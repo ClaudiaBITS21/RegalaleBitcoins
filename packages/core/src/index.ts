@@ -44,7 +44,7 @@ export {
   openGiftWallet,
 } from './gift.ts';
 export { decodeGiftFragment, encodeGiftFragment, LINK_VERSION } from './link.ts';
-export { cleanAddressInput, type Destination, type DestinationType, parseDestination } from './address.ts';
+export { addressFromScript, cleanAddressInput, type Destination, type DestinationType, parseDestination } from './address.ts';
 export {
   dustThreshold,
   estimateSweepFee,
@@ -62,3 +62,4 @@ export {
   type SweepPlan,
   sweepWeight,
 } from './sweep.ts';
+export { type InspectedTx, inspectTransaction } from './inspect.ts';

@@ -1,0 +1,218 @@
+import assert from 'node:assert/strict';
+import { after, before, beforeEach, describe, it } from 'node:test';
+import {
+  deriveGiftSecrets,
+  getNetwork,
+  masterRootFromMnemonic,
+  openGiftWallet,
+  parseDestination,
+  planSweep,
+  signSweep,
+} from '@regalale/core';
+import { createApp } from '../src/app.ts';
+import { processPending } from '../src/broadcaster.ts';
+import { type AddressStats, ChainError, type ChainClient, type FeeRates, type PriceClient, type Utxo } from '../src/chain.ts';
+import { connect, migrate, type Sql } from '../src/db.ts';
+import { findGift, insertGift } from '../src/gifts.ts';
+import { makeFundingTx } from '../../../packages/core/test/helpers.ts';
+
+const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
+const signet = getNetwork('signet');
+const MASTER = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+const secrets = deriveGiftSecrets(masterRootFromMnemonic(MASTER), 0, 'es');
+const wallet = openGiftWallet(secrets.entropy, secrets.passphraseWords, 'es', signet);
+const destination = parseDestination('tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7', signet);
+
+/** Cadena falsa en memoria: lo que respondería mempool.space. */
+class FakeChain implements ChainClient {
+  utxos: Utxo[] = [];
+  raw = new Map<string, string>();
+  mempoolFunded = 0n;
+  broadcasts: string[] = [];
+  rejectBroadcast: ChainError | null = null;
+  feeRates: FeeRates = { fastest: 5, halfHour: 3, hour: 2, economy: 1, minimum: 1 };
+
+  fund(amount: bigint, confirmed = true, salt = 1): void {
+    const f = makeFundingTx([{ script: wallet.script, amount }], salt);
+    this.raw.set(f.txid, f.rawTx);
+    this.utxos.push({ txid: f.txid, vout: 0, value: amount, confirmed });
+  }
+  async addressStats(): Promise<AddressStats> {
+    const sum = (c: boolean) => this.utxos.filter((u) => u.confirmed === c).reduce((a, u) => a + u.value, 0n);
+    const confirmed = sum(true);
+    return { confirmedFunded: confirmed, confirmedSpent: 0n, mempoolFunded: sum(false) + this.mempoolFunded, mempoolSpent: 0n, txCount: this.utxos.length };
+  }
+  async addressUtxos(): Promise<Utxo[]> {
+    return [...this.utxos];
+  }
+  async txHex(txid: string): Promise<string> {
+    const hex = this.raw.get(txid);
+    if (hex === undefined) throw new ChainError('no existe', 404);
+    return hex;
+  }
+  async broadcast(hex: string): Promise<string> {
+    if (this.rejectBroadcast !== null) throw this.rejectBroadcast;
+    this.broadcasts.push(hex);
+    const { inspectTransaction } = await import('@regalale/core');
+    return inspectTransaction(hex).txid;
+  }
+  async fees(): Promise<FeeRates> {
+    return this.feeRates;
+  }
+}
+
+const price: PriceClient = { btcUsd: async () => 100_000 };
+
+let sql: Sql;
+let chain: FakeChain;
+let app: ReturnType<typeof createApp>;
+let giftId: string;
+
+async function signedSweep(feeRate: number): Promise<{ hex: string; txid: string }> {
+  const res = await app.request(`/api/gifts/${giftId}/utxos`);
+  const { utxos } = (await res.json()) as { utxos: Array<{ txid: string; vout: number; rawTx: string }> };
+  const plan = planSweep({ network: signet, utxos, giftScript: wallet.script, destination, feeRate });
+  return signSweep(plan, wallet);
+}
+
+const post = (path: string, body: unknown) =>
+  app.request(path, { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } });
+
+describe('API del reclamo', () => {
+  before(async () => {
+    sql = connect(DB);
+    await sql`drop table if exists difusiones, regalos, migraciones cascade`;
+    await migrate(sql);
+  });
+  after(async () => {
+    await sql.end();
+  });
+  beforeEach(async () => {
+    await sql`delete from difusiones`;
+    await sql`delete from regalos`;
+    chain = new FakeChain();
+    app = createApp({ sql, chain, price, network: signet });
+    const gift = await insertGift(sql, {
+      network: 'signet',
+      address: wallet.address,
+      lang: 'es',
+      occasion: 'cumple',
+      to: 'Tomi',
+      from: 'Rodo',
+      message: 'Los verdaderos amigos son escasos. Bitcoin también.',
+      currency: 'USD',
+      amount: 25,
+      usdPerBtc: 80_000,
+    });
+    giftId = gift.id;
+  });
+
+  it('id con formato válido y 404 para regalos inexistentes', async () => {
+    assert.match(giftId, /^[A-Za-z0-9_-]{22}$/);
+    assert.equal((await app.request('/api/gifts/AAAAAAAAAAAAAAAAAAAAAA')).status, 404);
+    assert.equal((await app.request('/api/gifts/no-es-un-id')).status, 404);
+  });
+
+  it('estados según la cadena: esperando → en la red → activo', async () => {
+    const estado = async () => ((await (await app.request(`/api/gifts/${giftId}`)).json()) as { estado: string }).estado;
+    assert.equal(await estado(), 'esperando');
+    chain.fund(50_000n, false);
+    assert.equal(await estado(), 'en_la_red');
+    chain.utxos = chain.utxos.map((u) => ({ ...u, confirmed: true }));
+    assert.equal(await estado(), 'activo');
+  });
+
+  it('muestra la tarjeta, montos y cotizaciones, y nunca secretos', async () => {
+    chain.fund(50_000n);
+    const res = await app.request(`/api/gifts/${giftId}`);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    const body = (await res.json()) as Record<string, unknown>;
+    assert.equal(body.para, 'Tomi');
+    assert.equal(body.idioma, 'es');
+    assert.deepEqual(body.sats, { confirmados: '50000', sinConfirmar: '0' });
+    assert.deepEqual(body.original, { moneda: 'USD', monto: 25, usdPorBtc: 80_000 });
+    assert.equal(body.usdPorBtcHoy, 100_000);
+    const text = JSON.stringify(body);
+    for (const w of secrets.passphraseWords) assert.ok(!text.includes(` ${w} `));
+  });
+
+  it('entrega solo UTXO confirmados con su transacción completa', async () => {
+    chain.fund(50_000n, true, 1);
+    chain.fund(7_000n, false, 2);
+    const { utxos } = (await (await app.request(`/api/gifts/${giftId}/utxos`)).json()) as { utxos: Array<{ rawTx: string }> };
+    assert.equal(utxos.length, 1);
+    assert.match(utxos[0]?.rawTx ?? '', /^[0-9a-f]+$/);
+  });
+
+  it('reclamo ahora: verifica el barrido, lo difunde y marca el regalo', async () => {
+    chain.fund(50_000n);
+    const sweep = await signedSweep(3);
+    const res = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { txid: sweep.txid, estado: 'reclamado' });
+    assert.deepEqual(chain.broadcasts, [sweep.hex]);
+    const gift = await findGift(sql, giftId);
+    assert.equal(gift?.claimTxid, sweep.txid);
+    const again = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' });
+    assert.equal(again.status, 409);
+  });
+
+  it('rechaza transacciones que no son un barrido completo del regalo', async () => {
+    chain.fund(50_000n, true, 1);
+    const sweep = await signedSweep(3);
+    // Llegó otro pago confirmado después de firmar: el barrido ya no es completo.
+    chain.fund(10_000n, true, 2);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' })).status, 409);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: 'zz', modo: 'ahora' })).status, 422);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ya' })).status, 400);
+    assert.equal(chain.broadcasts.length, 0);
+  });
+
+  it('una transacción ajena no se difunde', async () => {
+    chain.fund(50_000n);
+    const other = makeFundingTx([{ script: destination.script, amount: 1_000n }], 9);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: other.rawTx, modo: 'ahora' })).status, 422);
+    assert.equal(chain.broadcasts.length, 0);
+  });
+
+  it('si la red rechaza la difusión, el regalo no queda marcado', async () => {
+    chain.fund(50_000n);
+    const sweep = await signedSweep(3);
+    chain.rejectBroadcast = new ChainError('min relay fee not met', 400);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' })).status, 422);
+    assert.equal((await findGift(sql, giftId))?.claimTxid, null);
+  });
+
+  it('esperar a que baje: guarda el barrido y lo difunde cuando la red lo acepta', async () => {
+    chain.fund(50_000n);
+    chain.feeRates = { fastest: 20, halfHour: 15, hour: 10, economy: 8, minimum: 5 };
+    const sweep = await signedSweep(2);
+    const res = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'esperar' });
+    assert.equal(res.status, 202);
+    const estado = async () => ((await (await app.request(`/api/gifts/${giftId}`)).json()) as { estado: string }).estado;
+    assert.equal(await estado(), 'reclamo_programado');
+    assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 0, canceladas: 0 });
+    chain.feeRates = { fastest: 3, halfHour: 2, hour: 2, economy: 1, minimum: 1 };
+    assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 1, canceladas: 0 });
+    assert.equal(await estado(), 'reclamado');
+    assert.deepEqual(chain.broadcasts, [sweep.hex]);
+  });
+
+  it('esperar a que baje: se cancela si los fondos se movieron', async () => {
+    chain.fund(50_000n);
+    chain.feeRates = { fastest: 20, halfHour: 15, hour: 10, economy: 8, minimum: 5 };
+    const sweep = await signedSweep(2);
+    await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'esperar' });
+    chain.utxos = [];
+    assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 0, canceladas: 1 });
+  });
+
+  it('si la cadena no responde: 502 sin detalles internos', async () => {
+    chain.addressStats = async () => {
+      throw new ChainError('caído');
+    };
+    const res = await app.request(`/api/gifts/${giftId}`);
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'cadena_no_disponible' });
+  });
+});

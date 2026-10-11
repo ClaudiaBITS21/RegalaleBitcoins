@@ -87,3 +87,14 @@ export function parseDestination(input: string, network: Network): Destination {
     witness: kind.witness,
   });
 }
+
+/** Script de salida → dirección de la red, o null si no es un tipo estándar. */
+export function addressFromScript(script: Uint8Array, network: Network): string | null {
+  assertNetwork(network);
+  try {
+    const decoded = OutScript.decode(script);
+    return TYPES[decoded.type] === undefined ? null : Address(network.btc).encode(decoded);
+  } catch {
+    return null;
+  }
+}

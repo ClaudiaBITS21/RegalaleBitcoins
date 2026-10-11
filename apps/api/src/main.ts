@@ -1,0 +1,29 @@
+import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
+import { createApp } from './app.ts';
+import { startBroadcaster } from './broadcaster.ts';
+import { esploraClient, priceClient } from './chain.ts';
+import { loadConfig } from './config.ts';
+import { connect, migrate } from './db.ts';
+import { securityHeaders } from './security.ts';
+
+const config = loadConfig();
+const sql = connect(config.databaseUrl);
+const applied = await migrate(sql);
+if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
+
+const chain = esploraClient(config.esploraUrl);
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), network: config.network });
+
+if (config.webDist !== null) {
+  // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.
+  app.use('*', securityHeaders());
+  app.use('/assets/*', serveStatic({ root: config.webDist }));
+  app.get('*', serveStatic({ root: config.webDist, path: 'index.html' }));
+}
+
+startBroadcaster({ sql, chain, network: config.network });
+
+serve({ fetch: app.fetch, port: config.port }, (info) => {
+  console.log(`API de RegalaleBitcoins en http://localhost:${info.port} (red: ${config.network.name}, cadena: ${config.esploraUrl})`);
+});

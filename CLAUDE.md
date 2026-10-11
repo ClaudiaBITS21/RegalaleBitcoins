@@ -28,9 +28,14 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 ```sh
 pnpm install --frozen-lockfile
 pnpm typecheck
-pnpm test
+pnpm test                 # núcleo, API (Postgres local, base regalale_test) y web
+pnpm build                # web
+pnpm e2e:simulado         # reclamo completo en Chromium contra cadena simulada
 node packages/core/scripts/fetch-vectors.ts   # regenera vectores oficiales (usa red)
 ```
+
+Postgres local: `pg_ctlcluster 16 main start`; detalles en `docs/desarrollo.md`.
+Secretos de desarrollo (signet) en `.dev/`, nunca al repo.
 
 ## Dependencias
 

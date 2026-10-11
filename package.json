@@ -7,7 +7,9 @@
   },
   "scripts": {
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm --filter @regalale/web build",
+    "e2e:simulado": "pnpm --filter @regalale/e2e simulado"
   },
   "devDependencies": {
     "@types/node": "24.19.1",

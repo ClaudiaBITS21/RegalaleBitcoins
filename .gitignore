@@ -6,3 +6,7 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+
+# Secretos de desarrollo (signet), nunca al repo
+.dev/
+apps/e2e/capturas/

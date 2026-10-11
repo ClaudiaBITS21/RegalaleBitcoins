@@ -1,0 +1,59 @@
+import '@fontsource/montserrat/latin-700.css';
+import '@fontsource/montserrat/latin-800.css';
+import '@fontsource/manrope/latin-400.css';
+import '@fontsource/manrope/latin-600.css';
+import '@fontsource/manrope/latin-700.css';
+import './styles.css';
+import { render } from 'preact';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { ClaimPage } from './claim/ClaimPage.tsx';
+import { ALLOW_MAINNET } from './config.ts';
+import { Home } from './home.tsx';
+import { detectLang, translate, type UiLang } from './i18n/index.ts';
+import { I18nContext, Layout } from './ui.tsx';
+
+const LANG_KEY = 'idioma';
+
+function savedLang(): string | null {
+  try {
+    return localStorage.getItem(LANG_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function App() {
+  const [lang, setLangState] = useState<UiLang>(() => detectLang(savedLang(), navigator.languages ?? [navigator.language]));
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  const i18n = useMemo(
+    () => ({
+      lang,
+      setLang: (l: UiLang) => {
+        setLangState(l);
+        try {
+          localStorage.setItem(LANG_KEY, l);
+        } catch {
+          // Sin almacenamiento (modo privado): el idioma vale solo para esta visita.
+        }
+      },
+      t: (key: Parameters<typeof translate>[1], vars?: Readonly<Record<string, string | number>>) => translate(lang, key, vars),
+    }),
+    [lang],
+  );
+  const claim = /^\/r\/([A-Za-z0-9_-]{22})\/?$/.exec(window.location.pathname);
+  return (
+    <I18nContext.Provider value={i18n}>
+      {claim?.[1] !== undefined ? (
+        <ClaimPage id={claim[1]} />
+      ) : (
+        <Layout testnet={!ALLOW_MAINNET}>
+          <Home />
+        </Layout>
+      )}
+    </I18nContext.Provider>
+  );
+}
+
+render(<App />, document.getElementById('app') as HTMLElement);

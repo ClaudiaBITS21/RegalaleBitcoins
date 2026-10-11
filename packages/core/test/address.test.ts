@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { p2pkh, p2sh, p2wpkh, TEST_NETWORK } from '@scure/btc-signer';
-import { cleanAddressInput, getNetwork, parseDestination } from '../src/index.ts';
+import { addressFromScript, cleanAddressInput, getNetwork, parseDestination } from '../src/index.ts';
 import { assertCoreError, loadVector, toHex } from './helpers.ts';
 
 const bip350 = loadVector<{ valid: Array<{ address: string; script: string }>; invalid: Array<{ address: string; reason: string }> }>(
@@ -79,5 +79,19 @@ describe('Dirección de destino: casos de uso', () => {
     assertCoreError(() => parseDestination(wpkh.slice(0, -1), signet), 'INVALID_ADDRESS');
     const mixed = wpkh.slice(0, 10).toUpperCase() + wpkh.slice(10);
     assertCoreError(() => parseDestination(mixed, signet), 'INVALID_ADDRESS');
+  });
+});
+
+describe('Script → dirección', () => {
+  it('ida y vuelta para los tipos soportados', () => {
+    for (const v of bip350.valid.filter((x) => ['0014', '0020', '5120'].includes(x.script.slice(0, 4)))) {
+      const network = networkFor(v.address);
+      assert.equal(addressFromScript(parseDestination(v.address, network).script, network), v.address.toLowerCase());
+    }
+  });
+
+  it('null para scripts no estándar', () => {
+    assert.equal(addressFromScript(Uint8Array.of(0x6a, 0x01, 0x00), signet), null); // OP_RETURN
+    assert.equal(addressFromScript(new Uint8Array(0), signet), null);
   });
 });

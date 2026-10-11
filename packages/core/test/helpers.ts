@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { ripemd160 } from '@noble/hashes/legacy.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { hex } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
@@ -159,4 +161,23 @@ export function bip143PreimageP2WPKH(tx: ParsedTx, index: number, pubkeyHash: Ui
 
 export function bip143SighashP2WPKH(tx: ParsedTx, index: number, pubkeyHash: Uint8Array, amount: bigint): Uint8Array {
   return dsha256(bip143PreimageP2WPKH(tx, index, pubkeyHash, amount));
+}
+
+/**
+ * Verifica de forma independiente cada entrada P2WPKH de una transacción firmada:
+ * witness [firma, clave], hash160(clave) = el script gastado, y firma BIP143 válida.
+ */
+export function verifyP2WPKHInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>): boolean {
+  const tx = parseTx(raw);
+  if (tx.inputs.length !== prevouts.length) return false;
+  return tx.inputs.every((_, i) => {
+    const [sig, pubkey] = tx.witnesses[i] ?? [];
+    const prev = prevouts[i];
+    if (sig === undefined || pubkey === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
+    const pubkeyHash = ripemd160(sha256(pubkey));
+    const expected = concat(Uint8Array.of(0x00, 0x14), pubkeyHash);
+    if (hex.encode(expected) !== hex.encode(prev.script)) return false;
+    const sighash = bip143SighashP2WPKH(tx, i, pubkeyHash, prev.amount);
+    return secp256k1.verify(sig.slice(0, -1), sighash, pubkey, { prehash: false, format: 'der', lowS: true });
+  });
 }

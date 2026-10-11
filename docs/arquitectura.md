@@ -54,7 +54,25 @@ oficiales.
   - Vigila direcciones y retransmite transacciones.
   - Guarda la bóveda cifrada sin poder abrirla y manda mails.
   - Solo recibe una semilla en el caso del link guardado que prevé la especificación.
-- **Link:** `/r/<id>#<semilla>`; ver [derivacion.md](derivacion.md).
+- **Link:** `/r/<id>#<semilla>`; ver [derivacion.md](derivacion.md). La web lee la
+  semilla una sola vez y la saca de la barra de direcciones: queda solo en memoria.
+
+## API del reclamo
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| GET | `/api/gifts/:id` | Tarjeta, idioma, dirección pública, estado y montos. El estado se calcula en el servidor desde la cadena: `esperando`, `en_la_red`, `activo`, `reclamo_programado`, `reclamado`, `recuperado`, `retirado`. |
+| GET | `/api/gifts/:id/utxos` | UTXO confirmados con su transacción completa. El navegador verifica los montos contra el txid. |
+| GET | `/api/fees` | Comisiones recomendadas (sat/vB). |
+| POST | `/api/gifts/:id/claim` | `{hex, modo: 'ahora' \| 'esperar'}`. Ver abajo. |
+
+**Qué verifica el servidor antes de difundir:**
+- que el barrido gaste exactamente todos los UTXO confirmados del regalo, y nada más;
+- que tenga una sola salida;
+- que la comisión esté en rango.
+
+Con `esperar`, si la red todavía no acepta esa comisión, guarda la transacción firmada
+y la difunde cuando baje. El servidor no puede cambiarla: solo decide cuándo mandarla.
 
 ## Seguridad web
 
@@ -80,7 +98,7 @@ que se decida otra cosa:
    mandar el link. Etapa 4.
 3. **Sin verificar palabras de la billetera del que recibe** en la guía de BlueWallet:
    solo el checkbox. Pedir palabras contradice "Nunca te vamos a pedir las palabras de
-   tu billetera". Etapa 3.
+   tu billetera". Implementado en la etapa 3.
 4. **Link guardado** (envío programado o reclamo desde el panel) solo si se pide
    explícitamente: cifrado en la base, borrado al reclamarse o recuperarse, y aviso si
    el monto supera el techo. Etapa 6.
@@ -89,7 +107,9 @@ que se decida otra cosa:
 
 1. Stack y arquitectura. Hecho.
 2. Núcleo criptográfico con tests. Hecho.
-3. Reclamo en signet, de punta a punta. Necesita acceso de red a `mempool.space`.
+3. Reclamo en signet. Código hecho: API, web y prueba completa en navegador contra una
+   cadena simulada. Falta la prueba en signet real, que necesita acceso de red a
+   `mempool.space` y el regalo de prueba fondeado.
 4. Regalar en 5 pasos, con detección de pago (mempool, 1 confirmación, RBF).
 5. Bóveda con passkey y código de recuperación.
 6. Paneles, estados y notificaciones.
