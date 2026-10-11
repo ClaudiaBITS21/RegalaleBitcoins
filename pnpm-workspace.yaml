@@ -1,0 +1,16 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Seguridad de la cadena de suministro (ver docs/arquitectura.md)
+# No instalar versiones publicadas hace menos de 7 días (en minutos).
+minimumReleaseAge: 10080
+# Ninguna dependencia puede correr scripts de instalación salvo las listadas.
+onlyBuiltDependencies: []
+strictDepBuilds: true
+# Falla si un paquete pierde nivel de confianza (por ejemplo, deja de publicarse con procedencia).
+trustPolicy: no-downgrade
+# Las dependencias transitivas no pueden venir de git ni de URLs.
+blockExoticSubdeps: true
+# Versiones exactas al agregar dependencias.
+savePrefix: ''
