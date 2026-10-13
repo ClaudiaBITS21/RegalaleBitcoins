@@ -75,7 +75,7 @@ Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas d
 11. **No hace falta una computadora para recibirlo.** Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera.
 12. **Se puede regalar entre varios.** Cada uno pone lo que puede y le llega todo junto.
 13. **Si no lo quiere, vos lo recuperás o él lo canjea por dinero.** No hay regalo que quede tirado.
-14. **Es de quien lo recibe, de verdad.** Queda en su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar.
+14. **Una vez que lo reclama, es suyo de verdad.** Pasa a su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar.
 15. **Lleva un mensaje.** Es una invitación a pensar en el ahorro y en el largo plazo.
 16. **Es personal.** Tu mensaje, su nombre y una imagen hecha para la ocasión.
 17. **Viene con instrucciones.** Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas.
@@ -131,7 +131,7 @@ Nada de shopping el 24 a la noche: se arma en dos minutos desde el celular, tamb
 
 Cruce del contenido con el modelo del producto. Lo marcado **A CONFIRMAR** espera respuesta.
 
-1. **A CONFIRMAR — razón 14 contradice la 13.** La 14 dice "queda en su propia billetera: ni
+1. **RESUELTO (Claudia, 13/10) — razón 14 contradecía la 13; texto actualizado.** La 14 dice "queda en su propia billetera: ni
    nosotros ni nadie se lo puede quitar", pero la 13 (y el modelo: la semilla del regalo se
    deriva de la clave de quien regala) dice que, mientras no lo reclamó, quien regala lo
    recupera. Propuesta para la 14: "**Una vez que lo reclama, es suyo de verdad.** Pasa a su
