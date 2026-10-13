@@ -35,6 +35,8 @@ export {
   type Bip84Key,
   bip84Path,
   deriveBip84Key,
+  type DerivedGift,
+  deriveGift,
   deriveGiftSecrets,
   GIFT_ENTROPY_BYTES,
   giftMnemonicPath,

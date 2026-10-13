@@ -121,3 +121,19 @@ export function openGiftWallet(entropy: Uint8Array, passphraseWords: readonly st
     root.wipePrivateData();
   }
 }
+
+/** Lo que el que regala necesita de un regalo: sus secretos y la dirección donde pagarlo. */
+export interface DerivedGift extends GiftSecrets {
+  readonly address: string;
+}
+
+/**
+ * Deriva el regalo `index` completo desde la clave maestra: la semilla del link, las 4
+ * palabras y la dirección de pago, calculada igual que la calcula el que recibe.
+ */
+export function deriveGift(root: HDKey, index: number, lang: Lang, network: Network): DerivedGift {
+  const secrets = deriveGiftSecrets(root, index, lang);
+  const wallet = openGiftWallet(secrets.entropy, secrets.passphraseWords, lang, network);
+  wallet.wipe();
+  return Object.freeze({ ...secrets, address: wallet.address });
+}

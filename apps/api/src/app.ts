@@ -1,10 +1,11 @@
 import { timingSafeEqual } from 'node:crypto';
-import { addressFromScript, isCoreError, inspectTransaction, type InspectedTx, type Network } from '@regalale/core';
+import { addressFromScript, isCoreError, isLang, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination } from '@regalale/core';
 import { Hono } from 'hono';
 import { ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
-import { findGift, type Gift, pendingFor, recordClaim, schedulePending } from './gifts.ts';
+import { findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
+import { RateLimiter } from './ratelimit.ts';
 import { giftState } from './state.ts';
 
 export interface AppDeps {
@@ -14,7 +15,16 @@ export interface AppDeps {
   readonly network: Network;
   /** Si está, habilita POST /api/tareas/difusiones con el encabezado x-tarea-token. */
   readonly tasksToken?: string | null;
+  /** Regalos que puede crear una misma IP por hora. */
+  readonly createLimitPerHour?: number;
 }
+
+/** Techo de la beta: un regalo no puede superar este valor en dólares. */
+export const CEILING_USD = 100;
+/** Margen entre la cotización del navegador y la del servidor. */
+const PRICE_TOLERANCE = 0.05;
+export const OCCASIONS = ['cumple', 'navidad', 'nacimiento', 'bautismo', 'casamiento', 'graduacion', 'amigo', 'porque', 'otra'] as const;
+export const LIMITS = { to: 30, from: 30, message: 280 } as const;
 
 function sameToken(a: string, b: string): boolean {
   const x = Buffer.from(a);
@@ -34,12 +44,15 @@ type ErrorCode =
   | 'fondos_cambiaron'
   | 'ya_reclamado'
   | 'cadena_no_disponible'
-  | 'difusion_rechazada';
+  | 'difusion_rechazada'
+  | 'regalo_existente'
+  | 'monto_invalido'
+  | 'demasiados_pedidos';
 
 class ApiError extends Error {
-  readonly status: 400 | 404 | 409 | 422 | 502;
+  readonly status: 400 | 404 | 409 | 422 | 429 | 502;
   readonly code: ErrorCode;
-  constructor(status: 400 | 404 | 409 | 422 | 502, code: ErrorCode, message: string = code) {
+  constructor(status: 400 | 404 | 409 | 422 | 429 | 502, code: ErrorCode, message: string = code) {
     super(message);
     this.status = status;
     this.code = code;
@@ -113,6 +126,31 @@ export function createApp(deps: AppDeps): Hono {
     return c.json(await processPending({ sql, chain, network }));
   });
 
+  app.get('/api/precio', async (c) => c.json({ usdPorBtc: await price.btcUsd() }));
+
+  const createLimiter = new RateLimiter(deps.createLimitPerHour ?? 30, 60 * 60 * 1000);
+
+  /**
+   * El que regala registra el regalo antes de pagarlo: datos de la tarjeta, la dirección
+   * derivada en su navegador y cuánto va a mandar. Nunca recibe semillas ni palabras.
+   * 409 regalo_existente si la dirección ya está registrada: el navegador prueba el índice siguiente.
+   */
+  app.post('/api/gifts', async (c) => {
+    const ip = clientIp(c.req.header('x-forwarded-for'));
+    if (!createLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
+    const g = parseNewGift(await c.req.json().catch(() => null), network);
+    const [usdPerBtc, fees] = await Promise.all([price.btcUsd(), chain.fees()]);
+    checkAmount(g, usdPerBtc, minimumGiftAmount(fees.economy));
+    try {
+      const gift = await insertGift(sql, { ...g, network: network.name, usdPerBtc });
+      createLimiter.record(ip);
+      return c.json({ id: gift.id }, 201);
+    } catch (error) {
+      if (isDuplicateAddress(error)) throw new ApiError(409, 'regalo_existente');
+      throw error;
+    }
+  });
+
   app.get('/api/gifts/:id', async (c) => {
     const gift = await giftOr404(sql, c.req.param('id'));
     if (gift.network !== network.name) throw new ApiError(404, 'regalo_no_encontrado');
@@ -122,6 +160,12 @@ export function createApp(deps: AppDeps): Hono {
       price.btcUsd().catch(() => null),
     ]);
     const funds = giftState(gift, stats, pending !== null);
+    // Pago trabado: alguna transacción sin confirmar paga menos que la comisión "económica".
+    let stuck = false;
+    if (funds.state === 'en_la_red') {
+      const [payments, fees] = await Promise.all([chain.mempoolPayments(gift.address), chain.fees()]);
+      stuck = payments.some((p) => p.value > 0n && p.feeRate < fees.economy);
+    }
     return c.json({
       id: gift.id,
       red: gift.network,
@@ -133,7 +177,12 @@ export function createApp(deps: AppDeps): Hono {
       imagen: gift.image,
       direccion: gift.address,
       estado: funds.state,
-      sats: { confirmados: funds.confirmedSats.toString(), sinConfirmar: funds.unconfirmedSats.toString() },
+      sats: {
+        confirmados: funds.confirmedSats.toString(),
+        sinConfirmar: funds.unconfirmedSats.toString(),
+        esperados: gift.satsExpected === null ? null : gift.satsExpected.toString(),
+      },
+      pagoTrabado: stuck,
       original: gift.amount === null ? null : { moneda: gift.currency, monto: gift.amount, usdPorBtc: gift.usdPerBtc },
       usdPorBtcHoy: usdNow,
       reclamo: gift.claimTxid === null ? (pending === null ? null : { txid: pending.txid, tipo: 'programado' }) : { txid: gift.claimTxid, tipo: gift.claimKind },
@@ -186,6 +235,68 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   return app;
+}
+
+/** IP del cliente: Cloud Run y Firebase Hosting la ponen primera en x-forwarded-for. */
+function clientIp(forwarded: string | undefined): string {
+  return forwarded?.split(',')[0]?.trim() || 'local';
+}
+
+type ParsedGift = Omit<Parameters<typeof insertGift>[1], 'network' | 'usdPerBtc'> & { satsExpected: bigint; currency: 'USD' | 'SAT'; amount: number };
+
+function text(value: unknown, max: number, required: boolean): string | null {
+  if (value === undefined || value === null || value === '') {
+    if (required) throw new ApiError(400, 'pedido_invalido');
+    return null;
+  }
+  if (typeof value !== 'string') throw new ApiError(400, 'pedido_invalido');
+  const clean = value.normalize('NFC').trim();
+  // Se cuentan caracteres como los ve la persona (emojis incluidos), no unidades UTF-16.
+  if ([...clean].length > max || (required && clean === '')) throw new ApiError(400, 'pedido_invalido');
+  return clean === '' ? null : clean;
+}
+
+function parseNewGift(body: unknown, network: Network): ParsedGift {
+  if (body === null || typeof body !== 'object') throw new ApiError(400, 'pedido_invalido');
+  const b = body as Record<string, unknown>;
+  let address: string;
+  try {
+    const d = parseDestination(String(b.direccion ?? ''), network);
+    if (d.type !== 'p2wpkh') throw new ApiError(400, 'pedido_invalido');
+    address = d.address;
+  } catch (error) {
+    if (error instanceof ApiError || isCoreError(error)) throw new ApiError(400, 'pedido_invalido');
+    throw error;
+  }
+  if (typeof b.idioma !== 'string' || !isLang(b.idioma)) throw new ApiError(400, 'pedido_invalido');
+  if (typeof b.ocasion !== 'string' || !(OCCASIONS as readonly string[]).includes(b.ocasion)) throw new ApiError(400, 'pedido_invalido');
+  if (typeof b.imagen !== 'number' || !Number.isInteger(b.imagen) || b.imagen < 1 || b.imagen > 4) throw new ApiError(400, 'pedido_invalido');
+  if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
+  if (b.moneda !== 'USD' && b.moneda !== 'SAT') throw new ApiError(400, 'monto_invalido');
+  if (typeof b.monto !== 'number' || !Number.isFinite(b.monto) || b.monto <= 0) throw new ApiError(400, 'monto_invalido');
+  return {
+    address,
+    lang: b.idioma,
+    occasion: b.ocasion,
+    to: text(b.para, LIMITS.to, true) as string,
+    from: text(b.de, LIMITS.from, false),
+    message: text(b.mensaje, LIMITS.message, false) ?? '',
+    image: b.imagen,
+    currency: b.moneda,
+    amount: b.monto,
+    satsExpected: BigInt(b.sats),
+  };
+}
+
+/** Monto coherente: mayor al mínimo de la red, debajo del techo y, en dólares, de acuerdo con la cotización. */
+function checkAmount(g: ParsedGift, usdPerBtc: number, minimumSats: bigint): void {
+  const usd = (Number(g.satsExpected) / 1e8) * usdPerBtc;
+  if (g.satsExpected < minimumSats) throw new ApiError(422, 'monto_invalido', 'Debajo del mínimo que se puede reclamar con las comisiones de hoy.');
+  if (usd > CEILING_USD * (1 + PRICE_TOLERANCE)) throw new ApiError(422, 'monto_invalido', `Supera el techo de USD ${CEILING_USD}.`);
+  if (g.currency === 'SAT' && BigInt(Math.round(g.amount)) !== g.satsExpected) throw new ApiError(422, 'monto_invalido');
+  if (g.currency === 'USD' && (Math.round(g.amount * 100) !== g.amount * 100 || Math.abs(usd - g.amount) > g.amount * PRICE_TOLERANCE)) {
+    throw new ApiError(422, 'monto_invalido', 'Los sats no corresponden al monto en dólares.');
+  }
 }
 
 /** La dirección de destino del barrido, para registrarla (o el script en hex si no es estándar). */

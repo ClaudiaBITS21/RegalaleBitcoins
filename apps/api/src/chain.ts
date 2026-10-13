@@ -19,6 +19,15 @@ export interface AddressStats {
   readonly txCount: number;
 }
 
+/** Un pago a la dirección que todavía está en la mempool. */
+export interface MempoolPayment {
+  readonly txid: string;
+  /** sat/vB de la transacción. */
+  readonly feeRate: number;
+  /** Lo que esa transacción manda a la dirección. */
+  readonly value: bigint;
+}
+
 /** sat/vB. */
 export interface FeeRates {
   readonly fastest: number;
@@ -31,6 +40,8 @@ export interface FeeRates {
 export interface ChainClient {
   addressStats(address: string): Promise<AddressStats>;
   addressUtxos(address: string): Promise<Utxo[]>;
+  /** Pagos sin confirmar a la dirección (para avisar si uno quedó trabado por comisión baja). */
+  mempoolPayments(address: string): Promise<MempoolPayment[]>;
   txHex(txid: string): Promise<string>;
   /** Difunde y devuelve el txid. */
   broadcast(hex: string): Promise<string>;
@@ -99,6 +110,19 @@ export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, 
           throw new ChainError('UTXO inválido.');
         }
         return { txid: u.txid, vout: u.vout, value: sats(u.value), confirmed: u.status?.confirmed === true };
+      });
+    },
+    async mempoolPayments(address) {
+      const list = await json(`/address/${encodeURIComponent(address)}/txs/mempool`);
+      if (!Array.isArray(list)) throw new ChainError('Lista de transacciones inválida.');
+      return list.map((t: { txid?: unknown; fee?: unknown; weight?: unknown; vout?: unknown }) => {
+        if (typeof t.txid !== 'string' || !TXID.test(t.txid) || !Array.isArray(t.vout)) throw new ChainError('Transacción inválida.');
+        const weight = Number(sats(t.weight));
+        if (weight === 0) throw new ChainError('Transacción inválida.');
+        const value = (t.vout as Array<{ scriptpubkey_address?: unknown; value?: unknown }>)
+          .filter((o) => o.scriptpubkey_address === address)
+          .reduce((a, o) => a + sats(o.value), 0n);
+        return { txid: t.txid, feeRate: Number(sats(t.fee)) / (weight / 4), value };
       });
     },
     async txHex(txid) {

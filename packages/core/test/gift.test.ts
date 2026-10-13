@@ -5,6 +5,7 @@ import { mnemonicToSeedSync } from '@scure/bip39';
 import { p2wpkh, TEST_NETWORK } from '@scure/btc-signer';
 import {
   bip85Hex,
+  deriveGift,
   deriveGiftSecrets,
   generateMasterMnemonic,
   getNetwork,
@@ -112,6 +113,18 @@ describe('Derivación del regalo', () => {
       const key = HDKey.fromMasterSeed(seed).derive("m/84'/1'/0'/0/0");
       assert.equal(wallet.address, p2wpkh(key.publicKey as Uint8Array, TEST_NETWORK).address);
       assert.equal(wallet.path, "m/84'/1'/0'/0/0");
+    }
+  });
+});
+
+describe('Regalo completo (lado del que regala)', () => {
+  it('la dirección de pago es la que abre el que recibe con el link y las palabras', () => {
+    for (const lang of LANGS) {
+      const gift = deriveGift(root, 3, lang, signet);
+      const wallet = openGiftWallet(gift.entropy, gift.passphraseWords, lang, signet);
+      assert.equal(gift.address, wallet.address);
+      assert.deepEqual(gift.passphraseWords, deriveGiftSecrets(root, 3, lang).passphraseWords);
+      assert.ok(gift.address.startsWith('tb1q'));
     }
   });
 });

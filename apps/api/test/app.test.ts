@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import {
+  deriveGift,
   deriveGiftSecrets,
   getNetwork,
   masterRootFromMnemonic,
@@ -11,7 +12,7 @@ import {
 } from '@regalale/core';
 import { createApp } from '../src/app.ts';
 import { processPending } from '../src/broadcaster.ts';
-import { type AddressStats, ChainError, type ChainClient, type FeeRates, type PriceClient, type Utxo } from '../src/chain.ts';
+import { type AddressStats, ChainError, type ChainClient, type FeeRates, type MempoolPayment, type PriceClient, type Utxo } from '../src/chain.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
 import { findGift, insertGift } from '../src/gifts.ts';
 import { makeFundingTx } from '../../../packages/core/test/helpers.ts';
@@ -30,6 +31,7 @@ class FakeChain implements ChainClient {
   mempoolFunded = 0n;
   broadcasts: string[] = [];
   rejectBroadcast: ChainError | null = null;
+  mempool: MempoolPayment[] = [];
   feeRates: FeeRates = { fastest: 5, halfHour: 3, hour: 2, economy: 1, minimum: 1 };
 
   fund(amount: bigint, confirmed = true, salt = 1): void {
@@ -41,6 +43,9 @@ class FakeChain implements ChainClient {
     const sum = (c: boolean) => this.utxos.filter((u) => u.confirmed === c).reduce((a, u) => a + u.value, 0n);
     const confirmed = sum(true);
     return { confirmedFunded: confirmed, confirmedSpent: 0n, mempoolFunded: sum(false) + this.mempoolFunded, mempoolSpent: 0n, txCount: this.utxos.length };
+  }
+  async mempoolPayments(): Promise<MempoolPayment[]> {
+    return [...this.mempool];
   }
   async addressUtxos(): Promise<Utxo[]> {
     return [...this.utxos];
@@ -129,7 +134,7 @@ describe('API del reclamo', () => {
     const body = (await res.json()) as Record<string, unknown>;
     assert.equal(body.para, 'Tomi');
     assert.equal(body.idioma, 'es');
-    assert.deepEqual(body.sats, { confirmados: '50000', sinConfirmar: '0' });
+    assert.deepEqual(body.sats, { confirmados: '50000', sinConfirmar: '0', esperados: null });
     assert.deepEqual(body.original, { moneda: 'USD', monto: 25, usdPorBtc: 80_000 });
     assert.equal(body.usdPorBtcHoy, 100_000);
     const text = JSON.stringify(body);
@@ -226,5 +231,109 @@ describe('API del reclamo', () => {
     const res = await app.request(`/api/gifts/${giftId}`);
     assert.equal(res.status, 502);
     assert.deepEqual(await res.json(), { error: 'cadena_no_disponible' });
+  });
+
+  it('el pago trabado por comisión baja se avisa', async () => {
+    const body = async () => (await (await app.request(`/api/gifts/${giftId}`)).json()) as { estado: string; pagoTrabado: boolean };
+    chain.fund(50_000n, false);
+    chain.mempool = [{ txid: 'a'.repeat(64), feeRate: 3, value: 50_000n }];
+    assert.equal((await body()).pagoTrabado, false);
+    chain.mempool = [{ txid: 'a'.repeat(64), feeRate: 0.5, value: 50_000n }];
+    assert.deepEqual(await body(), { ...(await body()), estado: 'en_la_red', pagoTrabado: true });
+  });
+});
+
+describe('API para regalar', () => {
+  const root = masterRootFromMnemonic(MASTER);
+  const nuevo = (index: number, extra: Record<string, unknown> = {}) => ({
+    direccion: deriveGift(root, index, 'pt', signet).address,
+    idioma: 'pt',
+    ocasion: 'navidad',
+    para: 'Ana',
+    de: 'Rodo',
+    mensaje: 'Feliz Navidad 🎄',
+    imagen: 2,
+    moneda: 'USD',
+    monto: 25,
+    sats: '25000', // USD 25 a USD 100.000 por bitcoin
+    ...extra,
+  });
+
+  before(async () => {
+    sql = connect(DB);
+    await migrate(sql);
+  });
+  after(async () => {
+    await sql.end();
+  });
+  beforeEach(async () => {
+    await sql`delete from difusiones`;
+    await sql`delete from regalos`;
+    chain = new FakeChain();
+    app = createApp({ sql, chain, price, network: signet, createLimitPerHour: 5 });
+  });
+
+  it('crea el regalo con la cotización del servidor y lo muestra esperando el pago', async () => {
+    const res = await post('/api/gifts', nuevo(1));
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const gift = await findGift(sql, id);
+    assert.equal(gift?.address, deriveGift(root, 1, 'pt', signet).address);
+    assert.equal(gift?.usdPerBtc, 100_000);
+    assert.equal(gift?.satsExpected, 25_000n);
+    assert.equal(gift?.message, 'Feliz Navidad 🎄');
+    const view = (await (await app.request(`/api/gifts/${id}`)).json()) as { estado: string; sats: { esperados: string } };
+    assert.equal(view.estado, 'esperando');
+    assert.equal(view.sats.esperados, '25000');
+  });
+
+  it('la misma dirección no se registra dos veces: el navegador prueba el índice siguiente', async () => {
+    assert.equal((await post('/api/gifts', nuevo(1))).status, 201);
+    const again = await post('/api/gifts', nuevo(1));
+    assert.equal(again.status, 409);
+    assert.deepEqual(await again.json(), { error: 'regalo_existente', detalle: 'regalo_existente' });
+  });
+
+  it('montos: en sats, mínimo de la red, techo y coherencia con los dólares', async () => {
+    assert.equal((await post('/api/gifts', nuevo(1, { moneda: 'SAT', monto: 30_000, sats: '30000' }))).status, 201);
+    const status = async (extra: Record<string, unknown>) => (await post('/api/gifts', nuevo(2, extra))).status;
+    assert.equal(await status({ moneda: 'SAT', monto: 300, sats: '300' }), 422); // no alcanza para barrerlo
+    assert.equal(await status({ monto: 150, sats: '150000' }), 422); // supera USD 100
+    assert.equal(await status({ monto: 25, sats: '50000' }), 422); // sats de otro monto
+    assert.equal(await status({ moneda: 'SAT', monto: 30_000, sats: '31000' }), 422);
+    assert.equal(await status({ sats: '25000.5' }), 400);
+    assert.equal(await status({ sats: 25000 }), 400);
+    assert.equal(await status({ moneda: 'ARS' }), 400);
+  });
+
+  it('valida la tarjeta: largos, ocasión, imagen, idioma y dirección de la red', async () => {
+    const status = async (extra: Record<string, unknown>) => (await post('/api/gifts', nuevo(3, extra))).status;
+    assert.equal(await status({ para: '' }), 400);
+    assert.equal(await status({ para: 'x'.repeat(31) }), 400);
+    assert.equal(await status({ de: 'x'.repeat(31) }), 400);
+    assert.equal(await status({ mensaje: 'x'.repeat(281) }), 400);
+    assert.equal(await status({ mensaje: '🎄'.repeat(280) }), 201); // se cuentan caracteres, no bytes
+    assert.equal(await status({ ocasion: 'condolencias' }), 400);
+    assert.equal(await status({ imagen: 5 }), 400);
+    assert.equal(await status({ idioma: 'fr' }), 400);
+    assert.equal(await status({ direccion: 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu' }), 400); // mainnet
+    assert.equal(await status({ direccion: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7' }), 400); // no es P2WPKH
+    assert.equal((await app.request('/api/gifts', { method: 'POST', body: 'no es json' })).status, 400);
+  });
+
+  it('limita cuántos regalos crea una misma IP', async () => {
+    const from = (ip: string, i: number) =>
+      app.request('/api/gifts', {
+        method: 'POST',
+        body: JSON.stringify(nuevo(i)),
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': `${ip}, 10.0.0.1` },
+      });
+    for (let i = 0; i < 5; i++) assert.equal((await from('1.2.3.4', 10 + i)).status, 201);
+    assert.equal((await from('1.2.3.4', 20)).status, 429);
+    assert.equal((await from('5.6.7.8', 21)).status, 201);
+  });
+
+  it('precio para la web', async () => {
+    assert.deepEqual(await (await app.request('/api/precio')).json(), { usdPorBtc: 100_000 });
   });
 });

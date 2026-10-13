@@ -16,6 +16,8 @@ export interface Gift {
   readonly currency: string | null;
   readonly amount: number | null;
   readonly usdPerBtc: number | null;
+  /** Lo que el que regala eligió regalar, en sats (null en regalos anteriores a la etapa 4). */
+  readonly satsExpected: bigint | null;
   readonly createdAt: Date;
   readonly claimTxid: string | null;
   readonly claimKind: ClaimKind | null;
@@ -34,6 +36,7 @@ export interface NewGift {
   readonly currency?: string | null;
   readonly amount?: number | null;
   readonly usdPerBtc?: number | null;
+  readonly satsExpected?: bigint | null;
 }
 
 export const GIFT_ID = /^[A-Za-z0-9_-]{22}$/;
@@ -57,6 +60,7 @@ interface Row {
   moneda: string | null;
   monto: string | null;
   usd_por_btc: string | null;
+  sats_esperados: string | null;
   creado: Date;
   reclamo_txid: string | null;
   reclamo_tipo: ClaimKind | null;
@@ -78,6 +82,7 @@ function fromRow(r: Row): Gift {
     currency: r.moneda,
     amount: r.monto === null ? null : Number(r.monto),
     usdPerBtc: r.usd_por_btc === null ? null : Number(r.usd_por_btc),
+    satsExpected: r.sats_esperados === null ? null : BigInt(r.sats_esperados),
     createdAt: r.creado,
     claimTxid: r.reclamo_txid,
     claimKind: r.reclamo_tipo,
@@ -87,11 +92,18 @@ function fromRow(r: Row): Gift {
 
 export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   const [row] = await sql<Row[]>`
-    insert into regalos (id, red, direccion, idioma, ocasion, para, de, mensaje, imagen, moneda, monto, usd_por_btc)
+    insert into regalos (id, red, direccion, idioma, ocasion, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados)
     values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.to}, ${g.from ?? null},
-            ${g.message ?? ''}, ${g.image ?? 1}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null})
+            ${g.message ?? ''}, ${g.image ?? 1}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
+            ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()})
     returning *`;
   return fromRow(row as Row);
+}
+
+/** true si el error es por una dirección ya registrada (otro regalo con el mismo índice). */
+export function isDuplicateAddress(error: unknown): boolean {
+  const e = error as { code?: unknown; constraint_name?: unknown };
+  return e.code === '23505' && e.constraint_name === 'regalos_direccion_key';
 }
 
 export async function findGift(sql: Sql, id: string): Promise<Gift | null> {
