@@ -207,6 +207,18 @@ describe('API del reclamo', () => {
     assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 0, canceladas: 1 });
   });
 
+  it('tareas programadas: solo con el token correcto', async () => {
+    const token = 'x'.repeat(40);
+    const withToken = createApp({ sql, chain, price, network: signet, tasksToken: token });
+    const call = (t?: string) =>
+      withToken.request('/api/tareas/difusiones', { method: 'POST', headers: t === undefined ? {} : { 'x-tarea-token': t } });
+    assert.equal((await call()).status, 401);
+    assert.equal((await call('y'.repeat(40))).status, 401);
+    assert.equal((await call(token)).status, 200);
+    // Sin token configurado, el endpoint queda cerrado.
+    assert.equal((await app.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).status, 401);
+  });
+
   it('si la cadena no responde: 502 sin detalles internos', async () => {
     chain.addressStats = async () => {
       throw new ChainError('caído');

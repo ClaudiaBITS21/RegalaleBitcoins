@@ -1,0 +1,11 @@
+# Construye la imagen de la API y la sube a Artifact Registry.
+#   gcloud builds submit --config cloudbuild.api.yaml --project regalalebitcoins
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'apps/api/Dockerfile', '-t', '${_IMAGE}:${_TAG}', '.']
+images: ['${_IMAGE}:${_TAG}']
+substitutions:
+  _IMAGE: southamerica-east1-docker.pkg.dev/regalalebitcoins/regalalebitcoins/api
+  _TAG: manual
+options:
+  logging: CLOUD_LOGGING_ONLY

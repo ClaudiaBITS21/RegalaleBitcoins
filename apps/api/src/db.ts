@@ -7,7 +7,14 @@ export type Sql = postgres.Sql;
 
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
-export function connect(databaseUrl: string): Sql {
+export function connect(
+  databaseUrl: string,
+  socket: { path: string; user: string; database: string; password: string } | null = null,
+): Sql {
+  if (socket !== null) {
+    // Cloud SQL: el conector expone el socket en <path>/.s.PGSQL.5432.
+    return postgres({ host: socket.path, username: socket.user, database: socket.database, password: socket.password, max: 5, onnotice: () => {} });
+  }
   return postgres(databaseUrl, { max: 10, onnotice: () => {} });
 }
 

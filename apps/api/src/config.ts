@@ -3,6 +3,12 @@ import { getNetwork, type Network, type NetworkName } from '@regalale/core';
 export interface Config {
   readonly network: Network;
   readonly databaseUrl: string;
+  /** En Cloud Run: conexión a Cloud SQL por socket Unix (DB_SOCKET, DB_USER, DB_NAME, DB_PASSWORD). */
+  readonly databaseSocket: { readonly path: string; readonly user: string; readonly database: string; readonly password: string } | null;
+  /** Token que exige el endpoint de tareas programadas (Cloud Scheduler). */
+  readonly tasksToken: string | null;
+  /** Si corre el bucle interno de difusiones programadas (en Cloud Run lo dispara Scheduler). */
+  readonly broadcasterLoop: boolean;
   /** API compatible con Esplora (mempool.space, Blockstream o propia). */
   readonly esploraUrl: string;
   /** Endpoint de precios de mempool.space (/api/v1/prices). */
@@ -28,6 +34,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return Object.freeze({
     network,
     databaseUrl: env.DATABASE_URL ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale',
+    databaseSocket:
+      env.DB_SOCKET === undefined
+        ? null
+        : { path: env.DB_SOCKET, user: env.DB_USER ?? 'regalale', database: env.DB_NAME ?? 'regalale', password: env.DB_PASSWORD ?? '' },
+    tasksToken: env.TAREAS_TOKEN !== undefined && env.TAREAS_TOKEN.length >= 32 ? env.TAREAS_TOKEN : null,
+    broadcasterLoop: env.RUN_BROADCASTER_LOOP !== 'no',
     esploraUrl: (env.ESPLORA_URL ?? DEFAULT_ESPLORA[name]).replace(/\/$/, ''),
     priceUrl: env.PRICE_URL ?? 'https://mempool.space/api/v1/prices',
     port,

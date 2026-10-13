@@ -1,0 +1,11 @@
+# Lo que NO se sube a Cloud Build. Nunca subir .dev/ (secretos de desarrollo).
+.git/
+.dev/
+node_modules/
+**/node_modules/
+**/dist/
+apps/e2e/capturas/
+coverage/
+*.log
+.env
+.env.*

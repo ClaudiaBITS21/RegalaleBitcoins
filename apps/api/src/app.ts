@@ -1,7 +1,9 @@
+import { timingSafeEqual } from 'node:crypto';
 import { addressFromScript, isCoreError, inspectTransaction, type InspectedTx, type Network } from '@regalale/core';
 import { Hono } from 'hono';
 import { ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
+import { processPending } from './broadcaster.ts';
 import { findGift, type Gift, pendingFor, recordClaim, schedulePending } from './gifts.ts';
 import { giftState } from './state.ts';
 
@@ -10,6 +12,14 @@ export interface AppDeps {
   readonly chain: ChainClient;
   readonly price: PriceClient;
   readonly network: Network;
+  /** Si está, habilita POST /api/tareas/difusiones con el encabezado x-tarea-token. */
+  readonly tasksToken?: string | null;
+}
+
+function sameToken(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
 }
 
 /** Tasa mínima que se acepta difundir (sat/vB) y tope de sanidad. */
@@ -94,6 +104,14 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get('/api/salud', (c) => c.json({ ok: true, red: network.name }));
+
+  /** Difusiones programadas: lo dispara Cloud Scheduler cada pocos minutos. */
+  app.post('/api/tareas/difusiones', async (c) => {
+    const expected = deps.tasksToken;
+    const given = c.req.header('x-tarea-token') ?? '';
+    if (expected === undefined || expected === null || !sameToken(given, expected)) return c.json({ error: 'no_autorizado' }, 401);
+    return c.json(await processPending({ sql, chain, network }));
+  });
 
   app.get('/api/gifts/:id', async (c) => {
     const gift = await giftOr404(sql, c.req.param('id'));
