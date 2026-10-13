@@ -12,7 +12,9 @@ export function Home() {
         <p class="bajada">{t('home.bajada')}</p>
       </section>
       <nav class="acciones" aria-label={t('home.regalar')}>
-        <Button onClick={() => setHint('pronto')}>{t('home.regalar')}</Button>
+        <a class="boton boton-primario" href="/regalar">
+          {t('home.regalar')}
+        </a>
         <Button kind="acento" onClick={() => setHint('reclamar')}>
           {t('home.reclamar')}
         </Button>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { explorerTxUrl, formatFiat, formatSats, formatUsd, groupAddress, satsToUsd } from '../src/format.ts';
+import { explorerTxUrl, formatFiat, formatSats, formatUsd, parseAmount, paymentUri, satsToBtcString, usdCentsToSats, groupAddress, satsToUsd } from '../src/format.ts';
 
 describe('Formatos', () => {
   it('sats con separador de miles según idioma', () => {
@@ -40,5 +40,39 @@ describe('Formatos', () => {
     assert.equal(explorerTxUrl('signet', txid), `https://mempool.space/signet/tx/${txid}`);
     assert.equal(explorerTxUrl('signet', 'javascript:alert(1)'), null);
     assert.equal(explorerTxUrl('regtest', txid), null);
+  });
+
+  it('lee montos con los separadores del idioma de quien escribe', () => {
+    const ok = (value: bigint) => ({ ok: true, value });
+    assert.deepEqual(parseAmount('1.234', 'es', 0), ok(1234n));
+    assert.deepEqual(parseAmount('1.234,5', 'es', 2), ok(123450n));
+    assert.deepEqual(parseAmount('0,5', 'es', 2), ok(50n));
+    assert.deepEqual(parseAmount('25', 'pt', 2), ok(2500n));
+    assert.deepEqual(parseAmount('1.000.000', 'it', 0), ok(1_000_000n));
+    assert.deepEqual(parseAmount('1,234.5', 'en', 2), ok(123450n));
+    assert.deepEqual(parseAmount('0.5', 'en', 2), ok(50n));
+    assert.deepEqual(parseAmount(' 12 500 ', 'es', 0), ok(12500n));
+    assert.deepEqual(parseAmount('10,50', 'es', 2), ok(1050n));
+    assert.deepEqual(parseAmount('10,500', 'es', 2), ok(1050n)); // ceros de más al final
+  });
+
+  it('no adivina separadores mal puestos ni decimales de más', () => {
+    assert.deepEqual(parseAmount('1.5', 'es', 2), { ok: false, error: 'formato' }); // en castellano el punto es de miles
+    assert.deepEqual(parseAmount('1,5', 'en', 2), { ok: false, error: 'formato' });
+    assert.deepEqual(parseAmount('12.34', 'es', 2), { ok: false, error: 'formato' });
+    assert.deepEqual(parseAmount('1,234', 'es', 2), { ok: false, error: 'decimales' }); // 1,234 en castellano es uno coma algo
+    assert.deepEqual(parseAmount('100,5', 'es', 0), { ok: false, error: 'decimales' }); // sats enteros
+    assert.deepEqual(parseAmount('-5', 'es', 2), { ok: false, error: 'formato' });
+    assert.deepEqual(parseAmount('5e3', 'en', 0), { ok: false, error: 'formato' });
+    assert.deepEqual(parseAmount('', 'es', 2), { ok: false, error: 'vacio' });
+  });
+
+  it('link de pago BIP21 y conversión de dólares a sats', () => {
+    assert.equal(satsToBtcString(25_000n), '0.00025');
+    assert.equal(satsToBtcString(100_000_000n), '1');
+    assert.equal(satsToBtcString(123_456_789n), '1.23456789');
+    assert.equal(paymentUri('tb1qabc', 25_000n), 'bitcoin:TB1QABC?amount=0.00025');
+    assert.equal(usdCentsToSats(2500n, 100_000), 25_000n);
+    assert.equal(usdCentsToSats(1n, 100_000), 10n);
   });
 });

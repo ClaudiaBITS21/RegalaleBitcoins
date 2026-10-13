@@ -11,6 +11,10 @@ export interface FakeChain {
   readonly broadcasts: string[];
   /** Transacciones rechazadas por firma inválida. */
   readonly rejected: string[];
+  /** Simula un pago a la dirección; con confirmed = false queda en la mempool. */
+  pay(address: string, amount: bigint, confirmed?: boolean): void;
+  /** Mina un bloque: confirma todo lo que está en la mempool. */
+  confirmAll(): void;
   close(): Promise<void>;
 }
 
@@ -20,18 +24,21 @@ interface Output {
   script: Uint8Array;
   value: bigint;
   spent: boolean;
+  confirmed: boolean;
 }
 
 export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ address: string; amount: bigint }>): Promise<FakeChain> {
   const signet = getNetwork('signet');
   const raw = new Map<string, string>();
   const outputs: Output[] = [];
-  fund.forEach(({ address, amount }, i) => {
+  let salt = 100;
+  const pay = (address: string, amount: bigint, confirmed = true) => {
     const script = parseDestination(address, signet).script;
-    const f = makeFundingTx([{ script, amount }], 100 + i);
+    const f = makeFundingTx([{ script, amount }], salt++);
     raw.set(f.txid, f.rawTx);
-    outputs.push({ txid: f.txid, vout: 0, script, value: amount, spent: false });
-  });
+    outputs.push({ txid: f.txid, vout: 0, script, value: amount, spent: false, confirmed });
+  };
+  for (const { address, amount } of fund) pay(address, amount);
   const scriptOf = (address: string) => Buffer.from(parseDestination(address, signet).script).toString('hex');
   const broadcasts: string[] = [];
   const rejected: string[] = [];
@@ -46,12 +53,24 @@ export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ addre
     if (req.method === 'GET' && (m = /^\/address\/([^/]+)$/.exec(url.pathname))) {
       const script = scriptOf(decodeURIComponent(m[1] as string));
       const mine = outputs.filter((o) => Buffer.from(o.script).toString('hex') === script);
-      const funded = mine.reduce((a, o) => a + o.value, 0n);
-      const spent = mine.filter((o) => o.spent).reduce((a, o) => a + o.value, 0n);
+      const sum = (list: Output[]) => Number(list.reduce((a, o) => a + o.value, 0n));
+      const chain = mine.filter((o) => o.confirmed);
+      const mempool = mine.filter((o) => !o.confirmed);
       return send(200, {
-        chain_stats: { funded_txo_sum: Number(funded), spent_txo_sum: Number(spent), tx_count: mine.length },
-        mempool_stats: { funded_txo_sum: 0, spent_txo_sum: 0, tx_count: 0 },
+        chain_stats: { funded_txo_sum: sum(chain), spent_txo_sum: sum(chain.filter((o) => o.spent)), tx_count: chain.length },
+        mempool_stats: { funded_txo_sum: sum(mempool), spent_txo_sum: sum(mempool.filter((o) => o.spent)), tx_count: mempool.length },
       });
+    }
+    if (req.method === 'GET' && (m = /^\/address\/([^/]+)\/txs\/mempool$/.exec(url.pathname))) {
+      const address = decodeURIComponent(m[1] as string);
+      const script = scriptOf(address);
+      // Pagos sin confirmar con 2 sat/vB (la comisión "económica" simulada también es 2).
+      return send(
+        200,
+        outputs
+          .filter((o) => !o.confirmed && Buffer.from(o.script).toString('hex') === script)
+          .map((o) => ({ txid: o.txid, fee: 2 * 141, weight: 4 * 141, vout: [{ scriptpubkey_address: address, value: Number(o.value) }] })),
+      );
     }
     if (req.method === 'GET' && (m = /^\/address\/([^/]+)\/utxo$/.exec(url.pathname))) {
       const script = scriptOf(decodeURIComponent(m[1] as string));
@@ -59,7 +78,7 @@ export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ addre
         200,
         outputs
           .filter((o) => !o.spent && Buffer.from(o.script).toString('hex') === script)
-          .map((o) => ({ txid: o.txid, vout: o.vout, value: Number(o.value), status: { confirmed: true, block_height: 200_000 } })),
+          .map((o) => ({ txid: o.txid, vout: o.vout, value: Number(o.value), status: o.confirmed ? { confirmed: true, block_height: 200_000 } : { confirmed: false } })),
       );
     }
     if (req.method === 'GET' && (m = /^\/tx\/([0-9a-f]{64})\/hex$/.exec(url.pathname))) {
@@ -104,6 +123,10 @@ export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ addre
     url: `http://127.0.0.1:${port}`,
     broadcasts,
     rejected,
+    pay,
+    confirmAll: () => {
+      for (const o of outputs) o.confirmed = true;
+    },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }

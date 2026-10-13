@@ -54,6 +54,9 @@ importers:
       preact:
         specifier: 11.0.0
         version: 11.0.0
+      qr:
+        specifier: 0.7.2
+        version: 0.7.2
     devDependencies:
       vite:
         specifier: 8.3.2
@@ -472,6 +475,10 @@ packages:
       preact-render-to-string:
         optional: true
 
+  qr@0.7.2:
+    resolution: {integrity: sha512-yovYRuacJBJkG9fWSwcB2bKZhr58c04DpOXguDU+rAAoJZdi6/J3DtlomkKqdd1MutIptIK+kigWmT7LKz8y7A==}
+    engines: {node: '>= 20.19.0'}
+
   rolldown@1.2.12:
     resolution: {integrity: sha512-8wafseiaG80xmXSfqidUNqZcylTlhmPZZt+za2m+js2sFZ8dTNlhIOV2WcbIPx2hgwPBJpEUGFAMZ9bgBBLTSQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -765,6 +772,8 @@ snapshots:
   postgres@3.4.9: {}
 
   preact@11.0.0: {}
+
+  qr@0.7.2: {}
 
   rolldown@1.2.12:
     dependencies:

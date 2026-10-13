@@ -16,7 +16,8 @@ export interface GiftView {
   readonly imagen: number;
   readonly direccion: string;
   readonly estado: GiftState;
-  readonly sats: { readonly confirmados: string; readonly sinConfirmar: string };
+  readonly sats: { readonly confirmados: string; readonly sinConfirmar: string; readonly esperados: string | null };
+  readonly pagoTrabado: boolean;
   readonly original: { readonly moneda: string | null; readonly monto: number; readonly usdPorBtc: number | null } | null;
   readonly usdPorBtcHoy: number | null;
   readonly reclamo: { readonly txid: string; readonly tipo: string } | null;
@@ -28,6 +29,19 @@ export interface FeeRates {
   readonly hour: number;
   readonly economy: number;
   readonly minimum: number;
+}
+
+export interface NewGift {
+  readonly direccion: string;
+  readonly idioma: Lang;
+  readonly ocasion: string;
+  readonly para: string;
+  readonly de: string;
+  readonly mensaje: string;
+  readonly imagen: number;
+  readonly moneda: 'USD' | 'SAT';
+  readonly monto: number;
+  readonly sats: string;
 }
 
 export class ApiFailure extends Error {
@@ -56,6 +70,17 @@ export const api = {
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,
   fees: () => call<FeeRates>('/api/fees'),
+  health: () => call<{ ok: boolean; red: NetworkName }>('/api/salud'),
+  price: async () => (await call<{ usdPorBtc: number }>('/api/precio')).usdPorBtc,
+  /** Registra un regalo antes de pagarlo. Solo datos públicos: nunca la semilla ni las palabras. */
+  createGift: async (gift: NewGift) =>
+    (
+      await call<{ id: string }>('/api/gifts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(gift),
+      })
+    ).id,
   claim: (id: string, hex: string, modo: 'ahora' | 'esperar') =>
     call<{ txid: string; estado: GiftState }>(`/api/gifts/${encodeURIComponent(id)}/claim`, {
       method: 'POST',

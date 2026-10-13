@@ -19,7 +19,9 @@ aparte). Acá queda lo técnico.
 
 ## Dependencias criptográficas
 
-Siete paquetes, todos de Paul Miller, con versión exacta:
+Siete paquetes, todos de Paul Miller, con versión exacta (más `qr` 0.7.2, del mismo autor y
+sin dependencias, que dibuja el QR de pago; no es criptográfico pero muestra la dirección, así
+que entra en la misma revisión):
 
 - `@noble/curves` 2.4.0
 - `@noble/hashes` 2.4.0
@@ -57,11 +59,13 @@ oficiales.
 - **Link:** `/r/<id>#<semilla>`; ver [derivacion.md](derivacion.md). La web lee la
   semilla una sola vez y la saca de la barra de direcciones: queda solo en memoria.
 
-## API del reclamo
+## API
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| GET | `/api/gifts/:id` | Tarjeta, idioma, dirección pública, estado y montos. El estado se calcula en el servidor desde la cadena: `esperando`, `en_la_red`, `activo`, `reclamo_programado`, `reclamado`, `recuperado`, `retirado`. |
+| POST | `/api/gifts` | Regalar: registra el regalo antes del pago con la tarjeta, la dirección derivada en el navegador y los sats a mandar. El servidor pone la cotización, controla el techo (USD 100), el mínimo según comisiones y un límite por IP. Devuelve 409 `regalo_existente` si la dirección ya está: el navegador prueba el índice siguiente. |
+| GET | `/api/precio` | Cotización BTC/USD (mempool.space). |
+| GET | `/api/gifts/:id` | Tarjeta, idioma, dirección pública, estado y montos (recibidos y esperados). El estado se calcula en el servidor desde la cadena: `esperando`, `en_la_red`, `activo`, `reclamo_programado`, `reclamado`, `recuperado`, `retirado`. `pagoTrabado` avisa si un pago en la mempool paga menos que la comisión económica. |
 | GET | `/api/gifts/:id/utxos` | UTXO confirmados con su transacción completa. El navegador verifica los montos contra el txid. |
 | GET | `/api/fees` | Comisiones recomendadas (sat/vB). |
 | POST | `/api/gifts/:id/claim` | `{hex, modo: 'ahora' \| 'esperar'}`. Ver abajo. |
@@ -73,6 +77,27 @@ oficiales.
 
 Con `esperar`, si la red todavía no acepta esa comisión, guarda la transacción firmada
 y la difunde cuando baje. El servidor no puede cambiarla: solo decide cuándo mandarla.
+
+## Regalar (etapa 4)
+
+`/regalar`, en el navegador:
+
+1. Ocasión, tarjeta (nombre hasta 30 caracteres, mensaje hasta 280), imagen e idioma de quien
+   recibe.
+2. Monto: USD 25, 50, 100 u otro en dólares o en sats, leído con los separadores del idioma
+   (`parseAmount`). Mínimo según las comisiones del momento; máximo USD 100.
+3. **Código de recuperación antes de pagar.** Mientras no exista la bóveda con passkey
+   (etapa 5), la clave maestra se muestra como código de 12 palabras y se verifica con 3 al
+   azar. Quien ya tiene un código lo escribe y sigue con el índice libre siguiente.
+4. Pago: dirección del regalo `i` (`deriveGift`), QR BIP21 dibujado como SVG y consulta del
+   estado cada 5 s. Pago completo en la mempool: pasa a mandar. Llega menos: avisa y deja seguir.
+   Pago reemplazado (RBF) o caído: vuelve a esperar y avisa. Comisión baja: sugiere acelerarlo.
+5. Mandar: link por WhatsApp, mail o copiado; las 4 palabras por otro canal (el mismo canal
+   queda deshabilitado) o en persona. Los mensajes van en el idioma de quien recibe y salen del
+   navegador: el servidor no ve el link.
+
+La clave maestra, la semilla y las palabras viven solo en la memoria de la página. Sin bóveda,
+cada visita sin código arma una clave maestra nueva.
 
 ## Seguridad web
 
@@ -95,7 +120,7 @@ que se decida otra cosa:
    recuperación alcance para recuperar regalos. Implementado.
 2. **Clave maestra asegurada antes de mostrar la dirección de pago:** passkey o, sin
    PRF, el código anotado. Evita perder fondos si se cierra la pestaña entre pagar y
-   mandar el link. Etapa 4.
+   mandar el link. En la etapa 4, código obligatorio y verificado; la passkey llega en la 5.
 3. **Sin verificar palabras de la billetera del que recibe** en la guía de BlueWallet:
    solo el checkbox. Pedir palabras contradice "Nunca te vamos a pedir las palabras de
    tu billetera". Implementado en la etapa 3.
@@ -107,10 +132,13 @@ que se decida otra cosa:
 
 1. Stack y arquitectura. Hecho.
 2. Núcleo criptográfico con tests. Hecho.
-3. Reclamo en signet. Código hecho: API, web y prueba completa en navegador contra una
-   cadena simulada. Falta la prueba en signet real, que necesita acceso de red a
-   `mempool.space` y el regalo de prueba fondeado.
-4. Regalar en 5 pasos, con detección de pago (mempool, 1 confirmación, RBF).
+3. Reclamo en signet. Código hecho y publicado en regalalebitcoins.web.app. Falta la prueba
+   con el regalo de prueba fondeado desde un faucet de signet.
+4. Regalar en 5 pasos, con detección de pago (mempool, 1 confirmación, RBF). Hecho, con
+   prueba en navegador contra la cadena simulada. Queda para después: montos en pesos (falta
+   una fuente de cotización ARS), tarjeta imprimible (espera el diseño), envío programado y
+   aviso por mail si se cierra la página (etapa 6). Los mensajes sugeridos por ocasión son
+   provisorios hasta que los defina el equipo de contenido.
 5. Bóveda con passkey y código de recuperación.
 6. Paneles, estados y notificaciones.
 7. Listas de regalos (xpub + alias bancario).
