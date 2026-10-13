@@ -10,3 +10,6 @@ coverage/
 # Secretos de desarrollo (signet), nunca al repo
 .dev/
 apps/e2e/capturas/
+
+# Caché local de firebase-tools
+.firebase/
