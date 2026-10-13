@@ -2,17 +2,21 @@ import type { UiLang } from './i18n/index.ts';
 
 const LOCALES: Readonly<Record<UiLang, string>> = { es: 'es-AR', pt: 'pt-BR', en: 'en-US', it: 'it-IT' };
 
+// Separadores según idioma: es/pt/it usan punto para miles y coma para decimales; en, al revés.
+// Agrupar siempre: CLDR deja sin separador los números de 4 cifras en italiano (1234).
+const GROUPING = { useGrouping: 'always' } as const;
+
 export function formatSats(sats: bigint, lang: UiLang): string {
-  return `${new Intl.NumberFormat(LOCALES[lang]).format(sats)} sats`;
+  return `${new Intl.NumberFormat(LOCALES[lang], GROUPING).format(sats)} sats`;
 }
 
 export function formatUsd(amount: number, lang: UiLang): string {
-  return new Intl.NumberFormat(LOCALES[lang], { style: 'currency', currency: 'USD', maximumFractionDigits: amount < 10 ? 2 : 0 }).format(amount);
+  return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'USD', maximumFractionDigits: amount < 10 ? 2 : 0 }).format(amount);
 }
 
 export function formatFiat(amount: number, currency: string, lang: UiLang): string {
   if (currency === 'SAT') return formatSats(BigInt(Math.round(amount)), lang);
-  return new Intl.NumberFormat(LOCALES[lang], { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
+  return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
 }
 
 export function satsToUsd(sats: bigint, usdPerBtc: number): number {

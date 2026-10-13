@@ -22,6 +22,11 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
 - Textos de la interfaz en castellano rioplatense (voseo), con traducciones pt/en/it.
   Comentarios de código en castellano.
+- Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con
+  `Intl.NumberFormat` (ver `apps/web/src/format.ts`), nunca concatenando. Los montos que escribe
+  la persona se leen con el separador de su idioma (en es, `1.234` son mil doscientos treinta y
+  cuatro y `0,5` es medio), con confirmación del monto interpretado antes de pagar. Montos internos
+  siempre en sats enteros (bigint); nada de `parseFloat` sobre lo que tipea el usuario.
 
 ## Comandos
 
