@@ -168,9 +168,11 @@ try {
   // ── Regalar: los 5 pasos, el código de recuperación, el pago y el reclamo del regalo nuevo ──
   await page.goto(`http://127.0.0.1:${API_PORT}/`);
   await page.getByRole('link', { name: 'Regalar bitcoin' }).click();
+  await page.waitForURL('**/regalar');
   await page.getByRole('heading', { name: '¿Qué ocasión es?' }).waitFor();
   await shot('r1-ocasion');
-  await page.getByRole('button', { name: 'Navidad' }).click();
+  await page.getByRole('button', { name: 'Navidad', exact: true }).click();
+  await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
   if ((await page.getByLabel('Tu mensaje').inputValue()) !== '¡Feliz Navidad! Un regalo chiquito para guardar mucho tiempo.') {

@@ -3,10 +3,10 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
+import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
 
-export const OCCASIONS = ['cumple', 'navidad', 'nacimiento', 'bautismo', 'casamiento', 'graduacion', 'amigo', 'porque', 'otra'] as const;
 export const LIMITS = { to: 30, from: 30, message: 280, messageWarn: 240 } as const;
 /** Techo de la beta, en dólares. El servidor lo vuelve a controlar. */
 export const CEILING_USD = 100;
@@ -15,18 +15,16 @@ const PRESETS_USD = [25, 50, 100] as const;
 /** Caracteres como los ve la persona: un emoji cuenta como uno. */
 export const charCount = (s: string): number => [...s.trim()].length;
 
-export function OccasionStep({ value, onPick }: { value: string; onPick: (occasion: string) => void }) {
+export function OccasionStep({ value, onPick }: { value: OccasionChoice | null; onPick: (choice: OccasionChoice) => void }) {
   const { t } = useI18n();
+  const [choice, setChoice] = useState<OccasionChoice | null>(value);
   return (
     <div class="paso">
       <StepTitle>{t('regalar.ocasion.titulo')}</StepTitle>
-      <div class="grilla-ocasiones">
-        {OCCASIONS.map((o) => (
-          <button type="button" key={o} class={`ocasion${value === o ? ' elegida' : ''}`} aria-pressed={value === o} onClick={() => onPick(o)}>
-            {t(o === 'otra' ? 'regalar.ocasion.otra' : (`ocasion.${o}` as Key))}
-          </button>
-        ))}
-      </div>
+      <OccasionPicker value={choice} onPick={setChoice} />
+      <Button disabled={choice === null} onClick={() => choice !== null && onPick(choice)}>
+        {t('seguir')}
+      </Button>
     </div>
   );
 }

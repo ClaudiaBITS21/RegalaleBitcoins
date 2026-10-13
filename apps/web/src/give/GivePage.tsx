@@ -2,7 +2,9 @@ import { deriveGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, typ
 import { useEffect, useState } from 'preact/hooks';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
-import type { Key } from '../i18n/index.ts';
+import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
+import type { OccasionChoice } from '../content/OccasionPicker.tsx';
+import { DICTS, type Key, translate } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
 import { AmountStep, CardStep, OccasionStep } from './DraftSteps.tsx';
@@ -27,6 +29,8 @@ const PROGRESS: Readonly<Record<Step, number>> = {
 
 export interface Draft {
   occasion: string;
+  /** Texto de la ocasión libre (occasion = 'otra'). */
+  occasionFree: string;
   to: string;
   from: string;
   message: string;
@@ -73,6 +77,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         direccion: gift.address,
         idioma: draft.lang,
         ocasion: draft.occasion,
+        ...(draft.occasion === 'otra' && draft.occasionFree !== '' ? { ocasionLibre: draft.occasionFree } : {}),
         para: draft.to,
         de: draft.from,
         mensaje: draft.message,
@@ -100,16 +105,34 @@ async function register(session: Session, draft: Draft, network: Network): Promi
   throw new ApiFailure(0, 'sin_indice');
 }
 
+function presetOccasion(): OccasionChoice | null {
+  const params = new URLSearchParams(window.location.search);
+  const key = params.get('ocasion');
+  if (key === null || !isOccasion(key)) return null;
+  const free = params.get('libre')?.trim().slice(0, FREE_OCCASION_MAX);
+  if (key === 'otra') return free ? { key, free } : null;
+  return { key };
+}
+
+/** Mensaje sugerido para la ocasión, si hay uno; si no, vacío para que escriba el suyo. */
+function suggestedMessage(key: string, t: (k: Key) => string): string {
+  const k = `regalar.sugerido.${key}`;
+  return k in DICTS.es ? t(k as Key) : '';
+}
+
 export function GivePage() {
   const { t, lang } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
   const [netError, setNetError] = useState<'mainnet' | 'sin_red' | null>(null);
-  const [steps, setSteps] = useState<Step[]>(['ocasion']);
+  // Si viene de la home con la ocasión elegida (/regalar?ocasion=…&libre=…), arranca en "Para quién".
+  const [preset] = useState(presetOccasion);
+  const [steps, setSteps] = useState<Step[]>(preset === null ? ['ocasion'] : ['ocasion', 'para']);
   const [draft, setDraft] = useState<Draft>(() => ({
-    occasion: '',
+    occasion: preset?.key ?? '',
+    occasionFree: preset?.free ?? '',
     to: '',
     from: '',
-    message: '',
+    message: preset === null ? '' : suggestedMessage(preset.key, (k) => translate(lang, k)),
     image: 1,
     lang: lang as Lang,
     currency: 'USD',
@@ -181,7 +204,7 @@ export function GivePage() {
 
   const another = () => {
     setGift(null);
-    setDraft((d) => ({ ...d, occasion: '', to: '', message: '', image: 1, amount: 0, sats: 0n }));
+    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', image: 1, amount: 0, sats: 0n }));
     setSteps(['ocasion']);
   };
 
@@ -200,10 +223,14 @@ export function GivePage() {
   } else if (step === 'ocasion') {
     body = (
       <OccasionStep
-        value={draft.occasion}
-        onPick={(occasion) => {
-          const suggested = occasion === 'otra' ? '' : t(`regalar.sugerido.${occasion}` as Key);
-          setDraft((d) => ({ ...d, occasion, message: d.message === '' || d.occasion !== occasion ? suggested : d.message }));
+        value={draft.occasion === '' ? null : draft.occasion === 'otra' ? { key: 'otra', free: draft.occasionFree } : { key: draft.occasion as OccasionKey }}
+        onPick={(choice) => {
+          setDraft((d) => ({
+            ...d,
+            occasion: choice.key,
+            occasionFree: choice.free ?? '',
+            message: d.message === '' || d.occasion !== choice.key ? suggestedMessage(choice.key, t) : d.message,
+          }));
           go('para');
         }}
       />

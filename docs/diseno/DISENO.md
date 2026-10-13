@@ -1,5 +1,7 @@
 # Handoff de diseño — línea visual "Confeti" (13/10/2026)
 
+> **Implementado (Code, 13/10/2026):** tokens y tipografías autoalojadas (§1), home celular y compu (§2), menú Regalar / Recibir con "Abrir un regalo" en `/abrir` y "Armar mi lista" / "Mis regalos" como "Muy pronto" (§3), selector de ocasiones con temporada, buscador y ocasión libre, que entra a `/regalar` con la ocasión precargada (§4), y abanico de 21 razones con el texto de `docs/contenido/razones.es.json` en los 4 idiomas (§5). Pendiente: imágenes de la tarjeta en 4 estilos y "Hacela con tu IA" (§6), y la temporada según el país.
+
 Trabajado con Rodolfo en Cowork. Complementa `../HANDOFF.md` (contenido, 21 razones, tarjeta imprimible). Lo marcado **ABIERTO** se confirma con Rodolfo antes de implementar.
 
 Prototipos de referencia en esta carpeta (formato Design de Claude: HTML con estilos inline + clase `Component` con la lógica; son referencia visual y de comportamiento, **reimplementar en Preact** con el CSS del proyecto, sin estilos inline por la CSP):

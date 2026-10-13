@@ -1,8 +1,7 @@
-import '@fontsource/montserrat/latin-700.css';
-import '@fontsource/montserrat/latin-800.css';
-import '@fontsource/manrope/latin-400.css';
-import '@fontsource/manrope/latin-600.css';
-import '@fontsource/manrope/latin-700.css';
+import '@fontsource/bricolage-grotesque/latin-800.css';
+import '@fontsource/dm-sans/latin-400.css';
+import '@fontsource/dm-sans/latin-500.css';
+import '@fontsource/dm-sans/latin-700.css';
 import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
@@ -11,7 +10,8 @@ import { GivePage } from './give/GivePage.tsx';
 import { ALLOW_MAINNET } from './config.ts';
 import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
-import { I18nContext, Layout } from './ui.tsx';
+import { OpenGiftPage } from './open.tsx';
+import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
 
@@ -51,10 +51,10 @@ function App() {
         <ClaimPage id={claim[1]} />
       ) : /^\/regalar\/?$/.test(path) ? (
         <GivePage />
+      ) : /^\/abrir\/?$/.test(path) ? (
+        <OpenGiftPage />
       ) : (
-        <Layout testnet={!ALLOW_MAINNET}>
-          <Home />
-        </Layout>
+        <Home testnet={!ALLOW_MAINNET} />
       )}
     </I18nContext.Provider>
   );

@@ -9,6 +9,8 @@ export interface Gift {
   readonly address: string;
   readonly lang: Lang;
   readonly occasion: string;
+  /** Texto de la ocasión libre (ocasión "otra"). */
+  readonly occasionFree: string | null;
   readonly to: string;
   readonly from: string | null;
   readonly message: string;
@@ -29,6 +31,7 @@ export interface NewGift {
   readonly address: string;
   readonly lang: Lang;
   readonly occasion: string;
+  readonly occasionFree?: string | null;
   readonly to: string;
   readonly from?: string | null;
   readonly message?: string;
@@ -53,6 +56,7 @@ interface Row {
   direccion: string;
   idioma: string;
   ocasion: string;
+  ocasion_libre: string | null;
   para: string;
   de: string | null;
   mensaje: string;
@@ -75,6 +79,7 @@ function fromRow(r: Row): Gift {
     address: r.direccion,
     lang: r.idioma,
     occasion: r.ocasion,
+    occasionFree: r.ocasion_libre,
     to: r.para,
     from: r.de,
     message: r.mensaje,
@@ -92,8 +97,8 @@ function fromRow(r: Row): Gift {
 
 export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   const [row] = await sql<Row[]>`
-    insert into regalos (id, red, direccion, idioma, ocasion, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados)
-    values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.to}, ${g.from ?? null},
+    insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados)
+    values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
             ${g.message ?? ''}, ${g.image ?? 1}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
             ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()})
     returning *`;

@@ -25,8 +25,14 @@ export interface AppDeps {
 export const CEILING_USD = 100;
 /** Margen entre la cotización del navegador y la del servidor. */
 const PRICE_TOLERANCE = 0.05;
-export const OCCASIONS = ['cumple', 'navidad', 'nacimiento', 'bautismo', 'casamiento', 'graduacion', 'amigo', 'porque', 'otra'] as const;
-export const LIMITS = { to: 30, from: 30, message: 280 } as const;
+// Mismo catálogo que apps/web/src/content/occasions.ts ("otra" = ocasión libre; "graduacion" queda por regalos viejos).
+export const OCCASIONS = [
+  'cumple', 'bautismo', 'navidad', 'casamiento', 'babyshower', 'porque', 'nacimiento', 'comunion', 'mitzva', 'quince',
+  'egresados', 'recibido', 'aniversario', 'jubilacion', 'casanueva', 'reyes', 'anionuevo', 'sanvalentin', 'pascuas',
+  'diamadre', 'diapadre', 'dianino', 'amigo', 'abuelos', 'maestro', 'pizzaday', 'genesis', 'whitepaper', 'halving',
+  'trabajo', 'gracias', 'mejorate', 'graduacion', 'otra',
+] as const;
+export const LIMITS = { to: 30, from: 30, message: 280, freeOccasion: 40 } as const;
 
 function sameToken(a: string, b: string): boolean {
   const x = Buffer.from(a);
@@ -181,6 +187,7 @@ export function createApp(deps: AppDeps): Hono {
       red: gift.network,
       idioma: gift.lang,
       ocasion: gift.occasion,
+      ocasionLibre: gift.occasionFree,
       para: gift.to,
       de: gift.from,
       mensaje: gift.message,
@@ -292,6 +299,7 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     address,
     lang: b.idioma,
     occasion: b.ocasion,
+    occasionFree: b.ocasion === 'otra' ? text(b.ocasionLibre, LIMITS.freeOccasion, false) : null,
     to: text(b.para, LIMITS.to, true) as string,
     from: text(b.de, LIMITS.from, false),
     message: text(b.mensaje, LIMITS.message, false) ?? '',

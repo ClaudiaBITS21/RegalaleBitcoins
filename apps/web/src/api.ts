@@ -10,6 +10,7 @@ export interface GiftView {
   readonly red: NetworkName;
   readonly idioma: Lang;
   readonly ocasion: string;
+  readonly ocasionLibre: string | null;
   readonly para: string;
   readonly de: string | null;
   readonly mensaje: string;
@@ -35,6 +36,7 @@ export interface NewGift {
   readonly direccion: string;
   readonly idioma: Lang;
   readonly ocasion: string;
+  readonly ocasionLibre?: string;
   readonly para: string;
   readonly de: string;
   readonly mensaje: string;

@@ -270,7 +270,7 @@ describe('API para regalar', () => {
     await sql`delete from difusiones`;
     await sql`delete from regalos`;
     chain = new FakeChain();
-    app = createApp({ sql, chain, price, arsPrice: { btcArs: async () => ({ price: 160_000_000, source: 'criptoya' as const }) }, network: signet, createLimitPerHour: 5 });
+    app = createApp({ sql, chain, price, arsPrice: { btcArs: async () => ({ price: 160_000_000, source: 'criptoya' as const }) }, network: signet, createLimitPerHour: 8 });
   });
 
   it('crea el regalo con la cotización del servidor y lo muestra esperando el pago', async () => {
@@ -314,11 +314,23 @@ describe('API para regalar', () => {
     assert.equal(await status({ mensaje: 'x'.repeat(281) }), 400);
     assert.equal(await status({ mensaje: '🎄'.repeat(280) }), 201); // se cuentan caracteres, no bytes
     assert.equal(await status({ ocasion: 'condolencias' }), 400);
+    assert.equal(await status({ ocasion: 'otra', ocasionLibre: 'x'.repeat(41) }), 400);
     assert.equal(await status({ imagen: 5 }), 400);
     assert.equal(await status({ idioma: 'fr' }), 400);
     assert.equal(await status({ direccion: 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu' }), 400); // mainnet
     assert.equal(await status({ direccion: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7' }), 400); // no es P2WPKH
     assert.equal((await app.request('/api/gifts', { method: 'POST', body: 'no es json' })).status, 400);
+  });
+
+  it('ocasión del catálogo nuevo y ocasión libre', async () => {
+    const res = await post('/api/gifts', nuevo(7, { ocasion: 'otra', ocasionLibre: 'Mudanza de Ana' }));
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const view = (await (await app.request(`/api/gifts/${id}`)).json()) as { ocasion: string; ocasionLibre: string | null };
+    assert.deepEqual([view.ocasion, view.ocasionLibre], ['otra', 'Mudanza de Ana']);
+    assert.equal((await post('/api/gifts', nuevo(8, { ocasion: 'pizzaday', ocasionLibre: 'ignorado' }))).status, 201);
+    const pizza = await sql<{ ocasion_libre: string | null }[]>`select ocasion_libre from regalos where ocasion = 'pizzaday'`;
+    assert.equal(pizza[0]?.ocasion_libre, null);
   });
 
   it('limita cuántos regalos crea una misma IP', async () => {
@@ -328,7 +340,7 @@ describe('API para regalar', () => {
         body: JSON.stringify(nuevo(i)),
         headers: { 'content-type': 'application/json', 'x-forwarded-for': `${ip}, 10.0.0.1` },
       });
-    for (let i = 0; i < 5; i++) assert.equal((await from('1.2.3.4', 10 + i)).status, 201);
+    for (let i = 0; i < 8; i++) assert.equal((await from('1.2.3.4', 10 + i)).status, 201);
     assert.equal((await from('1.2.3.4', 20)).status, 429);
     assert.equal((await from('5.6.7.8', 21)).status, 201);
   });

@@ -1,5 +1,5 @@
 import { type ComponentChildren, createContext } from 'preact';
-import { useContext, useEffect, useRef } from 'preact/hooks';
+import { useContext, useEffect, useRef, useState } from 'preact/hooks';
 import { type Key, LANG_NAMES, translate, UI_LANGS, type UiLang } from './i18n/index.ts';
 
 export interface I18n {
@@ -11,18 +11,147 @@ export interface I18n {
 export const I18nContext = createContext<I18n>({ lang: 'es', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
 export const useI18n = (): I18n => useContext(I18nContext);
 
-export function Logo() {
+/** La marca como texto: "regalale" en tinta y "bitcoins" en el color de acento. */
+export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
   return (
-    <svg class="logo" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
-      <path d="M11 9c-3-4 2-7 6 0c4-7 9-4 6 0" />
-      <rect x="5" y="10" width="24" height="19" rx="3" />
-      <path d="M13 14h6a3 3 0 0 1 0 6h-6v-6zM13 20h7a3 3 0 0 1 0 6h-7v-6zM15 12v2M15 26v2" />
-    </svg>
+    <span class={`marca-texto${onOrange ? ' sobre-naranja' : ''}`}>
+      regalale<span>bitcoins</span>
+    </span>
+  );
+}
+
+function LangPill() {
+  const { t, lang, setLang } = useI18n();
+  return (
+    <label class="idioma-pill">
+      <span class="solo-lector">{t('idioma')}</span>
+      <select value={lang} onChange={(e) => setLang((e.currentTarget as HTMLSelectElement).value as UiLang)}>
+        {UI_LANGS.map((l) => (
+          <option value={l} key={l} aria-label={LANG_NAMES[l]}>
+            {l.toUpperCase()}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/** Cierra un menú al tocar afuera o con Escape. */
+function useDismiss(open: boolean, close: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: Event) => {
+      if (ref.current !== null && !ref.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return ref;
+}
+
+function ReceiveItems() {
+  const { t } = useI18n();
+  return (
+    <>
+      <a class="menu-item destacado" href="/abrir">
+        <strong>{t('menu.abrirRegalo')}</strong>
+        <span>{t('menu.abrirRegalo.d')}</span>
+      </a>
+      <div class="menu-item">
+        <strong>
+          {t('menu.lista')} <span class="etiqueta-pronto">{t('menu.pronto')}</span>
+        </strong>
+        <span>{t('menu.lista.d')}</span>
+      </div>
+      <div class="menu-item">
+        <strong>
+          {t('menu.mis')} <span class="etiqueta-pronto">{t('menu.pronto')}</span>
+        </strong>
+        <span>{t('menu.mis.d')}</span>
+      </div>
+    </>
+  );
+}
+
+/** Encabezado del sitio: marca, menú (Regalar / Recibir / 21 razones) e idioma. */
+export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
+  const { t } = useI18n();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [receiveOpen, setReceiveOpen] = useState(false);
+  const mobileRef = useDismiss(mobileOpen, () => setMobileOpen(false));
+  const receiveRef = useDismiss(receiveOpen, () => setReceiveOpen(false));
+  return (
+    <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
+      <a class="marca" href="/">
+        <Wordmark onOrange={onOrange} />
+      </a>
+      <nav class="nav-compu" aria-label={t('menu.abrir')}>
+        <a class="boton-nav" href="/regalar">
+          {t('menu.regalar')}
+        </a>
+        <div class="desplegable" ref={receiveRef}>
+          <button type="button" class="link-nav" aria-expanded={receiveOpen} aria-haspopup="true" onClick={() => setReceiveOpen(!receiveOpen)}>
+            {t('menu.recibir')}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={receiveOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
+            </svg>
+          </button>
+          {receiveOpen && (
+            <div class="panel-menu panel-recibir">
+              <ReceiveItems />
+            </div>
+          )}
+        </div>
+        <a class="link-nav" href="/#razones">
+          {t('menu.razones')}
+        </a>
+        <LangPill />
+      </nav>
+      <div class="nav-movil" ref={mobileRef}>
+        <LangPill />
+        <button type="button" class="boton-hamburguesa" aria-expanded={mobileOpen} aria-label={t(mobileOpen ? 'menu.cerrar' : 'menu.abrir')} onClick={() => setMobileOpen(!mobileOpen)}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />
+          </svg>
+        </button>
+        {mobileOpen && (
+          <div class="panel-menu panel-movil">
+            <a class="boton boton-primario" href="/regalar">
+              {t('menu.regalar')}
+            </a>
+            <p class="menu-titulo">{t('menu.recibir')}</p>
+            <ReceiveItems />
+            <a class="menu-link" href="/#razones" onClick={() => setMobileOpen(false)}>
+              {t('razones.titulo')}
+            </a>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+export function SiteFooter() {
+  const { t } = useI18n();
+  return (
+    <footer class="pie">
+      <Wordmark />
+      <span>{t('pie.custodia')}</span>
+      <span>{t('pie')}</span>
+    </footer>
   );
 }
 
 export function Layout({ children, testnet, onBack }: { children: ComponentChildren; testnet: boolean; onBack?: (() => void) | undefined }) {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   return (
     <div class="pagina">
       {testnet && (
@@ -30,24 +159,7 @@ export function Layout({ children, testnet, onBack }: { children: ComponentChild
           {t('red.prueba')}
         </p>
       )}
-      <header class="cabecera">
-        <a class="marca" href="/">
-          <Logo />
-          <span>{t('marca')}</span>
-        </a>
-        <div class="cabecera-acciones">
-          <label class="selector-idioma">
-            <span class="solo-lector">{t('idioma')}</span>
-            <select value={lang} onChange={(e) => setLang((e.currentTarget as HTMLSelectElement).value as UiLang)}>
-              {UI_LANGS.map((l) => (
-                <option value={l} key={l}>
-                  {LANG_NAMES[l]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </header>
+      <SiteHeader />
       {onBack !== undefined && (
         <div class="barra-volver">
           <button type="button" class="boton-texto" onClick={onBack}>
@@ -56,7 +168,7 @@ export function Layout({ children, testnet, onBack }: { children: ComponentChild
         </div>
       )}
       <main class="contenido">{children}</main>
-      <footer class="pie">{t('pie')}</footer>
+      <SiteFooter />
     </div>
   );
 }

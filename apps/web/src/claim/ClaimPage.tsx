@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { explorerTxUrl, formatFiat, formatSats, formatUsd, formatUsdExact, satsToUsd } from '../format.ts';
+import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AddressStep } from './AddressStep.tsx';
@@ -12,7 +13,6 @@ import { WordsStep } from './WordsStep.tsx';
 type Step = 'regalo' | 'palabras' | 'billetera' | 'guia' | 'direccion' | 'confirmar' | 'listo';
 type LoadError = 'link' | 'no_existe' | 'sin_red' | 'mainnet';
 
-const OCCASIONS = new Set(['cumple', 'bautismo', 'casamiento', 'nacimiento', 'graduacion', 'navidad', 'amigo', 'porque']);
 
 /**
  * Lee la semilla del fragmento del link (#...) una sola vez y la saca de la barra de
@@ -202,7 +202,6 @@ export function ClaimPage({ id }: { id: string }) {
 
 function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: () => void; onReload: () => void }) {
   const { t, lang } = useI18n();
-  const occasion = OCCASIONS.has(gift.ocasion) ? gift.ocasion : 'otra';
   const sats = BigInt(gift.sats.confirmados) + BigInt(gift.sats.sinConfirmar);
   const now = gift.usdPorBtcHoy === null ? null : formatUsd(satsToUsd(sats, gift.usdPorBtcHoy), lang);
   const before = gift.original?.moneda ? formatFiat(gift.original.monto, gift.original.moneda, lang) : null;
@@ -221,7 +220,7 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
     <div class="paso">
       <article class="tarjeta">
         <div class={`tarjeta-imagen tinte-${Math.min(Math.max(gift.imagen, 1), 4)}`} aria-hidden="true">
-          {t(`ocasion.${occasion}` as Key)}
+          {occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}
         </div>
         <div class="tarjeta-texto">
           <StepTitle>{gift.de ? t('reclamo.de', { de: gift.de }) : t('reclamo.anonimo')}</StepTitle>
