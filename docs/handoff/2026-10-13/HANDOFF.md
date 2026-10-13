@@ -4,6 +4,8 @@
 
 Brief para el repo `ClaudiaBITS21/RegalaleBitcoins` (rama de trabajo actual: `etapa-3-reclamo`). Trabajado con Rodolfo en Cowork el 13/10/2026. Lo decidido está decidido; lo marcado **ABIERTO** consultarlo con Rodolfo antes de implementar.
 
+> **Diseño:** ver `diseno/DISENO.md` (línea visual Confeti, tokens, home, menú Regalar/Recibir, selector de ocasiones, tarjetas, "Hacela con tu IA").
+
 ## Cómo integrarlo al repo
 
 - **Reemplaza las decisiones de `docs/contenido.md`.** Actualizar ese archivo con este contenido (no crear docs paralelos). Mover `contenido/por-que-bitcoin.md` y `fuentes/` a `docs/` como corresponda.

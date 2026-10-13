@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Home B — Confeti</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1A1530}a:hover{color:#B3470A}
+.oc-chip:focus-visible{outline:3px solid #1A1530;outline-offset:3px}
+.oc-chip{transition:transform .15s}.oc-chip:hover{transform:translateY(-2px)}
+.cf-card{position:absolute;left:79px;top:20px;width:200px;height:280px;perspective:1200px;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;transform-origin:50% 90%;transition:transform .55s cubic-bezier(.2,.75,.25,1),opacity .45s ease;border-radius:20px}
+.cf-card.dragging{transition:none}
+.cf-card:focus-visible{outline:3px solid #FFD23F;outline-offset:4px}
+.cf-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.cf-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;box-sizing:border-box;box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.cf-back{transform:rotateY(180deg)}
+.cf-nav{flex:none;width:48px;height:48px;border-radius:50%;border:2px solid #FFFFFF;background:transparent;color:#FFFFFF;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cf-nav:disabled{opacity:.3;cursor:default}
+@media (prefers-reduced-motion:reduce){.cf-card,.cf-inner{transition:none}}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1900px; background: #FFFFFF; color: #1A1530; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column">
+
+<section style="position: relative; overflow: hidden; background: #FF8A1F; padding: 16px 20px 34px; display: flex; flex-direction: column; gap: 18px">
+<svg width="390" height="520" viewBox="0 0 390 520" aria-hidden="true" style="position: absolute; left: 0; top: 0">
+<rect x="30" y="80" width="10" height="18" rx="3" fill="#FFD23F" transform="rotate(25 35 89)"></rect>
+<rect x="320" y="60" width="10" height="18" rx="3" fill="#4CC9F0" transform="rotate(-30 325 69)"></rect>
+<circle cx="350" cy="150" r="6" fill="#FFFFFF"></circle>
+<circle cx="70" cy="190" r="5" fill="#FF5D8F"></circle>
+<rect x="290" y="210" width="9" height="16" rx="3" fill="#FF5D8F" transform="rotate(40 294 218)"></rect>
+<circle cx="200" cy="70" r="4" fill="#FFFFFF"></circle>
+<rect x="110" y="40" width="9" height="16" rx="3" fill="#4CC9F0" transform="rotate(-15 114 48)"></rect>
+<circle cx="25" cy="300" r="5" fill="#FFD23F"></circle>
+<rect x="355" y="320" width="10" height="18" rx="3" fill="#FFD23F" transform="rotate(20 360 329)"></rect>
+<circle cx="250" cy="120" r="5" fill="#FF5D8F"></circle>
+</svg>
+<header style="position: relative; z-index: 40; display: flex; align-items: center; justify-content: space-between">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; color: #1A1530">regalale<span style="color: #FFFFFF">bitcoins</span></span>
+<div style="display: flex; align-items: center; gap: 8px">
+<button aria-label="Cambiar idioma" style="min-height: 44px; padding: 0 14px; border-radius: 12px; border: 0; background: #1A1530; color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 14px">ES</button>
+<button onClick="{{toggleMenu}}" aria-expanded="{{menuOpen}}" aria-label="Menú" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: #FFFFFF; color: #1A1530; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="{{menuIcon}}"></path></svg></button>
+</div>
+<sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 0; right: 0; top: 54px; border-radius: 20px; background: #FFFFFF; border: 2px solid #1A1530; box-shadow: 0 16px 40px rgba(26,21,48,.3); padding: 10px; display: flex; flex-direction: column; gap: 4px">
+<a href="#" style="display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; background: #1A1530; color: #FFFFFF; text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">Regalar</a>
+<p style="margin: 8px 6px 2px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6A6480">Recibir</p>
+<a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; text-decoration: none; background: #FFF1E3"><strong style="font-size: 16px; color: #1A1530">Abrir un regalo</strong><span style="font-size: 14px; color: #4B4660">Te mandaron un link: empezá acá.</span></a>
+<a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; text-decoration: none"><strong style="font-size: 16px; color: #1A1530">Armar mi lista</strong><span style="font-size: 14px; color: #4B4660">Que te regalen bitcoin en tu festejo.</span></a>
+<a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; text-decoration: none"><strong style="font-size: 16px; color: #1A1530">Mis regalos</strong><span style="font-size: 14px; color: #4B4660">Los que te llegaron y todavía no abriste.</span></a>
+<a href="#razones" style="display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 16px; color: #1A1530">21 razones para regalar Bitcoin</a>
+</div>
+</sc-if>
+</header>
+<svg width="220" height="200" viewBox="0 0 220 200" role="img" aria-label="Caja de regalo abierta con una moneda de bitcoin saltando" style="position: relative; align-self: center; margin-top: 6px">
+<circle cx="110" cy="52" r="40" fill="#FFD23F" stroke="#1A1530" stroke-width="5"></circle>
+<text x="110" y="68" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="44" fill="#1A1530">₿</text>
+<path d="M60 40 l-14 -10 M160 40 l14 -10 M110 4 v-0" stroke="#1A1530" stroke-width="5" stroke-linecap="round"></path>
+<rect x="34" y="104" width="152" height="90" rx="10" fill="#FF5D8F" stroke="#1A1530" stroke-width="5"></rect>
+<rect x="24" y="86" width="172" height="30" rx="8" fill="#FF5D8F" stroke="#1A1530" stroke-width="5" transform="rotate(-8 110 101)"></rect>
+<rect x="98" y="104" width="24" height="90" fill="#FFFFFF" stroke="#1A1530" stroke-width="5"></rect>
+</svg>
+<h1 style="position: relative; margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 40px; line-height: .98; letter-spacing: -.02em; text-align: center">Regalá bitcoin en un par de toques.</h1>
+<p style="position: relative; margin: 0; font-size: 17px; line-height: 1.45; text-align: center">Para un cumple, un bautismo o porque sí. Nunca tocamos tu bitcoin.</p>
+<a href="#" style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; background: #1A1530; color: #FFFFFF; text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">Regalar bitcoin</a>
+<a href="#" style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 16px; background: #FFFFFF; color: #1A1530; text-decoration: none; font-weight: 700; font-size: 16px">Tengo un regalo para abrir</a>
+<a href="#" style="position: relative; align-self: center; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 8px; color: #1A1530; font-weight: 700; font-size: 16px">Armar mi lista de regalos →</a>
+</section>
+
+<section style="padding: 36px 20px 8px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -.01em">¿Qué festejamos?</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; ">
+<sc-for list="{{featured}}" as="o" hint-placeholder-count="7">
+<button class="oc-chip" onClick="{{o.pick}}" aria-pressed="{{o.sel}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px; border-radius: 23px; border: 0; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 16px; color: #1A1530; cursor: pointer; background: {{o.bg}}; box-shadow: {{o.ring}}">{{o.label}}<sc-if value="{{o.tag}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 8px; border-radius: 10px; background: #1A1530; color: #FFFFFF; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase">Se viene</span></sc-if></button>
+</sc-for>
+<button class="oc-chip" onClick="{{toggleMore}}" aria-expanded="{{moreOpen}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px; border-radius: 23px; border: 0; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 16px; color: #1A1530; cursor: pointer; background: #FFFFFF; box-shadow: inset 0 0 0 2px #1A1530">{{moreLabel}}</button>
+</div>
+<sc-if value="{{moreOpen}}" hint-placeholder-val="{{ false }}">
+<div style="align-self: stretch; text-align: left; border-radius: 22px; background: #FAF7F2; border: 2px solid #1A1530; padding: 18px; display: flex; flex-direction: column; gap: 16px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 15px">Buscá una ocasión
+<input type="text" value="{{q}}" onInput="{{setQ}}" placeholder="Ej.: jubilación, Reyes, aniversario" style="min-height: 48px; padding: 0 14px; border-radius: 14px; border: 2px solid #1A1530; background: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 16px; color: #1A1530"></input>
+</label>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #6A6480">{{g.name}}</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{g.items}}" as="o" hint-placeholder-count="5">
+<button class="oc-chip" onClick="{{o.pick}}" aria-pressed="{{o.sel}}" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 0; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 15px; color: #1A1530; cursor: pointer; background: {{o.bg}}; box-shadow: {{o.ring}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 15px; color: #4B4660">No la tenemos en la lista, pero no hay problema.</p>
+</sc-if>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-top: 1px dashed #C9C2D6; padding-top: 14px">
+<span style="font-size: 15px; color: #4B4660">¿No está?</span>
+<button class="oc-chip" onClick="{{useCustom}}" disabled="{{customOff}}" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; border: 2px dashed #1A1530; background: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 15px; color: #1A1530; cursor: pointer">{{customLabel}}</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<a href="#" style="align-self: stretch; display: flex; align-items: center; justify-content: center; min-height: 54px; border-radius: 16px; background: #1A1530; color: #FFFFFF; text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px">Regalar para {{selLabel}} →</a>
+</sc-if>
+</section>
+
+<section style="padding: 36px 20px 8px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -.01em">Así de fácil</h2>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 20px; background: #FFF1E3; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 36px; line-height: 1; color: #E06A00">1</span><strong style="font-size: 18px">Elegí la ocasión y el monto</strong><span style="font-size: 15px; color: #4B4660">En pesos, dólares o sats. Sumale tu mensaje.</span></div>
+<div style="border-radius: 20px; background: #FFEAF0; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 36px; line-height: 1; color: #D6305F">2</span><strong style="font-size: 18px">Pagá desde tu billetera</strong><span style="font-size: 15px; color: #4B4660">El bitcoin va directo al regalo. Nosotros nunca lo tocamos.</span></div>
+<div style="border-radius: 20px; background: #E6F7FD; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 36px; line-height: 1; color: #127A9C">3</span><strong style="font-size: 18px">Mandalo por WhatsApp o mail</strong><span style="font-size: 15px; color: #4B4660">O imprimí la tarjeta y dásela en mano.</span></div>
+</div>
+</section>
+
+<section id="razones" style="margin: 36px 16px 0; border-radius: 24px; background: #1A1530; color: #FFFFFF; padding: 26px 0 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div style="padding: 0 20px; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-weight: 700; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #FFD23F">Solo hay 21 millones de bitcoin</p>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 30px; line-height: 1; letter-spacing: -.01em">21 razones para regalar Bitcoin</h2>
+<p style="margin: 0; font-size: 14px; color: #C9C5D9">Deslizá o tocá una carta del costado.</p>
+</div>
+<div onTouchStart="{{touchStart}}" onTouchMove="{{touchMove}}" onTouchEnd="{{touchEnd}}" style="position: relative; width: 358px; height: 330px; touch-action: pan-y">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="21">
+<button class="{{c.cls}}" onClick="{{c.tap}}" tabindex="{{c.tab}}" aria-hidden="{{c.hidden}}" aria-label="{{c.label}}" style="transform: {{c.pos}}; opacity: {{c.op}}; z-index: {{c.z}}; pointer-events: {{c.pe}}">
+<div class="cf-inner" style="transform: {{c.rot}}">
+<div class="cf-face" style="background: #2A2347; border: 2px solid #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px">
+<span aria-hidden="true" style="width: 110px; height: 110px; border-radius: 50%; background: {{c.coin}}; border: 4px solid #1A1530; box-shadow: 0 6px 0 #0E0B1C; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #1A1530"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 42px; line-height: 1">{{c.n}}</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; line-height: 1">₿</span></span>
+<span style="font-size: 13px; color: #C9C5D9; letter-spacing: .08em">{{c.n}} / 21</span>
+</div>
+<div class="cf-face cf-back" style="background: #FFFFFF; color: #1A1530; padding: 20px 18px; display: flex; flex-direction: column; justify-content: center; gap: 8px; overflow: auto">
+<span style="align-self: flex-start; padding: 2px 10px; border-radius: 10px; background: {{c.coin}}; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 13px">{{c.n}} / 21</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; line-height: 1.1; letter-spacing: -.01em">{{c.t}}</span>
+<span style="font-size: 15px; line-height: 1.4; color: #4B4660">{{c.d}}</span>
+</div>
+</div>
+</button>
+</sc-for>
+</div>
+<div style="padding: 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<button class="cf-nav" onClick="{{prev}}" disabled="{{atStart}}" aria-label="Razón anterior"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 6px; align-items: center">
+<span style="font-size: 14px">Diste vuelta <strong style="color: #FFD23F">{{count}}</strong> de 21</span>
+<div style="width: 100%; height: 6px; background: #2E2850; border-radius: 3px; overflow: hidden"><div style="height: 100%; background: #FFD23F; border-radius: 3px; transition: width .4s; width: {{pct}}"></div></div>
+</div>
+<button class="cf-nav" onClick="{{next}}" disabled="{{atEnd}}" aria-label="Razón siguiente"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<a href="#" style="margin: 0 20px; display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; background: #FFD23F; color: #1A1530; text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">¡Las 21! ¿Regalamos?</a>
+</sc-if>
+</section>
+
+<section style="padding: 36px 20px 8px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -.01em">¿Festejo grande?</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.45; color: #4B4660">Armá tu lista para el baby shower o el casamiento y compartila con tus amigos bitcoiners.</p>
+<a href="#" style="display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 16px; background: #FF5D8F; color: #1A1530; text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">Armar mi lista</a>
+</section>
+
+<footer style="margin-top: auto; padding: 40px 20px 28px; display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; font-size: 14px; color: #4B4660">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; color: #1A1530">regalale<span style="color: #E06A00">bitcoins</span></span>
+<span>Sin custodia: el regalo es de quien lo recibe.</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { i: 0, flipped: {}, seen: {}, drag: 0, dragging: false, oOpen: false, q: '', sel: null, mOpen: false };
+    this.tx = null;
+    this.timer = null;
+  }
+  componentDidMount() { this.reveal(0); }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); }
+  reveal(j) {
+    var self = this;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(function () {
+      var nf = Object.assign({}, self.state.flipped); nf[j] = true;
+      var ns = Object.assign({}, self.state.seen); ns[j] = true;
+      self.setState({ flipped: nf, seen: ns });
+    }, 500);
+  }
+  go(d) {
+    var j = Math.max(0, Math.min(20, this.state.i + d));
+    if (j === this.state.i) { this.setState({ drag: 0, dragging: false }); return; }
+    var nf = Object.assign({}, this.state.flipped); nf[j] = false;
+    this.setState({ i: j, flipped: nf, drag: 0, dragging: false });
+    this.reveal(j);
+  }
+  renderVals() {
+    var R = [
+      ["Es original.", "Seguro que nadie más en la mesa regala lo mismo."],
+      ["No hay que adivinar el talle, el color ni el gusto.", "Ni guardar el ticket de cambio."],
+      ["No ocupa lugar, no se rompe, no se vence.", "Entra en el celular o en un papelito, y dura más que cualquier juguete."],
+      ["Se ajusta a tu bolsillo.", "No hace falta regalar un bitcoin entero: se divide en 100 millones de partes."],
+      ["Sirve para cualquier edad.", "Desde un bautismo hasta los 90 años del abuelo."],
+      ["Es el mismo regalo para todos, pero cada uno lo vive distinto.", "A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar."],
+      ["Va a disparar una linda charla, seguro.", "Alguien pregunta qué es, y la sobremesa ya está armada."],
+      ["Une generaciones.", "El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más."],
+      ["Llega aunque estés lejos.", "Sin envío, sin aduana y sin cambio de moneda."],
+      ["Se arma en dos minutos.", "Desde el celular, también la noche anterior, y sin que se note."],
+      ["No hace falta una computadora para recibirlo.", "Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera."],
+      ["Se puede regalar entre varios.", "Cada uno pone lo que puede y le llega todo junto."],
+      ["Si no lo quiere, vos lo recuperás o él lo canjea por dinero.", "No hay regalo que quede tirado."],
+      ["Es de quien lo recibe, de verdad.", "Queda en su propia billetera: nadie se lo puede congelar ni quitar."],
+      ["Lleva un mensaje.", "Una invitación a pensar en el ahorro y en el largo plazo."],
+      ["Es personal.", "Tu mensaje, su nombre y una imagen hecha para la ocasión."],
+      ["Viene con instrucciones.", "Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas."],
+      ["Sabés si lo reclamó.", "Ves cuándo lo hizo, sin tener que preguntar."],
+      ["Funciona desde 2009 y nunca cerró.", "Ni un feriado, ni un domingo, ni un 25 de diciembre."],
+      ["Se lo podés regalar a alguien que todavía no nació.", "Ideal para el baby shower."],
+      ["Nunca va a haber más de 21 millones.", "Le estás regalando un pedacito de algo que nadie puede fabricar."]
+    ];
+
+    var COINS = ["#FFD23F", "#FF8A1F", "#FF7FA6", "#7FD3EE", "#A8E07F"];
+    var self = this;
+    var st = this.state;
+    var i = st.i;
+    var dx = st.drag;
+    var k = Math.max(-1, Math.min(1, dx / 150));
+    var count = 0;
+    for (var s in st.seen) { if (st.seen[s]) count++; }
+    var cards = R.map(function (r, j) {
+      var off = j - i;
+      var pos, op = 1, z = 0, pe = "none";
+      if (off === 0) {
+        pos = "translateX(" + dx + "px) rotate(" + (dx / 14) + "deg)";
+        z = 30; pe = "auto";
+      } else if (off === 1) {
+        var p = Math.max(0, -k);
+        pos = "translateX(" + (78 - 78 * p) + "px) rotate(" + (14 - 14 * p) + "deg) scale(" + (0.88 + 0.12 * p) + ")";
+        z = 20; pe = "auto";
+      } else if (off === -1) {
+        var q = Math.max(0, k);
+        pos = "translateX(" + (-78 + 78 * q) + "px) rotate(" + (-14 + 14 * q) + "deg) scale(" + (0.88 + 0.12 * q) + ")";
+        z = 20; pe = "auto";
+      } else if (off < -1) {
+        pos = "translateX(-140px) rotate(-22deg) scale(.72)"; op = 0;
+      } else {
+        pos = "translateX(140px) rotate(22deg) scale(.72)"; op = 0;
+      }
+      var on = off === 0 && !!st.flipped[j];
+      var vis = off >= -1 && off <= 1;
+      return {
+        n: j + 1, t: r[0], d: r[1], coin: COINS[j % COINS.length],
+        pos: pos, op: op, z: z, pe: pe,
+        cls: "cf-card" + (st.dragging && vis ? " dragging" : ""),
+        tab: vis ? "0" : "-1",
+        hidden: vis ? "false" : "true",
+        rot: on ? "rotateY(180deg)" : "rotateY(0deg)",
+        label: off === 0 ? ("Razón " + (j + 1) + " de 21" + (on ? ": " + r[0] + " " + r[1] : ". Tocá para darla vuelta.")) : ("Ir a la razón " + (j + 1)),
+        tap: function () {
+          var o = j - self.state.i;
+          if (o === 0) {
+            if (!self.state.seen[j]) { self.reveal(j); return; }
+            var nf = Object.assign({}, self.state.flipped); nf[j] = !nf[j];
+            self.setState({ flipped: nf });
+          } else { self.go(o); }
+        }
+      };
+    });
+
+    var GROUPS = [
+      { name: "Familia y vida", bg: "#FFD976", items: ["Nacimiento", "Bautismo", "Primera comunión", "Bar / Bat Mitzvá", "Cumpleaños", "Cumple de 15", "Egresados", "Recibido/a", "Casamiento", "Aniversario", "Baby shower", "Jubilación", "Casa nueva"] },
+      { name: "Fechas del año", bg: "#FFC7D8", items: ["Navidad", "Reyes", "Año nuevo", "San Valentín", "Pascuas", "Día de la Madre", "Día del Padre", "Día del Niño", "Día del Amigo", "Día de los Abuelos", "Día del Maestro"] },
+      { name: "Fechas bitcoiners", bg: "#FFD8B5", items: ["Bitcoin Pizza Day", "Cumple del bloque génesis", "Aniversario del whitepaper", "Halving"] },
+      { name: "Otras", bg: "#BDEBFA", items: ["Nuevo trabajo", "Gracias", "Mejorate pronto", "Porque sí"] }
+    ];
+    var SEASON = ["Reyes", "San Valentín", "Pascuas", "Pascuas", "Bitcoin Pizza Day", "Día del Padre", "Día del Amigo", "Día del Niño", "Día del Maestro", "Día de la Madre", "Navidad", "Navidad"];
+    var BASE = [["Cumpleaños", "#FFD23F"], ["Bautismo", "#BDEBFA"], ["Navidad", "#FFC7D8"], ["Casamiento", "#FFD8B5"], ["Baby shower", "#D9F5C9"], ["Porque sí", "#F1F1F4"]];
+    var seasonal = SEASON[new Date().getMonth()];
+    var selName = st.sel;
+    var mkPick = function (label) { return function () { self.setState({ sel: self.state.sel === label ? null : label }); }; };
+    var ringFor = function (label) { return selName === label ? "inset 0 0 0 3px #1A1530, 0 4px 0 #1A1530" : "none"; };
+    var featured = [];
+    if (BASE.map(function (b) { return b[0]; }).indexOf(seasonal) < 0) featured.push({ label: seasonal, bg: "#EEE9FF", tag: true });
+    BASE.forEach(function (b) { featured.push({ label: b[0], bg: b[1], tag: b[0] === seasonal }); });
+    featured = featured.map(function (o) { return { label: o.label, bg: o.bg, tag: o.tag, sel: selName === o.label ? "true" : "false", ring: ringFor(o.label), pick: mkPick(o.label) }; });
+    var qn = (st.q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    var groups = [];
+    GROUPS.forEach(function (g) {
+      var items = g.items.filter(function (it) { return !qn || it.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").indexOf(qn) >= 0; })
+        .map(function (it) { return { label: it, bg: g.bg, sel: selName === it ? "true" : "false", ring: ringFor(it), pick: mkPick(it) }; });
+      if (items.length) groups.push({ name: g.name, items: items });
+    });
+    var occ = {
+      menuOpen: !!st.mOpen,
+      menuIcon: st.mOpen ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16",
+      toggleMenu: function () { self.setState({ mOpen: !self.state.mOpen }); },
+      featured: featured,
+      groups: groups,
+      noResults: !!qn && groups.length === 0,
+      moreOpen: !!st.oOpen,
+      moreLabel: st.oOpen ? "Menos ocasiones −" : "Más ocasiones +",
+      toggleMore: function () { self.setState({ oOpen: !self.state.oOpen }); },
+      q: st.q || "",
+      setQ: function (e) { self.setState({ q: e.target.value }); },
+      customLabel: st.q ? ("Usar “" + st.q + "” como ocasión") : "Escribila en el buscador",
+      customOff: !st.q,
+      useCustom: function () {
+        if (self.state.q) { self.setState({ sel: self.state.q }); }
+      },
+      hasSel: !!selName,
+      selLabel: selName ? selName.toLowerCase() === "porque sí" ? "porque sí" : selName : ""
+    };
+    return Object.assign(occ, {
+      cards: cards,
+      atStart: i === 0,
+      atEnd: i === 20,
+      count: count,
+      pct: Math.round(count / 21 * 100) + "%",
+      done: count === 21,
+      prev: function () { self.go(-1); },
+      next: function () { self.go(1); },
+      touchStart: function (e) { self.tx = e.touches && e.touches[0] ? e.touches[0].clientX : null; self.setState({ dragging: true }); },
+      touchMove: function (e) {
+        if (self.tx === null || !e.touches || !e.touches[0]) return;
+        self.setState({ drag: e.touches[0].clientX - self.tx });
+      },
+      touchEnd: function () {
+        var d = self.state.drag;
+        self.tx = null;
+        if (d < -60) self.go(1); else if (d > 60) self.go(-1); else self.setState({ drag: 0, dragging: false });
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
