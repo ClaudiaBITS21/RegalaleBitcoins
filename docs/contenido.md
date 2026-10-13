@@ -119,7 +119,7 @@ Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, qu
 - **Interior derecho:** QR al link de reclamo + "cómo reclamarlo" en 3 pasos + recuadro para escribir a mano las 4 palabras (4 renglones numerados).
 - **Contratapa:** logo RegalaleBitcoins.com + leyenda corta.
 
-**Passphrase:** nunca impresa por la web. Recuadro manual opcional, adentro de la tarjeta (cerrada no se ve). Microcopy: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte."
+**Passphrase:** nunca impresa por la web. Recuadro manual opcional, adentro de la tarjeta (cerrada no se ve). Microcopy: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte. Guardá esta tarjeta como si fuera efectivo." El PDF se genera en el navegador: el link nunca pasa por el servidor.
 
 **Mensaje:** máximo 280 caracteres (mismo límite para WhatsApp, mail y tarjeta). Contador visible; aviso desde 240.
 
@@ -136,7 +136,7 @@ Cruce del contenido con el modelo del producto. Lo marcado **A CONFIRMAR** esper
    deriva de la clave de quien regala) dice que, mientras no lo reclamó, quien regala lo
    recupera. Propuesta para la 14: "**Una vez que lo reclama, es suyo de verdad.** Pasa a su
    propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar."
-2. **Tarjeta imprimible: el QR contiene la semilla** (el link lleva la semilla después del `#`).
+2. **RESUELTO (Claudia, 13/10) — la tarjeta es para entregar en mano. Tarjeta imprimible: el QR contiene la semilla** (el link lleva la semilla después del `#`).
    La tarjeta es medio regalo; con las 4 palabras escritas a mano, es el regalo entero, como
    un billete. Implicancias: el PDF se genera en el navegador (el link nunca pasa por el
    servidor) y el recuadro de las palabras suma "Guardá esta tarjeta como si fuera efectivo".
