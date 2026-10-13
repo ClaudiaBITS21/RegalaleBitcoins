@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createApp } from './app.ts';
 import { startBroadcaster } from './broadcaster.ts';
-import { esploraClient, priceClient } from './chain.ts';
+import { arsPriceClient, esploraClient, priceClient } from './chain.ts';
 import { loadConfig } from './config.ts';
 import { connect, migrate } from './db.ts';
 import { securityHeaders } from './security.ts';
@@ -13,7 +13,7 @@ const applied = await migrate(sql);
 if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
 
 const chain = esploraClient(config.esploraUrl);
-const app = createApp({ sql, chain, price: priceClient(config.priceUrl), network: config.network, tasksToken: config.tasksToken });
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), network: config.network, tasksToken: config.tasksToken });
 
 if (config.webDist !== null) {
   // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.

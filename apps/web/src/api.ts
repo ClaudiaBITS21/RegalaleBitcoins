@@ -39,7 +39,7 @@ export interface NewGift {
   readonly de: string;
   readonly mensaje: string;
   readonly imagen: number;
-  readonly moneda: 'USD' | 'SAT';
+  readonly moneda: 'USD' | 'ARS' | 'SAT';
   readonly monto: number;
   readonly sats: string;
 }
@@ -71,7 +71,7 @@ export const api = {
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,
   fees: () => call<FeeRates>('/api/fees'),
   health: () => call<{ ok: boolean; red: NetworkName }>('/api/salud'),
-  price: async () => (await call<{ usdPorBtc: number }>('/api/precio')).usdPorBtc,
+  price: () => call<{ usdPorBtc: number; fuenteUsd: string; arsPorBtc: number | null; fuenteArs: 'criptoya' | 'bitso' | null }>('/api/precio'),
   /** Registra un regalo antes de pagarlo. Solo datos públicos: nunca la semilla ni las palabras. */
   createGift: async (gift: NewGift) =>
     (

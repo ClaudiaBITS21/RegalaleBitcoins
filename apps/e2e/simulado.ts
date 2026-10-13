@@ -84,7 +84,7 @@ const browser = await chromium.launch({ executablePath: CHROMIUM });
 const problems: string[] = [];
 try {
   api = spawn(process.execPath, [join(ROOT, 'apps', 'api', 'src', 'main.ts')], {
-    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, DATABASE_URL, WEB_DIST },
+    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, DATABASE_URL, WEB_DIST },
     stdio: ['ignore', 'inherit', 'inherit'],
   });
   await waitFor(`http://127.0.0.1:${API_PORT}/api/salud`);
@@ -103,7 +103,7 @@ try {
 
   await page.getByRole('heading', { name: 'Rodo te hizo un regalo' }).waitFor();
   if (page.url().includes('#')) fail('la semilla quedó en la barra de direcciones');
-  await page.getByText('120.000 sats').waitFor();
+  await page.getByText('120.000 sats', { exact: true }).waitFor();
   await page.getByText('Valía US$ 25,00 cuando te lo regalaron. Hoy vale US$ 120.').waitFor();
   await page.getByText('Red de prueba (signet)').waitFor();
   await shot('1-regalo');
@@ -193,6 +193,14 @@ try {
   await page.getByText('No entendimos el número. Escribilo así: US$ 1.234,50.').waitFor();
   await page.getByLabel('Monto', { exact: true }).fill('150');
   await page.getByText('Durante la prueba, el máximo por regalo es US$ 100.').waitFor();
+  // En pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
+  await page.getByRole('button', { name: 'En pesos' }).click();
+  await page.getByLabel('Monto', { exact: true }).fill('40.000');
+  await page.getByText('Vas a regalar $ 40.000,00.').waitFor();
+  await page.getByText('Hoy equivale a 25.000 sats · US$ 25,00.').waitFor();
+  await page.getByText('Cotización: 1 BTC = $ 160.000.000,00 (mediana del precio de compra en exchanges argentinos, según CriptoYa). Cálculo: $ 40.000,00 ÷ $ 160.000.000,00 × 100.000.000 = 25.000 sats.').waitFor();
+  await shot('r3-cuanto-pesos');
+  await page.getByRole('button', { name: 'En dólares' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('30,5');
   await page.getByText('Vas a regalar US$ 30,50.').waitFor();
   await page.getByText('Hoy equivale a 30.500 sats.').waitFor();
@@ -257,7 +265,7 @@ try {
   receiver.on('pageerror', (e) => problems.push(`error de página (recibe): ${e.message}`));
   await receiver.goto(giftLink);
   await receiver.getByRole('heading', { name: 'Rodo te deu um presente' }).waitFor();
-  await receiver.getByText('30.500 sats').waitFor();
+  await receiver.getByText('30.500 sats', { exact: true }).waitFor();
   await receiver.getByRole('button', { name: 'Receber meu presente' }).click();
   for (let i = 0; i < 4; i++) await receiver.getByLabel(`Palavra ${i + 1}`).fill(giftWords[i] as string);
   await receiver.getByRole('button', { name: 'Continuar' }).click();

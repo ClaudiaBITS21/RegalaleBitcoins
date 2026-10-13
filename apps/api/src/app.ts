@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { addressFromScript, isCoreError, isLang, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination } from '@regalale/core';
 import { Hono } from 'hono';
-import { ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
+import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
 import { findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
@@ -12,6 +12,8 @@ export interface AppDeps {
   readonly sql: Sql;
   readonly chain: ChainClient;
   readonly price: PriceClient;
+  /** Sin cotización en pesos, los regalos solo se arman en dólares o sats. */
+  readonly arsPrice?: ArsPriceClient;
   readonly network: Network;
   /** Si está, habilita POST /api/tareas/difusiones con el encabezado x-tarea-token. */
   readonly tasksToken?: string | null;
@@ -126,7 +128,11 @@ export function createApp(deps: AppDeps): Hono {
     return c.json(await processPending({ sql, chain, network }));
   });
 
-  app.get('/api/precio', async (c) => c.json({ usdPorBtc: await price.btcUsd() }));
+  app.get('/api/precio', async (c) => {
+    const [usdPorBtc, ars] = await Promise.all([price.btcUsd(), deps.arsPrice?.btcArs().catch(() => null) ?? null]);
+    // Las fuentes se muestran junto a la conversión, para que se pueda verificar.
+    return c.json({ usdPorBtc, fuenteUsd: 'mempool.space', arsPorBtc: ars?.price ?? null, fuenteArs: ars?.source ?? null });
+  });
 
   const createLimiter = new RateLimiter(deps.createLimitPerHour ?? 30, 60 * 60 * 1000);
 
@@ -139,8 +145,12 @@ export function createApp(deps: AppDeps): Hono {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!createLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const g = parseNewGift(await c.req.json().catch(() => null), network);
-    const [usdPerBtc, fees] = await Promise.all([price.btcUsd(), chain.fees()]);
-    checkAmount(g, usdPerBtc, minimumGiftAmount(fees.economy));
+    const [usdPerBtc, fees, arsPerBtc] = await Promise.all([
+      price.btcUsd(),
+      chain.fees(),
+      g.currency === 'ARS' ? (deps.arsPrice?.btcArs().then((q) => q.price) ?? Promise.reject(new ApiError(422, 'monto_invalido'))) : null,
+    ]);
+    checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy));
     try {
       const gift = await insertGift(sql, { ...g, network: network.name, usdPerBtc });
       createLimiter.record(ip);
@@ -242,7 +252,11 @@ function clientIp(forwarded: string | undefined): string {
   return forwarded?.split(',')[0]?.trim() || 'local';
 }
 
-type ParsedGift = Omit<Parameters<typeof insertGift>[1], 'network' | 'usdPerBtc'> & { satsExpected: bigint; currency: 'USD' | 'SAT'; amount: number };
+type ParsedGift = Omit<Parameters<typeof insertGift>[1], 'network' | 'usdPerBtc'> & {
+  satsExpected: bigint;
+  currency: 'USD' | 'ARS' | 'SAT';
+  amount: number;
+};
 
 function text(value: unknown, max: number, required: boolean): string | null {
   if (value === undefined || value === null || value === '') {
@@ -272,7 +286,7 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
   if (typeof b.ocasion !== 'string' || !(OCCASIONS as readonly string[]).includes(b.ocasion)) throw new ApiError(400, 'pedido_invalido');
   if (typeof b.imagen !== 'number' || !Number.isInteger(b.imagen) || b.imagen < 1 || b.imagen > 4) throw new ApiError(400, 'pedido_invalido');
   if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
-  if (b.moneda !== 'USD' && b.moneda !== 'SAT') throw new ApiError(400, 'monto_invalido');
+  if (b.moneda !== 'USD' && b.moneda !== 'ARS' && b.moneda !== 'SAT') throw new ApiError(400, 'monto_invalido');
   if (typeof b.monto !== 'number' || !Number.isFinite(b.monto) || b.monto <= 0) throw new ApiError(400, 'monto_invalido');
   return {
     address,
@@ -289,13 +303,16 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
 }
 
 /** Monto coherente: mayor al mínimo de la red, debajo del techo y, en dólares, de acuerdo con la cotización. */
-function checkAmount(g: ParsedGift, usdPerBtc: number, minimumSats: bigint): void {
+function checkAmount(g: ParsedGift, usdPerBtc: number, arsPerBtc: number | null, minimumSats: bigint): void {
   const usd = (Number(g.satsExpected) / 1e8) * usdPerBtc;
   if (g.satsExpected < minimumSats) throw new ApiError(422, 'monto_invalido', 'Debajo del mínimo que se puede reclamar con las comisiones de hoy.');
   if (usd > CEILING_USD * (1 + PRICE_TOLERANCE)) throw new ApiError(422, 'monto_invalido', `Supera el techo de USD ${CEILING_USD}.`);
   if (g.currency === 'SAT' && BigInt(Math.round(g.amount)) !== g.satsExpected) throw new ApiError(422, 'monto_invalido');
-  if (g.currency === 'USD' && (Math.round(g.amount * 100) !== g.amount * 100 || Math.abs(usd - g.amount) > g.amount * PRICE_TOLERANCE)) {
-    throw new ApiError(422, 'monto_invalido', 'Los sats no corresponden al monto en dólares.');
+  if (g.currency === 'USD' || g.currency === 'ARS') {
+    const fiat = g.currency === 'USD' ? usd : (Number(g.satsExpected) / 1e8) * (arsPerBtc as number);
+    if (Math.round(g.amount * 100) !== g.amount * 100 || Math.abs(fiat - g.amount) > g.amount * PRICE_TOLERANCE) {
+      throw new ApiError(422, 'monto_invalido', 'Los sats no corresponden al monto elegido.');
+    }
   }
 }
 

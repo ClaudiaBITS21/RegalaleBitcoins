@@ -32,8 +32,8 @@ export interface Draft {
   message: string;
   image: number;
   lang: Lang;
-  currency: 'USD' | 'SAT';
-  /** En la moneda elegida: dólares o sats. */
+  currency: 'USD' | 'ARS' | 'SAT';
+  /** En la moneda elegida: dólares, pesos o sats. */
   amount: number;
   sats: bigint;
 }

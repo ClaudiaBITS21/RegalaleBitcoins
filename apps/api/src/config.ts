@@ -13,6 +13,8 @@ export interface Config {
   readonly esploraUrl: string;
   /** Endpoint de precios de mempool.space (/api/v1/prices). */
   readonly priceUrl: string;
+  /** BTC/ARS: CriptoYa (exchanges locales) y Bitso como control. */
+  readonly arsPriceUrls: { readonly criptoya: string; readonly bitso: string };
   readonly port: number;
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
@@ -42,6 +44,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     broadcasterLoop: env.RUN_BROADCASTER_LOOP !== 'no',
     esploraUrl: (env.ESPLORA_URL ?? DEFAULT_ESPLORA[name]).replace(/\/$/, ''),
     priceUrl: env.PRICE_URL ?? 'https://mempool.space/api/v1/prices',
+    arsPriceUrls: {
+      criptoya: env.ARS_PRICE_URL ?? 'https://criptoya.com/api/btc/ars/0.1',
+      bitso: env.ARS_CHECK_URL ?? 'https://api.bitso.com/v3/ticker/?book=btc_ars',
+    },
     port,
     webDist: env.WEB_DIST ?? null,
   });

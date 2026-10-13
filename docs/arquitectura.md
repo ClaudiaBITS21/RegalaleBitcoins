@@ -64,7 +64,7 @@ oficiales.
 | Método | Ruta | Qué hace |
 |---|---|---|
 | POST | `/api/gifts` | Regalar: registra el regalo antes del pago con la tarjeta, la dirección derivada en el navegador y los sats a mandar. El servidor pone la cotización, controla el techo (USD 100), el mínimo según comisiones y un límite por IP. Devuelve 409 `regalo_existente` si la dirección ya está: el navegador prueba el índice siguiente. |
-| GET | `/api/precio` | Cotización BTC/USD (mempool.space). |
+| GET | `/api/precio` | Cotizaciones con su fuente: BTC/USD de mempool.space y BTC/ARS directo de exchanges argentinos (mediana del precio final de compra según CriptoYa, controlada con el par btc_ars de Bitso; si difieren más de 10 %, no hay cotización en pesos). |
 | GET | `/api/gifts/:id` | Tarjeta, idioma, dirección pública, estado y montos (recibidos y esperados). El estado se calcula en el servidor desde la cadena: `esperando`, `en_la_red`, `activo`, `reclamo_programado`, `reclamado`, `recuperado`, `retirado`. `pagoTrabado` avisa si un pago en la mempool paga menos que la comisión económica. |
 | GET | `/api/gifts/:id/utxos` | UTXO confirmados con su transacción completa. El navegador verifica los montos contra el txid. |
 | GET | `/api/fees` | Comisiones recomendadas (sat/vB). |
@@ -84,8 +84,10 @@ y la difunde cuando baje. El servidor no puede cambiarla: solo decide cuándo ma
 
 1. Ocasión, tarjeta (nombre hasta 30 caracteres, mensaje hasta 280), imagen e idioma de quien
    recibe.
-2. Monto: USD 25, 50, 100 u otro en dólares o en sats, leído con los separadores del idioma
-   (`parseAmount`). Mínimo según las comisiones del momento; máximo USD 100.
+2. Monto: USD 25, 50, 100 u otro en dólares, pesos o sats, leído con los separadores del
+   idioma (`parseAmount`). Mínimo según las comisiones del momento; máximo USD 100. Toda
+   conversión muestra en letra chica la fuente, la cotización y la cuenta. Los pesos salen de
+   BTC/ARS de exchanges locales, nunca de pasar por el dólar oficial.
 3. **Código de recuperación antes de pagar.** Mientras no exista la bóveda con passkey
    (etapa 5), la clave maestra se muestra como código de 12 palabras y se verifica con 3 al
    azar. Quien ya tiene un código lo escribe y sigue con el índice libre siguiente.
@@ -135,8 +137,7 @@ que se decida otra cosa:
 3. Reclamo en signet. Código hecho y publicado en regalalebitcoins.web.app. Falta la prueba
    con el regalo de prueba fondeado desde un faucet de signet.
 4. Regalar en 5 pasos, con detección de pago (mempool, 1 confirmación, RBF). Hecho, con
-   prueba en navegador contra la cadena simulada. Queda para después: montos en pesos (falta
-   una fuente de cotización ARS), tarjeta imprimible (espera el diseño), envío programado y
+   prueba en navegador contra la cadena simulada. Queda para después: tarjeta imprimible (espera el diseño), envío programado y
    aviso por mail si se cierra la página (etapa 6). Los mensajes sugeridos por ocasión son
    provisorios hasta que los defina el equipo de contenido.
 5. Bóveda con passkey y código de recuperación.

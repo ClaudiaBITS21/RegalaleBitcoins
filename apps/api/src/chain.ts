@@ -168,3 +168,74 @@ export function priceClient(url: string, fetchImpl: typeof fetch = fetch, cacheM
     },
   };
 }
+
+export type ArsSource = 'criptoya' | 'bitso';
+
+export interface ArsQuote {
+  /** Precio de 1 BTC en pesos argentinos, directo de exchanges locales (sin pasar por un dólar). */
+  readonly price: number;
+  readonly source: ArsSource;
+}
+
+export interface ArsPriceClient {
+  btcArs(): Promise<ArsQuote>;
+}
+
+function positive(value: unknown): number | null {
+  const n = typeof value === 'string' ? Number(value) : value;
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? (sorted[mid] as number) : ((sorted[mid - 1] as number) + (sorted[mid] as number)) / 2;
+}
+
+/** Cuánto se separan dos precios, relativo al menor. */
+const gap = (a: number, b: number): number => Math.abs(a - b) / Math.min(a, b);
+
+/**
+ * BTC/ARS: mediana del precio final de compra ("totalAsk", con comisiones) de los
+ * exchanges locales que reúne CriptoYa, con al menos 3 cotizaciones de los últimos 15
+ * minutos. Bitso (su par btc_ars) sirve de control y de respaldo: si las dos fuentes
+ * difieren en más de 10 %, no se cotiza.
+ */
+export function arsPriceClient(
+  urls: { criptoya: string; bitso: string },
+  fetchImpl: typeof fetch = fetch,
+  cacheMs = 60_000,
+  now: () => number = Date.now,
+): ArsPriceClient {
+  let cached: { at: number; quote: ArsQuote } | null = null;
+  const getJson = async (url: string): Promise<unknown> => {
+    const res = await fetchImpl(url, { signal: AbortSignal.timeout(8_000) });
+    if (!res.ok) throw new ChainError(`Cotización en pesos no disponible (${res.status}).`, res.status);
+    return res.json();
+  };
+  const fromCriptoya = async (): Promise<number | null> => {
+    const data = (await getJson(urls.criptoya).catch(() => null)) as Record<string, { totalAsk?: unknown; time?: unknown }> | null;
+    if (data === null || typeof data !== 'object') return null;
+    const fresh = Object.values(data)
+      .filter((q) => typeof q === 'object' && q !== null && typeof q.time === 'number' && now() / 1000 - q.time < 15 * 60)
+      .map((q) => positive(q.totalAsk))
+      .filter((v): v is number => v !== null);
+    return fresh.length >= 3 ? median(fresh) : null;
+  };
+  const fromBitso = async (): Promise<number | null> => {
+    const data = (await getJson(urls.bitso).catch(() => null)) as { success?: unknown; payload?: { ask?: unknown; book?: unknown } } | null;
+    if (data?.success !== true || data.payload?.book !== 'btc_ars') return null;
+    return positive(data.payload.ask);
+  };
+  return {
+    async btcArs() {
+      if (cached !== null && now() - cached.at < cacheMs) return cached.quote;
+      const [a, b] = await Promise.all([fromCriptoya(), fromBitso()]);
+      if (a === null && b === null) throw new ChainError('Cotización en pesos no disponible.');
+      if (a !== null && b !== null && gap(a, b) > 0.1) throw new ChainError('Las cotizaciones en pesos no coinciden.');
+      const quote: ArsQuote = a !== null ? { price: a, source: 'criptoya' } : { price: b as number, source: 'bitso' };
+      cached = { at: now(), quote };
+      return quote;
+    },
+  };
+}

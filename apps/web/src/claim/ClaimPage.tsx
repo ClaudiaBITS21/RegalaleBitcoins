@@ -2,7 +2,7 @@ import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCo
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
-import { explorerTxUrl, formatFiat, formatSats, formatUsd, satsToUsd } from '../format.ts';
+import { explorerTxUrl, formatFiat, formatSats, formatUsd, formatUsdExact, satsToUsd } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AddressStep } from './AddressStep.tsx';
@@ -232,6 +232,17 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
         <div class="caja monto">
           <strong class="monto-sats">{formatSats(sats, lang)}</strong>
           {now !== null && <span class="texto-suave">{before !== null ? t('reclamo.valia', { antes: before, hoy: now }) : t('reclamo.vale', { hoy: now })}</span>}
+          {now !== null && gift.usdPorBtcHoy !== null && (
+            <small class="letra-chica">
+              {t('regalar.cuanto.calculoSats', {
+                precio: formatUsdExact(gift.usdPorBtcHoy, lang),
+                fuente: 'mempool.space',
+                sats: formatSats(sats, lang),
+                unBtc: formatSats(100_000_000n, lang).replace(' sats', ''),
+                monto: formatUsdExact(satsToUsd(sats, gift.usdPorBtcHoy), lang),
+              })}
+            </small>
+          )}
         </div>
       )}
       {notice !== undefined && <Notice kind={gift.estado === 'reclamado' ? 'ok' : 'info'}>{t(notice)}</Notice>}

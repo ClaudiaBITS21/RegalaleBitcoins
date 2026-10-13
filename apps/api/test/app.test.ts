@@ -12,7 +12,7 @@ import {
 } from '@regalale/core';
 import { createApp } from '../src/app.ts';
 import { processPending } from '../src/broadcaster.ts';
-import { type AddressStats, ChainError, type ChainClient, type FeeRates, type MempoolPayment, type PriceClient, type Utxo } from '../src/chain.ts';
+import { type AddressStats, arsPriceClient, ChainError, type ChainClient, type FeeRates, type MempoolPayment, type PriceClient, type Utxo } from '../src/chain.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
 import { findGift, insertGift } from '../src/gifts.ts';
 import { makeFundingTx } from '../../../packages/core/test/helpers.ts';
@@ -270,7 +270,7 @@ describe('API para regalar', () => {
     await sql`delete from difusiones`;
     await sql`delete from regalos`;
     chain = new FakeChain();
-    app = createApp({ sql, chain, price, network: signet, createLimitPerHour: 5 });
+    app = createApp({ sql, chain, price, arsPrice: { btcArs: async () => ({ price: 160_000_000, source: 'criptoya' as const }) }, network: signet, createLimitPerHour: 5 });
   });
 
   it('crea el regalo con la cotización del servidor y lo muestra esperando el pago', async () => {
@@ -303,7 +303,7 @@ describe('API para regalar', () => {
     assert.equal(await status({ moneda: 'SAT', monto: 30_000, sats: '31000' }), 422);
     assert.equal(await status({ sats: '25000.5' }), 400);
     assert.equal(await status({ sats: 25000 }), 400);
-    assert.equal(await status({ moneda: 'ARS' }), 400);
+    assert.equal(await status({ moneda: 'EUR' }), 400);
   });
 
   it('valida la tarjeta: largos, ocasión, imagen, idioma y dirección de la red', async () => {
@@ -334,6 +334,57 @@ describe('API para regalar', () => {
   });
 
   it('precio para la web', async () => {
-    assert.deepEqual(await (await app.request('/api/precio')).json(), { usdPorBtc: 100_000 });
+    assert.deepEqual(await (await app.request('/api/precio')).json(), { usdPorBtc: 100_000, fuenteUsd: 'mempool.space', arsPorBtc: 160_000_000, fuenteArs: 'criptoya' });
+  });
+
+  it('regalo en pesos: los sats tienen que corresponder a la cotización BTC/ARS', async () => {
+    // $ 40.000 a $ 160.000.000 por bitcoin = 25.000 sats.
+    assert.equal((await post('/api/gifts', nuevo(4, { moneda: 'ARS', monto: 40_000, sats: '25000' }))).status, 201);
+    assert.equal((await post('/api/gifts', nuevo(5, { moneda: 'ARS', monto: 40_000, sats: '40000' }))).status, 422);
+    const sinPesos = createApp({ sql, chain, price, network: signet });
+    const res = await sinPesos.request('/api/gifts', {
+      method: 'POST',
+      body: JSON.stringify(nuevo(6, { moneda: 'ARS', monto: 40_000, sats: '25000' })),
+      headers: { 'content-type': 'application/json' },
+    });
+    assert.equal(res.status, 422);
+    assert.deepEqual(await (await sinPesos.request('/api/precio')).json(), { usdPorBtc: 100_000, fuenteUsd: 'mempool.space', arsPorBtc: null, fuenteArs: null });
+  });
+});
+
+describe('Cotización BTC/ARS', () => {
+  const NOW = 1_800_000_000_000;
+  const criptoya = (quotes: Record<string, { totalAsk: number; time: number }>) => quotes;
+  const bitso = (ask: string) => ({ success: true, payload: { book: 'btc_ars', ask } });
+  const fake = (responses: Record<string, unknown>): typeof fetch =>
+    (async (url: string | URL | Request) => {
+      const body = responses[String(url)];
+      return body === undefined ? new Response('caído', { status: 503 }) : Response.json(body);
+    }) as typeof fetch;
+  const urls = { criptoya: 'https://cy/btc/ars', bitso: 'https://bitso/ticker' };
+  const t = NOW / 1000;
+
+  it('mediana del precio final de compra de los exchanges locales, controlada con Bitso', async () => {
+    const client = arsPriceClient(
+      urls,
+      fake({
+        [urls.criptoya]: criptoya({ a: { totalAsk: 100, time: t }, b: { totalAsk: 110, time: t }, c: { totalAsk: 105, time: t }, viejo: { totalAsk: 999, time: t - 3600 } }),
+        [urls.bitso]: bitso('104'),
+      }),
+      60_000,
+      () => NOW,
+    );
+    assert.deepEqual(await client.btcArs(), { price: 105, source: 'criptoya' });
+  });
+
+  it('si las fuentes no coinciden, no cotiza; si falta una, usa la otra', async () => {
+    const three = criptoya({ a: { totalAsk: 100, time: t }, b: { totalAsk: 100, time: t }, c: { totalAsk: 100, time: t } });
+    await assert.rejects(arsPriceClient(urls, fake({ [urls.criptoya]: three, [urls.bitso]: bitso('150') }), 0, () => NOW).btcArs());
+    assert.deepEqual(await arsPriceClient(urls, fake({ [urls.bitso]: bitso('150') }), 0, () => NOW).btcArs(), { price: 150, source: 'bitso' });
+    assert.deepEqual(await arsPriceClient(urls, fake({ [urls.criptoya]: three }), 0, () => NOW).btcArs(), { price: 100, source: 'criptoya' });
+    // Con menos de 3 cotizaciones frescas, CriptoYa no alcanza.
+    const two = criptoya({ a: { totalAsk: 100, time: t }, b: { totalAsk: 100, time: t } });
+    await assert.rejects(arsPriceClient(urls, fake({ [urls.criptoya]: two }), 0, () => NOW).btcArs());
+    await assert.rejects(arsPriceClient(urls, fake({}), 0, () => NOW).btcArs());
   });
 });

@@ -91,6 +91,14 @@ export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ addre
     if (req.method === 'GET' && url.pathname === '/v1/prices') {
       return send(200, { time: Math.floor(Date.now() / 1000), USD: 100_000 });
     }
+    // Cotizaciones BTC/ARS simuladas: CriptoYa (3 exchanges) y Bitso, a $ 160.000.000.
+    if (req.method === 'GET' && url.pathname === '/ars/criptoya') {
+      const time = Math.floor(Date.now() / 1000);
+      return send(200, { a: { totalAsk: 159_000_000, time }, b: { totalAsk: 160_000_000, time }, c: { totalAsk: 161_000_000, time } });
+    }
+    if (req.method === 'GET' && url.pathname === '/ars/bitso') {
+      return send(200, { success: true, payload: { book: 'btc_ars', ask: '160500000' } });
+    }
     if (req.method === 'POST' && url.pathname === '/tx') {
       let body = '';
       req.on('data', (c: Buffer) => (body += c.toString()));
