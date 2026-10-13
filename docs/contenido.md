@@ -1,70 +1,150 @@
-# Contenido: por qué regalar bitcoin
+# Contenido: ¿Por qué Bitcoin?
 
-Fuente: nota "El mejor regalo para esta Navidad es uno que ni te imaginas", de Rodolfo Andragnes
-(ONG Bitcoin Argentina). Es el origen de regalalebitcoins.com: la primera versión imprimía
-billeteras de papel con bitaddress.org. Acá queda lo que se reutiliza en la web y cómo se adapta
-al producto actual (link + 4 palabras, sin custodia).
+Decidido con Rodolfo en Cowork el 13/10/2026 (registro: `docs/handoff/2026-10-13/HANDOFF.md`).
+Fuente original: `docs/fuentes/el-mejor-regalo-navidad.md` (nota de ~2017, datos desactualizados).
+Texto canónico de las 21 razones: `docs/contenido/razones.es.json` → va a `apps/web/src/i18n/*.ts`.
+Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías propias, sin terceros).
 
-## Reglas de adaptación
+## Reglas de contenido
 
-- Voseo rioplatense (la nota usa "usted"/"les"); traducciones pt/en/it.
-- Sin promesas de suba. Los datos de precio van con fecha y con la aclaración de que el precio
-  sube y baja y que nada de esto es consejo de inversión.
-- Sin recomendar grupos, exchanges ni tiendas puntuales (Facebook, coinmonitor, G2A, Steam).
-- Los números con el formato del idioma (ver CLAUDE.md); montos de ejemplo en sats y en la moneda
-  local de quien lee, calculados al momento, nunca fijos en el texto.
-- La anécdota y la foto de las monedas físicas se usan solo con permiso explícito de Rodolfo.
+- Cero promesas de precio. El disclaimer acompaña siempre a la lista.
+- Español único: rioplatense con vos. pt/en/it por el i18n.
+- Precios y conversiones nunca fijos en el texto; si se muestran, en vivo y con el formato
+  numérico del idioma (ver CLAUDE.md).
+- Sin recomendar grupos, exchanges ni tiendas puntuales.
+- Lo marcado **ABIERTO** se confirma con Rodolfo antes de implementarlo.
 
-## Por qué es un buen regalo (home y página /por-que)
+## Especificación de componentes
 
-De la lista original, las que siguen siendo ciertas con el producto:
+### 1. Componente "21 razones" (monedas que se dan vuelta)
 
-| Original | Cómo se dice hoy |
-|---|---|
-| Es muy original | Nadie más lo va a regalar. |
-| No ocupa lugar | Es un link y cuatro palabras. |
-| Se ajusta al bolsillo | No hace falta un bitcoin entero: se regala desde unos pocos dólares. |
-| Interesante para todas las edades | Ver "Según la edad". |
-| El mismo para todos, distinto para cada uno | Cada regalo tiene su ocasión, su mensaje y su propia billetera. |
-| Tema de conversación | Igual. |
-| Si alguno no lo quiere, otro se lo compra | Se puede vender o cambiar cuando quiera; es suyo. |
-| Regalar el envoltorio y llenarlo después | Ver idea 1 abajo. |
-| Más interesante cuanto más tiempo se guarda | Pensado para guardar a largo plazo (sin prometer precio). |
-| Tecnológico pero no necesita computadora | Para guardarlo alcanza con el link y las palabras; para retirarlo, un navegador. |
-| Tiene un mensaje potente | Dinero que nadie puede imprimir ni congelar, y que es de quien tiene las claves. |
+- Título: "Solo hay 21 millones de bitcoin" (kicker) + "21 razones para regalar Bitcoin".
+- Grilla de 21 tarjetas. **Frente:** moneda dorada con el número + ₿, sin texto. **Dorso:** número, frase corta (título) y explicación debajo.
+- Flip con **tap/clic**, nunca hover. Respetar `prefers-reduced-motion`.
+- Cada tarjeta es un `<button aria-pressed>` con `aria-label` que incluye título + explicación.
+- **El texto de ambas caras va en el HTML renderizado del servidor** (SEO: la página tiene que posicionar para "por qué regalar bitcoin"). Nada de texto en imágenes.
+- Contador "Diste vuelta X de 21" + barra. Botón "Ver todas" / "Darlas vuelta de nuevo".
+- Al completar 21: bloque de cierre con CTA "¿Regalamos?" → flujo de regalo.
+- Diseño de moneda propio (no imitar monedas físicas reales/comerciales).
+- **Home:** mismo componente con las 6 destacadas (`destacadas_home` en el JSON) + link "Ver las 21".
+- **Mazo en abanico** (a Rodolfo le gustó el diseño; **ABIERTO**: confirmar si en celular reemplaza a la grilla y qué va en compu). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
+  - 3 cartas como en la mano: **centro = actual** (adelante, más grande, se da vuelta sola ~0,5 s después de llegar y muestra frase + explicación); **izquierda = anterior**, **derecha = siguiente**, inclinadas ±14°, escala 0,9, mostrando la moneda con su número. En la 1 no hay izquierda; en la 21 no hay derecha.
+  - Pasar: swipe, flechas, o tocar una lateral (pasa al centro). Animación: todas las cartas se desplazan a su nuevo lugar (transform + opacity, ~0,55 s); la que sale se desvanece hacia atrás, la que entra aparece desde atrás.
+  - Mientras se arrastra, la central sigue el dedo con leve rotación y la que viene se acerca al centro proporcionalmente; si se suelta antes de ~60 px vuelve a su lugar.
+  - Tocar la central la da vuelta (moneda ↔ texto). Contador cuenta cartas reveladas. `prefers-reduced-motion`: sin animación.
+- **ABIERTO:** razón 20 (baby shower) confirmada o reemplazar.
 
-## Según la edad
+### 2. Página "¿Por qué Bitcoin?"
 
-Para la página /por-que y como sugerencia de mensaje en el paso "ocasión" de Regalar.
+Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas de edad) → "Nuestra historia" (firma Rodolfo Andragnes) → disclaimer → CTA. Los textos por edad también pueden mostrarse contextualmente al elegir ocasión en el flujo de regalo (bautismo → bebés, etc.).
 
-- **0 a 5 (nacimiento, bautismo):** como la medallita de oro de antes: algo chico hoy que lo
-  acompaña hasta que crezca. Lo guardan los padres.
-- **5 a 10:** ya juntan monedas en los juegos; esta es parecida, pero de verdad y de todo el
-  mundo. Por ahora la guardan los padres.
-- **11 a 15:** pueden guardarla ellos. Una buena excusa para empezar a leer sobre dinero y
-  tecnología, e imaginar cuánto tendrán a los 18.
-- **15 a 18:** independencia, ideales, cómo funciona el dinero: tema de charla en común.
-  Puede que sepan más que vos.
-- **20 a 40:** casi seguro escucharon hablar; el regalo es la excusa para que aprendan a
-  manejarlo y lo pasen a una billetera propia.
-- **40 a 70:** muchos ya tienen o leyeron; lo van a valorar y a guardar con cuidado.
-- **Más de 70:** para quien ya tiene todo: un regalo inesperado que los mete en este siglo.
+### 3. Tarjeta imprimible (feature del lanzamiento)
 
-## Lo que cambió desde la nota (no reutilizar)
+- PDF A4, impresión **de un solo lado**, 2 tarjetas A5 por hoja; se corta y se dobla → A6 (10,5 × 14,8 cm).
+- Tapa: diseño de la ocasión + nombre de quien recibe. Interior izq.: mensaje + nombre de quien regala. Interior der.: QR al link de reclamo + 3 pasos + recuadro con 4 renglones numerados para escribir a mano la passphrase. Contratapa: logo.
+- **La web NUNCA imprime la passphrase.** Microcopy del recuadro: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte."
+- Límites: mensaje **máx. 280 caracteres** (mismo para WhatsApp, mail y tarjeta; contador visible, aviso desde 240). Nombre del destinatario **máx. 30**.
 
-- Billetera de papel con clave privada impresa → link con la semilla en el fragmento y
-  passphrase de 4 palabras por otro canal. "Nunca mandes la foto de la billetera" se convierte en
-  "nunca mandes el link y las palabras por el mismo lado".
-- "Cómo conseguir bitcoins" (amigos, grupos, exchanges) → se paga desde cualquier billetera o
-  exchange dentro del flujo de Regalar; no listamos proveedores.
-- Comisiones caras por saturación → la web muestra la comisión del momento y deja elegir.
+### 4. Decisiones de producto relacionadas
 
-## Ideas que salen de la nota (a decidir, no están en la especificación)
+- Listas de regalo: entran en el lanzamiento, **solo BTC**, pensadas para compartir en grupos bitcoiners. Mercado Pago/tarjeta, después.
+- "Regalar entre varios" (razón 12): una dirección on-chain acepta varios depósitos; el que recibe debería ver quién aportó qué.
+- Razón 13 ("vos lo recuperás"): la cancelación solo aplica mientras el regalo no fue reclamado.
+- Descartado: "mandar hoy y cargar después" (no está en el producto).
 
-1. **Regalar el envoltorio primero:** entregar la tarjeta (link + palabras) antes de pagar y
-   fondear después. Encaja con el modelo (la dirección existe antes del pago), pero hay que
-   resolver qué ve quien recibe si abre el link sin fondos.
-2. **Tarjeta imprimible:** versión de papel con el QR del link y, en otra hoja o al dorso
-   tapado, las 4 palabras. Equivale a una billetera de papel: mismo cuidado.
-3. **Página "Nuestra historia":** la anécdota de la Natividad Moderna y las monedas de 2013, si
-   Rodolfo da permiso.
+## Textos
+
+## Solo hay 21 millones de bitcoin. 21 razones para regalar Bitcoin (v3)
+
+> Decisión: las listas de regalo entran en el lanzamiento, solo BTC, pensadas para compartir en grupos bitcoiners. Mercado Pago/tarjeta para listas queda para después.
+
+**Formato (decisión):** tarjetas que se dan vuelta. Frente = moneda con su número (sin texto); dorso = frase corta + explicación debajo. Botón "Ver todas". Prototipo: https://claude.ai/artifact/8XCsPQyMRrbokMb6uEPuQv Flip por tap/clic (no hover). Texto de ambas caras en el HTML (SEO + accesibilidad). Mobile: 2 columnas o mazo con swipe (a definir). Opcional: contador "diste vuelta X de 21" con cierre + CTA al completar.
+
+**Home (6 destacadas):** 1, 2, 4, 9, 11, 14. El resto en la página "¿Por qué Bitcoin?".
+
+1. **Es original.** Seguro que nadie más en la mesa regala lo mismo.
+2. **No hay que adivinar el talle, el color ni el gusto.** Ni guardar el ticket de cambio.
+3. **No ocupa lugar, no se rompe, no se vence.** Entra en el celular o en un papelito, y dura más que cualquier juguete.
+4. **Se ajusta a tu bolsillo.** No hace falta regalar un bitcoin entero: se divide en 100 millones de partes, así que podés regalar desde muy poquito.
+5. **Sirve para cualquier edad.** Desde un bautismo hasta los 90 años del abuelo.
+6. **Es el mismo regalo para todos, pero cada uno lo vive distinto.** A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar.
+7. **Va a disparar una linda charla, seguro.** Alguien pregunta qué es, y la sobremesa ya está armada.
+8. **Une generaciones.** El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más.
+9. **Llega aunque estés lejos.** Sin envío, sin aduana y sin cambio de moneda: el mismo regalo vale para tu sobrino en Brasil y para tu abuela en Italia.
+10. **Se arma en dos minutos.** Desde el celular, también la noche anterior, y sin que se note que fue de último momento.
+11. **No hace falta una computadora para recibirlo.** Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera.
+12. **Se puede regalar entre varios.** Cada uno pone lo que puede y le llega todo junto.
+13. **Si no lo quiere, vos lo recuperás o él lo canjea por dinero.** No hay regalo que quede tirado.
+14. **Es de quien lo recibe, de verdad.** Queda en su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar.
+15. **Lleva un mensaje.** Es una invitación a pensar en el ahorro y en el largo plazo.
+16. **Es personal.** Tu mensaje, su nombre y una imagen hecha para la ocasión.
+17. **Viene con instrucciones.** Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas.
+18. **Sabés si lo reclamó.** Ves cuándo lo hizo, sin tener que preguntar.
+19. **Funciona desde 2009 y nunca cerró.** Ni un feriado, ni un domingo, ni un 25 de diciembre.
+20. **Se lo podés regalar a alguien que todavía no nació.** Ideal para el baby shower.
+21. **Nunca va a haber más de 21 millones.** Le estás regalando un pedacito de algo que nadie puede fabricar.
+
+Descartadas: "mandar hoy y cargar después" (no va en el producto), "si no lo quiere, otro se lo compra", "más interesante mientras más lo guardan", "enseña sin sermonear" (reemplazada por 7), "no junta polvo".
+
+> **Importante:** el precio de bitcoin sube y baja, y lo que pasó antes no garantiza lo que vaya a pasar. Regalá lo que tenga sentido para vos, como cualquier otro regalo.
+
+## Nuestra historia
+
+En la Navidad de 2012 escribí una obrita de teatro para la fiesta familiar: una "Natividad Moderna", con José, María y un Gabriel Arcángel que llamaba a la carpintería. Al final, el mago Baltazar hacía aparecer una moneda detrás de la oreja del niño: "No es oro. Es bitcoin, el oro del futuro".
+
+Esa noche le regalé a cada invitado una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.
+
+Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.
+— Rodolfo Andragnes
+
+## Por qué bitcoin, según quién lo recibe
+
+**Bebés y bautismos (0–4).** Antes se regalaba una medallita de oro para que acompañara toda la vida. Esto es lo mismo, pero en digital. Lo guardan los padres hasta que el chico sea grande, y si encima le escribís unas palabras, va a ser de los regalos más especiales que reciba.
+
+**Chicos (5–12).** Ya juntan monedas en sus jueguitos. Podés contarles que esta es una moneda de verdad, mantenida por miles de personas en todo el mundo, y que por ahora la cuidan sus papás. Es su primera lección de ahorro.
+
+**Adolescentes (13–17).** Les interesan la independencia y las ideas propias, y probablemente ya escucharon hablar de bitcoin. Les estás regalando un tema de conversación sobre dinero, valor y escasez, y a lo mejor te sorprenden sabiendo más que vos.
+
+**Adultos (18–69).** Casi todos escucharon hablar de bitcoin y muchos alguna vez pensaron en tener un poco. Este puede ser el empujón: les llega el regalo con una guía para crear su propia billetera paso a paso.
+
+**Mayores (70+).** ¿Qué le regalás a alguien que ya tiene todo? Algo totalmente inesperado, que lo mete en una de las conversaciones de esta época. Si necesita ayuda para reclamarlo, es la excusa perfecta para sentarse juntos un rato.
+
+## Tarjeta imprimible (spec v2)
+
+**Formato:** tarjeta doblada. Hoja A4 impresa de un solo lado con 2 tarjetas A5; se corta y cada una se dobla al medio y queda en A6 (10,5 × 14,8 cm). No requiere impresora doble faz.
+
+**Caras (cerrada / abierta):**
+- **Tapa:** diseño de la ocasión + nombre de quien recibe (máx. 30 caracteres).
+- **Interior izquierdo:** el mensaje de quien regala + su firma/nombre.
+- **Interior derecho:** QR al link de reclamo + "cómo reclamarlo" en 3 pasos + recuadro para escribir a mano las 4 palabras (4 renglones numerados).
+- **Contratapa:** logo RegalaleBitcoins.com + leyenda corta.
+
+**Passphrase:** nunca impresa por la web. Recuadro manual opcional, adentro de la tarjeta (cerrada no se ve). Microcopy: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte."
+
+**Mensaje:** máximo 280 caracteres (mismo límite para WhatsApp, mail y tarjeta). Contador visible; aviso desde 240.
+
+## Navidad (bloque estacional)
+
+Nada de shopping el 24 a la noche: se arma en dos minutos desde el celular, también a las 23:50. Este año regalá algo que nadie espera. Elegís el monto y escribís tu mensaje, y le llega por WhatsApp o por mail para abrirlo cuando quiera, aunque sea después de las fiestas.
+
+## Revisión técnica (Code, 13/10/2026)
+
+Cruce del contenido con el modelo del producto. Lo marcado **A CONFIRMAR** espera respuesta.
+
+1. **A CONFIRMAR — razón 14 contradice la 13.** La 14 dice "queda en su propia billetera: ni
+   nosotros ni nadie se lo puede quitar", pero la 13 (y el modelo: la semilla del regalo se
+   deriva de la clave de quien regala) dice que, mientras no lo reclamó, quien regala lo
+   recupera. Propuesta para la 14: "**Una vez que lo reclama, es suyo de verdad.** Pasa a su
+   propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar."
+2. **Tarjeta imprimible: el QR contiene la semilla** (el link lleva la semilla después del `#`).
+   La tarjeta es medio regalo; con las 4 palabras escritas a mano, es el regalo entero, como
+   un billete. Implicancias: el PDF se genera en el navegador (el link nunca pasa por el
+   servidor) y el recuadro de las palabras suma "Guardá esta tarjeta como si fuera efectivo".
+3. **Razones que prometen funciones que todavía no existen.** La 12 ("quién aportó qué") pide
+   que cada aporte pase por nuestro flujo (on-chain no hay nombres); la 18 ("sabés si lo
+   reclamó") llega con los paneles (etapa 6). Se publican cuando la función exista o se
+   ajusta el texto.
+4. **SEO.** La web hoy es una SPA; para que el texto de las 21 razones esté en el HTML se
+   prerenderizan home y /por-que en el build (Preact a HTML estático, sin servidor nuevo).
+5. **Listas solo BTC en el lanzamiento** cambia la especificación v0.1 (xpub + alias bancario):
+   el alias bancario con conversión por tandas pasa a después del lanzamiento.

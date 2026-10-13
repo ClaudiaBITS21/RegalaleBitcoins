@@ -1,5 +1,7 @@
 # Handoff: contenido "¿Por qué Bitcoin?" + 21 razones + tarjeta imprimible
 
+> **Integrado** en `etapa-3-reclamo`: el contenido quedó en `docs/contenido.md`, las razones en `docs/contenido/razones.es.json`, la nota en `docs/fuentes/` y los prototipos en `docs/prototipos/`. Este archivo queda como registro.
+
 Brief para el repo `ClaudiaBITS21/RegalaleBitcoins` (rama de trabajo actual: `etapa-3-reclamo`). Trabajado con Rodolfo en Cowork el 13/10/2026. Lo decidido está decidido; lo marcado **ABIERTO** consultarlo con Rodolfo antes de implementar.
 
 ## Cómo integrarlo al repo
