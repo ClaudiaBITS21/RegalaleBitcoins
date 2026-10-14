@@ -16,6 +16,12 @@ export interface Config {
   /** BTC/ARS: CriptoYa (exchanges locales) y Bitso como control. */
   readonly arsPriceUrls: { readonly criptoya: string; readonly bitso: string };
   readonly port: number;
+  /** URL pública de la web (para los links de los mails) y orígenes aceptados para passkeys. */
+  readonly publicUrl: string;
+  readonly allowedOrigins: readonly string[];
+  readonly mailFrom: string;
+  readonly resendApiKey: string | null;
+  readonly cookieSecure: boolean;
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
 }
@@ -33,6 +39,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const network = getNetwork(name, { allowMainnet: env.ALLOW_MAINNET === 'autorizado' });
   const port = Number(env.PORT ?? 8787);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error(`PORT inválido: ${env.PORT}`);
+  const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
   return Object.freeze({
     network,
     databaseUrl: env.DATABASE_URL ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale',
@@ -49,6 +56,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       bitso: env.ARS_CHECK_URL ?? 'https://api.bitso.com/v3/ticker/?book=btc_ars',
     },
     port,
+    publicUrl,
+    allowedOrigins: [publicUrl, ...(env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter((o) => o !== '')],
+    mailFrom: env.MAIL_FROM ?? 'RegalaleBitcoins <onboarding@resend.dev>',
+    resendApiKey: env.RESEND_API_KEY !== undefined && env.RESEND_API_KEY !== '' ? env.RESEND_API_KEY : null,
+    cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
     webDist: env.WEB_DIST ?? null,
   });
 }

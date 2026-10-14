@@ -19,7 +19,8 @@ export type CoreErrorCode =
   | 'INVALID_UTXO'
   | 'INVALID_FEE_RATE'
   | 'AMOUNT_BELOW_DUST'
-  | 'SIGNING_FAILED';
+  | 'SIGNING_FAILED'
+  | 'INVALID_VAULT';
 
 export class CoreError extends Error {
   readonly code: CoreErrorCode;

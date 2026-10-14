@@ -40,6 +40,9 @@ export interface NewGift {
   readonly amount?: number | null;
   readonly usdPerBtc?: number | null;
   readonly satsExpected?: bigint | null;
+  /** Cuenta de quien regala e índice del regalo en su clave maestra. */
+  readonly accountId?: string | null;
+  readonly index?: number | null;
 }
 
 export const GIFT_ID = /^[A-Za-z0-9_-]{22}$/;
@@ -97,10 +100,11 @@ function fromRow(r: Row): Gift {
 
 export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   const [row] = await sql<Row[]>`
-    insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados)
+    insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice)
     values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
             ${g.message ?? ''}, ${g.image ?? 1}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
-            ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()})
+            ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
+            ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null})
     returning *`;
   return fromRow(row as Row);
 }

@@ -5,6 +5,7 @@ import { startBroadcaster } from './broadcaster.ts';
 import { arsPriceClient, esploraClient, priceClient } from './chain.ts';
 import { loadConfig } from './config.ts';
 import { connect, migrate } from './db.ts';
+import { consoleMailer, resendMailer } from './mail.ts';
 import { securityHeaders } from './security.ts';
 
 const config = loadConfig();
@@ -13,7 +14,7 @@ const applied = await migrate(sql);
 if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
 
 const chain = esploraClient(config.esploraUrl);
-const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), network: config.network, tasksToken: config.tasksToken });
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken });
 
 if (config.webDist !== null) {
   // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.

@@ -6,6 +6,10 @@ import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
 import { findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
 import { RateLimiter } from './ratelimit.ts';
+import { ApiError } from './errors.ts';
+import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
+import { consoleMailer } from './mail.ts';
+import { sendReadyNotices } from './notices.ts';
 import { giftState } from './state.ts';
 
 export interface AppDeps {
@@ -19,6 +23,8 @@ export interface AppDeps {
   readonly tasksToken?: string | null;
   /** Regalos que puede crear una misma IP por hora. */
   readonly createLimitPerHour?: number;
+  /** Cuentas con passkey y mails. Sin esto, solo desde localhost y con mails al log. */
+  readonly accounts?: AccountConfig;
 }
 
 /** Techo de la beta: un regalo no puede superar este valor en dólares. */
@@ -43,29 +49,6 @@ function sameToken(a: string, b: string): boolean {
 /** Tasa mínima que se acepta difundir (sat/vB) y tope de sanidad. */
 const MIN_RELAY_SAT_VB = 0.1;
 const MAX_SAT_VB = 1000;
-
-type ErrorCode =
-  | 'regalo_no_encontrado'
-  | 'regalo_no_disponible'
-  | 'pedido_invalido'
-  | 'transaccion_invalida'
-  | 'fondos_cambiaron'
-  | 'ya_reclamado'
-  | 'cadena_no_disponible'
-  | 'difusion_rechazada'
-  | 'regalo_existente'
-  | 'monto_invalido'
-  | 'demasiados_pedidos';
-
-class ApiError extends Error {
-  readonly status: 400 | 404 | 409 | 422 | 429 | 502;
-  readonly code: ErrorCode;
-  constructor(status: 400 | 404 | 409 | 422 | 429 | 502, code: ErrorCode, message: string = code) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
 
 function confirmedUtxos(utxos: Utxo[]): Utxo[] {
   return utxos.filter((u) => u.confirmed);
@@ -126,12 +109,17 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get('/api/salud', (c) => c.json({ ok: true, red: network.name }));
 
+  const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
+  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')) });
+
   /** Difusiones programadas: lo dispara Cloud Scheduler cada pocos minutos. */
   app.post('/api/tareas/difusiones', async (c) => {
     const expected = deps.tasksToken;
     const given = c.req.header('x-tarea-token') ?? '';
     if (expected === undefined || expected === null || !sameToken(given, expected)) return c.json({ error: 'no_autorizado' }, 401);
-    return c.json(await processPending({ sql, chain, network }));
+    const broadcasts = await processPending({ sql, chain, network });
+    const avisos = await sendReadyNotices({ sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl });
+    return c.json({ ...broadcasts, avisos });
   });
 
   app.get('/api/precio', async (c) => {
@@ -151,6 +139,8 @@ export function createApp(deps: AppDeps): Hono {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!createLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const g = parseNewGift(await c.req.json().catch(() => null), network);
+    // Con sesión, el regalo queda en la cuenta (con su índice, para volver a derivarlo desde la bóveda).
+    const account = await currentAccount(sql, c);
     const [usdPerBtc, fees, arsPerBtc] = await Promise.all([
       price.btcUsd(),
       chain.fees(),
@@ -158,7 +148,13 @@ export function createApp(deps: AppDeps): Hono {
     ]);
     checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy));
     try {
-      const gift = await insertGift(sql, { ...g, network: network.name, usdPerBtc });
+      const gift = await insertGift(sql, {
+        ...g,
+        network: network.name,
+        usdPerBtc,
+        accountId: account?.id ?? null,
+        index: account === null ? null : (g.index ?? null),
+      });
       createLimiter.record(ip);
       return c.json({ id: gift.id }, 201);
     } catch (error) {
@@ -259,7 +255,7 @@ function clientIp(forwarded: string | undefined): string {
   return forwarded?.split(',')[0]?.trim() || 'local';
 }
 
-type ParsedGift = Omit<Parameters<typeof insertGift>[1], 'network' | 'usdPerBtc'> & {
+type ParsedGift = Omit<Parameters<typeof insertGift>[1], 'network' | 'usdPerBtc' | 'accountId'> & {
   satsExpected: bigint;
   currency: 'USD' | 'ARS' | 'SAT';
   amount: number;
@@ -307,6 +303,7 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     currency: b.moneda,
     amount: b.monto,
     satsExpected: BigInt(b.sats),
+    index: typeof b.indice === 'number' && Number.isInteger(b.indice) && b.indice >= 0 && b.indice < 2 ** 31 ? b.indice : null,
   };
 }
 
