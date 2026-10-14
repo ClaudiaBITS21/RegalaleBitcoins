@@ -7,7 +7,8 @@ Todo vive en el proyecto de Google Cloud `regalalebitcoins`, región `southameri
 | Web | Firebase Hosting, sitio `regalalebitcoins` → https://regalalebitcoins.web.app |
 | API | Cloud Run `regalalebitcoins-api` (imagen en Artifact Registry `regalalebitcoins/api`) |
 | Base | Cloud SQL Postgres 16 `regalalebitcoins-db`, base y usuario `regalale` |
-| Secretos | Secret Manager: `db-password`, `tareas-token` |
+| Secretos | Secret Manager: `db-password`, `tareas-token`, `resend-api-key` |
+| Mails | Resend (`RESEND_API_KEY`, remitente `MAIL_FROM`). Sin dominio verificado solo llega a la dueña de la cuenta de Resend |
 | Difusiones programadas | Cloud Scheduler `difusiones-programadas`, cada 5 min, POST `/api/tareas/difusiones` con OIDC (`tareas-scheduler@`) y header `x-tarea-token` |
 
 Firebase Hosting reenvía `/api/**` a Cloud Run; el resto cae en `index.html`.
@@ -23,6 +24,17 @@ gcloud run deploy regalalebitcoins-api --region southamerica-east1 \
 La configuración (variables, secretos, conexión a Cloud SQL) queda en el servicio; el deploy
 solo cambia la imagen. `RUN_BROADCASTER_LOOP=no`: las difusiones las dispara Scheduler.
 
+Variables de cuentas (etapa 4, paso 4):
+- `PUBLIC_URL`: origen público, base de los links de los mails y rpId de las passkeys.
+- `ALLOWED_ORIGINS`: otros orígenes aceptados (coma).
+- `MAIL_FROM` y el secreto `RESEND_API_KEY=resend-api-key:latest`.
+
+```sh
+gcloud run services update regalalebitcoins-api --region southamerica-east1 \
+  --update-env-vars PUBLIC_URL=https://regalalebitcoins.web.app \
+  --update-secrets RESEND_API_KEY=resend-api-key:latest
+```
+
 La organización tiene *domain restricted sharing*, que impide dar `allUsers`. El servicio es
 público con el control de invocador desactivado (`--no-invoker-iam-check`), solo en este servicio.
 
@@ -36,5 +48,5 @@ npx firebase deploy --only hosting --project regalalebitcoins
 ## Dominio
 
 `regalalebitcoins.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
-DNS en Namecheap: A `@` 199.36.158.100, TXT `@` `hosting-site=regalalebitcoins`, CNAME `www`
+Registrador Metaregistrar, pero los nameservers vigentes son de AWS Route 53 (decisión pendiente de dónde cargar los registros). Registros: A `@` 199.36.158.100, TXT `@` `hosting-site=regalalebitcoins`, CNAME `www`
 `regalalebitcoins.web.app.`

@@ -1692,3 +1692,63 @@ textarea {
     padding: 0 40px;
   }
 }
+
+/* Paso 4 y panel */
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lista-regalos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.regalo-item {
+  background: var(--blanco);
+  border: 2px solid var(--borde);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.regalo-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.estado {
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--gris);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.estado-activo,
+.estado-reclamado {
+  background: var(--ok);
+}
+
+.estado-en_la_red {
+  background: #fff1c2;
+}
+
+.regalo-secretos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--borde);
+}

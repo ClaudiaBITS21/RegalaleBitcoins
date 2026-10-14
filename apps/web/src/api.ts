@@ -44,6 +44,8 @@ export interface NewGift {
   readonly moneda: 'USD' | 'ARS' | 'SAT';
   readonly monto: number;
   readonly sats: string;
+  /** Índice del regalo en la clave maestra: el servidor lo guarda solo si hay sesión. */
+  readonly indice: number;
 }
 
 export class ApiFailure extends Error {

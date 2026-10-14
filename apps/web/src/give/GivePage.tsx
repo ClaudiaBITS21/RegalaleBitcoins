@@ -7,6 +7,7 @@ import type { OccasionChoice } from '../content/OccasionPicker.tsx';
 import { DICTS, type Key, translate } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
+import { SaveStep } from './SaveStep.tsx';
 import { AmountStep, CardStep, OccasionStep } from './DraftSteps.tsx';
 import { PayStep } from './PayStep.tsx';
 import { SendStep } from './SendStep.tsx';
@@ -14,12 +15,13 @@ import { SendStep } from './SendStep.tsx';
 // Regalar en 5 pasos: ocasión, para quién, cuánto, pagá y mandalo. Todo lo secreto
 // (clave maestra, semilla del regalo, palabras) vive solo en la memoria de esta página.
 
-type Step = 'ocasion' | 'para' | 'cuanto' | 'codigo' | 'verificar' | 'tengoCodigo' | 'pagar' | 'mandar';
+type Step = 'ocasion' | 'para' | 'cuanto' | 'guardar' | 'codigo' | 'verificar' | 'tengoCodigo' | 'pagar' | 'mandar';
 
 const PROGRESS: Readonly<Record<Step, number>> = {
   ocasion: 1,
   para: 2,
   cuanto: 3,
+  guardar: 4,
   codigo: 4,
   verificar: 4,
   tengoCodigo: 4,
@@ -85,6 +87,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         moneda: draft.currency,
         monto: draft.amount,
         sats: draft.sats.toString(),
+        indice: index,
       });
       session.next = index + 1;
       return {
@@ -196,8 +199,8 @@ export function GivePage() {
     }
   };
 
-  const startSession = (mnemonic: string) => {
-    const s: Session = { mnemonic, root: masterRootFromMnemonic(mnemonic), next: 0 };
+  const startSession = (mnemonic: string, next = 0) => {
+    const s: Session = { mnemonic, root: masterRootFromMnemonic(mnemonic), next };
     setSession(s);
     void create(s, draft);
   };
@@ -246,10 +249,22 @@ export function GivePage() {
           const next = { ...draft, ...a };
           setDraft(next);
           if (session === null) {
-            setNewMnemonic((m) => m ?? generateMasterMnemonic());
-            go('codigo');
+            go('guardar');
           } else {
             void create(session, next);
+          }
+        }}
+      />
+    );
+  } else if (step === 'guardar') {
+    body = (
+      <SaveStep
+        onReady={(master, next) => startSession(master, next)}
+        onNeedCode={(hasCodeAlready) => {
+          if (hasCodeAlready) go('tengoCodigo');
+          else {
+            setNewMnemonic((m) => m ?? generateMasterMnemonic());
+            go('codigo');
           }
         }}
       />

@@ -11,6 +11,7 @@ import { ALLOW_MAINNET } from './config.ts';
 import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { OpenGiftPage } from './open.tsx';
+import { PanelPage } from './panel/PanelPage.tsx';
 import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
@@ -51,6 +52,8 @@ function App() {
         <ClaimPage id={claim[1]} />
       ) : /^\/regalar\/?$/.test(path) ? (
         <GivePage />
+      ) : /^\/panel\/?$/.test(path) ? (
+        <PanelPage />
       ) : /^\/abrir\/?$/.test(path) ? (
         <OpenGiftPage />
       ) : (

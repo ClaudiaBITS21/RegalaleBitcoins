@@ -32,6 +32,8 @@ const SHOTS = join(ROOT, 'apps', 'e2e', 'capturas');
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale';
 const CHROMIUM = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const API_PORT = 8788;
+// WebAuthn no acepta IPs como dominio: todo por localhost (contexto seguro).
+const BASE = `http://localhost:${API_PORT}`;
 const CHAIN_PORT = 3992;
 
 function fail(message: string): never {
@@ -84,10 +86,10 @@ const browser = await chromium.launch({ executablePath: CHROMIUM });
 const problems: string[] = [];
 try {
   api = spawn(process.execPath, [join(ROOT, 'apps', 'api', 'src', 'main.ts')], {
-    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, DATABASE_URL, WEB_DIST },
+    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, PUBLIC_URL: BASE, COOKIE_SECURE: 'no', DATABASE_URL, WEB_DIST },
     stdio: ['ignore', 'inherit', 'inherit'],
   });
-  await waitFor(`http://127.0.0.1:${API_PORT}/api/salud`);
+  await waitFor(`${BASE}/api/salud`);
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
   page.on('console', (m) => {
@@ -95,8 +97,9 @@ try {
   });
   page.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));
   const shot = (name: string) => page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
+  const shot2 = (p: typeof page, name: string) => p.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
 
-  const link = `http://127.0.0.1:${API_PORT}/r/${gift.id}#${encodeGiftFragment(secrets.entropy)}`;
+  const link = `${BASE}/r/${gift.id}#${encodeGiftFragment(secrets.entropy)}`;
   const response = await page.goto(link);
   const csp = response?.headers()['content-security-policy'] ?? '';
   if (!csp.includes("script-src 'self'")) fail('la página no trae la CSP estricta');
@@ -159,14 +162,14 @@ try {
   if (tx.outputs.length !== 1) fail('el barrido no tiene una sola salida');
   const fee = AMOUNT - (tx.outputs[0]?.amount ?? 0n);
   if (fee <= 0n || fee > 1_000n) fail(`comisión inesperada: ${fee}`);
-  const state = (await (await fetch(`http://127.0.0.1:${API_PORT}/api/gifts/${gift.id}`)).json()) as { estado: string; reclamo: { txid: string } };
+  const state = (await (await fetch(`${BASE}/api/gifts/${gift.id}`)).json()) as { estado: string; reclamo: { txid: string } };
   if (state.estado !== 'reclamado' || state.reclamo.txid !== tx.txid) fail(`estado del regalo: ${state.estado}`);
 
   await page.reload();
   await page.getByText('Este link no está completo').waitFor();
 
   // ── Regalar: los 5 pasos, el código de recuperación, el pago y el reclamo del regalo nuevo ──
-  await page.goto(`http://127.0.0.1:${API_PORT}/`);
+  await page.goto(`${BASE}/`);
   await page.getByRole('link', { name: 'Regalar bitcoin' }).click();
   await page.waitForURL('**/regalar');
   await page.getByRole('heading', { name: '¿Qué ocasión es?' }).waitFor();
@@ -209,6 +212,10 @@ try {
   await shot('r3-cuanto');
   await page.getByRole('button', { name: 'Seguir' }).click();
 
+  // Paso 4: sin passkey en este navegador, se elige anotar el código.
+  await page.getByRole('heading', { name: 'Guardá tu regalo' }).waitFor();
+  await shot('r4-guardar');
+  await page.getByRole('button', { name: 'Prefiero anotar un código' }).click();
   await page.getByRole('heading', { name: 'Tu código de recuperación de regalos' }).waitFor();
   const code = (await page.locator('.codigo li').allInnerTexts()).map((t) => t.replace(/^\d+\s*/, '').trim());
   if (code.length !== 12) fail(`el código tiene ${code.length} palabras`);
@@ -281,9 +288,55 @@ try {
   const tx2 = inspectTransaction(chain.broadcasts[1] as string);
   if (tx2.inputs.length !== 2) fail('el barrido del regalo nuevo no gasta los dos pagos');
 
+  // ── Paso 4 con passkey (autenticador virtual con PRF), panel y regreso con la passkey ──
+  const giver = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  giver.on('pageerror', (e) => problems.push(`error de página (passkey): ${e.message}`));
+  const cdp = await giver.context().newCDPSession(giver);
+  await cdp.send('WebAuthn.enable', { enableUI: false });
+  await cdp.send('WebAuthn.addVirtualAuthenticator', {
+    options: { protocol: 'ctap2', ctap2Version: 'ctap2_1', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, hasPrf: true, automaticPresenceSimulation: true },
+  });
+  await giver.goto(`${BASE}/regalar?ocasion=cumple`);
+  await giver.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
+  await giver.getByLabel('Su nombre').fill('Lupe');
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('button', { name: 'US$ 25' }).click();
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('heading', { name: 'Guardá tu regalo' }).waitFor();
+  await giver.getByLabel('Tu mail').fill('lupe.e2e@example.com');
+  await giver.getByRole('button', { name: 'Crear mi acceso' }).click();
+  await giver.getByRole('heading', { name: 'Pagá 25.000 sats' }).waitFor({ timeout: 20_000 });
+  const lupeAddress = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
+  chain.pay(lupeAddress, 25_000n, true);
+  await giver.getByRole('heading', { name: '¡Pago recibido! Mandá el regalo' }).waitFor({ timeout: 15_000 });
+  const lupeLink = await giver.locator('.enlace-regalo').innerText();
+  const lupeWords = await giver.locator('.palabras-regalo li').allInnerTexts();
+  const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
+  if (account === undefined || account.indice !== 0 || account.email !== 'lupe.e2e@example.com' || !String(account.boveda).startsWith('v1.')) {
+    fail(`el regalo no quedó en la cuenta con su bóveda: ${JSON.stringify(account)}`);
+  }
+  if (lupeWords.some((w) => String(account.boveda).includes(w))) fail('la bóveda contiene las palabras en claro');
+
+  await giver.goto(`${BASE}/panel`);
+  await giver.getByRole('heading', { name: 'Regalos que hiciste' }).waitFor();
+  await giver.getByText('Para Lupe').waitFor();
+  await giver.getByText('Listo para abrir').waitFor();
+  await giver.getByRole('button', { name: 'Ver link y palabras' }).click();
+  await giver.locator('.regalo-secretos').waitFor({ timeout: 15_000 });
+  if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('el panel no reconstruyó el mismo link');
+  if ((await giver.locator('.regalo-secretos .palabras-regalo li').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
+  await giver.getByRole('button', { name: 'Ver mi código' }).click();
+  await giver.locator('.codigo li').first().waitFor();
+  await shot2(giver, 'p1-panel');
+  await giver.getByRole('button', { name: 'Salir' }).click();
+  await giver.getByRole('heading', { name: 'Tus regalos' }).waitFor();
+  await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
+  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();
@@ -291,5 +344,7 @@ try {
   await chain.close();
   await sql`delete from regalos where id = ${gift.id}`;
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
+  await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();
 }

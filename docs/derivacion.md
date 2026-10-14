@@ -129,3 +129,20 @@ probar en promedio 2⁴³ passphrases. Cada prueba cuesta un PBKDF2-HMAC-SHA512 
 iteraciones. Estimación gruesa a octubre de 2026: unas 1.500 horas de GPU de gama alta
 por regalo, del orden de USD 500 a 1.000. No escala: cada regalo tiene otra semilla.
 Con el techo de USD 100 de la beta no conviene. Si el techo sube, hay que revisarlo.
+
+## 9. Bóveda
+
+La clave maestra se guarda cifrada con la extensión PRF de una passkey (WebAuthn). Solo
+el navegador, con la passkey, la puede abrir.
+
+- **Salt PRF:** `SHA-256("regalalebitcoins/boveda/v1/prf")`, el mismo para todas las cuentas.
+- **Clave:** `HKDF-SHA256(salida PRF, salt vacío, info "regalalebitcoins/boveda/v1/aes-gcm")`,
+  32 bytes.
+- **Cifrado:** AES-256-GCM (WebCrypto), IV de 12 bytes al azar, AAD =
+  `"regalalebitcoins/boveda/v1"` ‖ id de la credencial.
+- **Contenido:** los 16 bytes de entropía de la clave maestra.
+- **Formato:** `v1.<iv base64url>.<cifrado base64url>`.
+
+El servidor guarda el texto por credencial. Sin la passkey no puede abrirlo; con otra
+credencial falla el AAD. Si se pierde la passkey, queda el código de recuperación del panel.
+

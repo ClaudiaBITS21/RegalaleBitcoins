@@ -69,6 +69,13 @@ oficiales.
 | GET | `/api/gifts/:id/utxos` | UTXO confirmados con su transacción completa. El navegador verifica los montos contra el txid. |
 | GET | `/api/fees` | Comisiones recomendadas (sat/vB). |
 | POST | `/api/gifts/:id/claim` | `{hex, modo: 'ahora' \| 'esperar'}`. Ver abajo. |
+| POST | `/api/cuenta/desafio` | Desafío WebAuthn de un solo uso (`registro` o `ingreso`), 5 min. |
+| POST | `/api/cuenta/registro` | `{email, idioma, boveda, credencial}`: crea la cuenta con su passkey y la bóveda cifrada (o `null` sin PRF). Abre sesión. 409 `cuenta_existente`. |
+| POST | `/api/cuenta/ingreso` | `{credencial}`: verifica la firma de la passkey (origen, rpId, UP+UV, contador) y devuelve la bóveda de esa credencial. |
+| POST | `/api/cuenta/link` | Manda un link de acceso por mail (`/panel#acceso=…`, 20 min). Siempre 202, exista o no la cuenta. |
+| POST | `/api/cuenta/link/canje` | Canjea el token del link (una vez) y abre sesión. |
+| GET | `/api/cuenta` | Mail, credenciales, próximo índice y regalos de la cuenta con su estado. |
+| POST | `/api/cuenta/salir` | Cierra la sesión. |
 
 **Qué verifica el servidor antes de difundir:**
 - que el barrido gaste exactamente todos los UTXO confirmados del regalo, y nada más;
@@ -88,9 +95,11 @@ y la difunde cuando baje. El servidor no puede cambiarla: solo decide cuándo ma
    idioma (`parseAmount`). Mínimo según las comisiones del momento; máximo USD 100. Toda
    conversión muestra en letra chica la fuente, la cotización y la cuenta. Los pesos salen de
    BTC/ARS de exchanges locales, nunca de pasar por el dólar oficial.
-3. **Código de recuperación antes de pagar.** Mientras no exista la bóveda con passkey
-   (etapa 5), la clave maestra se muestra como código de 12 palabras y se verifica con 3 al
-   azar. Quien ya tiene un código lo escribe y sigue con el índice libre siguiente.
+3. **Guardar antes de pagar.** Mail y passkey: el navegador genera la clave maestra, la
+   cifra con la salida PRF de la passkey (bóveda, ver [derivacion.md](derivacion.md#9-bóveda))
+   y el servidor guarda solo el sobre cerrado. Quien ya tiene cuenta entra con su passkey y
+   sigue con el índice libre siguiente. Sin passkey o sin PRF: la clave maestra se muestra como
+   código de 12 palabras y se verifica con 3 al azar.
 4. Pago: dirección del regalo `i` (`deriveGift`), QR BIP21 dibujado como SVG y consulta del
    estado cada 5 s. Pago completo en la mempool: pasa a mandar. Llega menos: avisa y deja seguir.
    Pago reemplazado (RBF) o caído: vuelve a esperar y avisa. Comisión baja: sugiere acelerarlo.
@@ -100,6 +109,19 @@ y la difunde cuando baje. El servidor no puede cambiarla: solo decide cuándo ma
 
 La clave maestra, la semilla y las palabras viven solo en la memoria de la página. Sin bóveda,
 cada visita sin código arma una clave maestra nueva.
+
+## Cuenta y panel
+
+- La cuenta es mail + passkey. La sesión va en la cookie `__session` (HttpOnly, Secure,
+  SameSite=Strict, 30 días; la única que pasa Firebase Hosting) y los POST controlan `Origin`.
+- `/panel` lista los regalos con su estado. "Ver link y palabras" pide la passkey, abre la
+  bóveda en el navegador y deriva link y palabras del índice guardado: el servidor nunca los ve.
+- El link por mail solo abre sesión para ver la lista; para ver link y palabras hace falta la
+  passkey. Los mails nunca llevan link de regalo ni palabras.
+- Cuando un regalo con cuenta recibe el pago confirmado, la tarea programada manda un aviso
+  "listo para mandar" con link de acceso al panel (3 días).
+- Las passkeys quedan atadas al dominio (rpId): las creadas en `regalalebitcoins.web.app` no
+  sirven en `regalalebitcoins.com`. Al mudar de dominio, entrar por mail y crear otra.
 
 ## Seguridad web
 
@@ -122,7 +144,7 @@ que se decida otra cosa:
    recuperación alcance para recuperar regalos. Implementado.
 2. **Clave maestra asegurada antes de mostrar la dirección de pago:** passkey o, sin
    PRF, el código anotado. Evita perder fondos si se cierra la pestaña entre pagar y
-   mandar el link. En la etapa 4, código obligatorio y verificado; la passkey llega en la 5.
+   mandar el link. Implementado: passkey con PRF o, si no hay, código obligatorio y verificado.
 3. **Sin verificar palabras de la billetera del que recibe** en la guía de BlueWallet:
    solo el checkbox. Pedir palabras contradice "Nunca te vamos a pedir las palabras de
    tu billetera". Implementado en la etapa 3.

@@ -110,6 +110,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
             </div>
           )}
         </div>
+        <a class="link-nav" href="/panel">
+          {t('menu.hechos')}
+        </a>
         <a class="link-nav" href="/#razones">
           {t('menu.razones')}
         </a>
@@ -126,6 +129,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
           <div class="panel-menu panel-movil">
             <a class="boton boton-primario" href="/regalar">
               {t('menu.regalar')}
+            </a>
+            <a class="menu-link" href="/panel">
+              {t('menu.hechos')}
             </a>
             <p class="menu-titulo">{t('menu.recibir')}</p>
             <ReceiveItems />
