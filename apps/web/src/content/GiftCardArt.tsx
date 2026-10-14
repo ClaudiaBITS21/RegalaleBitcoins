@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { useId } from 'preact/hooks';
 import { isOccasion, type OccasionKey } from './occasions.ts';
 
 // Imagen de la tarjeta del regalo, estilo "Ilustración" (docs/diseno/DISENO.md §6): plana y
@@ -450,7 +451,27 @@ export const cardVariant = (n: number): 1 | 2 | 3 | 4 => Math.min(Math.max(Math.
  * (aria-hidden): quien la usa pone el texto accesible. Con `name`, el nombre de quien
  * recibe va en una etiqueta abajo.
  */
-export function GiftCardArt({ occasion, variant, name, class: className }: { occasion: string; variant: number; name?: string | undefined; class?: string }) {
+export type CardStyle = 'ilustracion' | 'mano';
+
+/** Fondo papel y garabatos de fibra para el estilo "Dibujo a mano". */
+const PAPEL = '#FBF6EA';
+function Garabatos({ p }: { p: Palette }) {
+  const t = { fill: 'none', 'stroke-width': 4, 'stroke-linecap': 'round' } as const;
+  return (
+    <>
+      <path d="M34 34 l10 14 M50 30 l4 12" stroke={p.a} {...t} />
+      <path d="M272 40 q8 -6 14 2" stroke={p.c} {...t} />
+      <path d="M40 176 l14 -4" stroke={p.c} {...t} />
+      <path d="M276 168 l12 6 M280 186 l10 -2" stroke={p.a} {...t} />
+      <path d="M248 112 l6 6" stroke={AMARILLO} {...t} />
+      <path d="M70 100 l-6 8" stroke={AMARILLO} {...t} />
+    </>
+  );
+}
+
+export function GiftCardArt({ occasion, variant, name, class: className, estilo = 'ilustracion' }: { occasion: string; variant: number; name?: string | undefined; class?: string; estilo?: CardStyle }) {
+  const id = useId().replace(/[^A-Za-z0-9_-]/g, '');
+  if (estilo === 'mano') return <HandCard occasion={occasion} variant={variant} name={name} className={className} fid={`mano-${id}`} />;
   const v = VARIANTS[cardVariant(variant)];
   const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
   const [cx, cy, r] = v.coin;
@@ -470,6 +491,46 @@ export function GiftCardArt({ occasion, variant, name, class: className }: { occ
         <g>
           <rect x={160 - pill / 2} y="206" width={pill} height="34" rx="17" fill="#FFFFFF" {...S} stroke-width="3" />
           <text x="160" y={223 + size * 0.36} text-anchor="middle" font-family="Bricolage Grotesque, system-ui, sans-serif" font-weight="800" font-size={size} fill={TINTA}>
+            {label}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Estilo "Dibujo a mano": los mismos motivos sobre papel, con el trazo temblado y grano de
+ * crayón (filtro SVG). El filtro usa un id único por tarjeta; no carga nada externo.
+ */
+function HandCard({ occasion, variant, name, className, fid }: { occasion: string; variant: number; name?: string | undefined; className?: string | undefined; fid: string }) {
+  const v = VARIANTS[cardVariant(variant)];
+  const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
+  const p: Palette = { ...v.p, e: TINTA };
+  const label = name?.trim() ?? '';
+  const chars = [...label].length;
+  const size = Math.min(34, 250 / Math.max(1, chars * 0.42));
+  return (
+    <svg class={`arte-tarjeta${className ? ` ${className}` : ''}`} viewBox="0 0 320 250" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id={fid} x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed={cardVariant(variant)} result="ondas" />
+          <feDisplacementMap in="SourceGraphic" in2="ondas" scale="6" xChannelSelector="R" yChannelSelector="G" result="temblor" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" seed="7" result="grano" />
+          <feColorMatrix in="grano" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 2.1" result="poros" />
+          <feComposite in="temblor" in2="poros" operator="in" />
+        </filter>
+      </defs>
+      <rect width="320" height="250" fill={PAPEL} />
+      <g filter={`url(#${fid})`}>
+        <Garabatos p={p} />
+        <g transform={v.shift || undefined}>{motif(p)}</g>
+        <Coin cx={v.coin[0]} cy={v.coin[1]} r={v.coin[2]} glow={false} />
+      </g>
+      {label !== '' && (
+        <g transform="rotate(-3 160 222)">
+          <rect x={160 - (chars * size * 0.42 + 36) / 2} y="200" width={chars * size * 0.42 + 36} height="40" rx="4" fill="#FFFFFF" opacity=".92" stroke={TINTA} stroke-width="2.5" stroke-dasharray="7 4" />
+          <text x="160" y={220 + size * 0.34} text-anchor="middle" font-family="Caveat, 'Segoe Print', 'Bradley Hand', cursive" font-weight="700" font-size={size} fill={TINTA}>
             {label}
           </text>
         </g>

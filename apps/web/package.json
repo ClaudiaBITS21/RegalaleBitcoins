@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource/bricolage-grotesque": "5.3.0",
+    "@fontsource/caveat": "5.3.0",
     "@fontsource/dm-sans": "5.3.0",
     "@regalale/core": "workspace:*",
     "preact": "11.0.0",

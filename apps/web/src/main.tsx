@@ -2,6 +2,7 @@ import '@fontsource/bricolage-grotesque/latin-800.css';
 import '@fontsource/dm-sans/latin-400.css';
 import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-700.css';
+import '@fontsource/caveat/latin-700.css';
 import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
