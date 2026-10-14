@@ -128,6 +128,9 @@ export function Home({ testnet }: { testnet: boolean }) {
             <p class="kicker">{t('razones.kicker')}</p>
             <h2>{t('razones.titulo')}</h2>
             <p class="razones-ayuda">{t('razones.ayuda')}</p>
+            <a class="link-porque" href="/por-que">
+              {t('porque.verTodo')} →
+            </a>
           </div>
           <ReasonsFan ctaHref="/regalar" />
           <p class="razones-aviso">{t('razones.aviso')}</p>

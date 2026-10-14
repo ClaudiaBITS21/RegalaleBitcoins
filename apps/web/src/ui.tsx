@@ -110,7 +110,7 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
             </div>
           )}
         </div>
-        <a class="link-nav" href="/#razones">
+        <a class="link-nav" href="/por-que">
           {t('menu.razones')}
         </a>
         <LangPill />
@@ -129,7 +129,7 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
             </a>
             <p class="menu-titulo">{t('menu.recibir')}</p>
             <ReceiveItems />
-            <a class="menu-link" href="/#razones" onClick={() => setMobileOpen(false)}>
+            <a class="menu-link" href="/por-que" onClick={() => setMobileOpen(false)}>
               {t('razones.titulo')}
             </a>
           </div>

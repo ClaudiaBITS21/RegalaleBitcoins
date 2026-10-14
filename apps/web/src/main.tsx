@@ -11,6 +11,7 @@ import { ALLOW_MAINNET } from './config.ts';
 import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { OpenGiftPage } from './open.tsx';
+import { WhyPage } from './porque.tsx';
 import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
@@ -53,6 +54,8 @@ function App() {
         <GivePage />
       ) : /^\/abrir\/?$/.test(path) ? (
         <OpenGiftPage />
+      ) : /^\/por-que\/?$/.test(path) ? (
+        <WhyPage testnet={!ALLOW_MAINNET} />
       ) : (
         <Home testnet={!ALLOW_MAINNET} />
       )}
