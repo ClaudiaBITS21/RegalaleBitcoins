@@ -111,17 +111,27 @@ const arbol: Motif = (p) => (
   </>
 );
 
-const corona: Motif = (p) => (
-  <>
-    <path d="M98 196 L92 122 L128 154 L160 108 L192 154 L228 122 L222 196 Z" fill={AMARILLO} {...S} />
-    <rect x="96" y="188" width="128" height="26" rx="6" fill={p.a} {...S} />
-    <circle cx="128" cy="201" r="6" fill={p.d} {...S} stroke-width="3" />
-    <circle cx="160" cy="201" r="7" fill={p.c} {...S} stroke-width="3" />
-    <circle cx="192" cy="201" r="6" fill={p.d} {...S} stroke-width="3" />
-    <circle cx="92" cy="118" r="7" fill={p.c} {...S} stroke-width="3" />
-    <circle cx="160" cy="102" r="8" fill={p.a} {...S} stroke-width="3" />
-    <circle cx="228" cy="118" r="7" fill={p.c} {...S} stroke-width="3" />
-  </>
+/** Un rey mago que trae un regalo con la ₿. */
+const reyMago: Motif = (p) => (
+  <g transform="translate(160 88) scale(0.8) translate(-160 -76)">
+    <path d="M108 220 L124 150 Q160 136 196 150 L212 220 Z" fill={p.a} {...S} />
+    <path d="M160 146 L160 220" stroke={TINTA} stroke-width="4" stroke-linecap="round" />
+    <circle cx="160" cy="128" r="22" fill="#F2C9A0" {...S} />
+    <path d="M138 132 Q140 168 160 172 Q180 168 182 132 Q170 142 160 140 Q150 142 138 132 Z" fill={p.d} {...S} stroke-width="4" />
+    <circle cx="152" cy="124" r="2.8" fill={TINTA} />
+    <circle cx="168" cy="124" r="2.8" fill={TINTA} />
+    <path d="M136 108 L134 82 L148 96 L160 76 L172 96 L186 82 L184 108 Z" fill={AMARILLO} {...S} stroke-width="4" />
+    <circle cx="160" cy="76" r="5" fill={p.c} {...S} stroke-width="3" />
+    <rect x="132" y="168" width="56" height="44" rx="5" fill={p.c} {...S} />
+    <rect x="155" y="168" width="10" height="44" fill={p.b} {...S} stroke-width="3" />
+    <path d="M160 168 q-16 -16 -20 -4 q4 8 20 4 q16 4 20 -4 q-4 -12 -20 4z" fill={p.b} {...S} stroke-width="3" />
+    <circle cx="160" cy="194" r="12" fill={AMARILLO} {...S} stroke-width="3.5" />
+    <text x="160" y="200" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="16" fill={TINTA}>
+      ₿
+    </text>
+    <ellipse cx="126" cy="184" rx="9" ry="8" fill="#F2C9A0" {...S} stroke-width="3.5" />
+    <ellipse cx="194" cy="184" rx="9" ry="8" fill="#F2C9A0" {...S} stroke-width="3.5" />
+  </g>
 );
 
 /** Estallido de fuegos artificiales. */
@@ -329,7 +339,7 @@ const MOTIFS: Readonly<Record<OccasionKey, Motif>> = {
   bautismo: paloma,
   comunion: paloma,
   navidad: arbol,
-  reyes: corona,
+  reyes: reyMago,
   anionuevo: fuegos,
   casamiento: anillos,
   aniversario: anillos,
