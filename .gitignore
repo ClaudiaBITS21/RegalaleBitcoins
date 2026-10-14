@@ -13,3 +13,6 @@ apps/e2e/capturas/
 
 # Caché local de firebase-tools
 .firebase/
+
+# Copias de trabajo de agentes
+.claude/worktrees/
