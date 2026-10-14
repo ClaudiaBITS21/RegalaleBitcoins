@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
+import { CARD_VARIANTS, GiftCardArt } from '../content/GiftCardArt.tsx';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
@@ -64,15 +65,17 @@ export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: 
       <fieldset class="campo">
         <legend>{t('regalar.para.imagen')}</legend>
         <div class="grilla-imagenes">
-          {[1, 2, 3, 4].map((n) => (
+          {CARD_VARIANTS.map((n) => (
             <button
               type="button"
               key={n}
-              class={`imagen-opcion tinte-${n}${draft.image === n ? ' elegida' : ''}`}
+              class={`imagen-opcion${draft.image === n ? ' elegida' : ''}`}
               aria-pressed={draft.image === n}
               aria-label={t('regalar.para.imagenN', { n })}
               onClick={() => onChange({ image: n })}
-            />
+            >
+              <GiftCardArt occasion={draft.occasion} variant={n} />
+            </button>
           ))}
         </div>
       </fieldset>
