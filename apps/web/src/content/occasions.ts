@@ -1,4 +1,5 @@
 import type { UiLang } from '../i18n/index.ts';
+import { type Country, DEFAULT_COUNTRY, upcomingOccasion } from './temporada.ts';
 
 // Catálogo de ocasiones (docs/diseno/DISENO.md §4). La clave viaja a la API; la etiqueta
 // se muestra en el idioma de quien mira. "otra" es la ocasión libre que escribe la persona.
@@ -81,12 +82,26 @@ export const FEATURED: ReadonlyArray<readonly [OccasionKey, string]> = [
   ['porque', '#f1f1f4'],
 ];
 
-/** La ocasión de temporada según el mes (0 = enero). Fechas de Argentina por ahora. */
+/** Respaldo de la temporada según el mes (0 = enero), con fechas de Argentina. */
 const SEASON: readonly OccasionKey[] = ['reyes', 'sanvalentin', 'pascuas', 'pascuas', 'pizzaday', 'diapadre', 'amigo', 'dianino', 'maestro', 'diamadre', 'navidad', 'navidad'];
 
-export function seasonalOccasion(date: Date = new Date()): OccasionKey {
-  return SEASON[date.getMonth()] as OccasionKey;
+/**
+ * La ocasión de temporada (content/temporada.ts): la próxima fecha de regalo del país en
+ * las próximas 6 semanas. Si no hay ninguna, la del mes, siempre que en ese país todavía
+ * no haya pasado (el Día de la Madre de octubre no sirve en Brasil ni el 20 de octubre);
+ * si no, la próxima fecha del país, aunque falte más.
+ */
+export function seasonalOccasion(date: Date = new Date(), country: Country = DEFAULT_COUNTRY): OccasionKey {
+  const soon = upcomingOccasion(date, country);
+  if (soon !== null) return soon.key;
+  const byMonth = SEASON[date.getMonth()] as OccasionKey;
+  const next = upcomingOccasion(date, country, MONTH_FALLBACK_DAYS, byMonth);
+  if (next !== null) return byMonth;
+  return upcomingOccasion(date, country, 366)?.key ?? byMonth;
 }
+
+/** Hasta cuánto puede faltar para la ocasión del mes cuando se usa de respaldo. */
+const MONTH_FALLBACK_DAYS = 90;
 
 /** Sin tildes ni mayúsculas, para el buscador. */
 export const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();

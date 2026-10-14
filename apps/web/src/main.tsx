@@ -12,6 +12,7 @@ import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { OpenGiftPage } from './open.tsx';
 import { PanelPage } from './panel/PanelPage.tsx';
+import { WhyPage } from './porque.tsx';
 import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
@@ -56,6 +57,8 @@ function App() {
         <PanelPage />
       ) : /^\/abrir\/?$/.test(path) ? (
         <OpenGiftPage />
+      ) : /^\/por-que\/?$/.test(path) ? (
+        <WhyPage testnet={!ALLOW_MAINNET} />
       ) : (
         <Home testnet={!ALLOW_MAINNET} />
       )}

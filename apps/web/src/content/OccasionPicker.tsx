@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import type { Key } from '../i18n/index.ts';
 import { useI18n } from '../ui.tsx';
 import { FEATURED, fold, FREE_OCCASION_MAX, OCCASION_GROUPS, OCCASION_LABELS, type OccasionKey, seasonalOccasion } from './occasions.ts';
+import { browserCountry } from './temporada.ts';
 
 /** La ocasión elegida: del catálogo o libre ("otra" con el texto que escribió la persona). */
 export type OccasionChoice = { readonly key: OccasionKey; readonly free?: string };
@@ -16,7 +17,7 @@ export function OccasionPicker({ value, onPick }: { value: OccasionChoice | null
   const { t, lang } = useI18n();
   const [more, setMore] = useState(false);
   const [query, setQuery] = useState('');
-  const seasonal = seasonalOccasion();
+  const seasonal = seasonalOccasion(new Date(), browserCountry());
   const label = (k: OccasionKey) => OCCASION_LABELS[k][lang];
   const isSel = (k: OccasionKey) => value !== null && value.key === k && value.free === undefined;
   const toggle = (k: OccasionKey) => onPick(isSel(k) ? null : { key: k });

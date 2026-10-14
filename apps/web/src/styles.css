@@ -1751,4 +1751,323 @@ textarea {
   gap: 8px;
   padding-top: 6px;
   border-top: 1px dashed var(--borde);
+/* Imagen ilustrada de la tarjeta (content/GiftCardArt.tsx) */
+
+.arte-tarjeta {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+svg.tarjeta-imagen {
+  height: auto;
+}
+
+.tarjeta-ocasion {
+  color: var(--naranja-texto);
+}
+
+.imagen-opcion {
+  aspect-ratio: auto;
+  padding: 0;
+  overflow: hidden;
+  background: var(--gris);
+  line-height: 0;
+  border-radius: 14px;
+}
+
+.imagen-opcion.elegida {
+  box-shadow: 0 0 0 3px var(--amarillo);
+}
+
+.vista-tarjeta {
+  width: 100%;
+  max-width: 340px;
+  align-self: center;
+}
+
+@media (max-width: 519px) {
+  .grilla-imagenes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ¿Por qué Bitcoin? (porque.tsx) */
+
+.link-porque {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--amarillo);
+  font-weight: 700;
+}
+
+.link-porque:hover {
+  color: var(--blanco);
+}
+
+.porque-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--naranja);
+}
+
+.porque-hero-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0 6px;
+}
+
+.porque-hero h1 {
+  font-size: 44px;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+}
+
+.porque-hero .bajada {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--tinta);
+}
+
+.kicker-tinta {
+  color: var(--tinta);
+}
+
+.kicker-naranja {
+  color: var(--naranja-texto);
+}
+
+.razones-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.razon {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--papel);
+  border: 2px solid var(--borde);
+}
+
+.razon-moneda {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 3px solid var(--tinta);
+  box-shadow: 0 3px 0 var(--tinta);
+  display: grid;
+  place-items: center;
+  font: 800 19px var(--titulos);
+  color: var(--tinta);
+}
+
+.razon-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  color: var(--suave);
+}
+
+.razon-texto strong {
+  font-family: var(--titulos);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.15;
+  color: var(--tinta);
+}
+
+.aviso-precio {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--crema);
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.porque-intro {
+  margin: -6px 0 0;
+}
+
+.edades {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.edad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--blanco);
+  border: 2px solid var(--borde);
+}
+
+.edad h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.edad p {
+  margin: 0;
+  color: var(--suave);
+}
+
+.edad-rango {
+  align-self: flex-start;
+  padding: 2px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--tinta);
+  font: 800 20px var(--titulos);
+}
+
+.historia {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 20px;
+  border-radius: 26px;
+  background: var(--papel);
+  border: 2px solid var(--borde);
+}
+
+.historia p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.historia .kicker {
+  font-size: 12px;
+}
+
+.historia .firma {
+  font-family: var(--titulos);
+  font-weight: 800;
+  font-size: 20px;
+  text-align: right;
+}
+
+.porque-cta {
+  margin: 40px 16px 0;
+  padding: 32px 20px;
+  border-radius: 24px;
+  background: var(--rosa);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.porque-cta h2 {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.porque-cta p {
+  margin: 0;
+  max-width: 520px;
+  font-size: 17px;
+}
+
+.porque-cta .boton {
+  align-self: stretch;
+}
+
+@media (min-width: 640px) {
+  .razones-lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .edades {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .porque-hero-texto {
+    max-width: 760px;
+    padding: 36px 0 24px;
+    gap: 18px;
+  }
+
+  .porque-hero h1 {
+    font-size: clamp(52px, 6vw, 80px);
+  }
+
+  .porque-hero .bajada {
+    font-size: 20px;
+  }
+
+  .razones-lista {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .razon {
+    padding: 20px;
+  }
+
+  .edades {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* 3 arriba y 2 abajo, centradas. */
+  .edad {
+    grid-column: span 2;
+  }
+
+  .edad:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .historia {
+    width: 100%;
+    max-width: 780px;
+    align-self: center;
+    padding: 40px 48px;
+  }
+
+  .historia p {
+    font-size: 18px;
+  }
+
+  .porque-cta {
+    width: calc(100% - 32px);
+    max-width: 1180px;
+    margin: 56px auto 0;
+    padding: 56px 40px;
+    border-radius: 34px;
+  }
+
+  .porque-cta h2 {
+    font-size: 52px;
+  }
+
+  .porque-cta .boton {
+    align-self: center;
+    padding: 0 40px;
+  }
+}
+
+.pagina-porque .seccion h2 {
+  line-height: 1.05;
 }

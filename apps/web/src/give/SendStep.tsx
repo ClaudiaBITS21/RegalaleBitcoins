@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -43,6 +44,11 @@ export function SendStep({ gift, onAnother }: { gift: MadeGift; onAnother: () =>
       <StepTitle>{t('regalar.mandar.titulo')}</StepTitle>
       <Notice kind={confirmed ? 'ok' : 'info'}>{t(confirmed ? 'regalar.mandar.activo' : 'regalar.mandar.confirmando')}</Notice>
       {overCeiling && <Notice>{t('regalar.pagar.techo', { maximo: formatUsd(CEILING_USD, lang) })}</Notice>}
+      {view !== null && (
+        <div class="tarjeta vista-tarjeta">
+          <GiftCardArt occasion={view.ocasion} variant={view.imagen} name={view.para} class="tarjeta-imagen" />
+        </div>
+      )}
       <p class="texto-suave">{t('regalar.mandar.monto', { monto: formatSats(received, lang) })}</p>
 
       <section class="caja envio">

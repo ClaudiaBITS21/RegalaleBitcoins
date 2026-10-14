@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { explorerTxUrl, formatFiat, formatSats, formatUsd, formatUsdExact, satsToUsd } from '../format.ts';
+import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -219,10 +220,9 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
   return (
     <div class="paso">
       <article class="tarjeta">
-        <div class={`tarjeta-imagen tinte-${Math.min(Math.max(gift.imagen, 1), 4)}`} aria-hidden="true">
-          {occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}
-        </div>
+        <GiftCardArt occasion={gift.ocasion} variant={gift.imagen} name={gift.para} class="tarjeta-imagen" />
         <div class="tarjeta-texto">
+          <p class="kicker tarjeta-ocasion">{occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}</p>
           <StepTitle>{gift.de ? t('reclamo.de', { de: gift.de }) : t('reclamo.anonimo')}</StepTitle>
           {gift.mensaje !== '' && <p class="texto-suave">{gift.mensaje}</p>}
         </div>
