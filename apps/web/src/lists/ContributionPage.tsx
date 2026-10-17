@@ -45,6 +45,9 @@ export function ContributionPage() {
           {data.mensaje !== '' && <p class="texto-suave">“{data.mensaje}”</p>}
         </div>
         <Notice kind={data.estado === 'anunciada' ? 'info' : 'ok'}>{t(stateKey, { sats: data.satsConvertidos === null ? '' : formatSats(BigInt(data.satsConvertidos), lang) })}</Notice>
+        {data.estado === 'convertida' && data.tanda !== null && data.tanda.aportes > 1 && (
+          <small class="texto-suave">{t('lista.mio.tanda', { total: formatSats(BigInt(data.tanda.sats), lang), n: String(data.tanda.aportes) })}</small>
+        )}
         <small class="texto-suave">{t('lista.mio.pesosAviso')}</small>
       </div>
     );
