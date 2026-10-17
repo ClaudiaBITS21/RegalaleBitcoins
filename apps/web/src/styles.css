@@ -2591,3 +2591,18 @@ svg.tarjeta-imagen {
 .admin > * { min-width: 0; }
 .porque-cuento-mas { color: var(--naranja-texto); font-weight: 700; }
 .custodia-link { color: var(--naranja-texto); font-weight: 700; }
+
+/* Listas de regalos */
+.lista-ayuda { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; color: var(--suave); }
+.lista-primera { display: grid; gap: 10px; }
+.mis-listas { display: grid; gap: 14px; }
+.mis-listas h2 { font-family: var(--titulos); font-size: 1.3rem; margin: 8px 0 0; }
+.lista-panel { display: grid; gap: 8px; }
+.lista-aportes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lista-aportes li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-top: 1px dashed var(--borde); }
+.lista-aporte-quien { font-weight: 700; }
+.lista-aporte-monto { text-align: right; font-variant-numeric: tabular-nums; }
+.lista-aporte-mensaje { grid-column: 1 / -1; color: var(--suave); font-style: italic; }
+.etiqueta-estado { justify-self: start; padding: 1px 10px; border-radius: 999px; font-size: 0.8rem; background: var(--gris); }
+.etiqueta-estado.estado-recibido { background: var(--ok); }
+.etiqueta-estado.estado-en_la_red { background: var(--crema); }

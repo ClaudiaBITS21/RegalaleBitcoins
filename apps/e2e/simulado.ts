@@ -12,7 +12,10 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  accountKeyText,
   deriveBip84Key,
+  deriveListAddress,
+  parseAccountKey,
   deriveGift,
   deriveGiftSecrets,
   encodeGiftFragment,
@@ -349,10 +352,60 @@ try {
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
 
+  // Lista de regalos: Lupe la arma con la vpub de su billetera; un invitado regala desde otro navegador.
+  const vpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
+  const listAddr = (i: number) => deriveListAddress(parseAccountKey(vpub, signet), i).address;
+  await giver.goto(`${BASE}/listas/nueva`);
+  await giver.getByRole('heading', { name: 'Armá tu lista de regalos' }).waitFor();
+  await giver.getByLabel('Nombre de la lista').fill('Casamiento de Lupe');
+  await giver.locator('.selector-ocasiones button, .ocasiones button').filter({ hasText: 'Casamiento' }).first().click();
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('heading', { name: '¿Dónde te llegan los regalos?' }).waitFor();
+  await giver.getByLabel('Llave pública de prueba (vpub)').fill(vpub);
+  const shownFirst = (await giver.locator('.lista-primera .direccion-completa').innerText()).replace(/\s/g, '');
+  if (shownFirst !== listAddr(0)) fail(`la primera dirección mostrada no es la de la llave: ${shownFirst}`);
+  if (!(await giver.getByRole('button', { name: 'Publicar mi lista' }).isDisabled())) fail('se puede publicar sin confirmar la primera dirección');
+  await giver.getByText('Sí, mi billetera muestra esta misma dirección.').click();
+  await shot2(giver, 'l1-llave');
+  await giver.getByRole('button', { name: 'Publicar mi lista' }).click();
+  await giver.getByRole('heading', { name: '¡Tu lista está lista!' }).waitFor();
+  const listLink = await giver.locator('.enlace-regalo').innerText();
+
+  const guest = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  guest.on('pageerror', (e) => problems.push(`invitado: ${e.message}`));
+  await guest.goto(listLink);
+  await guest.getByRole('heading', { name: 'Casamiento de Lupe' }).waitFor();
+  await shot2(guest, 'l2-invitado');
+  await guest.getByRole('button', { name: 'Hacer mi regalo' }).click();
+  await guest.getByRole('button', { name: 'US$ 25' }).click();
+  await guest.getByRole('button', { name: 'Seguir' }).click();
+  await guest.getByLabel('Tu nombre (opcional)').fill('Tía Marta');
+  await guest.getByLabel('Tu mensaje (opcional)').fill('¡Que sean muy felices!');
+  await guest.getByRole('button', { name: /^Confirmar y pagar/ }).click();
+  await guest.getByRole('heading', { name: 'Pagá 25.000 sats' }).waitFor({ timeout: 15_000 });
+  const guestAddr = (await guest.locator('.direccion-completa').innerText()).replace(/\s/g, '');
+  if (guestAddr !== listAddr(0)) fail(`la dirección del invitado no sale de la llave de la lista: ${guestAddr}`);
+  await shot2(guest, 'l3-pagar');
+  chain.pay(guestAddr, 25_000n, true);
+  await guest.getByRole('heading', { name: '¡Gracias por tu regalo!' }).waitFor({ timeout: 15_000 });
+  const mineLink = await guest.locator('.caja .enlace-regalo').innerText();
+  await guest.goto(mineLink);
+  await guest.getByRole('heading', { name: 'Tu regalo' }).waitFor();
+  await guest.getByText(/Llegó y está confirmado/).waitFor();
+  if (await guest.getByText('Casamiento de Lupe').count() === 0) fail('"mi aporte" no muestra la lista');
+
+  await giver.goto(`${BASE}/panel`);
+  await giver.getByRole('heading', { name: 'Mis listas' }).waitFor({ timeout: 15_000 });
+  await giver.locator('.lista-aportes').getByText('Tía Marta').waitFor();
+  await giver.locator('.lista-aportes').getByText('Recibido').waitFor();
+  if ((await giver.getByText('alguna dirección no sale de tu llave').count()) > 0) fail('el panel marca como ajena una dirección propia');
+  await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l4-panel.png') });
+
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
+  console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();
@@ -361,6 +414,7 @@ try {
   await sql`delete from regalos where id = ${gift.id}`;
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { accountApi, type AccountView, signIn } from '../account.ts';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
+import { MyLists } from '../lists/MyLists.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
@@ -208,6 +209,7 @@ export function PanelPage() {
             })}
           </ul>
         )}
+        <MyLists network={network} />
         <div class="caja">
           <strong>{t('regalar.codigo.titulo')}</strong>
           <p class="texto-suave">{t('regalar.codigo.texto1')}</p>

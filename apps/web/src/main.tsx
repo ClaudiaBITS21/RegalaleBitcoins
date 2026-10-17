@@ -13,6 +13,9 @@ import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { OpenGiftPage } from './open.tsx';
 import { AdminPage } from './admin/AdminPage.tsx';
+import { ContributionPage } from './lists/ContributionPage.tsx';
+import { ListPage } from './lists/ListPage.tsx';
+import { NewListPage } from './lists/NewListPage.tsx';
 import { PanelPage } from './panel/PanelPage.tsx';
 import { WhyPage } from './porque.tsx';
 import { NoCustodyPage } from './sincustodia.tsx';
@@ -50,10 +53,17 @@ function App() {
   );
   const path = window.location.pathname;
   const claim = /^\/r\/([A-Za-z0-9_-]{22})\/?$/.exec(path);
+  const list = /^\/l\/([A-Za-z0-9_-]{22})\/?$/.exec(path);
   return (
     <I18nContext.Provider value={i18n}>
       {claim?.[1] !== undefined ? (
         <ClaimPage id={claim[1]} />
+      ) : list?.[1] !== undefined ? (
+        <ListPage id={list[1]} />
+      ) : /^\/listas\/nueva\/?$/.test(path) ? (
+        <NewListPage />
+      ) : /^\/aporte\/?$/.test(path) ? (
+        <ContributionPage />
       ) : /^\/regalar\/?$/.test(path) ? (
         <GivePage />
       ) : /^\/admin\/?$/.test(path) ? (

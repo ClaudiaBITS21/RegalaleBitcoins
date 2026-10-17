@@ -65,12 +65,10 @@ function ReceiveItems() {
         <strong>{t('menu.abrirRegalo')}</strong>
         <span>{t('menu.abrirRegalo.d')}</span>
       </a>
-      <div class="menu-item">
-        <strong>
-          {t('menu.lista')} <span class="etiqueta-pronto">{t('menu.pronto')}</span>
-        </strong>
+      <a class="menu-item" href="/listas/nueva">
+        <strong>{t('menu.lista')}</strong>
         <span>{t('menu.lista.d')}</span>
-      </div>
+      </a>
       <div class="menu-item">
         <strong>
           {t('menu.mis')} <span class="etiqueta-pronto">{t('menu.pronto')}</span>

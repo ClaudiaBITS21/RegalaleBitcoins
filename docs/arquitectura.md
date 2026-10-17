@@ -123,6 +123,20 @@ cada visita sin código arma una clave maestra nueva.
 - Las passkeys quedan atadas al dominio (rpId): las creadas en `regalalebitcoins.web.app` no
   sirven en `regalalebitcoins.com`. Al mudar de dominio, entrar por mail y crear otra.
 
+## Listas de regalos (etapa 7, solo BTC)
+
+- Quien arma la lista (con cuenta) pega la **zpub** de su billetera (vpub en pruebas; solo
+  BIP84, se rechazan claves privadas y xpub genéricas) y confirma que su billetera muestra la
+  misma primera dirección, calculada en su navegador. La llave solo permite generar direcciones.
+- Cada invitado que confirma un aporte recibe la próxima dirección `m/0/i` de esa llave; la
+  plata va directo a la billetera de quien armó la lista. Tope por aporte: USD 20 en mainnet.
+- El invitado ve solo su aporte, con un link privado `/aporte#<token>` (se guarda el hash).
+- Una dirección sin pagar a las 72 h se recicla si nunca recibió nada; una con movimientos
+  previos se saltea. Así no se abren huecos grandes (las billeteras miran ~20 sin usar).
+- El panel de quien armó la lista muestra todos los aportes y **vuelve a derivar cada dirección
+  en el navegador**: si el servidor mostrara una que no sale de la llave, avisa en rojo.
+- Publicar listas es gratis en la beta. Sin alias/CBU (después del lanzamiento).
+
 ## Seguridad web
 
 - **Cero scripts de terceros en todo el origen.** Las páginas del mismo origen
@@ -164,4 +178,4 @@ que se decida otra cosa:
    provisorios hasta que los defina el equipo de contenido.
 5. Bóveda con passkey y código de recuperación.
 6. Paneles, estados y notificaciones.
-7. Listas de regalos (xpub + alias bancario).
+7. Listas de regalos: solo BTC con zpub, hecho. Alias bancario, después del lanzamiento.

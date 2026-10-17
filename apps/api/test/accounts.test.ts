@@ -107,6 +107,7 @@ describe('Cuentas con passkey', () => {
   });
   beforeEach(async () => {
     await sql`delete from regalos`;
+    await sql`delete from listas`;
     await sql`delete from usuarios`;
     funded.clear();
     mails = [];

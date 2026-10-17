@@ -59,7 +59,6 @@ function GiftBox({ label }: { label: string }) {
 export function Home({ testnet }: { testnet: boolean }) {
   const { t, lang } = useI18n();
   const [occasion, setOccasion] = useState<OccasionChoice | null>(null);
-  const [soon, setSoon] = useState(false);
   const steps = [1, 2, 3] as const;
 
   return (
@@ -85,14 +84,9 @@ export function Home({ testnet }: { testnet: boolean }) {
                   {t('home.reclamar')}
                 </a>
               </div>
-              <button type="button" class="link-lista" onClick={() => setSoon(true)}>
+              <a class="link-lista" href="/listas/nueva">
                 {t('home.lista')} →
-              </button>
-              {soon && (
-                <p class="aviso-pronto" role="status">
-                  {t('home.pronto')}
-                </p>
-              )}
+              </a>
             </div>
             <GiftBox label={t('home.caja')} />
           </div>
@@ -139,14 +133,9 @@ export function Home({ testnet }: { testnet: boolean }) {
         <section class="seccion grande">
           <h2>{t('home.grande')}</h2>
           <p class="texto-suave">{t('home.grande.texto')}</p>
-          <button type="button" class="boton boton-rosa" onClick={() => setSoon(true)}>
+          <a class="boton boton-rosa" href="/listas/nueva">
             {t('home.grande.cta')}
-          </button>
-          {soon && (
-            <p class="aviso-pronto" role="status">
-              {t('home.pronto')}
-            </p>
-          )}
+          </a>
         </section>
       </main>
       <SiteFooter />
