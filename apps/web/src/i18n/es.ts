@@ -374,7 +374,7 @@ export const es = {
   'porque.edad.volver': 'Tocá para volver',
   'porque.cuento.kicker': 'Para leer en familia',
   'porque.cuento.titulo': 'El cuento',
-  'porque.cuento.texto': 'Un cuentito de Navidad para bajar, imprimir y leer en familia.',
+  'porque.cuento.texto': '“Una Natividad Moderna”, un cuentito de Navidad de Florando Dragones, el autor de Aventuras en Levitania. Para bajar, imprimir y leer en familia.',
   'porque.cuento.bajar': 'Bajar el cuento',
   'porque.cuento.pronto': 'Muy pronto',
   'porque.cuento.imagen': 'Los tres Reyes Magos llegan al pesebre bajo la estrella; uno de ellos trae una moneda dorada de bitcoin.',

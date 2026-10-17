@@ -375,7 +375,7 @@ export const it: Dict = {
   'porque.edad.volver': 'Tocca per tornare',
   'porque.cuento.kicker': 'Da leggere in famiglia',
   'porque.cuento.titulo': 'Il racconto',
-  'porque.cuento.texto': 'Un raccontino di Natale da scaricare, stampare e leggere in famiglia.',
+  'porque.cuento.texto': '“Una Natividad Moderna”, un raccontino di Natale di Florando Dragones, autore di Aventuras en Levitania. Da scaricare, stampare e leggere in famiglia.',
   'porque.cuento.bajar': 'Scarica il racconto',
   'porque.cuento.pronto': 'Prossimamente',
   'porque.cuento.imagen': 'I tre Re Magi arrivano alla capanna sotto la stella; uno di loro porta una moneta d’oro di bitcoin.',

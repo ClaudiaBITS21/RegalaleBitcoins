@@ -376,7 +376,7 @@ export const pt: Dict = {
   'porque.edad.volver': 'Toque para voltar',
   'porque.cuento.kicker': 'Para ler em família',
   'porque.cuento.titulo': 'O conto',
-  'porque.cuento.texto': 'Um continho de Natal para baixar, imprimir e ler em família.',
+  'porque.cuento.texto': '“Una Natividad Moderna”, um continho de Natal de Florando Dragones, autor de Aventuras en Levitania. Para baixar, imprimir e ler em família.',
   'porque.cuento.bajar': 'Baixar o conto',
   'porque.cuento.pronto': 'Em breve',
   'porque.cuento.imagen': 'Os três Reis Magos chegam ao presépio sob a estrela; um deles traz uma moeda dourada de bitcoin.',
