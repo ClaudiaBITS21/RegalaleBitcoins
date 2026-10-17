@@ -450,6 +450,7 @@ export const it: Dict = {
   'lista.pesos.alias': 'Alias',
   'lista.pesos.aliasInvalido': 'L’alias ha da 6 a 20 caratteri: lettere, numeri, punti o trattini.',
   'lista.pesos.titular': 'Intestatario del conto',
+  'lista.pesos.bancoAviso': "Attenzione: molti bonifici di terzi su un conto personale possono attirare l’attenzione della tua banca o del tuo portafoglio. Quel conto e ciò che compri con quei pesos sono sotto la tua responsabilità.",
   'lista.pesos.compromiso': 'Mi impegno a convertire in bitcoin ciò che ricevo con questa lista e a segnarlo nel mio pannello.',
   'lista.metodo.bitcoin': 'Regala bitcoin',
   'lista.metodo.pesos': 'Bonifico in pesos',

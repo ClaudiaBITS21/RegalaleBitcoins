@@ -449,6 +449,7 @@ export const es = {
   'lista.pesos.alias': 'Alias',
   'lista.pesos.aliasInvalido': 'El alias tiene entre 6 y 20 caracteres: letras, números, puntos o guiones.',
   'lista.pesos.titular': 'Titular de la cuenta',
+  'lista.pesos.bancoAviso': "Ojo: muchas transferencias de terceros a una cuenta personal pueden llamar la atención de tu banco o billetera. Esa cuenta y lo que compres con esos pesos quedan bajo tu responsabilidad.",
   'lista.pesos.compromiso': 'Me comprometo a convertir a bitcoin lo que reciba por esta lista y a marcarlo en mi panel.',
   'lista.metodo.bitcoin': 'Regalar bitcoin',
   'lista.metodo.pesos': 'Transferir pesos',

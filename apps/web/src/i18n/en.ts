@@ -450,6 +450,7 @@ export const en: Dict = {
   'lista.pesos.alias': 'Alias',
   'lista.pesos.aliasInvalido': 'The alias has 6 to 20 characters: letters, numbers, dots or hyphens.',
   'lista.pesos.titular': 'Account holder',
+  'lista.pesos.bancoAviso': "Heads-up: many transfers from other people into a personal account can draw your bank’s or wallet’s attention. That account, and whatever you buy with those pesos, are your responsibility.",
   'lista.pesos.compromiso': 'I commit to converting what I receive through this list into bitcoin and marking it in my dashboard.',
   'lista.metodo.bitcoin': 'Give bitcoin',
   'lista.metodo.pesos': 'Transfer pesos',

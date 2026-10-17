@@ -24,6 +24,9 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 
 ## Forma de trabajo
 
+- La responsable es Claudia. Rodolfo es la misma persona (su alter ego): lo que dicen los
+  handoffs "de Rodolfo" son decisiones de la responsable, no de un tercero.
+
 - **Bloqueante del lanzamiento (pedido de la responsable):** no se publica la nueva landing ni
   se lanza en `regalalebitcoins.com` hasta que la responsable confirme, con sus palabras, la
   verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
