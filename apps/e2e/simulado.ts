@@ -324,6 +324,7 @@ try {
   if (ownImg.w !== 1024 || ownImg.h !== 800 || !String(ownImg.src).endsWith('/imagen')) fail(`la imagen propia no se muestra bien: ${JSON.stringify(ownImg)}`);
   const stored = (await sql`select i.tipo, r.estilo from imagenes i join regalos r on r.id = i.regalo_id where r.direccion = ${lupeAddress}`)[0];
   if (stored?.tipo !== 'image/webp' || stored.estilo !== 'propia') fail(`imagen propia mal guardada: ${JSON.stringify(stored)}`);
+  await shot2(giver, 'r6-mandar-propia');
   const lupeLink = await giver.locator('.enlace-regalo').innerText();
   const lupeWords = await giver.locator('.palabras-regalo li').allInnerTexts();
   const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
