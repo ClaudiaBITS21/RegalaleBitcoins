@@ -5,6 +5,7 @@
 | Fecha | Quién | Qué |
 |---|---|---|
 | 17/10/2026 | Claudia (responsable del proyecto) | "Autorizo Mainnet con tope de 20 hasta ver que funciona todo." |
+| 17/10/2026 | Claudia | Listas de regalos en mainnet: "Si" a tope de USD 20 por aporte de cada invitado. Publicar listas, gratis en la beta. Sin guía de billetera (solo para quien ya tiene). Cada invitado ve solo su aporte. |
 
 - Tope: **USD 20 por regalo**, fijo en el código (`MAINNET_CEILING_USD` en `apps/api/src/app.ts`).
   La variable `TOPE_USD` solo puede bajarlo. Subirlo requiere una nueva autorización explícita

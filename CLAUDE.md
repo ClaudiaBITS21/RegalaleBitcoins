@@ -9,7 +9,7 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 - No custodio: la plataforma nunca puede mover fondos de un regalo. Claves generadas en el navegador.
 - Solo bitcoin, solo on-chain para los regalos.
 - Desarrollo y pruebas en signet/testnet. **Mainnet autorizado el 17/10/2026 con tope de USD 20
-  por regalo** (`docs/mainnet.md`); cualquier cambio de tope o de alcance en mainnet necesita una
+  por regalo y por aporte a una lista** (`docs/mainnet.md`); cualquier cambio de tope o de alcance en mainnet necesita una
   nueva autorización explícita de la responsable.
 - Pocas dependencias criptográficas (familia @scure/@noble), con versión exacta. No agregar
   ninguna dependencia criptográfica sin aprobación. Aleatoriedad solo con `crypto.getRandomValues`.

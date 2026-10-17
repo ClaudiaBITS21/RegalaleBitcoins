@@ -20,7 +20,8 @@ export type CoreErrorCode =
   | 'INVALID_FEE_RATE'
   | 'AMOUNT_BELOW_DUST'
   | 'SIGNING_FAILED'
-  | 'INVALID_VAULT';
+  | 'INVALID_VAULT'
+  | 'INVALID_XPUB';
 
 export class CoreError extends Error {
   readonly code: CoreErrorCode;
