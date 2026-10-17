@@ -59,7 +59,7 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 | I2. Si "ahora" no alcanzaba, no se ofrecía "esperar" | Arreglado: se arman por separado, con la tasa mínima como último recurso |
 | I3. Un reclamo expulsado de la mempool trababa el regalo | Arreglado: se libera si la red no conoce la transacción y los fondos siguen ahí |
 | I4. No repetir índices dependía solo de la base | Arreglado: una dirección con movimientos cuenta como usada |
-| I5. Sin nodo propio y con Firebase delante | Aceptado para la beta con tope de USD 20; llaves de hardware y pocos deployers |
+| I5. Sin nodo propio y con Firebase delante | Propuesto aceptar para la beta con tope de USD 20, con llaves de seguridad en las cuentas que pueden desplegar; pendiente de confirmación |
 | M2. Links de acceso a los logs sin mailer | Arreglado: mainnet no arranca sin `RESEND_API_KEY` |
 | M3. Control de red en `/utxos` y `/claim` | Arreglado |
 | M7. Directorio de Firebase | Arreglado (sitios separados) |
