@@ -126,6 +126,7 @@ function suggestedMessage(key: string, t: (k: Key) => string): string {
 export function GivePage() {
   const { t, lang } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
+  const [ceilingUsd, setCeilingUsd] = useState(20);
   const [netError, setNetError] = useState<'mainnet' | 'sin_red' | null>(null);
   // Si viene de la home con la ocasión elegida (/regalar?ocasion=…&libre=…), arranca en "Para quién".
   const [preset] = useState(presetOccasion);
@@ -152,7 +153,8 @@ export function GivePage() {
   const loadNetwork = async () => {
     setNetError(null);
     try {
-      const { red } = await api.health();
+      const { red, topeUsd } = await api.health();
+      if (typeof topeUsd === 'number' && topeUsd > 0) setCeilingUsd(topeUsd);
       try {
         setNetwork(getNetwork(red, { allowMainnet: ALLOW_MAINNET }));
       } catch {
@@ -245,6 +247,7 @@ export function GivePage() {
       <AmountStep
         draft={draft}
         error={error}
+        ceilingUsd={ceilingUsd}
         onNext={(a) => {
           const next = { ...draft, ...a };
           setDraft(next);
@@ -278,7 +281,7 @@ export function GivePage() {
   } else if (step === 'pagar' && gift !== null) {
     body = <PayStep gift={gift} network={network} onPaid={() => go('mandar')} />;
   } else if (step === 'mandar' && gift !== null) {
-    body = <SendStep gift={gift} onAnother={another} />;
+    body = <SendStep gift={gift} ceilingUsd={ceilingUsd} onAnother={another} />;
   } else {
     body = <p class="texto-suave">{t('reclamo.cargando')}</p>;
   }

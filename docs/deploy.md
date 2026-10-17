@@ -1,4 +1,6 @@
-# Deploy (signet)
+# Deploy
+
+Mainnet y signet están separados: ver [mainnet.md](mainnet.md).
 
 Todo vive en el proyecto de Google Cloud `regalalebitcoins`, región `southamerica-east1`.
 
@@ -41,8 +43,8 @@ público con el control de invocador desactivado (`--no-invoker-iam-check`), sol
 ## Web
 
 ```sh
-pnpm build
-npx firebase deploy --only hosting --project regalalebitcoins
+pnpm build && pnpm build:mainnet
+npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitcoins
 ```
 
 ## Dominio

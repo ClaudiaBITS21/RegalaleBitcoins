@@ -197,7 +197,7 @@ try {
   await page.getByLabel('Monto', { exact: true }).fill('1.5');
   await page.getByText('No entendimos el número. Escribilo así: US$ 1.234,50.').waitFor();
   await page.getByLabel('Monto', { exact: true }).fill('150');
-  await page.getByText('Durante la prueba, el máximo por regalo es US$ 100.').waitFor();
+  await page.getByText('Por ahora, el máximo por regalo es US$ 100.').waitFor();
   // En pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
   await page.getByRole('button', { name: 'En pesos' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('40.000');

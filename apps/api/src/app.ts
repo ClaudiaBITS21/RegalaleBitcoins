@@ -25,10 +25,23 @@ export interface AppDeps {
   readonly createLimitPerHour?: number;
   /** Cuentas con passkey y mails. Sin esto, solo desde localhost y con mails al log. */
   readonly accounts?: AccountConfig;
+  /** Techo por regalo en dólares (TOPE_USD). En mainnet nunca supera MAINNET_CEILING_USD. */
+  readonly ceilingUsd?: number;
 }
 
-/** Techo de la beta: un regalo no puede superar este valor en dólares. */
+/** Techo de la beta en redes de prueba: un regalo no puede superar este valor en dólares. */
 export const CEILING_USD = 100;
+/**
+ * Techo en mainnet autorizado por la responsable del proyecto (docs/mainnet.md). Subirlo
+ * requiere una nueva autorización explícita, no solo cambiar la variable de entorno.
+ */
+export const MAINNET_CEILING_USD = 20;
+
+/** Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. */
+export function effectiveCeilingUsd(network: Network, configured: number | undefined): number {
+  const base = configured !== undefined && Number.isFinite(configured) && configured > 0 ? configured : CEILING_USD;
+  return network.name === 'mainnet' ? Math.min(base, MAINNET_CEILING_USD) : base;
+}
 /** Margen entre la cotización del navegador y la del servidor. */
 const PRICE_TOLERANCE = 0.05;
 // Mismo catálogo que apps/web/src/content/occasions.ts ("otra" = ocasión libre; "graduacion" queda por regalos viejos).
@@ -107,7 +120,8 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ error: 'error_interno' }, 500);
   });
 
-  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name }));
+  const ceilingUsd = effectiveCeilingUsd(network, deps.ceilingUsd);
+  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
   registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')) });
@@ -146,7 +160,7 @@ export function createApp(deps: AppDeps): Hono {
       chain.fees(),
       g.currency === 'ARS' ? (deps.arsPrice?.btcArs().then((q) => q.price) ?? Promise.reject(new ApiError(422, 'monto_invalido'))) : null,
     ]);
-    checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy));
+    checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy), ceilingUsd);
     try {
       const gift = await insertGift(sql, {
         ...g,
@@ -308,10 +322,10 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
 }
 
 /** Monto coherente: mayor al mínimo de la red, debajo del techo y, en dólares, de acuerdo con la cotización. */
-function checkAmount(g: ParsedGift, usdPerBtc: number, arsPerBtc: number | null, minimumSats: bigint): void {
+function checkAmount(g: ParsedGift, usdPerBtc: number, arsPerBtc: number | null, minimumSats: bigint, ceilingUsd: number): void {
   const usd = (Number(g.satsExpected) / 1e8) * usdPerBtc;
   if (g.satsExpected < minimumSats) throw new ApiError(422, 'monto_invalido', 'Debajo del mínimo que se puede reclamar con las comisiones de hoy.');
-  if (usd > CEILING_USD * (1 + PRICE_TOLERANCE)) throw new ApiError(422, 'monto_invalido', `Supera el techo de USD ${CEILING_USD}.`);
+  if (usd > ceilingUsd * (1 + PRICE_TOLERANCE)) throw new ApiError(422, 'monto_invalido', `Supera el techo de USD ${ceilingUsd}.`);
   if (g.currency === 'SAT' && BigInt(Math.round(g.amount)) !== g.satsExpected) throw new ApiError(422, 'monto_invalido');
   if (g.currency === 'USD' || g.currency === 'ARS') {
     const fiat = g.currency === 'USD' ? usd : (Number(g.satsExpected) / 1e8) * (arsPerBtc as number);

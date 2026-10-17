@@ -3,7 +3,6 @@ import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
-import { CEILING_USD } from './DraftSteps.tsx';
 import type { MadeGift } from './GivePage.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
@@ -13,7 +12,7 @@ type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
  * Mandar el regalo: el link por un canal y las 4 palabras por otro distinto. Los mensajes
  * van en el idioma de quien recibe. Todo sale del navegador: el servidor no ve el link.
  */
-export function SendStep({ gift, onAnother }: { gift: MadeGift; onAnother: () => void }) {
+export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceilingUsd: number; onAnother: () => void }) {
   const { t, lang } = useI18n();
   const { view } = useGiftStatus(gift.id);
   const [linkBy, setLinkBy] = useState<Channel | null>(null);
@@ -36,14 +35,14 @@ export function SendStep({ gift, onAnother }: { gift: MadeGift; onAnother: () =>
   };
 
   const received = view === null ? gift.sats : receivedSats(view);
-  const overCeiling = view?.usdPorBtcHoy != null && satsToUsd(received, view.usdPorBtcHoy) > CEILING_USD;
+  const overCeiling = view?.usdPorBtcHoy != null && satsToUsd(received, view.usdPorBtcHoy) > ceilingUsd;
   const confirmed = view?.estado === 'activo';
 
   return (
     <div class="paso">
       <StepTitle>{t('regalar.mandar.titulo')}</StepTitle>
       <Notice kind={confirmed ? 'ok' : 'info'}>{t(confirmed ? 'regalar.mandar.activo' : 'regalar.mandar.confirmando')}</Notice>
-      {overCeiling && <Notice>{t('regalar.pagar.techo', { maximo: formatUsd(CEILING_USD, lang) })}</Notice>}
+      {overCeiling && <Notice>{t('regalar.pagar.techo', { maximo: formatUsd(ceilingUsd, lang) })}</Notice>}
       {view !== null && (
         <div class="tarjeta vista-tarjeta">
           <GiftCardArt occasion={view.ocasion} variant={view.imagen} name={view.para} class="tarjeta-imagen" />

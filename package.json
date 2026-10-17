@@ -9,6 +9,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm --filter @regalale/web build",
+    "build:mainnet": "pnpm --filter @regalale/web build:mainnet",
     "e2e:simulado": "pnpm --filter @regalale/e2e simulado"
   },
   "devDependencies": {

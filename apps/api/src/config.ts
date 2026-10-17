@@ -22,6 +22,8 @@ export interface Config {
   readonly mailFrom: string;
   readonly resendApiKey: string | null;
   readonly cookieSecure: boolean;
+  /** Techo por regalo en dólares (TOPE_USD); en mainnet lo acota MAINNET_CEILING_USD. */
+  readonly ceilingUsd: number | undefined;
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
 }
@@ -37,6 +39,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const name = (env.NETWORK ?? 'signet') as NetworkName;
   // Mainnet solo con autorización explícita del responsable del proyecto.
   const network = getNetwork(name, { allowMainnet: env.ALLOW_MAINNET === 'autorizado' });
+  if (env.TOPE_USD !== undefined && !(Number(env.TOPE_USD) > 0)) throw new Error(`TOPE_USD inválido: ${env.TOPE_USD}`);
   const port = Number(env.PORT ?? 8787);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error(`PORT inválido: ${env.PORT}`);
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
@@ -61,6 +64,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mailFrom: env.MAIL_FROM ?? 'RegalaleBitcoins <onboarding@resend.dev>',
     resendApiKey: env.RESEND_API_KEY !== undefined && env.RESEND_API_KEY !== '' ? env.RESEND_API_KEY : null,
     cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
+    ceilingUsd: env.TOPE_USD === undefined ? undefined : Number(env.TOPE_USD),
     webDist: env.WEB_DIST ?? null,
   });
 }

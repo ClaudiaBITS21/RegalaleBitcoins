@@ -14,7 +14,7 @@ const applied = await migrate(sql);
 if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
 
 const chain = esploraClient(config.esploraUrl);
-const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken });
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken, ...(config.ceilingUsd === undefined ? {} : { ceilingUsd: config.ceilingUsd }) });
 
 if (config.webDist !== null) {
   // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.
