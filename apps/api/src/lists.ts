@@ -36,6 +36,8 @@ export interface ListDeps {
 
 interface ListRow {
   id: string;
+  alias: string | null;
+  alias_titular: string | null;
   red: string;
   usuario_id: string;
   xpub: string;
@@ -63,7 +65,25 @@ interface ContributionRow {
   pagado: Date | null;
 }
 
+interface TransferRow {
+  id: string;
+  lista_id: string;
+  codigo: string;
+  nombre: string | null;
+  mensaje: string;
+  monto_ars: string;
+  estado: 'anunciada' | 'recibida' | 'convertida';
+  sats_convertidos: string | null;
+  creada: Date;
+}
+
 const hashToken = (token: string) => createHash('sha256').update(token).digest();
+/** Alias de Mercado Pago o de un banco argentino: 6 a 20 letras, números, puntos o guiones. */
+export const ALIAS = /^[a-z0-9.-]{6,20}$/;
+/** Código de referencia para el concepto de la transferencia: sin 0/O ni 1/I para no confundirse. */
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newCode = () => `RB-${Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('')}`;
+const newToken = () => Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
 async function findList(sql: Sql, id: string): Promise<ListRow | null> {
@@ -109,6 +129,17 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   idioma: l.idioma,
   abierta: l.cerrada === null,
   topeUsd: ceilingUsd,
+  aceptaPesos: l.alias !== null,
+});
+
+const transferView = (r: TransferRow) => ({
+  codigo: r.codigo,
+  nombre: r.nombre,
+  mensaje: r.mensaje,
+  montoArs: Number(r.monto_ars),
+  estado: r.estado,
+  satsConvertidos: r.sats_convertidos === null ? null : r.sats_convertidos.toString(),
+  creada: r.creada.toISOString(),
 });
 
 export function registerListRoutes(app: Hono, deps: ListDeps): void {
@@ -143,12 +174,20 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     if (typeof b.idioma !== 'string' || !isLang(b.idioma)) throw new ApiError(400, 'pedido_invalido');
     if (typeof b.ocasion !== 'string' || !deps.occasions.includes(b.ocasion)) throw new ApiError(400, 'pedido_invalido');
     const fecha = typeof b.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.fecha) ? b.fecha : null;
+    // Pesos (opcional): alias y titular, y el compromiso explícito de convertirlos a bitcoin.
+    let alias: string | null = null;
+    let holder: string | null = null;
+    if (b.alias !== undefined && b.alias !== null && b.alias !== '') {
+      alias = String(b.alias).trim().toLowerCase();
+      holder = text(b.aliasTitular, 60, true);
+      if (!ALIAS.test(alias) || b.convertir !== true) throw new ApiError(400, 'pedido_invalido', 'alias');
+    }
     const id = newGiftId();
     await sql`
-      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma)
+      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular)
       values (${id}, ${network.name}, ${account.id}, ${xpub}, ${text(b.titulo, LIST_LIMITS.title, true)}, ${b.ocasion},
               ${b.ocasion === 'otra' ? text(b.ocasionLibre, LIST_LIMITS.freeOccasion, false) : null},
-              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma})`;
+              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${alias}, ${holder})`;
     return c.json({ id }, 201);
   });
 
@@ -179,7 +218,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     const name = text(b.nombre, LIST_LIMITS.name, false);
     const message = text(b.mensaje, LIST_LIMITS.message, false) ?? '';
     const key = parseAccountKey(list.xpub, network);
-    const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
+    const token = newToken();
 
     // Reciclar un aporte vencido cuya dirección nunca recibió nada; si no, el índice siguiente.
     const expired = await sql<{ id: string; indice: number; direccion: string }[]>`
@@ -229,6 +268,39 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     throw new ApiError(409, 'regalo_existente');
   });
 
+  /**
+   * Un invitado anuncia una transferencia en pesos: recibe el alias, el titular y un código de
+   * referencia único para el concepto. No pasa por la plataforma ni tiene tope.
+   */
+  app.post('/api/listas/:id/transferencias', async (c) => {
+    const ip = clientIp(c.req.header('x-forwarded-for'));
+    if (!limiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
+    const list = await findList(sql, c.req.param('id'));
+    if (list === null || list.red !== network.name || list.alias === null) throw new ApiError(404, 'no_encontrado');
+    if (list.cerrada !== null) throw new ApiError(409, 'regalo_no_disponible', 'lista_cerrada');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    if (typeof b.monto !== 'number' || !Number.isFinite(b.monto) || b.monto <= 0 || b.monto >= 1e12 || Math.abs(Math.round(b.monto * 100) - b.monto * 100) > 1e-6) {
+      throw new ApiError(400, 'monto_invalido');
+    }
+    const name = text(b.nombre, LIST_LIMITS.name, false);
+    const message = text(b.mensaje, LIST_LIMITS.message, false) ?? '';
+    const token = newToken();
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const code = newCode();
+      try {
+        await sql`
+          insert into transferencias (lista_id, codigo, nombre, mensaje, monto_ars, token_hash)
+          values (${list.id}, ${code}, ${name}, ${message}, ${b.monto}, ${hashToken(token)})`;
+      } catch (error) {
+        if ((error as { code?: string }).code === '23505') continue;
+        throw error;
+      }
+      limiter.record(ip);
+      return c.json({ codigo: code, alias: list.alias, titular: list.alias_titular, monto: b.monto, token }, 201);
+    }
+    throw new ApiError(409, 'regalo_existente');
+  });
+
   /** El invitado mira su propio aporte con su link privado (el token viaja en el cuerpo, no en la URL). */
   app.post('/api/aportes/consulta', async (c) => {
     const b = ((await c.req.json().catch(() => null)) ?? {}) as { token?: unknown };
@@ -236,10 +308,23 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     const [r] = await sql<(ContributionRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string })[]>`
       select a.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma from aportes a join listas l on l.id = a.lista_id
       where a.token_hash = ${hashToken(b.token)} and l.red = ${network.name} and not a.externa`;
-    if (r === undefined) throw new ApiError(404, 'no_encontrado');
+    if (r === undefined) {
+      const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string; alias: string; alias_titular: string })[]>`
+        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular from transferencias t join listas l on l.id = t.lista_id
+        where t.token_hash = ${hashToken(b.token)} and l.red = ${network.name}`;
+      if (tr === undefined) throw new ApiError(404, 'no_encontrado');
+      return c.json({
+        tipo: 'pesos',
+        lista: { id: tr.lista_id, titulo: tr.titulo, ocasion: tr.ocasion, ocasionLibre: tr.ocasion_libre, idioma: tr.idioma },
+        alias: tr.alias,
+        titular: tr.alias_titular,
+        ...transferView(tr),
+      });
+    }
     const state = await contributionState(chain, r.direccion);
     if (state.estado === 'recibido' && r.pagado === null) await sql`update aportes set pagado = now() where id = ${r.id}`;
     return c.json({
+      tipo: 'bitcoin',
       lista: { id: r.lista_id, titulo: r.titulo, ocasion: r.ocasion, ocasionLibre: r.ocasion_libre, idioma: r.idioma },
       direccion: r.direccion,
       nombre: r.nombre,
@@ -274,10 +359,41 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
             creado: r.creado.toISOString(),
           };
         });
-        return { ...publicList(l, deps.ceilingUsd), xpub: l.xpub, totalRecibido: total.toString(), aportes };
+        const transfers = await sql<TransferRow[]>`select * from transferencias where lista_id = ${l.id} order by creada`;
+        return {
+          ...publicList(l, deps.ceilingUsd),
+          xpub: l.xpub,
+          alias: l.alias,
+          aliasTitular: l.alias_titular,
+          totalRecibido: total.toString(),
+          aportes,
+          transferencias: transfers.map(transferView),
+        };
       }),
     );
     return c.json({ listas: out });
+  });
+
+  /**
+   * Quien armó la lista marca una transferencia: la recibió en su cuenta, o ya la convirtió a
+   * bitcoin (con los sats que compró). Es lo único que no se verifica en la cadena.
+   */
+  app.post('/api/cuenta/listas/:id/transferencias/:codigo', async (c) => {
+    const account = await owner(c);
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as { estado?: unknown; sats?: unknown };
+    if (b.estado !== 'recibida' && b.estado !== 'convertida') throw new ApiError(400, 'pedido_invalido');
+    let sats: string | null = null;
+    if (b.estado === 'convertida') {
+      if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
+      sats = b.sats;
+    }
+    const rows = await sql`
+      update transferencias t set estado = ${b.estado}, sats_convertidos = ${sats}, actualizada = now()
+      from listas l
+      where t.lista_id = l.id and l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} and t.codigo = ${c.req.param('codigo')}
+      returning t.id`;
+    if (rows.length === 0) throw new ApiError(404, 'no_encontrado');
+    return c.json({ ok: true });
   });
 
   /** Cerrar una lista: no acepta más aportes nuevos (los ya confirmados siguen valiendo). */

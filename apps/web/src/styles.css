@@ -2606,3 +2606,15 @@ svg.tarjeta-imagen {
 .etiqueta-estado { justify-self: start; padding: 1px 10px; border-radius: 999px; font-size: 0.8rem; background: var(--gris); }
 .etiqueta-estado.estado-recibido { background: var(--ok); }
 .etiqueta-estado.estado-en_la_red { background: var(--crema); }
+.etiqueta-estado.estado-recibida { background: var(--crema); }
+.etiqueta-estado.estado-convertida { background: var(--ok); }
+.lista-aporte-acciones { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lista-aporte-acciones input { flex: 1 1 140px; min-width: 0; padding: 6px 10px; border: 1px solid var(--borde); border-radius: 10px; font: inherit; }
+.lista-transferencias { display: grid; gap: 6px; margin-top: 8px; }
+.lista-transferencias h3 { margin: 0; font-size: 1rem; }
+.lista-pesos { display: grid; gap: 10px; }
+.lista-metodos { display: grid; gap: 10px; }
+.datos-transferencia { display: grid; gap: 10px; margin: 0; }
+.dato-transferencia { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.dato-transferencia dt { grid-column: 1 / -1; font-size: 0.85rem; color: var(--suave); }
+.dato-transferencia dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; min-width: 0; }

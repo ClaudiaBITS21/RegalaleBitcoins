@@ -32,6 +32,18 @@ export interface PublicList {
   readonly idioma: string;
   readonly abierta: boolean;
   readonly topeUsd: number;
+  /** Quien armó la lista acepta transferencias en pesos a su alias. */
+  readonly aceptaPesos: boolean;
+}
+
+export interface Transfer {
+  readonly codigo: string;
+  readonly nombre: string | null;
+  readonly mensaje: string;
+  readonly montoArs: number;
+  readonly estado: 'anunciada' | 'recibida' | 'convertida';
+  readonly satsConvertidos: string | null;
+  readonly creada: string;
 }
 
 export interface ListContribution {
@@ -47,12 +59,27 @@ export interface ListContribution {
 
 export interface OwnedList extends PublicList {
   readonly xpub: string;
+  readonly alias: string | null;
+  readonly aliasTitular: string | null;
   readonly totalRecibido: string;
   readonly aportes: readonly ListContribution[];
+  readonly transferencias: readonly Transfer[];
 }
 
+type ListRef = { id: string; titulo: string; ocasion: string; ocasionLibre: string | null; idioma: string };
+
+export interface MyTransfer extends Transfer {
+  readonly tipo: 'pesos';
+  readonly lista: ListRef;
+  readonly alias: string;
+  readonly titular: string;
+}
+
+export type MyGift = MyContribution | MyTransfer;
+
 export interface MyContribution {
-  readonly lista: { id: string; titulo: string; ocasion: string; ocasionLibre: string | null; idioma: string };
+  readonly tipo: 'bitcoin';
+  readonly lista: ListRef;
   readonly direccion: string;
   readonly nombre: string | null;
   readonly mensaje: string;
@@ -71,6 +98,9 @@ export interface NewList {
   readonly idioma: string;
   readonly xpub: string;
   readonly primeraDireccion: string;
+  readonly alias?: string;
+  readonly aliasTitular?: string;
+  readonly convertir?: boolean;
 }
 
 export const listApi = {
@@ -78,10 +108,17 @@ export const listApi = {
   get: (id: string) => call<PublicList>(`/api/listas/${encodeURIComponent(id)}`),
   contribute: (id: string, a: { nombre?: string; mensaje?: string; moneda: string; monto: number; sats: string }) =>
     call<{ direccion: string; sats: string; token: string }>(`/api/listas/${encodeURIComponent(id)}/aportes`, a),
-  mine: (token: string) => call<MyContribution>('/api/aportes/consulta', { token }),
+  mine: (token: string) => call<MyGift>('/api/aportes/consulta', { token }),
+  announce: (id: string, t: { nombre?: string; mensaje?: string; monto: number }) =>
+    call<{ codigo: string; alias: string; titular: string; monto: number; token: string }>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),
+  mark: (id: string, codigo: string, estado: 'recibida' | 'convertida', sats?: string) =>
+    call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado, ...(sats === undefined ? {} : { sats }) }),
   owned: () => call<{ listas: OwnedList[] }>('/api/cuenta/listas'),
   close: (id: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cerrar`, {}),
 };
+
+/** Alias de Mercado Pago o banco (mismo formato que valida la API). */
+export const ALIAS = /^[a-z0-9.-]{6,20}$/;
 
 /** Link público de una lista y link privado de un aporte (el token va después del #). */
 export const listUrl = (id: string) => `${window.location.origin}/l/${id}`;

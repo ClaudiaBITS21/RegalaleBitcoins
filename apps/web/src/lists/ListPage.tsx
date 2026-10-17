@@ -3,7 +3,7 @@ import { ApiFailure } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatSats, groupAddress, paymentUri, satsToBtcString } from '../format.ts';
+import { formatArsExact, formatSats, groupAddress, parseAmount, paymentUri, satsToBtcString } from '../format.ts';
 import { AmountStep } from '../give/DraftSteps.tsx';
 import type { Draft } from '../give/GivePage.tsx';
 import { Qr } from '../give/Qr.tsx';
@@ -16,7 +16,8 @@ import { useNetwork } from './useNetwork.ts';
 // mensaje opcionales, y la dirección propia para pagar. Nunca ve los aportes de los demás.
 
 type Amount = Pick<Draft, 'currency' | 'amount' | 'sats'>;
-type Step = 'lista' | 'cuanto' | 'firma' | 'pagar';
+type Step = 'lista' | 'cuanto' | 'firma' | 'pagar' | 'pesos' | 'transferir';
+type Announced = { codigo: string; alias: string; titular: string; monto: number; token: string };
 const POLL_MS = 5_000;
 
 export function ListPage({ id }: { id: string }) {
@@ -33,6 +34,8 @@ export function ListPage({ id }: { id: string }) {
   const [pay, setPay] = useState<{ direccion: string; sats: bigint; token: string } | null>(null);
   const [state, setState] = useState<'esperando' | 'en_la_red' | 'recibido'>('esperando');
   const [copied, setCopied] = useState<string | null>(null);
+  const [ars, setArs] = useState('');
+  const [announced, setAnnounced] = useState<Announced | null>(null);
 
   useEffect(() => {
     listApi
@@ -47,7 +50,9 @@ export function ListPage({ id }: { id: string }) {
     const timer = window.setInterval(() => {
       listApi
         .mine(pay.token)
-        .then((m) => setState(m.estado))
+        .then((m) => {
+          if (m.tipo === 'bitcoin') setState(m.estado);
+        })
         .catch(() => undefined);
     }, POLL_MS);
     return () => window.clearInterval(timer);
@@ -85,6 +90,58 @@ export function ListPage({ id }: { id: string }) {
     }
   };
 
+  const arsParsed = parseAmount(ars, lang, 2);
+  const arsAmount = arsParsed.ok && arsParsed.value > 0n ? Number(arsParsed.value) / 100 : null;
+
+  const announce = async () => {
+    if (arsAmount === null) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await listApi.announce(id, {
+        ...(name.trim() !== '' ? { nombre: name.trim() } : {}),
+        ...(message.trim() !== '' ? { mensaje: message.trim() } : {}),
+        monto: arsAmount,
+      });
+      setAnnounced(r);
+      setStep('transferir');
+    } catch (e) {
+      const code = e instanceof ApiFailure ? e.code : '';
+      setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : code === 'lista_cerrada' ? 'lista.cerrada' : 'regalar.error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const privateLink = (token: string) => {
+    const mine = contributionUrl(token);
+    return (
+      <div class="caja">
+        <p>{t('lista.mio.guardar')}</p>
+        <p class="mono enlace-regalo" translate={false}>
+          {mine}
+        </p>
+        <Button kind="contorno" onClick={() => void copy('mio', mine)}>
+          {copied === 'mio' ? t('regalar.pagar.copiado') : t('lista.copiar')}
+        </Button>
+      </div>
+    );
+  };
+
+  const signFields = (
+    <>
+      <label class="campo">
+        <span>{t('lista.firma.nombre')}</span>
+        <input type="text" maxLength={40} autocomplete="name" value={name} onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)} />
+      </label>
+      <label class="campo">
+        <span>{t('lista.firma.mensaje')}</span>
+        <textarea rows={3} maxLength={280} value={message} onInput={(e) => setMessage((e.currentTarget as HTMLTextAreaElement).value)} />
+      </label>
+      <small class="texto-suave">{t('lista.firma.privado')}</small>
+    </>
+  );
+
   let body;
   if (missing) body = <Notice kind="error">{t('lista.noExiste')}</Notice>;
   else if (list === null || network === null) body = <p class="texto-suave cargando">{t('reclamo.cargando')}</p>;
@@ -101,7 +158,19 @@ export function ListPage({ id }: { id: string }) {
           </div>
         </article>
         <p class="texto-suave">{t('lista.invitado.texto')}</p>
-        {list.abierta ? <Button onClick={() => setStep('cuanto')}>{t('lista.invitado.cta')}</Button> : <Notice>{t('lista.cerrada')}</Notice>}
+        {!list.abierta ? (
+          <Notice>{t('lista.cerrada')}</Notice>
+        ) : list.aceptaPesos ? (
+          <div class="lista-metodos">
+            <Button onClick={() => setStep('cuanto')}>{t('lista.metodo.bitcoin')}</Button>
+            <Button kind="contorno" onClick={() => setStep('pesos')}>
+              {t('lista.metodo.pesos')}
+            </Button>
+            <small class="texto-suave">{t('lista.metodo.pesosTexto')}</small>
+          </div>
+        ) : (
+          <Button onClick={() => setStep('cuanto')}>{t('lista.invitado.cta')}</Button>
+        )}
       </div>
     );
   } else if (step === 'cuanto') {
@@ -127,23 +196,65 @@ export function ListPage({ id }: { id: string }) {
         }}
       >
         <StepTitle>{t('lista.firma.titulo')}</StepTitle>
-        <label class="campo">
-          <span>{t('lista.firma.nombre')}</span>
-          <input type="text" maxLength={40} autocomplete="name" value={name} onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)} />
-        </label>
-        <label class="campo">
-          <span>{t('lista.firma.mensaje')}</span>
-          <textarea rows={3} maxLength={280} value={message} onInput={(e) => setMessage((e.currentTarget as HTMLTextAreaElement).value)} />
-        </label>
-        <small class="texto-suave">{t('lista.firma.privado')}</small>
+        {signFields}
         {error !== null && <Notice kind="error">{t(error)}</Notice>}
         <Button type="submit" disabled={busy}>
           {busy ? t('regalar.creando') : t('lista.firma.cta', { monto: formatSats(amount?.sats ?? 0n, lang) })}
         </Button>
       </form>
     );
+  } else if (step === 'pesos') {
+    body = (
+      <form
+        class="paso"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void announce();
+        }}
+      >
+        <StepTitle>{t('lista.pesos.titulo')}</StepTitle>
+        <p class="texto-suave">{t('lista.pesos.invitadoTexto')}</p>
+        <label class="campo">
+          <span>{t('lista.pesos.monto')}</span>
+          <input type="text" inputMode="decimal" autocomplete="off" value={ars} onInput={(e) => setArs((e.currentTarget as HTMLInputElement).value)} />
+          {ars.trim() !== '' && arsAmount === null && <small class="error-campo">{t('regalar.errorMonto')}</small>}
+        </label>
+        {signFields}
+        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        <Button type="submit" disabled={busy || arsAmount === null}>
+          {busy ? t('regalar.creando') : arsAmount === null ? t('lista.pesos.cta0') : t('lista.pesos.cta', { monto: formatArsExact(arsAmount, lang) })}
+        </Button>
+      </form>
+    );
+  } else if (step === 'transferir' && announced !== null) {
+    const rows: readonly { k: string; label: Key; value: string; shown?: string }[] = [
+      { k: 'alias', label: 'lista.pesos.alias', value: announced.alias },
+      { k: 'titular', label: 'lista.pesos.titular', value: announced.titular },
+      { k: 'monto', label: 'lista.pesos.monto', value: announced.monto.toFixed(2), shown: formatArsExact(announced.monto, lang) },
+      { k: 'codigo', label: 'lista.pesos.codigo', value: announced.codigo },
+    ];
+    body = (
+      <div class="paso">
+        <StepTitle>{t('lista.pesos.transferiTitulo')}</StepTitle>
+        <p class="texto-suave">{t('lista.pesos.transferiTexto')}</p>
+        <dl class="caja datos-transferencia">
+          {rows.map((r) => (
+            <div key={r.k} class="dato-transferencia">
+              <dt>{t(r.label)}</dt>
+              <dd class={r.k === 'titular' ? '' : 'mono'} translate={false}>
+                {r.shown ?? r.value}
+              </dd>
+              <button type="button" class="boton boton-contorno boton-chico" onClick={() => void copy(r.k, r.value)}>
+                {copied === r.k ? t('regalar.pagar.copiado') : t('lista.copiar')}
+              </button>
+            </div>
+          ))}
+        </dl>
+        <Notice>{t('lista.pesos.codigoAviso', { codigo: announced.codigo })}</Notice>
+        {privateLink(announced.token)}
+      </div>
+    );
   } else if (pay !== null) {
-    const mine = contributionUrl(pay.token);
     body = (
       <div class="paso">
         {state === 'esperando' ? (
@@ -178,22 +289,14 @@ export function ListPage({ id }: { id: string }) {
             <Notice kind="ok">{t(state === 'recibido' ? 'lista.gracias.confirmado' : 'lista.gracias.enCamino')}</Notice>
           </>
         )}
-        <div class="caja">
-          <p>{t('lista.mio.guardar')}</p>
-          <p class="mono enlace-regalo" translate={false}>
-            {mine}
-          </p>
-          <Button kind="contorno" onClick={() => void copy('mio', mine)}>
-            {copied === 'mio' ? t('regalar.pagar.copiado') : t('lista.copiar')}
-          </Button>
-        </div>
+        {privateLink(pay.token)}
       </div>
     );
   }
   return (
     <Layout
       testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'}
-      onBack={step === 'cuanto' ? () => setStep('lista') : step === 'firma' ? () => setStep('cuanto') : undefined}
+      onBack={step === 'cuanto' || step === 'pesos' ? () => setStep('lista') : step === 'firma' ? () => setStep('cuanto') : undefined}
     >
       {body}
     </Layout>

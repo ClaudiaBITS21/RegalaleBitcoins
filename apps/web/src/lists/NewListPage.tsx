@@ -8,7 +8,7 @@ import { groupAddress } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
 import { PasskeyError } from '../passkey.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
-import { listApi, listUrl } from './listApi.ts';
+import { ALIAS, listApi, listUrl } from './listApi.ts';
 import { useNetwork } from './useNetwork.ts';
 
 // Armar una lista (/listas/nueva). Hace falta una cuenta (mail + passkey) para ver después
@@ -38,6 +38,10 @@ export function NewListPage() {
   const [occasion, setOccasion] = useState<OccasionChoice | null>(null);
   const [message, setMessage] = useState('');
   const [date, setDate] = useState('');
+  const [pesos, setPesos] = useState(false);
+  const [alias, setAlias] = useState('');
+  const [holder, setHolder] = useState('');
+  const [convert, setConvert] = useState(false);
   const [xpub, setXpub] = useState('');
   const [same, setSame] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
@@ -92,6 +96,7 @@ export function NewListPage() {
         idioma: lang,
         xpub: xpub.trim(),
         primeraDireccion: first,
+        ...(pesos ? { alias: alias.trim().toLowerCase(), aliasTitular: holder.trim(), convertir: convert } : {}),
       });
       setCreated(id);
       setStep('lista');
@@ -124,7 +129,9 @@ export function NewListPage() {
       </div>
     );
   } else if (step === 'datos') {
-    const ok = title.trim() !== '' && [...title.trim()].length <= LIMITS.title && occasion !== null && [...message].length <= LIMITS.message;
+    const aliasOk = ALIAS.test(alias.trim().toLowerCase());
+    const pesosOk = !pesos || (aliasOk && holder.trim() !== '' && convert);
+    const ok = title.trim() !== '' && [...title.trim()].length <= LIMITS.title && occasion !== null && [...message].length <= LIMITS.message && pesosOk;
     body = (
       <form
         class="paso"
@@ -151,6 +158,28 @@ export function NewListPage() {
           <span>{t('lista.campo.fecha')}</span>
           <input type="date" value={date} onInput={(e) => setDate((e.currentTarget as HTMLInputElement).value)} />
         </label>
+        <label class="casilla">
+          <input type="checkbox" checked={pesos} onChange={(e) => setPesos((e.currentTarget as HTMLInputElement).checked)} />
+          <span>{t('lista.pesos.activar')}</span>
+        </label>
+        {pesos && (
+          <div class="caja lista-pesos">
+            <p class="texto-suave">{t('lista.pesos.explica')}</p>
+            <label class="campo">
+              <span>{t('lista.pesos.alias')}</span>
+              <input type="text" value={alias} maxLength={20} autocapitalize="none" spellcheck={false} placeholder="ana.leo.mp" onInput={(e) => setAlias((e.currentTarget as HTMLInputElement).value)} />
+              {alias.trim() !== '' && !aliasOk && <small class="error-campo">{t('lista.pesos.aliasInvalido')}</small>}
+            </label>
+            <label class="campo">
+              <span>{t('lista.pesos.titular')}</span>
+              <input type="text" value={holder} maxLength={60} autocomplete="name" onInput={(e) => setHolder((e.currentTarget as HTMLInputElement).value)} />
+            </label>
+            <label class="casilla casilla-destacada">
+              <input type="checkbox" checked={convert} onChange={(e) => setConvert((e.currentTarget as HTMLInputElement).checked)} />
+              <span>{t('lista.pesos.compromiso')}</span>
+            </label>
+          </div>
+        )}
         <Button type="submit" disabled={!ok}>
           {t('seguir')}
         </Button>

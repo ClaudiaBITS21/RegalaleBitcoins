@@ -6,6 +6,7 @@
 |---|---|---|
 | 17/10/2026 | Claudia (responsable del proyecto) | "Autorizo Mainnet con tope de 20 hasta ver que funciona todo." |
 | 17/10/2026 | Claudia | Listas de regalos en mainnet: "Si" a tope de USD 20 por aporte de cada invitado. Publicar listas, gratis en la beta. Sin guía de billetera (solo para quien ya tiene). Cada invitado ve solo su aporte. |
+| 17/10/2026 | Claudia | Listas con transferencias en pesos: excepción a "solo bitcoin" solo en listas; sin tope; solo alias; estados anunciada → recibida → convertida que marca quien armó la lista. Pendiente: consulta legal antes del lanzamiento. |
 
 - Tope: **USD 20 por regalo**, fijo en el código (`MAINNET_CEILING_USD` en `apps/api/src/app.ts`).
   La variable `TOPE_USD` solo puede bajarlo. Subirlo requiere una nueva autorización explícita
@@ -43,7 +44,9 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
    Google (claudia@, rodo@ y toda cuenta con acceso al proyecto), GitHub, Metaregistrar/AWS
    (DNS), Resend y su mail. Sin esa confirmación no se publica la nueva landing ni se lanza en
    `regalalebitcoins.com`. Estado: **pendiente**.
-5. Recién ahí, compartir el link.
+5. **Consulta legal** de las listas con alias (transferencias en pesos entre personas), términos y
+   privacidad. Estado: **pendiente**.
+6. Recién ahí, compartir el link.
 
 ## Limitaciones conocidas mientras no haya dominio
 

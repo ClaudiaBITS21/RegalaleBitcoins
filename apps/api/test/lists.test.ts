@@ -70,6 +70,7 @@ describe('listas de regalos', () => {
     await sql.end();
   });
   beforeEach(async () => {
+    await sql`delete from transferencias`;
     await sql`delete from aportes`;
     await sql`delete from listas`;
     await sql`delete from usuarios`;
@@ -145,5 +146,40 @@ describe('listas de regalos', () => {
     assert.equal((await req(`/api/cuenta/listas/${id}/cerrar`, {}, false)).status, 401);
     assert.equal((await req(`/api/cuenta/listas/${id}/cerrar`, {})).status, 200);
     assert.equal((await aporte(id)).status, 409);
+  });
+
+  it('pesos: alias con compromiso de convertir; código único por invitado; solo quien armó la lista marca el estado', async () => {
+    assert.equal((await newList({ alias: 'ana.leo.mp', aliasTitular: 'Ana Pérez' })).status, 400, 'sin compromiso de convertir');
+    assert.equal((await newList({ alias: 'no vale!', aliasTitular: 'Ana', convertir: true })).status, 400);
+    const plain = (await (await newList()).json()) as { id: string };
+    assert.equal(((await (await req(`/api/listas/${plain.id}`, undefined, false)).json()) as { aceptaPesos: boolean }).aceptaPesos, false);
+    assert.equal((await req(`/api/listas/${plain.id}/transferencias`, { monto: 5000 }, false)).status, 404);
+
+    const { id } = (await (await newList({ alias: 'Ana.Leo.MP', aliasTitular: 'Ana Pérez', convertir: true })).json()) as { id: string };
+    const pub = (await (await req(`/api/listas/${id}`, undefined, false)).json()) as Record<string, unknown>;
+    assert.equal(pub.aceptaPesos, true);
+    assert.ok(!JSON.stringify(pub).includes('ana.leo.mp'), 'el alias se muestra recién al elegir pesos');
+    assert.equal((await req(`/api/listas/${id}/transferencias`, { monto: 10.123 }, false)).status, 400);
+    const t1 = (await (await req(`/api/listas/${id}/transferencias`, { nombre: 'Tío Beto', mensaje: 'Felicidades', monto: 250000 }, false)).json()) as { codigo: string; alias: string; titular: string; token: string };
+    const t2 = (await (await req(`/api/listas/${id}/transferencias`, { monto: 15000.5 }, false)).json()) as { codigo: string; token: string };
+    assert.match(t1.codigo, /^RB-[A-Z2-9]{4}$/);
+    assert.notEqual(t1.codigo, t2.codigo);
+    assert.deepEqual([t1.alias, t1.titular], ['ana.leo.mp', 'Ana Pérez']);
+
+    const mine = async (token: string) => (await (await req('/api/aportes/consulta', { token }, false)).json()) as { tipo: string; estado: string; satsConvertidos: string | null; montoArs: number };
+    assert.deepEqual(await mine(t1.token).then((m) => [m.tipo, m.estado, m.montoArs]), ['pesos', 'anunciada', 250000]);
+
+    const mark = (codigo: string, body: unknown, withCookie = true) => req(`/api/cuenta/listas/${id}/transferencias/${codigo}`, body, withCookie);
+    assert.equal((await mark(t1.codigo, { estado: 'recibida' }, false)).status, 401);
+    assert.equal((await mark(t1.codigo, { estado: 'recibida' })).status, 200);
+    assert.equal((await mark(t1.codigo, { estado: 'convertida' })).status, 400, 'convertida pide los sats');
+    assert.equal((await mark(t1.codigo, { estado: 'convertida', sats: '2100' })).status, 200);
+    assert.deepEqual(await mine(t1.token).then((m) => [m.estado, m.satsConvertidos]), ['convertida', '2100']);
+    assert.equal((await mine(t2.token)).estado, 'anunciada');
+
+    const panel = (await (await req('/api/cuenta/listas')).json()) as { listas: Array<{ id: string; alias: string; transferencias: Array<{ codigo: string; nombre: string | null; estado: string }> }> };
+    const l = panel.listas.find((x) => x.id === id);
+    assert.equal(l?.alias, 'ana.leo.mp');
+    assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.nombre, x.estado]), [[t1.codigo, 'Tío Beto', 'convertida'], [t2.codigo, null, 'anunciada']]);
   });
 });

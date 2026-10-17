@@ -7,14 +7,18 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 ## Principios no negociables
 
 - No custodio: la plataforma nunca puede mover fondos de un regalo. Claves generadas en el navegador.
-- Solo bitcoin, solo on-chain para los regalos.
+- Solo bitcoin, solo on-chain para los regalos. **Excepción aprobada (17/10/2026), solo en listas:**
+  quien arma una lista puede aceptar transferencias en pesos a su alias y se compromete a
+  convertirlas a bitcoin. Van de persona a persona: la plataforma solo muestra el alias y un código
+  de referencia, nunca recibe ni convierte pesos.
 - Desarrollo y pruebas en signet/testnet. **Mainnet autorizado el 17/10/2026 con tope de USD 20
   por regalo y por aporte a una lista** (`docs/mainnet.md`); cualquier cambio de tope o de alcance en mainnet necesita una
   nueva autorización explícita de la responsable.
 - Pocas dependencias criptográficas (familia @scure/@noble), con versión exacta. No agregar
   ninguna dependencia criptográfica sin aprobación. Aleatoriedad solo con `crypto.getRandomValues`.
 - Cero scripts de terceros (analytics, chats, píxeles) en el sitio.
-- Verificación de pagos siempre en el servidor.
+- Verificación de pagos siempre en el servidor. La única excepción son las transferencias en pesos
+  de las listas, que no podemos ver: las confirma quien armó la lista y se muestran como tales.
 - El esquema de `docs/derivacion.md` no cambia en silencio: los vectores de regresión de
   `packages/core/test` lo fijan.
 

@@ -1,9 +1,9 @@
 import { deriveListAddress, type Network, parseAccountKey } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatSats } from '../format.ts';
+import { formatArsExact, formatSats, parseAmount } from '../format.ts';
 import { Button, Notice, useI18n } from '../ui.tsx';
-import { listApi, listUrl, type OwnedList } from './listApi.ts';
+import { listApi, listUrl, type OwnedList, type Transfer } from './listApi.ts';
 
 // "Mis listas" en el panel: cada lista con su link, lo que llegó y quién regaló qué. El
 // navegador vuelve a derivar cada dirección desde la llave pública: si el servidor mostrara
@@ -15,6 +15,62 @@ function addressIsMine(list: OwnedList, network: Network, index: number, address
   } catch {
     return false;
   }
+}
+
+/** Una transferencia en pesos: quien armó la lista la marca recibida y, al comprar, convertida. */
+function TransferRow({ listId, tr, onDone }: { listId: string; tr: Transfer; onDone: () => void }) {
+  const { t, lang } = useI18n();
+  const [converting, setConverting] = useState(false);
+  const [sats, setSats] = useState('');
+  const [failed, setFailed] = useState(false);
+  const parsed = parseAmount(sats, lang, 0);
+  const satsOk = parsed.ok && parsed.value > 0n;
+  const mark = (estado: 'recibida' | 'convertida', value?: bigint) => {
+    setFailed(false);
+    listApi
+      .mark(listId, tr.codigo, estado, value?.toString())
+      .then(onDone)
+      .catch(() => setFailed(true));
+  };
+  return (
+    <li>
+      <span class="lista-aporte-quien">
+        <span class="mono">{tr.codigo}</span> · {tr.nombre ?? t('lista.panel.anonimo')}
+      </span>
+      <span class="lista-aporte-monto">{tr.estado === 'convertida' && tr.satsConvertidos !== null ? formatSats(BigInt(tr.satsConvertidos), lang) : formatArsExact(tr.montoArs, lang)}</span>
+      <span class={`etiqueta-estado estado-${tr.estado}`}>{t(`lista.transf.${tr.estado}`)}</span>
+      {tr.mensaje !== '' && <span class="lista-aporte-mensaje">“{tr.mensaje}”</span>}
+      {tr.estado === 'anunciada' && (
+        <span class="lista-aporte-acciones">
+          <button type="button" class="boton boton-contorno boton-chico" onClick={() => mark('recibida')}>
+            {t('lista.transf.marcarRecibida')}
+          </button>
+        </span>
+      )}
+      {tr.estado === 'recibida' &&
+        (converting ? (
+          <form
+            class="lista-aporte-acciones"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (parsed.ok && satsOk) mark('convertida', parsed.value);
+            }}
+          >
+            <input type="text" inputMode="numeric" placeholder={t('lista.transf.sats')} aria-label={t('lista.transf.sats')} value={sats} onInput={(e) => setSats((e.currentTarget as HTMLInputElement).value)} />
+            <button type="submit" class="boton boton-chico" disabled={!satsOk}>
+              {satsOk && parsed.ok ? t('lista.transf.confirmarSats', { sats: formatSats(parsed.value, lang) }) : t('lista.transf.marcarConvertida')}
+            </button>
+          </form>
+        ) : (
+          <span class="lista-aporte-acciones">
+            <button type="button" class="boton boton-contorno boton-chico" onClick={() => setConverting(true)}>
+              {t('lista.transf.marcarConvertida')}
+            </button>
+          </span>
+        ))}
+      {failed && <small class="error-campo">{t('regalar.error')}</small>}
+    </li>
+  );
 }
 
 export function MyLists({ network }: { network: Network | null }) {
@@ -68,6 +124,22 @@ export function MyLists({ network }: { network: Network | null }) {
                     </li>
                   ))}
                 </ul>
+              )}
+              {l.alias !== null && (
+                <div class="lista-transferencias">
+                  <h3>{t('lista.transf.titulo')}</h3>
+                  <p class="texto-suave">{t('lista.transf.alias', { alias: l.alias })}</p>
+                  {l.transferencias.length === 0 ? (
+                    <p class="texto-suave">{t('lista.transf.vacio')}</p>
+                  ) : (
+                    <ul class="lista-aportes">
+                      {l.transferencias.map((tr) => (
+                        <TransferRow key={tr.codigo} listId={l.id} tr={tr} onDone={() => void load()} />
+                      ))}
+                    </ul>
+                  )}
+                  <small class="texto-suave">{t('lista.transf.compromiso')}</small>
+                </div>
               )}
               {l.abierta ? (
                 <Button kind="contorno" onClick={() => void listApi.close(l.id).then(load)}>
