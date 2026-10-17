@@ -37,7 +37,7 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
 1. Revisión de seguridad de lo que mueve fondos, con los bloqueantes resueltos.
 2. ~~Prueba corta en signet~~: salteada por decisión de la responsable (17/10/2026).
 3. Primer regalo real de la responsable (≈ USD 5) de punta a punta: regalar, pagar, abrir,
-   reclamar a una billetera propia.
+   reclamar a una billetera propia. **Hecho el 17/10/2026: funcionó.**
 4. Recién ahí, compartir el link.
 
 ## Limitaciones conocidas mientras no haya dominio
