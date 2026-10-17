@@ -9,8 +9,9 @@
 - Tope: **USD 20 por regalo**, fijo en el código (`MAINNET_CEILING_USD` en `apps/api/src/app.ts`).
   La variable `TOPE_USD` solo puede bajarlo. Subirlo requiere una nueva autorización explícita
   anotada en esta tabla.
-- Hasta tener el dominio, mainnet vive en `https://regalalebitcoins.web.app`. Signet pasa a
-  `https://regalalebitcoins-signet.web.app`.
+- Hasta tener el dominio, mainnet vive en `https://regalalebitcoins.web.app`. La responsable no
+  usa signet: el sitio `regalalebitcoins-signet` no se creó (el destino queda en `firebase.json`
+  por si hace falta) y el servicio `regalalebitcoins-api` de signet sigue con la versión anterior.
 
 ## Cómo está separado
 
@@ -65,3 +66,11 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 | M7. Directorio de Firebase | Arreglado (sitios separados) |
 | M8. Cartel de prueba atado a la compilación | Arreglado: sale de la red real |
 | M1, M4, M5, M6, M9, M10, M11 | Menores, para después de abrir |
+
+## Deploy del 17/10/2026
+
+- Imagen `api:22f89f0-v1`; servicio `regalalebitcoins-api-mainnet` (revisión 00001) arrancó con
+  `red: mainnet`, cadena `https://mempool.space/api` y migraciones 001–004 en `regalale_mainnet`.
+- Secretos nuevos: `db-password-mainnet`, `tareas-token-mainnet`. Scheduler `difusiones-mainnet`.
+- Web `pnpm build:mainnet` en el sitio `regalalebitcoins` (`firebase deploy --only hosting:mainnet`).
+- Acceso público al servicio (`--no-invoker-iam-check`): lo corre la responsable desde Cloud Shell.
