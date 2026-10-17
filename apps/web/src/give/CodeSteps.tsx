@@ -56,7 +56,7 @@ function randomPositions(total: number, count: number): number[] {
   return [...picked].sort((a, b) => a - b);
 }
 
-export function VerifyCode({ mnemonic, onOk, error }: { mnemonic: string; onOk: () => void; error: Key | null }) {
+export function VerifyCode({ mnemonic, onOk, error, text = 'regalar.verificar.texto' }: { mnemonic: string; onOk: () => void; error: Key | null; text?: Key }) {
   const { t } = useI18n();
   const words = mnemonic.split(' ');
   const [positions] = useState(() => randomPositions(words.length, VERIFY_COUNT));
@@ -74,7 +74,7 @@ export function VerifyCode({ mnemonic, onOk, error }: { mnemonic: string; onOk: 
       }}
     >
       <StepTitle>{t('regalar.verificar.titulo')}</StepTitle>
-      <p class="texto-suave">{t('regalar.verificar.texto')}</p>
+      <p class="texto-suave">{t(text)}</p>
       {positions.map((p, i) => (
         <label class="campo" key={p}>
           <span>{t('regalar.verificar.palabra', { n: p + 1 })}</span>

@@ -1,10 +1,11 @@
-import { deriveListAddress, isCoreError, parseAccountKey } from '@regalale/core';
+import { accountKeyText, deriveListAddress, generateMasterMnemonic, isCoreError, masterRootFromMnemonic, parseAccountKey } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { OccasionPicker, type OccasionChoice } from '../content/OccasionPicker.tsx';
 import { groupAddress } from '../format.ts';
+import { VerifyCode } from '../give/CodeSteps.tsx';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { ALIAS, listApi, listUrl } from './listApi.ts';
@@ -13,7 +14,10 @@ import { useNetwork } from './useNetwork.ts';
 // Armar una lista (/listas/nueva). Hace falta una cuenta (mail + passkey) para ver después
 // quién regaló qué. La plata va directo a la billetera de quien arma la lista: pedimos la
 // llave pública de su cuenta y le mostramos la primera dirección para que la compare con su
-// billetera antes de publicar.
+// billetera antes de publicar. Quien no tiene billetera elige "Semilla nueva": el navegador
+// genera 12 palabras, las anota y las verifica, y de ahí sale la llave pública (BIP84, cuenta 0,
+// la que lee cualquier billetera al importarlas). Las palabras no se guardan en ningún lado,
+// ni en la bóveda ni en el servidor: son la billetera de la lista y quedan solo en su papel.
 
 type Step = 'acceso' | 'datos' | 'llave' | 'lista';
 const LIMITS = { title: 60, message: 280 } as const;
@@ -45,6 +49,10 @@ export function NewListPage() {
   const [convert, setConvert] = useState(false);
   const [xpub, setXpub] = useState('');
   const [same, setSame] = useState(false);
+  const [keyMode, setKeyMode] = useState<'cold' | 'semilla' | null>(null);
+  const [seed, setSeed] = useState<string | null>(null);
+  const [seedStage, setSeedStage] = useState<'ver' | 'verificar' | 'lista'>('ver');
+  const [wrote, setWrote] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -198,6 +206,101 @@ export function NewListPage() {
         </Button>
       </form>
     );
+  } else if (step === 'llave' && keyMode === null) {
+    body = (
+      <div class="paso">
+        <StepTitle>{t('lista.llave.titulo')}</StepTitle>
+        <p>{t('lista.modo.texto')}</p>
+        <div class="lista-modos">
+          <button type="button" class="caja lista-modo" onClick={() => setKeyMode('cold')}>
+            <strong>{t('lista.modo.cold')}</strong>
+            <span class="etiqueta-estado estado-recibido">{t('lista.modo.recomendado')}</span>
+            <span class="texto-suave">{t('lista.modo.coldTexto')}</span>
+          </button>
+          <button
+            type="button"
+            class="caja lista-modo"
+            onClick={() => {
+              setSeed(generateMasterMnemonic());
+              setSeedStage('ver');
+              setWrote(false);
+              setKeyMode('semilla');
+            }}
+          >
+            <strong>{t('lista.modo.semilla')}</strong>
+            <span class="texto-suave">{t('lista.modo.semillaTexto')}</span>
+          </button>
+        </div>
+        <button type="button" class="boton-texto enlace-centrado" onClick={() => setStep('datos')}>
+          ← {t('atras')}
+        </button>
+      </div>
+    );
+  } else if (step === 'llave' && keyMode === 'semilla' && seed !== null && seedStage === 'ver') {
+    body = (
+      <div class="paso">
+        <StepTitle>{t('lista.semilla.titulo')}</StepTitle>
+        <p class="texto-suave">{t('lista.semilla.porque')}</p>
+        <ol class="codigo" translate={false}>
+          {seed.split(' ').map((w, i) => (
+            <li key={i}>
+              <span class="codigo-n">{i + 1}</span> {w}
+            </li>
+          ))}
+        </ol>
+        <ul class="lista-avisos">
+          <li>{t('lista.semilla.texto1')}</li>
+          <li>{t('lista.semilla.texto2')}</li>
+          <li>
+            <strong>{t('lista.semilla.texto3')}</strong>
+          </li>
+        </ul>
+        <label class="casilla casilla-destacada">
+          <input type="checkbox" checked={wrote} onChange={(e) => setWrote((e.currentTarget as HTMLInputElement).checked)} />
+          {t('lista.semilla.anote')}
+        </label>
+        <Button disabled={!wrote} onClick={() => setSeedStage('verificar')}>
+          {t('seguir')}
+        </Button>
+        <button type="button" class="boton-texto enlace-centrado" onClick={() => (setSeed(null), setKeyMode(null))}>
+          ← {t('atras')}
+        </button>
+      </div>
+    );
+  } else if (step === 'llave' && keyMode === 'semilla' && seed !== null && seedStage === 'verificar') {
+    body = (
+      <VerifyCode
+        mnemonic={seed}
+        error={null}
+        text="lista.semilla.verificar"
+        onOk={() => {
+          // Solo la llave pública sigue adelante; las palabras se borran de la memoria de la página.
+          setXpub(accountKeyText(masterRootFromMnemonic(seed), network));
+          setSame(true);
+          setSeed(null);
+          setSeedStage('lista');
+        }}
+      />
+    );
+  } else if (step === 'llave' && keyMode === 'semilla') {
+    body = (
+      <div class="paso">
+        <StepTitle>{t('lista.semilla.listaTitulo')}</StepTitle>
+        <p>{t('lista.semilla.listaTexto')}</p>
+        {first !== null && (
+          <div class="caja lista-primera">
+            <p>{t('lista.semilla.primera')}</p>
+            <p class="mono direccion-completa" translate={false}>
+              {groupAddress(first)}
+            </p>
+          </div>
+        )}
+        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        <Button disabled={busy || first === null} onClick={() => void publish()}>
+          {busy ? t('lista.publicando') : t('lista.publicar')}
+        </Button>
+      </div>
+    );
   } else if (step === 'llave') {
     body = (
       <div class="paso">
@@ -232,7 +335,7 @@ export function NewListPage() {
         <Button disabled={busy || first === null || !same} onClick={() => void publish()}>
           {busy ? t('lista.publicando') : t('lista.publicar')}
         </Button>
-        <button type="button" class="boton-texto enlace-centrado" onClick={() => setStep('datos')}>
+        <button type="button" class="boton-texto enlace-centrado" onClick={() => (setKeyMode(null), setXpub(''), setSame(false))}>
           ← {t('atras')}
         </button>
       </div>

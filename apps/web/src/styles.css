@@ -2663,3 +2663,9 @@ svg.tarjeta-imagen {
   .renglones span { font-weight: 700; border-bottom: 0.4mm solid var(--tinta); padding-top: 5mm; }
   .abrir-palabras small { font-size: 8.5pt; color: var(--suave); line-height: 1.35; }
 }
+
+/* Listas: elegir dónde llegan los regalos */
+.lista-modos { display: grid; gap: 12px; }
+.lista-modo { display: grid; gap: 6px; justify-items: start; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 2px solid var(--borde); }
+.lista-modo:hover, .lista-modo:focus-visible { border-color: var(--tinta); }
+.lista-modo strong { font-family: var(--titulos); font-size: 1.2rem; }

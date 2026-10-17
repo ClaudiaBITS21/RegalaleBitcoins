@@ -431,6 +431,7 @@ try {
   if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con pesos se puede seguir sin el compromiso de convertir');
   await giver.getByText('Me comprometo a convertir a bitcoin').click();
   await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('button', { name: /^Mi cold wallet/ }).click();
   await giver.getByRole('heading', { name: '¿Dónde te llegan los regalos?' }).waitFor();
   await giver.getByLabel('Llave pública de prueba (vpub)').fill(vpub);
   const shownFirst = (await giver.locator('.lista-primera .direccion-completa').innerText()).replace(/\s/g, '');
@@ -474,6 +475,38 @@ try {
   if ((await giver.getByText('alguna dirección no sale de tu llave').count()) > 0) fail('el panel marca como ajena una dirección propia');
   await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l4-panel.png') });
 
+  // Lista con "Semilla nueva": las 12 palabras se generan en el navegador, se verifican y nunca
+  // salen de la página; al servidor llega solo la llave pública que sale de ellas.
+  const bodies: string[] = [];
+  const spy = (r: { postData: () => string | null }) => bodies.push(r.postData() ?? '');
+  giver.on('request', spy);
+  await giver.goto(`${BASE}/listas/nueva`);
+  await giver.getByLabel('Nombre de la lista').fill('Cumple de Lupe');
+  await giver.getByLabel('¿Para quién es la lista?').fill('Lupe');
+  await giver.locator('.selector-ocasiones button, .ocasiones button').filter({ hasText: 'Cumpleaños' }).first().click();
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('button', { name: /^Semilla nueva/ }).click();
+  await giver.getByRole('heading', { name: 'Las 12 palabras de tu billetera' }).waitFor();
+  const seedWords = (await giver.locator('.codigo li').allInnerTexts()).map((x) => x.replace(/^\d+\s*/, '').trim());
+  if (seedWords.length !== 12) fail(`la semilla nueva no tiene 12 palabras: ${seedWords.length}`);
+  await shot2(giver, 'l7-semilla');
+  await giver.getByText('Las anoté en papel').click();
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  for (const label of await giver.locator('form .campo span').allInnerTexts()) {
+    const n = Number(label.replace(/\D/g, ''));
+    await giver.getByLabel(label, { exact: true }).fill(seedWords[n - 1] as string);
+  }
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('heading', { name: 'Tu billetera está lista' }).waitFor();
+  const seedFirst = deriveListAddress(parseAccountKey(accountKeyText(masterRootFromMnemonic(seedWords.join(' ')), signet), signet), 0).address;
+  if ((await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '') !== seedFirst) fail('la primera dirección no sale de la semilla nueva');
+  await giver.getByRole('button', { name: 'Publicar mi lista' }).click();
+  await giver.getByRole('heading', { name: '¡Tu lista está lista!' }).waitFor();
+  giver.off('request', spy);
+  if (bodies.some((b) => seedWords.filter((w) => b.includes(w)).length >= 6)) fail('las palabras de la semilla nueva salieron del navegador');
+  const seedList = (await sql`select xpub from listas where titulo = 'Cumple de Lupe'`)[0];
+  if (seedList?.xpub !== accountKeyText(masterRootFromMnemonic(seedWords.join(' ')), signet)) fail('la lista no quedó con la llave pública de la semilla nueva');
+
   // Transferencia en pesos: otro invitado anuncia, recibe alias y código; Lupe la marca.
   const cousin = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
   cousin.on('pageerror', (e) => problems.push(`invitado pesos: ${e.message}`));
@@ -506,6 +539,7 @@ try {
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
+  console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log(`Capturas en ${SHOTS}`);

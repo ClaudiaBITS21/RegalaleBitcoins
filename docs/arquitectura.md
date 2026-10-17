@@ -159,6 +159,11 @@ cada visita sin código arma una clave maestra nueva.
   previos se saltea. Así no se abren huecos grandes (las billeteras miran ~20 sin usar).
 - El panel de quien armó la lista muestra todos los aportes y **vuelve a derivar cada dirección
   en el navegador**: si el servidor mostrara una que no sale de la llave, avisa en rojo.
+- **Dónde llegan los regalos** (17/10/2026): dos botones. "Mi cold wallet" (recomendado): pega la
+  zpub, como siempre. "Semilla nueva": el navegador genera 12 palabras (`crypto.getRandomValues`),
+  la persona las anota y las verifica, y de ahí sale la zpub (BIP84 `m/84'/0'/0'`, la que lee
+  cualquier billetera al importarlas). Las palabras no se guardan en ningún lado (ni bóveda ni
+  servidor) y se borran de la página apenas sale la llave pública: la billetera es solo de ella.
 - Publicar listas es gratis en la beta.
 - **Pesos (excepción aprobada el 17/10/2026, solo en listas):** quien arma la lista puede poner
   un alias (solo alias, sin CBU) y el titular, con el compromiso de convertir a bitcoin. El

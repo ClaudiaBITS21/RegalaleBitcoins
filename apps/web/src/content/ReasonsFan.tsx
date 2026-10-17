@@ -55,13 +55,11 @@ export function ReasonsFan({ ctaHref }: { ctaHref: string }) {
     setDrag(0);
     setDragging(false);
     if (j === index) return;
-    setFlipped((f) => {
-      const n = new Set(f);
-      n.delete(j);
-      return n;
-    });
+    // La que pasa al frente se da vuelta mientras se desplaza: llega ya abierta.
+    window.clearTimeout(timer.current);
+    setFlipped((f) => new Set(f).add(j));
+    setSeen((s) => new Set(s).add(j));
     setIndex(j);
-    reveal(j);
   };
 
   const side = wide ? 110 : 78;
