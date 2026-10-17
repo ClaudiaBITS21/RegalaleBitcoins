@@ -38,7 +38,11 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
 2. ~~Prueba corta en signet~~: salteada por decisión de la responsable (17/10/2026).
 3. Primer regalo real de la responsable (≈ USD 5) de punta a punta: regalar, pagar, abrir,
    reclamar a una billetera propia. **Hecho el 17/10/2026: funcionó.**
-4. Recién ahí, compartir el link.
+4. **Verificación en dos pasos confirmada por la responsable** (bloqueante pedido por ella):
+   Google (claudia@, rodo@ y toda cuenta con acceso al proyecto), GitHub, Metaregistrar/AWS
+   (DNS), Resend y su mail. Sin esa confirmación no se publica la nueva landing ni se lanza en
+   `regalalebitcoins.com`. Estado: **pendiente**.
+5. Recién ahí, compartir el link.
 
 ## Limitaciones conocidas mientras no haya dominio
 

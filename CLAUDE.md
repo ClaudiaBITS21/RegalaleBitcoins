@@ -20,6 +20,12 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 
 ## Forma de trabajo
 
+- **Bloqueante del lanzamiento (pedido de la responsable):** no se publica la nueva landing ni
+  se lanza en `regalalebitcoins.com` hasta que la responsable confirme, con sus palabras, la
+  verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
+  (Metaregistrar/AWS), Resend y su mail. Ver `docs/mainnet.md`. Este punto va **siempre** en cada
+  listado de pendientes hasta que esté confirmado.
+
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
 - En todo texto (web, mails, PDFs, materiales) la dirección del sitio es siempre
