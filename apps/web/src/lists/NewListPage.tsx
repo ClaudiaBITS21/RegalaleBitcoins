@@ -186,6 +186,7 @@ export function NewListPage() {
               <span>{t('lista.pesos.titular')}</span>
               <input type="text" value={holder} maxLength={60} autocomplete="name" onInput={(e) => setHolder((e.currentTarget as HTMLInputElement).value)} />
             </label>
+            <small class="texto-suave">{t('lista.pesos.bancoAviso')}</small>
             <label class="casilla casilla-destacada">
               <input type="checkbox" checked={convert} onChange={(e) => setConvert((e.currentTarget as HTMLInputElement).checked)} />
               <span>{t('lista.pesos.compromiso')}</span>

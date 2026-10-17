@@ -451,6 +451,7 @@ export const pt: Dict = {
   'lista.pesos.alias': 'Alias',
   'lista.pesos.aliasInvalido': 'O alias tem entre 6 e 20 caracteres: letras, números, pontos ou hífens.',
   'lista.pesos.titular': 'Titular da conta',
+  'lista.pesos.bancoAviso': "Atenção: muitas transferências de terceiros para uma conta pessoal podem chamar a atenção do seu banco ou carteira. Essa conta e o que você comprar com esses pesos ficam sob sua responsabilidade.",
   'lista.pesos.compromiso': 'Comprometo-me a converter em bitcoin o que receber por esta lista e a marcar no meu painel.',
   'lista.metodo.bitcoin': 'Presentear bitcoin',
   'lista.metodo.pesos': 'Transferir pesos',

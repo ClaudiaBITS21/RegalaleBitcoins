@@ -55,6 +55,10 @@ y `CLAUDE.md`, y aplicar las tareas de la sección final.
 - La web muestra los aportes en pesos como "aportaste $X". **Nunca muestra sats por un aporte
   en pesos**: sería prometer una conversión que no controlamos. Los sats se ven cuando llegan
   a la cadena.
+- **Cambio del 17/10/2026 (Claudia = Rodolfo):** las listas con alias van desde ya, no después
+  del lanzamiento. Y sí se muestran los sats de una transferencia convertida: "Es una división
+  entre los sats comprados entre todos los aportes marcados como usados para esa compra. No es
+  una promesa de nada." Ver `docs/mainnet.md`.
 - La guía del dueño de la lista avisa que muchas transferencias de terceros a una cuenta
   personal pueden llamar la atención del banco, y que el resguardo es suyo.
 
