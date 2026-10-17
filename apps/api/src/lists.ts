@@ -77,6 +77,8 @@ interface TransferRow {
   monto_ars: string;
   estado: 'anunciada' | 'recibida' | 'convertida';
   sats_convertidos: string | null;
+  tanda_sats: string | null;
+  tanda_aportes: number | null;
   creada: Date;
 }
 
@@ -150,8 +152,27 @@ const transferView = (r: TransferRow) => ({
   montoArs: Number(r.monto_ars),
   estado: r.estado,
   satsConvertidos: r.sats_convertidos === null ? null : r.sats_convertidos.toString(),
+  tanda: r.tanda_sats === null ? null : { sats: r.tanda_sats.toString(), aportes: r.tanda_aportes as number },
   creada: r.creada.toISOString(),
 });
+
+/**
+ * Reparte los sats de una compra entre transferencias, en proporción a sus pesos (en centavos,
+ * con bigint). Lo que sobra del redondeo va a las de mayor resto, así la suma da exacto.
+ */
+export function splitPurchase(sats: bigint, centsList: readonly bigint[]): bigint[] {
+  const total = centsList.reduce((a, b) => a + b, 0n);
+  const shares = centsList.map((c) => (sats * c) / total);
+  const remainders = centsList.map((c, i) => ({ i, r: (sats * c) % total }));
+  let left = sats - shares.reduce((a, b) => a + b, 0n);
+  remainders.sort((a, b) => (b.r > a.r ? 1 : b.r < a.r ? -1 : a.i - b.i));
+  for (const { i } of remainders) {
+    if (left === 0n) break;
+    shares[i] = (shares[i] as bigint) + 1n;
+    left -= 1n;
+  }
+  return shares;
+}
 
 export function registerListRoutes(app: Hono, deps: ListDeps): void {
   const { sql, chain, price, network } = deps;
@@ -398,24 +419,53 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
   });
 
   /**
-   * Quien armó la lista marca una transferencia: la recibió en su cuenta, o ya la convirtió a
-   * bitcoin (con los sats que compró). Es lo único que no se verifica en la cadena.
+   * Quien armó la lista marca que una transferencia le llegó. Es lo único que no se verifica en
+   * la cadena. La conversión a bitcoin se marca con una compra (abajo), de una o de varias juntas.
    */
   app.post('/api/cuenta/listas/:id/transferencias/:codigo', async (c) => {
     const account = await owner(c);
-    const b = ((await c.req.json().catch(() => null)) ?? {}) as { estado?: unknown; sats?: unknown };
-    if (b.estado !== 'recibida' && b.estado !== 'convertida') throw new ApiError(400, 'pedido_invalido');
-    let sats: string | null = null;
-    if (b.estado === 'convertida') {
-      if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
-      sats = b.sats;
-    }
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as { estado?: unknown };
+    if (b.estado !== 'recibida') throw new ApiError(400, 'pedido_invalido');
     const rows = await sql`
-      update transferencias t set estado = ${b.estado}, sats_convertidos = ${sats}, actualizada = now()
+      update transferencias t set estado = 'recibida', actualizada = now()
       from listas l
       where t.lista_id = l.id and l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} and t.codigo = ${c.req.param('codigo')}
+        and t.estado = 'anunciada'
       returning t.id`;
     if (rows.length === 0) throw new ApiError(404, 'no_encontrado');
+    return c.json({ ok: true });
+  });
+
+  /**
+   * Compra en tanda: quien armó la lista compró bitcoin con varias transferencias recibidas (las
+   * que quiso, cuando quiso). Los sats se reparten en proporción a los pesos de cada una y cada
+   * invitado ve su parte. No es una promesa: es la división de una compra que ya hizo.
+   */
+  app.post('/api/cuenta/listas/:id/tanda', async (c) => {
+    const account = await owner(c);
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as { codigos?: unknown; sats?: unknown };
+    if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
+    const codes = Array.isArray(b.codigos) ? [...new Set(b.codigos.filter((x): x is string => typeof x === 'string'))] : [];
+    if (codes.length === 0 || codes.length > 200) throw new ApiError(400, 'pedido_invalido');
+    const sats = BigInt(b.sats);
+    await sql.begin(async (tx) => {
+      const rows = await tx<{ id: string; monto_ars: string }[]>`
+        select t.id, t.monto_ars from transferencias t join listas l on l.id = t.lista_id
+        where l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} and t.estado = 'recibida' and t.codigo in ${tx(codes)}
+        order by t.id for update of t`;
+      // Todas tienen que ser de esta lista y estar recibidas (ni anunciadas ni ya convertidas).
+      if (rows.length !== codes.length) throw new ApiError(409, 'pedido_invalido', 'transferencias');
+      // numeric(14, 2) llega como texto con dos decimales: "40000.50" → 4000050 centavos.
+      const cents = rows.map((r) => BigInt(r.monto_ars.replace('.', '')));
+      if (sats < BigInt(rows.length)) throw new ApiError(400, 'monto_invalido');
+      const shares = splitPurchase(sats, cents);
+      for (const [i, r] of rows.entries()) {
+        await tx`
+          update transferencias set estado = 'convertida', sats_convertidos = ${(shares[i] as bigint).toString()},
+            tanda_sats = ${sats.toString()}, tanda_aportes = ${rows.length}, actualizada = now()
+          where id = ${r.id}`;
+      }
+    });
     return c.json({ ok: true });
   });
 

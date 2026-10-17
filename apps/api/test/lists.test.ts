@@ -6,7 +6,7 @@ import { createAccount, createSession } from '../src/accounts.ts';
 import { createApp } from '../src/app.ts';
 import type { AddressStats, ChainClient, FeeRates, MempoolPayment, PriceClient, Utxo } from '../src/chain.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
-import { RESERVATION_MS } from '../src/lists.ts';
+import { RESERVATION_MS, splitPurchase } from '../src/lists.ts';
 
 const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
 const ORIGIN = 'https://regalale.test';
@@ -190,14 +190,32 @@ describe('listas de regalos', () => {
     const mark = (codigo: string, body: unknown, withCookie = true) => req(`/api/cuenta/listas/${id}/transferencias/${codigo}`, body, withCookie);
     assert.equal((await mark(t1.codigo, { estado: 'recibida' }, false)).status, 401);
     assert.equal((await mark(t1.codigo, { estado: 'recibida' })).status, 200);
-    assert.equal((await mark(t1.codigo, { estado: 'convertida' })).status, 400, 'convertida pide los sats');
-    assert.equal((await mark(t1.codigo, { estado: 'convertida', sats: '2100' })).status, 200);
-    assert.deepEqual(await mine(t1.token).then((m) => [m.estado, m.satsConvertidos]), ['convertida', '2100']);
-    assert.equal((await mine(t2.token)).estado, 'anunciada');
+    // La conversión se marca con una compra (tanda), no transferencia por transferencia.
+    assert.equal((await mark(t1.codigo, { estado: 'convertida', sats: '2100' })).status, 400);
+    const tanda = (body: unknown) => req(`/api/cuenta/listas/${id}/tanda`, body);
+    assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '1000' })).status, 409, 'una todavía no se recibió');
+    assert.equal((await mine(t1.token)).estado, 'recibida', 'una compra rechazada no cambia nada');
+    assert.equal((await mark(t2.codigo, { estado: 'recibida' })).status, 200);
+    assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '0' })).status, 400);
+    // 250.000 y 15.000,50 pesos: 265.000,50 en total; 1.000.001 sats repartidos en proporción, sin perder ninguno.
+    assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '1000001' })).status, 200);
+    const [m1, m2] = (await Promise.all([mine(t1.token), mine(t2.token)])) as unknown as Array<{ estado: string; satsConvertidos: string; tanda: { sats: string; aportes: number } }>;
+    assert.deepEqual([m1?.estado, m1?.satsConvertidos, m2?.satsConvertidos], ['convertida', '943395', '56606']);
+    assert.equal(BigInt(m1?.satsConvertidos ?? 0) + BigInt(m2?.satsConvertidos ?? 0), 1000001n);
+    assert.deepEqual(m1?.tanda, { sats: '1000001', aportes: 2 });
+    assert.equal((await tanda({ codigos: [t1.codigo], sats: '5000' })).status, 409, 'una convertida no se vuelve a repartir');
 
     const panel = (await (await req('/api/cuenta/listas')).json()) as { listas: Array<{ id: string; alias: string; transferencias: Array<{ codigo: string; nombre: string | null; estado: string }> }> };
     const l = panel.listas.find((x) => x.id === id);
     assert.equal(l?.alias, 'ana.leo.mp');
-    assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.nombre, x.estado]), [[t1.codigo, 'Tío Beto', 'convertida'], [t2.codigo, null, 'anunciada']]);
+    assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.nombre, x.estado]), [[t1.codigo, 'Tío Beto', 'convertida'], [t2.codigo, null, 'convertida']]);
+  });
+});
+
+describe('compra en tanda: reparto', () => {
+  it('reparte en proporción a los pesos y la suma da exacto', () => {
+    assert.deepEqual(splitPurchase(100n, [100n, 100n, 100n]), [34n, 33n, 33n]);
+    assert.deepEqual(splitPurchase(10n, [1n]), [10n]);
+    assert.deepEqual(splitPurchase(1000n, [300n, 100n]), [750n, 250n]);
   });
 });

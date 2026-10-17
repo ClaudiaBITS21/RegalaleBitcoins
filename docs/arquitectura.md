@@ -172,6 +172,10 @@ cada visita sin código arma una clave maestra nueva.
   los pesos: quien armó la lista marca anunciada → recibida → convertida (con los sats que
   compró) y el invitado ve ese estado. El alias solo se muestra después de anunciar
   (tabla `transferencias`, migración 007).
+- **Compra en tanda** (17/10/2026): cuando quiere, quien armó la lista elige varias transferencias
+  recibidas, carga los sats que compró con ellas y se reparten en proporción a los pesos de cada una
+  (bigint; lo que sobra del redondeo va a las de mayor resto, la suma da exacto). Cada invitado ve su
+  parte y el total de la compra (`POST /api/cuenta/listas/:id/tanda`, migración 010).
 
 ## Seguridad web
 

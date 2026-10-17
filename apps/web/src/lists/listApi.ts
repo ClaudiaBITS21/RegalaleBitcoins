@@ -47,6 +47,8 @@ export interface Transfer {
   readonly montoArs: number;
   readonly estado: 'anunciada' | 'recibida' | 'convertida';
   readonly satsConvertidos: string | null;
+  /** La compra de la que salió (total y cuántas transferencias entraron). */
+  readonly tanda: { readonly sats: string; readonly aportes: number } | null;
   readonly creada: string;
 }
 
@@ -120,8 +122,9 @@ export const listApi = {
   mine: (token: string) => call<MyGift>('/api/aportes/consulta', { token }),
   announce: (id: string, t: { nombre?: string; mensaje?: string; monto: number }) =>
     call<{ codigo: string; alias: string; titular: string; monto: number; token: string }>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),
-  mark: (id: string, codigo: string, estado: 'recibida' | 'convertida', sats?: string) =>
-    call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado, ...(sats === undefined ? {} : { sats }) }),
+  mark: (id: string, codigo: string, estado: 'recibida') =>
+    call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado }),
+  tanda: (id: string, codigos: readonly string[], sats: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/tanda`, { codigos, sats }),
   owned: () => call<{ listas: OwnedList[] }>('/api/cuenta/listas'),
   close: (id: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cerrar`, {}),
 };

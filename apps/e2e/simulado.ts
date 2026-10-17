@@ -535,13 +535,16 @@ try {
   await row.getByText('Anunciada').waitFor({ timeout: 15_000 });
   await row.getByRole('button', { name: 'Ya me llegó' }).click();
   await row.getByText('Recibida').waitFor();
-  await row.getByRole('button', { name: 'Ya la convertí' }).click();
-  await row.getByLabel('Sats que compraste').fill('35.000');
-  await row.getByRole('button', { name: 'Confirmar 35.000 sats' }).click();
+  // Compra en tanda: elige las recibidas que usó, carga los sats comprados y se reparten.
+  await giver.getByRole('checkbox', { name: `Usar ${refCode} en esta compra` }).check();
+  await giver.getByLabel('Sats que compraste').fill('35.000');
+  await giver.locator('.tanda-reparto').getByText('35.000 sats').waitFor();
+  await giver.locator('.lista-transferencias').screenshot({ path: join(SHOTS, 'l6-tanda.png') });
+  await giver.getByRole('button', { name: 'Repartir 35.000 sats entre 1' }).click();
   await row.getByText('Convertida').waitFor();
   await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l6-panel-pesos.png') });
   await cousin.goto(cousinMine);
-  await cousin.getByText(/Ya se convirtió en 35\.000 sats/).waitFor({ timeout: 15_000 });
+  await cousin.getByText('¡Listo! Tu parte se convirtió en 35.000 sats.').waitFor({ timeout: 15_000 });
 
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
@@ -549,7 +552,7 @@ try {
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
-  console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida.');
+  console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
