@@ -8,6 +8,7 @@ import { clearClaim, findGift, type Gift, insertGift, isDuplicateAddress, pendin
 import { RateLimiter } from './ratelimit.ts';
 import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
+import { registerAdminRoutes } from './admin.ts';
 import { consoleMailer } from './mail.ts';
 import { sendReadyNotices } from './notices.ts';
 import { giftState } from './state.ts';
@@ -27,6 +28,8 @@ export interface AppDeps {
   readonly accounts?: AccountConfig;
   /** Techo por regalo en dólares (TOPE_USD). En mainnet nunca supera MAINNET_CEILING_USD. */
   readonly ceilingUsd?: number;
+  /** Mails con acceso al panel de administración (ADMIN_EMAILS). */
+  readonly adminEmails?: readonly string[];
 }
 
 /** Techo de la beta en redes de prueba: un regalo no puede superar este valor en dólares. */
@@ -125,6 +128,7 @@ export function createApp(deps: AppDeps): Hono {
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
   registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')) });
+  registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
 
   /** Difusiones programadas: lo dispara Cloud Scheduler cada pocos minutos. */
   app.post('/api/tareas/difusiones', async (c) => {

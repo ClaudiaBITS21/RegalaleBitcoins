@@ -70,7 +70,22 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+/** Resumen del panel de administración: solo números agregados. */
+export interface AdminSummary {
+  readonly red: string;
+  readonly generado: string;
+  readonly usuarios: { total: number; ultimos7: number; ultimos30: number; conBoveda: number; conRegalos: number };
+  readonly regalos: { total: number; ultimos7: number; ultimos30: number; conCuenta: number; porEstado: Record<string, number>; muestra: number; parcial: boolean };
+  readonly sats: { esperados: string; recibidos: string; enRegalos: string };
+  readonly usdPorBtc: number | null;
+  readonly porOcasion: Record<string, number>;
+  readonly porIdioma: Record<string, number>;
+  readonly porMoneda: Record<string, number>;
+  readonly porDia: { creados: Record<string, number>; reclamados: Record<string, number> };
+}
+
 export const api = {
+  adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,
   fees: () => call<FeeRates>('/api/fees'),

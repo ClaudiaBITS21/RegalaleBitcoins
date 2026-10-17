@@ -21,7 +21,7 @@ const chain = cachedFees(
         console.warn(`Cadena: ${method} con respaldo (${(error as Error).message.slice(0, 120)})`),
       ),
 );
-const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken, ...(config.ceilingUsd === undefined ? {} : { ceilingUsd: config.ceilingUsd }) });
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken, adminEmails: config.adminEmails, ...(config.ceilingUsd === undefined ? {} : { ceilingUsd: config.ceilingUsd }) });
 
 if (config.webDist !== null) {
   // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.

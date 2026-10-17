@@ -26,6 +26,8 @@ export interface Config {
   readonly cookieSecure: boolean;
   /** Techo por regalo en dólares (TOPE_USD); en mainnet lo acota MAINNET_CEILING_USD. */
   readonly ceilingUsd: number | undefined;
+  /** Mails con acceso al panel de administración (ADMIN_EMAILS, separados por coma). */
+  readonly adminEmails: readonly string[];
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
 }
@@ -77,6 +79,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mailFrom: env.MAIL_FROM ?? 'RegalaleBitcoins <onboarding@resend.dev>',
     resendApiKey: env.RESEND_API_KEY !== undefined && env.RESEND_API_KEY !== '' ? env.RESEND_API_KEY : null,
     cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
+    adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e !== ''),
     ceilingUsd: env.TOPE_USD === undefined ? undefined : Number(env.TOPE_USD),
     webDist: env.WEB_DIST ?? null,
   });

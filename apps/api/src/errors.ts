@@ -16,7 +16,8 @@ export type ErrorCode =
   | 'cuenta_existente'
   | 'passkey_invalida'
   | 'sesion_requerida'
-  | 'link_invalido';
+  | 'link_invalido'
+  | 'no_encontrado';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;

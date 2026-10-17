@@ -2071,3 +2071,21 @@ svg.tarjeta-imagen {
 .pagina-porque .seccion h2 {
   line-height: 1.05;
 }
+
+/* Panel de administración (/admin) */
+.admin { display: grid; gap: 20px; }
+.admin-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.admin-tile { display: grid; gap: 4px; padding: 14px 16px; border: 2px solid var(--borde); border-radius: var(--radio); background: var(--papel); }
+.admin-tile-label { font-size: 0.85rem; color: var(--suave); }
+.admin-tile-value { font-family: var(--titulos); font-size: 1.6rem; line-height: 1.1; overflow-wrap: anywhere; }
+.admin-tile-detail { font-size: 0.8rem; color: var(--apagado); }
+.admin-bloque h2 { font-family: var(--titulos); font-size: 1.1rem; margin: 0 0 10px; }
+.admin-barras { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.admin-barras li { display: grid; grid-template-columns: minmax(90px, 40%) 1fr auto; align-items: center; gap: 10px; font-size: 0.9rem; }
+.admin-barra-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-barra { height: 12px; border-radius: 6px; background: var(--gris); overflow: hidden; }
+.admin-barra-relleno { display: block; height: 100%; border-radius: 6px; background: var(--naranja); }
+.admin-barra-n { font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.admin-dias { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 8px; border: 2px solid var(--borde); border-radius: var(--radio); background: var(--papel); }
+.admin-dia { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.admin-dia-barra { display: block; width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--naranja); }

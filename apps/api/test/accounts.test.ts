@@ -116,6 +116,7 @@ describe('Cuentas con passkey', () => {
       price,
       network: signet,
       accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true },
+      adminEmails: ['admin@example.com'],
     });
   });
 
@@ -220,5 +221,26 @@ describe('Cuentas con passkey', () => {
     assert.equal((await run()).avisos, 0); // una sola vez
     assert.equal(mails.at(-1)?.subject, 'Tu regalo para Tomi ya está listo');
     assert.ok(!mails.at(-1)?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
+  });
+
+  it('panel de admin: solo para los mails autorizados, y solo números agregados', async () => {
+    assert.equal((await req('/api/admin/resumen')).status, 401);
+    const ana = await signUp('ana@example.com');
+    assert.equal((await req('/api/admin/resumen', undefined, ana.cookie)).status, 404);
+    const root = masterRootFromMnemonic(MASTER);
+    const g = deriveGift(root, 0, 'es', signet);
+    await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: 'secreto', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 }, ana.cookie);
+    const admin = await signUp('Admin@Example.com');
+    const res = await req('/api/admin/resumen', undefined, admin.cookie);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { usuarios: { total: number; conRegalos: number }; regalos: { total: number; porEstado: Record<string, number> }; porOcasion: Record<string, number>; sats: { esperados: string } };
+    assert.equal(body.usuarios.total, 2);
+    assert.equal(body.usuarios.conRegalos, 1);
+    assert.equal(body.regalos.total, 1);
+    assert.deepEqual(body.regalos.porEstado, { esperando: 1 });
+    assert.deepEqual(body.porOcasion, { cumple: 1 });
+    assert.equal(body.sats.esperados, '30000');
+    const text = JSON.stringify(body);
+    for (const leak of ['ana@example.com', 'Tomi', 'secreto', g.address]) assert.ok(!text.includes(leak), `no expone ${leak}`);
   });
 });

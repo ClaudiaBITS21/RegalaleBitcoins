@@ -12,6 +12,7 @@ import { ALLOW_MAINNET } from './config.ts';
 import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { OpenGiftPage } from './open.tsx';
+import { AdminPage } from './admin/AdminPage.tsx';
 import { PanelPage } from './panel/PanelPage.tsx';
 import { WhyPage } from './porque.tsx';
 import { I18nContext } from './ui.tsx';
@@ -54,6 +55,8 @@ function App() {
         <ClaimPage id={claim[1]} />
       ) : /^\/regalar\/?$/.test(path) ? (
         <GivePage />
+      ) : /^\/admin\/?$/.test(path) ? (
+        <AdminPage />
       ) : /^\/panel\/?$/.test(path) ? (
         <PanelPage />
       ) : /^\/abrir\/?$/.test(path) ? (
