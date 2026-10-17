@@ -20,7 +20,7 @@
 | Web | sitio `regalalebitcoins`, `pnpm build:mainnet` → `apps/web/dist-mainnet` | sitio `regalalebitcoins-signet`, `pnpm build` → `apps/web/dist` |
 | API | Cloud Run `regalalebitcoins-api-mainnet` | Cloud Run `regalalebitcoins-api` |
 | Base | base `regalale_mainnet` (misma instancia Cloud SQL, usuario propio) | base `regalale` |
-| Cadena | `https://mempool.space/api` | `https://mempool.space/signet/api` |
+| Cadena | `https://mempool.space/api`, con respaldo automático en `https://blockstream.info/api` | `https://mempool.space/signet/api` (sin respaldo) |
 | Tareas | Scheduler `difusiones-mainnet` | Scheduler `difusiones-programadas` |
 
 La API de mainnet arranca solo con `NETWORK=mainnet` y `ALLOW_MAINNET=autorizado`. La web solo

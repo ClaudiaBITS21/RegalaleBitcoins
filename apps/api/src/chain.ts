@@ -72,7 +72,25 @@ function rate(value: unknown): number {
   return value;
 }
 
-export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, timeoutMs = 10_000): ChainClient {
+/**
+ * Dialecto de la API Esplora: mempool.space tiene /v1/fees/recommended; Blockstream solo
+ * /fee-estimates (objetivo en bloques → sat/vB). El resto de las rutas es igual.
+ */
+export type EsploraFlavor = 'mempool' | 'blockstream';
+
+/** Comisiones a partir de /fee-estimates de Blockstream: 1, 3, 6, 144 y 1008 bloques. */
+export function feesFromEstimates(estimates: Record<string, unknown>): FeeRates {
+  const at = (target: number): number => {
+    const keys = Object.keys(estimates).map(Number).filter((k) => Number.isInteger(k) && k > 0).sort((a, b) => a - b);
+    // El objetivo pedido o el más cercano por debajo (más rápido, nunca menos de lo pedido).
+    const key = keys.filter((k) => k <= target).pop() ?? keys[0];
+    if (key === undefined) throw new ChainError('Estimaciones de comisión vacías.');
+    return Math.max(1, rate(estimates[String(key)]));
+  };
+  return { fastest: at(1), halfHour: at(3), hour: at(6), economy: at(144), minimum: at(1008) };
+}
+
+export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, timeoutMs = 10_000, flavor: EsploraFlavor = 'mempool'): ChainClient {
   async function request(path: string, init?: RequestInit): Promise<Response> {
     let res: Response;
     try {
@@ -137,6 +155,7 @@ export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, 
       return txid;
     },
     async fees() {
+      if (flavor === 'blockstream') return feesFromEstimates((await json('/fee-estimates')) as Record<string, unknown>);
       const f = (await json('/v1/fees/recommended')) as Record<string, unknown>;
       return {
         fastest: rate(f.fastestFee),
@@ -152,6 +171,55 @@ export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, 
 export interface PriceClient {
   /** Precio de 1 BTC en USD. */
   btcUsd(): Promise<number>;
+}
+
+/** Falla del proveedor (red, límite o error propio), no del pedido: vale probar con otro. */
+function providerFailure(error: unknown): boolean {
+  return error instanceof ChainError && (error.status === undefined || error.status === 429 || error.status >= 500);
+}
+
+/**
+ * Dos fuentes de cadena: usa la principal y, si falla o nos limita, la de respaldo. Un rechazo
+ * del pedido (4xx, por ejemplo una transacción inválida) no se reintenta en la otra.
+ */
+export function fallbackChain(primary: ChainClient, secondary: ChainClient, onFallback: (method: string, error: unknown) => void = () => {}): ChainClient {
+  const wrap =
+    <A extends unknown[], R>(method: string, call: (c: ChainClient, ...args: A) => Promise<R>) =>
+    async (...args: A): Promise<R> => {
+      try {
+        return await call(primary, ...args);
+      } catch (error) {
+        if (!providerFailure(error)) throw error;
+        onFallback(method, error);
+        return call(secondary, ...args);
+      }
+    };
+  return {
+    addressStats: wrap('addressStats', (c, a: string) => c.addressStats(a)),
+    addressUtxos: wrap('addressUtxos', (c, a: string) => c.addressUtxos(a)),
+    mempoolPayments: wrap('mempoolPayments', (c, a: string) => c.mempoolPayments(a)),
+    txHex: wrap('txHex', (c, t: string) => c.txHex(t)),
+    broadcast: wrap('broadcast', (c, h: string) => c.broadcast(h)),
+    fees: wrap('fees', (c) => c.fees()),
+  };
+}
+
+/** Guarda las comisiones unos segundos: cambian por bloque, no por pedido. */
+export function cachedFees(chain: ChainClient, cacheMs = 30_000, now: () => number = Date.now): ChainClient {
+  let cached: { at: number; fees: FeeRates } | null = null;
+  return {
+    addressStats: (a) => chain.addressStats(a),
+    addressUtxos: (a) => chain.addressUtxos(a),
+    mempoolPayments: (a) => chain.mempoolPayments(a),
+    txHex: (t) => chain.txHex(t),
+    broadcast: (h) => chain.broadcast(h),
+    async fees() {
+      if (cached !== null && now() - cached.at < cacheMs) return cached.fees;
+      const fees = await chain.fees();
+      cached = { at: now(), fees };
+      return fees;
+    },
+  };
 }
 
 export function priceClient(url: string, fetchImpl: typeof fetch = fetch, cacheMs = 60_000): PriceClient {

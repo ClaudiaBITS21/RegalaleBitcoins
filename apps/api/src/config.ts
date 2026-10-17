@@ -11,6 +11,8 @@ export interface Config {
   readonly broadcasterLoop: boolean;
   /** API compatible con Esplora (mempool.space, Blockstream o propia). */
   readonly esploraUrl: string;
+  /** Respaldo con la API de Blockstream si la principal falla o limita (ESPLORA_FALLBACK_URL, 'no' lo apaga). */
+  readonly esploraFallbackUrl: string | null;
   /** Endpoint de precios de mempool.space (/api/v1/prices). */
   readonly priceUrl: string;
   /** BTC/ARS: CriptoYa (exchanges locales) y Bitso como control. */
@@ -35,6 +37,14 @@ const DEFAULT_ESPLORA: Readonly<Record<NetworkName, string>> = {
   regtest: 'http://127.0.0.1:3002',
 };
 
+// Blockstream solo para mainnet: su testnet es testnet3 (acá testnet4) y no tiene signet.
+const DEFAULT_FALLBACK: Readonly<Record<NetworkName, string | null>> = {
+  mainnet: 'https://blockstream.info/api',
+  testnet: null,
+  signet: null,
+  regtest: null,
+};
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const name = (env.NETWORK ?? 'signet') as NetworkName;
   // Mainnet solo con autorización explícita del responsable del proyecto.
@@ -55,6 +65,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     tasksToken: env.TAREAS_TOKEN !== undefined && env.TAREAS_TOKEN.length >= 32 ? env.TAREAS_TOKEN : null,
     broadcasterLoop: env.RUN_BROADCASTER_LOOP !== 'no',
     esploraUrl: (env.ESPLORA_URL ?? DEFAULT_ESPLORA[name]).replace(/\/$/, ''),
+    esploraFallbackUrl: env.ESPLORA_FALLBACK_URL === 'no' ? null : (env.ESPLORA_FALLBACK_URL ?? DEFAULT_FALLBACK[name])?.replace(/\/$/, '') ?? null,
     priceUrl: env.PRICE_URL ?? 'https://mempool.space/api/v1/prices',
     arsPriceUrls: {
       criptoya: env.ARS_PRICE_URL ?? 'https://criptoya.com/api/btc/ars/0.1',
