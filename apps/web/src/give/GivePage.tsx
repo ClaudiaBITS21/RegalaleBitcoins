@@ -3,7 +3,9 @@ import { useEffect, useState } from 'preact/hooks';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
+import type { CardStyle } from '../content/GiftCardArt.tsx';
 import type { OccasionChoice } from '../content/OccasionPicker.tsx';
+import type { ProcessedImage } from './ownImage.ts';
 import { DICTS, type Key, translate } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
@@ -37,6 +39,9 @@ export interface Draft {
   from: string;
   message: string;
   image: number;
+  /** Estilo de la tarjeta; con 'propia', la imagen ya procesada en el navegador. */
+  style: CardStyle;
+  ownImage: ProcessedImage | null;
   lang: Lang;
   currency: 'USD' | 'ARS' | 'SAT';
   /** En la moneda elegida: dólares, pesos o sats. */
@@ -84,6 +89,8 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         de: draft.from,
         mensaje: draft.message,
         imagen: draft.image,
+        estilo: draft.style,
+        ...(draft.style === 'propia' && draft.ownImage !== null ? { imagenPropia: draft.ownImage.base64 } : {}),
         moneda: draft.currency,
         monto: draft.amount,
         sats: draft.sats.toString(),
@@ -138,6 +145,8 @@ export function GivePage() {
     from: '',
     message: preset === null ? '' : suggestedMessage(preset.key, (k) => translate(lang, k)),
     image: 1,
+    style: 'ilustracion',
+    ownImage: null,
     lang: lang as Lang,
     currency: 'USD',
     amount: 0,
@@ -209,7 +218,7 @@ export function GivePage() {
 
   const another = () => {
     setGift(null);
-    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', image: 1, amount: 0, sats: 0n }));
+    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', image: 1, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
     setSteps(['ocasion']);
   };
 

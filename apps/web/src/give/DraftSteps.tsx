@@ -3,10 +3,10 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
-import { CARD_VARIANTS, GiftCardArt } from '../content/GiftCardArt.tsx';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
+import { StylePicker } from './StylePicker.tsx';
 
 export const LIMITS = { to: 30, from: 30, message: 280, messageWarn: 240 } as const;
 /** Techo de la beta, en dólares. El servidor lo vuelve a controlar. */
@@ -38,7 +38,8 @@ export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: 
   const left = LIMITS.message - charCount(draft.message);
   const toOk = charCount(draft.to) > 0 && charCount(draft.to) <= LIMITS.to;
   const fromOk = charCount(draft.from) <= LIMITS.from;
-  const ok = toOk && fromOk && left >= 0;
+  const imageOk = draft.style !== 'propia' || draft.ownImage !== null;
+  const ok = toOk && fromOk && left >= 0 && imageOk;
   return (
     <form
       class="paso"
@@ -65,23 +66,7 @@ export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: 
           {left < 0 ? t('regalar.para.sobran', { n: -left }) : t('regalar.para.quedan', { n: left })}
         </small>
       </label>
-      <fieldset class="campo">
-        <legend>{t('regalar.para.imagen')}</legend>
-        <div class="grilla-imagenes">
-          {CARD_VARIANTS.map((n) => (
-            <button
-              type="button"
-              key={n}
-              class={`imagen-opcion${draft.image === n ? ' elegida' : ''}`}
-              aria-pressed={draft.image === n}
-              aria-label={t('regalar.para.imagenN', { n })}
-              onClick={() => onChange({ image: n })}
-            >
-              <GiftCardArt occasion={draft.occasion} variant={n} />
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <StylePicker draft={draft} onChange={onChange} />
       <label class="campo">
         <span>{t('regalar.para.idioma')}</span>
         <select value={draft.lang} onChange={(e) => onChange({ lang: (e.currentTarget as HTMLSelectElement).value as Lang })}>
@@ -93,6 +78,7 @@ export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: 
         </select>
         <small class="texto-suave">{t('regalar.para.idiomaAyuda')}</small>
       </label>
+      {!imageOk && <small class="texto-suave">{t('regalar.ia.falta')}</small>}
       <Button type="submit" disabled={!ok}>
         {t('seguir')}
       </Button>

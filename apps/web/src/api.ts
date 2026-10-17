@@ -15,6 +15,8 @@ export interface GiftView {
   readonly de: string | null;
   readonly mensaje: string;
   readonly imagen: number;
+  /** Estilo de la tarjeta (ilustracion, mano, elegante, propia). Falta en regalos viejos. */
+  readonly estilo?: string;
   readonly direccion: string;
   readonly estado: GiftState;
   readonly sats: { readonly confirmados: string; readonly sinConfirmar: string; readonly esperados: string | null };
@@ -41,6 +43,9 @@ export interface NewGift {
   readonly de: string;
   readonly mensaje: string;
   readonly imagen: number;
+  readonly estilo?: string;
+  /** Base64 de la imagen propia (solo con estilo 'propia'). */
+  readonly imagenPropia?: string;
   readonly moneda: 'USD' | 'ARS' | 'SAT';
   readonly monto: number;
   readonly sats: string;

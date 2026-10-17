@@ -3,6 +3,16 @@ import type { Sql } from './db.ts';
 
 export type ClaimKind = 'reclamo' | 'recupero';
 
+/** Estilo de la tarjeta: los dibujos de la web, una foto del banco o una imagen propia. */
+export const CARD_STYLES = ['ilustracion', 'mano', 'elegante', 'realista', 'propia'] as const;
+export type CardStyle = (typeof CARD_STYLES)[number];
+
+/** Imagen propia de la tarjeta, ya achicada y sin metadatos en el navegador. */
+export interface OwnImage {
+  readonly type: 'image/webp' | 'image/jpeg' | 'image/png';
+  readonly data: Uint8Array;
+}
+
 export interface Gift {
   readonly id: string;
   readonly network: NetworkName;
@@ -15,6 +25,7 @@ export interface Gift {
   readonly from: string | null;
   readonly message: string;
   readonly image: number;
+  readonly style: CardStyle;
   readonly currency: string | null;
   readonly amount: number | null;
   readonly usdPerBtc: number | null;
@@ -36,6 +47,9 @@ export interface NewGift {
   readonly from?: string | null;
   readonly message?: string;
   readonly image?: number;
+  readonly style?: CardStyle;
+  /** Solo con style 'propia'. */
+  readonly ownImage?: OwnImage | null;
   readonly currency?: string | null;
   readonly amount?: number | null;
   readonly usdPerBtc?: number | null;
@@ -64,6 +78,7 @@ interface Row {
   de: string | null;
   mensaje: string;
   imagen: number;
+  estilo: CardStyle;
   moneda: string | null;
   monto: string | null;
   usd_por_btc: string | null;
@@ -87,6 +102,7 @@ function fromRow(r: Row): Gift {
     from: r.de,
     message: r.mensaje,
     image: r.imagen,
+    style: r.estilo,
     currency: r.moneda,
     amount: r.monto === null ? null : Number(r.monto),
     usdPerBtc: r.usd_por_btc === null ? null : Number(r.usd_por_btc),
@@ -99,14 +115,28 @@ function fromRow(r: Row): Gift {
 }
 
 export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
-  const [row] = await sql<Row[]>`
-    insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice)
-    values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
-            ${g.message ?? ''}, ${g.image ?? 1}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
-            ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
-            ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null})
-    returning *`;
-  return fromRow(row as Row);
+  const style = g.style ?? 'ilustracion';
+  if ((style === 'propia') !== (g.ownImage != null)) throw new Error('La imagen propia va solo con el estilo "propia".');
+  return sql.begin(async (tx) => {
+    const [row] = await tx<Row[]>`
+      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice)
+      values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
+              ${g.message ?? ''}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
+              ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
+              ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null})
+      returning *`;
+    const gift = fromRow(row as Row);
+    if (g.ownImage != null) {
+      await tx`insert into imagenes (regalo_id, tipo, datos) values (${gift.id}, ${g.ownImage.type}, ${Buffer.from(g.ownImage.data)})`;
+    }
+    return gift;
+  }) as Promise<Gift>;
+}
+
+export async function findOwnImage(sql: Sql, id: string): Promise<OwnImage | null> {
+  if (!GIFT_ID.test(id)) return null;
+  const [r] = await sql<{ tipo: OwnImage['type']; datos: Buffer }[]>`select tipo, datos from imagenes where regalo_id = ${id}`;
+  return r === undefined ? null : { type: r.tipo, data: new Uint8Array(r.datos) };
 }
 
 /** true si el error es por una dirección ya registrada (otro regalo con el mismo índice). */

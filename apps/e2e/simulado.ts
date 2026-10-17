@@ -1,3 +1,4 @@
+import zlib from 'node:zlib';
 // Prueba de punta a punta del reclamo, en Chromium real, contra una cadena SIMULADA.
 // Levanta la API sirviendo la web compilada (mismo origen, CSP estricta), crea un
 // regalo efímero, lo reclama desde el navegador y verifica la transacción difundida.
@@ -299,6 +300,13 @@ try {
   await giver.goto(`${BASE}/regalar?ocasion=cumple`);
   await giver.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
   await giver.getByLabel('Su nombre').fill('Lupe');
+  // Estilo "Con tu IA": el pedido nombra la ocasión y la imagen se sube procesada en el navegador.
+  await giver.getByRole('radio', { name: 'Con tu IA' }).click();
+  if (!(await giver.locator('.ia-pedido').inputValue()).includes('Cumpleaños')) fail('el pedido para la IA no nombra la ocasión');
+  if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con "Con tu IA" y sin imagen no debería poder seguir');
+  await giver.locator('.ia-subir input[type=file]').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: testPng(1600, 900) });
+  await giver.locator('.ia-vista img').waitFor({ timeout: 10_000 });
+  await shot2(giver, 'r2-ia');
   await giver.getByRole('button', { name: 'Seguir' }).click();
   await giver.getByRole('button', { name: 'US$ 25' }).click();
   await giver.getByRole('button', { name: 'Seguir' }).click();
@@ -309,6 +317,13 @@ try {
   const lupeAddress = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   chain.pay(lupeAddress, 25_000n, true);
   await giver.getByRole('heading', { name: '¡Pago recibido! Mandá el regalo' }).waitFor({ timeout: 15_000 });
+  const ownImg = await giver.locator('.arte-propia img').evaluate(async (img: HTMLImageElement) => {
+    await img.decode().catch(() => undefined);
+    return { w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute('src') };
+  });
+  if (ownImg.w !== 1024 || ownImg.h !== 800 || !String(ownImg.src).endsWith('/imagen')) fail(`la imagen propia no se muestra bien: ${JSON.stringify(ownImg)}`);
+  const stored = (await sql`select i.tipo, r.estilo from imagenes i join regalos r on r.id = i.regalo_id where r.direccion = ${lupeAddress}`)[0];
+  if (stored?.tipo !== 'image/webp' || stored.estilo !== 'propia') fail(`imagen propia mal guardada: ${JSON.stringify(stored)}`);
   const lupeLink = await giver.locator('.enlace-regalo').innerText();
   const lupeWords = await giver.locator('.palabras-regalo li').allInnerTexts();
   const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
@@ -347,4 +362,26 @@ try {
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();
+}
+
+/** PNG de prueba (degradé) armado a mano, con la firma y los CRC reales. */
+function testPng(width: number, height: number): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const out = Buffer.alloc(12 + data.length);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(zlib.crc32(body) >>> 0, 8 + data.length);
+    return out;
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8); // 8 bits, RGB
+  const raw = Buffer.alloc((width * 3 + 1) * height);
+  for (let y = 0; y < height; y++) {
+    const row = y * (width * 3 + 1);
+    for (let x = 0; x < width; x++) raw.set([255, Math.round((x / width) * 200), Math.round((y / height) * 200)], row + 1 + x * 3);
+  }
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }

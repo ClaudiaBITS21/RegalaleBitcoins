@@ -45,7 +45,7 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
       {overCeiling && <Notice>{t('regalar.pagar.techo', { maximo: formatUsd(ceilingUsd, lang) })}</Notice>}
       {view !== null && (
         <div class="tarjeta vista-tarjeta">
-          <GiftCardArt occasion={view.ocasion} variant={view.imagen} name={view.para} class="tarjeta-imagen" />
+          <GiftCardArt occasion={view.ocasion} variant={view.imagen} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} name={view.para} class="tarjeta-imagen" />
         </div>
       )}
       <p class="texto-suave">{t('regalar.mandar.monto', { monto: formatSats(received, lang) })}</p>

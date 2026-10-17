@@ -451,7 +451,10 @@ export const cardVariant = (n: number): 1 | 2 | 3 | 4 => Math.min(Math.max(Math.
  * (aria-hidden): quien la usa pone el texto accesible. Con `name`, el nombre de quien
  * recibe va en una etiqueta abajo.
  */
-export type CardStyle = 'ilustracion' | 'mano';
+/** Estilos que ofrece la web. 'realista' (banco de fotos) se suma cuando haya fotos. */
+export type CardStyle = 'ilustracion' | 'mano' | 'elegante' | 'propia';
+export const CARD_STYLES: readonly CardStyle[] = ['ilustracion', 'mano', 'elegante', 'propia'];
+export const isCardStyle = (s: unknown): s is CardStyle => typeof s === 'string' && (CARD_STYLES as readonly string[]).includes(s);
 
 /** Fondo papel y garabatos de fibra para el estilo "Dibujo a mano". */
 const PAPEL = '#FBF6EA';
@@ -469,8 +472,25 @@ function Garabatos({ p }: { p: Palette }) {
   );
 }
 
-export function GiftCardArt({ occasion, variant, name, class: className, estilo = 'ilustracion' }: { occasion: string; variant: number; name?: string | undefined; class?: string; estilo?: CardStyle }) {
+export function GiftCardArt({
+  occasion,
+  variant,
+  name,
+  class: className,
+  estilo,
+  src,
+}: {
+  occasion: string;
+  variant: number;
+  name?: string | undefined;
+  class?: string;
+  estilo?: string | undefined;
+  /** Imagen propia (estilo 'propia'): data: en el navegador o /api/gifts/<id>/imagen. */
+  src?: string | null | undefined;
+}) {
   const id = useId().replace(/[^A-Za-z0-9_-]/g, '');
+  if (estilo === 'propia' && src) return <OwnCard src={src} name={name} className={className} />;
+  if (estilo === 'elegante') return <ElegantCard occasion={occasion} variant={variant} name={name} className={className} />;
   if (estilo === 'mano') return <HandCard occasion={occasion} variant={variant} name={name} className={className} fid={`mano-${id}`} />;
   const v = VARIANTS[cardVariant(variant)];
   const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
@@ -534,6 +554,58 @@ function HandCard({ occasion, variant, name, className, fid }: { occasion: strin
             {label}
           </text>
         </g>
+      )}
+    </svg>
+  );
+}
+
+/** Imagen propia (hecha con IA o subida): misma proporción que los dibujos, nombre encima. */
+function OwnCard({ src, name, className }: { src: string; name?: string | undefined; className?: string | undefined }) {
+  const label = name?.trim() ?? '';
+  return (
+    <span class={`arte-tarjeta arte-propia${className ? ` ${className}` : ''}`} aria-hidden="true">
+      <img src={src} alt="" decoding="async" />
+      {label !== '' && <span class="arte-propia-nombre">{label}</span>}
+    </span>
+  );
+}
+
+const DORADO = '#E2B84A';
+const NOCHE = ['#14122B', '#10202B', '#22122B', '#121A14'] as const;
+
+/**
+ * Estilo "Elegante": fondo noche, marco y motivo en línea dorada (el CSS de .arte-elegante pasa
+ * los rellenos a trazo dorado) y el nombre en letra serif.
+ */
+function ElegantCard({ occasion, variant, name, className }: { occasion: string; variant: number; name?: string | undefined; className?: string | undefined }) {
+  const v = cardVariant(variant);
+  const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
+  const label = name?.trim() ?? '';
+  const size = Math.min(24, 250 / Math.max(1, [...label].length * 0.5));
+  const stars: readonly [number, number, number][] = [
+    [40, 40, 7],
+    [282, 52, 9],
+    [262, 180, 5],
+    [56, 168, 5],
+  ];
+  return (
+    <svg class={`arte-tarjeta arte-elegante${className ? ` ${className}` : ''}`} viewBox="0 0 320 250" aria-hidden="true" focusable="false">
+      <rect width="320" height="250" fill={NOCHE[v - 1]} />
+      <rect x="12" y="12" width="296" height="226" rx="6" fill="none" stroke={DORADO} stroke-width="1.5" opacity=".7" />
+      {stars.map(([x, y, r]) => (
+        <path key={`${x}-${y}`} d={starPath(x, y, r, r * 0.35, 4)} fill={DORADO} opacity=".9" />
+      ))}
+      <g class="motivo-linea" transform={label === '' ? 'translate(32 18) scale(0.8)' : 'translate(40 6) scale(0.75)'}>
+        {motif(VARIANTS[v].p)}
+      </g>
+      <circle cx="160" cy="42" r="17" fill="none" stroke={DORADO} stroke-width="2" />
+      <text x="160" y="49" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="19" fill={DORADO}>
+        ₿
+      </text>
+      {label !== '' && (
+        <text x="160" y="226" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size={size} fill={DORADO}>
+          {label}
+        </text>
       )}
     </svg>
   );

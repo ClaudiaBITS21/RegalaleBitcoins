@@ -88,7 +88,7 @@ const post = (path: string, body: unknown) =>
 describe('API del reclamo', () => {
   before(async () => {
     sql = connect(DB);
-    await sql`drop table if exists difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
+    await sql`drop table if exists imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
     await migrate(sql);
   });
   after(async () => {
@@ -308,6 +308,29 @@ describe('API para regalar', () => {
     const again = await post('/api/gifts', nuevo(1));
     assert.equal(again.status, 409);
     assert.deepEqual(await again.json(), { error: 'regalo_existente', detalle: 'regalo_existente' });
+  });
+
+  it('estilos: dibujo por defecto, elegido, o imagen propia validada y servida como archivo inerte', async () => {
+    const plain = (await (await post('/api/gifts', nuevo(1))).json()) as { id: string };
+    assert.equal(((await (await app.request(`/api/gifts/${plain.id}`)).json()) as { estilo: string }).estilo, 'ilustracion');
+    assert.equal((await post('/api/gifts', nuevo(2, { estilo: 'mano' }))).status, 201);
+    assert.equal((await post('/api/gifts', nuevo(3, { estilo: 'cualquiera' }))).status, 400);
+    // Imagen propia: firma WebP real, nada de SVG ni de imagen sin el estilo.
+    const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 '), Buffer.alloc(200, 7)]);
+    const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg">${'<g/>'.repeat(40)}</svg>`);
+    assert.equal((await post('/api/gifts', nuevo(4, { estilo: 'propia' }))).status, 400);
+    assert.equal((await post('/api/gifts', nuevo(4, { estilo: 'propia', imagenPropia: svg.toString('base64') }))).status, 400);
+    assert.equal((await post('/api/gifts', nuevo(4, { estilo: 'propia', imagenPropia: Buffer.alloc(700_000, 1).toString('base64') }))).status, 400);
+    const own = await post('/api/gifts', nuevo(4, { estilo: 'propia', imagenPropia: webp.toString('base64') }));
+    assert.equal(own.status, 201);
+    const { id } = (await own.json()) as { id: string };
+    const img = await app.request(`/api/gifts/${id}/imagen`);
+    assert.equal(img.status, 200);
+    assert.equal(img.headers.get('content-type'), 'image/webp');
+    assert.equal(img.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(img.headers.get('content-security-policy') ?? '', /sandbox/);
+    assert.deepEqual(Buffer.from(await img.arrayBuffer()), webp);
+    assert.equal((await app.request(`/api/gifts/${plain.id}/imagen`)).status, 404);
   });
 
   it('una dirección con movimientos previos cuenta como usada (base perdida o restaurada)', async () => {

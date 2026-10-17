@@ -220,7 +220,7 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
   return (
     <div class="paso">
       <article class="tarjeta">
-        <GiftCardArt occasion={gift.ocasion} variant={gift.imagen} name={gift.para} class="tarjeta-imagen" />
+        <GiftCardArt occasion={gift.ocasion} variant={gift.imagen} estilo={gift.estilo} src={`/api/gifts/${gift.id}/imagen`} name={gift.para} class="tarjeta-imagen" />
         <div class="tarjeta-texto">
           <p class="kicker tarjeta-ocasion">{occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}</p>
           <StepTitle>{gift.de ? t('reclamo.de', { de: gift.de }) : t('reclamo.anonimo')}</StepTitle>

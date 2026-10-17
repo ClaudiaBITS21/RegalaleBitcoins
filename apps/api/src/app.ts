@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
-import { clearClaim, findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
+import { CARD_STYLES, type CardStyle, clearClaim, findGift, findOwnImage, type OwnImage, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
@@ -210,6 +210,7 @@ export function createApp(deps: AppDeps): Hono {
       de: gift.from,
       mensaje: gift.message,
       imagen: gift.image,
+      estilo: gift.style,
       direccion: gift.address,
       estado: funds.state,
       sats: {
@@ -250,6 +251,18 @@ export function createApp(deps: AppDeps): Hono {
     const txids = [...new Set(utxos.map((u) => u.txid))];
     const raw = new Map(await Promise.all(txids.map(async (t) => [t, await chain.txHex(t)] as const)));
     return c.json({ utxos: utxos.map((u) => ({ txid: u.txid, vout: u.vout, rawTx: raw.get(u.txid) })) });
+  });
+
+  /** Imagen propia de la tarjeta: nunca cambia, se sirve como archivo inerte. */
+  app.get('/api/gifts/:id/imagen', async (c) => {
+    const image = await findOwnImage(sql, c.req.param('id'));
+    if (image === null) throw new ApiError(404, 'regalo_no_encontrado');
+    return c.body(image.data as Uint8Array<ArrayBuffer>, 200, {
+      'content-type': image.type,
+      'cache-control': 'public, max-age=31536000, immutable',
+      'content-security-policy': "default-src 'none'; sandbox",
+      'content-disposition': 'inline',
+    });
   });
 
   app.get('/api/fees', async (c) => c.json(await chain.fees()));
@@ -314,6 +327,25 @@ function text(value: unknown, max: number, required: boolean): string | null {
   return clean === '' ? null : clean;
 }
 
+function badRequest(): never {
+  throw new ApiError(400, 'pedido_invalido');
+}
+
+/** Tope de la imagen propia (ya achicada en el navegador a ~1024 px). */
+export const OWN_IMAGE_MAX_BYTES = 600_000;
+
+/** Imagen propia en base64: solo WebP, JPEG o PNG reconocidos por su firma, nunca SVG. */
+function parseOwnImage(value: unknown): OwnImage {
+  if (typeof value !== 'string' || value.length > Math.ceil(OWN_IMAGE_MAX_BYTES / 3) * 4 + 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) badRequest();
+  const data = new Uint8Array(Buffer.from(value, 'base64'));
+  if (data.length < 100 || data.length > OWN_IMAGE_MAX_BYTES) badRequest();
+  const at = (i: number, bytes: number[]) => bytes.every((b, j) => data[i + j] === b);
+  if (at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50])) return { type: 'image/webp', data };
+  if (at(0, [0xff, 0xd8, 0xff])) return { type: 'image/jpeg', data };
+  if (at(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return { type: 'image/png', data };
+  return badRequest();
+}
+
 function parseNewGift(body: unknown, network: Network): ParsedGift {
   if (body === null || typeof body !== 'object') throw new ApiError(400, 'pedido_invalido');
   const b = body as Record<string, unknown>;
@@ -331,6 +363,8 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
   if (typeof b.imagen !== 'number' || !Number.isInteger(b.imagen) || b.imagen < 1 || b.imagen > 4) throw new ApiError(400, 'pedido_invalido');
   if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
   if (b.moneda !== 'USD' && b.moneda !== 'ARS' && b.moneda !== 'SAT') throw new ApiError(400, 'monto_invalido');
+  const style: CardStyle = b.estilo === undefined ? 'ilustracion' : (CARD_STYLES as readonly unknown[]).includes(b.estilo) ? (b.estilo as CardStyle) : badRequest();
+  const ownImage = style === 'propia' ? parseOwnImage(b.imagenPropia) : null;
   if (typeof b.monto !== 'number' || !Number.isFinite(b.monto) || b.monto <= 0) throw new ApiError(400, 'monto_invalido');
   return {
     address,
@@ -341,6 +375,8 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     from: text(b.de, LIMITS.from, false),
     message: text(b.mensaje, LIMITS.message, false) ?? '',
     image: b.imagen,
+    style,
+    ownImage,
     currency: b.moneda,
     amount: b.monto,
     satsExpected: BigInt(b.sats),
