@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { BitcoinBIcon } from './BitcoinB.tsx';
 import { useI18n } from '../ui.tsx';
 import { COIN_COLORS, REASONS } from './razones.ts';
 
@@ -143,7 +144,7 @@ export function ReasonsFan({ ctaHref }: { ctaHref: string }) {
                 <span class="carta-cara carta-frente">
                   <span class="moneda" style={{ background: coin }} aria-hidden="true">
                     <span class="moneda-n">{n}</span>
-                    <span class="moneda-b">₿</span>
+                    <BitcoinBIcon class="moneda-b" />
                   </span>
                   <span class="carta-pie">{n} / 21</span>
                 </span>

@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useId } from 'preact/hooks';
+import { BitcoinB } from './BitcoinB.tsx';
 import { isOccasion, type OccasionKey } from './occasions.ts';
 
 // Imagen de la tarjeta del regalo, estilo "Ilustración" (docs/diseno/DISENO.md §6): plana y
@@ -127,9 +128,7 @@ const reyMago: Motif = (p) => (
     <rect x="155" y="168" width="10" height="44" fill={p.b} {...S} stroke-width="3" />
     <path d="M160 168 q-16 -16 -20 -4 q4 8 20 4 q16 4 20 -4 q-4 -12 -20 4z" fill={p.b} {...S} stroke-width="3" />
     <circle cx="160" cy="194" r="12" fill={AMARILLO} {...S} stroke-width="3.5" />
-    <text x="160" y="200" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="16" fill={TINTA}>
-      ₿
-    </text>
+    <BitcoinB cx={160} cy={194} h={14} color={TINTA} weight={5} />
     <ellipse cx="126" cy="184" rx="9" ry="8" fill="#F2C9A0" {...S} stroke-width="3.5" />
     <ellipse cx="194" cy="184" rx="9" ry="8" fill="#F2C9A0" {...S} stroke-width="3.5" />
   </g>
@@ -436,9 +435,7 @@ function Coin({ cx, cy, r, glow }: { cx: number; cy: number; r: number; glow: bo
       {glow && <circle cx={cx} cy={cy} r={r + 9} fill="none" stroke={AMARILLO} stroke-width="3" opacity=".45" />}
       <circle cx={cx} cy={cy} r={r} fill={AMARILLO} {...S} />
       <circle cx={cx} cy={cy} r={r - 7} fill="none" stroke="#E0A800" stroke-width="2" />
-      <text x={cx} y={cy + r * 0.4} text-anchor="middle" font-family="Bricolage Grotesque, system-ui, sans-serif" font-weight="800" font-size={r * 1.15} fill={TINTA}>
-        ₿
-      </text>
+      <BitcoinB cx={cx} cy={cy} h={r * 1.05} color={TINTA} />
     </g>
   );
 }
@@ -599,9 +596,7 @@ function ElegantCard({ occasion, variant, name, className }: { occasion: string;
         {motif(VARIANTS[v].p)}
       </g>
       <circle cx="160" cy="42" r="17" fill="none" stroke={DORADO} stroke-width="2" />
-      <text x="160" y="49" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="19" fill={DORADO}>
-        ₿
-      </text>
+      <BitcoinB cx={160} cy={42} h={19} color={DORADO} weight={3.5} />
       {label !== '' && (
         <text x="160" y="226" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size={size} fill={DORADO}>
           {label}

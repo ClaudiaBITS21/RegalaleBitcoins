@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { BitcoinB } from './content/BitcoinB.tsx';
 import { choiceLabel, giveHref, type OccasionChoice, OccasionPicker } from './content/OccasionPicker.tsx';
 import { ReasonsFan } from './content/ReasonsFan.tsx';
 import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
@@ -44,9 +45,7 @@ function GiftBox({ label }: { label: string }) {
     <svg class="caja-regalo" viewBox="0 0 220 200" role="img" aria-label={label}>
       <g class="moneda-salta">
         <circle cx="110" cy="52" r="40" fill="#ffd23f" stroke="#1a1530" stroke-width="5" />
-        <text x="110" y="68" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="44" fill="#1a1530">
-          ₿
-        </text>
+        <BitcoinB cx={110} cy={52} h={42} color="#1a1530" />
       </g>
       <path d="M60 40 l-14 -10 M160 40 l14 -10" stroke="#1a1530" stroke-width="5" stroke-linecap="round" />
       <rect x="34" y="104" width="152" height="90" rx="10" fill="#ff5d8f" stroke="#1a1530" stroke-width="5" />
