@@ -305,6 +305,17 @@ export const es = {
   'porque.historia.p3': 'Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.',
   'porque.cta.titulo': '¿Regalamos?',
   'porque.cta.texto': 'Elegís la ocasión y el monto, escribís tu mensaje y le llega por WhatsApp, por mail o en una tarjeta.',
+  'porque.razones.verTodas': 'Ver las 21 en una lista',
+  'porque.edades.ayuda': 'Tocá una tarjeta para ver por qué.',
+  'porque.edad.anios': '{rango} años',
+  'porque.edad.tocar': 'Tocá para ver por qué',
+  'porque.edad.volver': 'Tocá para volver',
+  'porque.cuento.kicker': 'Para leer en familia',
+  'porque.cuento.titulo': 'El cuento',
+  'porque.cuento.texto': 'Un cuentito de Navidad para bajar, imprimir y leer en familia.',
+  'porque.cuento.bajar': 'Bajar el cuento',
+  'porque.cuento.pronto': 'Muy pronto',
+  'porque.cuento.imagen': 'Los tres Reyes Magos llegan al pesebre bajo la estrella; uno de ellos trae una moneda dorada de bitcoin.',
 } as const;
 
 export type Key = keyof typeof es;

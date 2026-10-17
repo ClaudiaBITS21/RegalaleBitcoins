@@ -1,19 +1,62 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
+import { AgeArt, CuentoArt } from './content/PorqueArt.tsx';
+import { ReasonsFan } from './content/ReasonsFan.tsx';
 import { COIN_COLORS, REASONS } from './content/razones.ts';
 import type { Key } from './i18n/index.ts';
 import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
-// Página "¿Por qué Bitcoin?" (docs/contenido.md §2): las 21 razones → según quién lo
-// recibe (5 franjas de edad) → nuestra historia → disclaimer → "¿Regalamos?". Todo el texto
-// va en el DOM, a la vista: es la página que tiene que posicionar en los buscadores.
+// Página "¿Por qué Bitcoin?" (docs/contenido.md §2): las 21 razones en abanico → según quién
+// lo recibe (5 tarjetas que se dan vuelta) → nuestra historia → el cuento para bajar → "¿Regalamos?".
+// Todo el texto va en el DOM aunque esté del lado de atrás de una carta: es la página que
+// tiene que posicionar en los buscadores, y la leen igual los lectores de pantalla.
 
 const AGES = [
   { n: 1, range: '0–4', color: '#bdebfa' },
-  { n: 2, range: '5–12', color: '#ffd23f' },
+  { n: 2, range: '5–12', color: '#ffd8b5' },
   { n: 3, range: '13–17', color: '#ffc7d8' },
   { n: 4, range: '18–69', color: '#d9f5c9' },
-  { n: 5, range: '70+', color: '#ffd8b5' },
+  { n: 5, range: '70+', color: '#eee9ff' },
 ] as const;
+
+/**
+ * El cuento para bajar. Cuando esté el archivo, se pone en apps/web/public/ (mismo origen) y
+ * acá su ruta, por ejemplo '/el-cuento-de-navidad.pdf'; mientras sea null el botón dice "Muy pronto".
+ */
+const CUENTO_URL: string | null = null;
+
+/** Tarjeta de una franja de edad: frente con la ilustración, dorso con el porqué. */
+function AgeCard({ n, range, color }: (typeof AGES)[number]) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const name = t(`porque.edad${n}.t` as Key);
+  return (
+    <li class="porque-edad-item">
+      {/* Sin aria-label: el nombre del botón es nombre + franja + texto, siempre completo;
+          aria-pressed dice de qué lado está. Las pistas y el nombre repetido van ocultos. */}
+      <button type="button" class="porque-edad" aria-pressed={open} onClick={() => setOpen(!open)}>
+        <span class={`porque-edad-giro${open ? ' abierta' : ''}`}>
+          <span class="porque-edad-cara porque-edad-frente" style={{ background: color }}>
+            <AgeArt n={n} class="porque-edad-arte" />
+            <span class="porque-edad-rango">{t('porque.edad.anios', { rango: range })}</span>
+            <span class="porque-edad-nombre">{name}</span>
+            <span class="porque-edad-pista" aria-hidden="true">
+              {t('porque.edad.tocar')} →
+            </span>
+          </span>
+          <span class="porque-edad-cara porque-edad-dorso">
+            <span class="porque-edad-nombre" aria-hidden="true">
+              {name}
+            </span>
+            <span class="porque-edad-texto">{t(`porque.edad${n}.d` as Key)}</span>
+            <span class="porque-edad-pista" aria-hidden="true">
+              ← {t('porque.edad.volver')}
+            </span>
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}
 
 export function WhyPage({ testnet }: { testnet: boolean }) {
   const { t, lang } = useI18n();
@@ -42,37 +85,45 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
       </section>
 
       <main class="home-secciones">
-        <section class="seccion" aria-labelledby="porque-razones">
-          <h2 id="porque-razones">{t('razones.titulo')}</h2>
-          <ol class="razones-lista">
-            {reasons.map(([title, detail], i) => (
-              <li class="razon" key={i}>
-                <span class="razon-moneda" style={{ background: COIN_COLORS[i % COIN_COLORS.length] }} aria-hidden="true">
-                  {i + 1}
-                </span>
-                <span class="razon-texto">
-                  <strong>{title}</strong> <span>{detail}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p class="aviso-precio">{t('razones.aviso')}</p>
+        <section class="razones porque-razones" aria-labelledby="porque-razones">
+          <div class="razones-texto">
+            <h2 id="porque-razones">{t('razones.titulo')}</h2>
+            <p class="razones-ayuda">{t('razones.ayuda')}</p>
+          </div>
+          <ReasonsFan ctaHref="/regalar" />
+          <p class="razones-aviso">{t('razones.aviso')}</p>
+        </section>
+
+        <section class="seccion porque-lista-seccion">
+          {/* Las 21 juntas, para leerlas de corrido (y para buscadores y lectores de pantalla). */}
+          <details class="porque-lista">
+            <summary>{t('porque.razones.verTodas')}</summary>
+            <ol class="razones-lista">
+              {reasons.map(([title, detail], i) => (
+                <li class="razon" key={i}>
+                  <span class="razon-moneda" style={{ background: COIN_COLORS[i % COIN_COLORS.length] }} aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <span class="razon-texto">
+                    <strong>{title}</strong> <span>{detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p class="aviso-precio">{t('razones.aviso')}</p>
+          </details>
         </section>
 
         <section class="seccion" aria-labelledby="porque-edades">
           <h2 id="porque-edades">{t('porque.edades.titulo')}</h2>
-          <p class="texto-suave porque-intro">{t('porque.edades.texto')}</p>
-          <div class="edades">
-            {AGES.map(({ n, range, color }) => (
-              <article class="edad" key={n}>
-                <span class="edad-rango" style={{ background: color }}>
-                  {range}
-                </span>
-                <h3>{t(`porque.edad${n}.t` as Key)}</h3>
-                <p>{t(`porque.edad${n}.d` as Key)}</p>
-              </article>
+          <p class="texto-suave porque-intro">
+            {t('porque.edades.texto')} {t('porque.edades.ayuda')}
+          </p>
+          <ul class="porque-edades">
+            {AGES.map((age) => (
+              <AgeCard key={age.n} {...age} />
             ))}
-          </div>
+          </ul>
         </section>
 
         <section class="seccion" aria-labelledby="porque-historia">
@@ -82,8 +133,28 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
             <p>{t('porque.historia.p1')}</p>
             <p>{t('porque.historia.p2')}</p>
             <p>{t('porque.historia.p3')}</p>
-            <p class="firma">— Rodolfo Andragnes</p>
           </article>
+        </section>
+
+        <section class="seccion" aria-labelledby="porque-cuento">
+          <div class="porque-cuento">
+            <CuentoArt label={t('porque.cuento.imagen')} class="porque-cuento-arte" />
+            <div class="porque-cuento-texto">
+              <p class="kicker kicker-naranja">{t('porque.cuento.kicker')}</p>
+              <h2 id="porque-cuento">{t('porque.cuento.titulo')}</h2>
+              <p>{t('porque.cuento.texto')}</p>
+              {CUENTO_URL !== null ? (
+                <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download>
+                  {t('porque.cuento.bajar')}
+                </a>
+              ) : (
+                <button type="button" class="boton porque-cuento-boton" disabled>
+                  {t('porque.cuento.bajar')}
+                  <span class="porque-pronto">{t('porque.cuento.pronto')}</span>
+                </button>
+              )}
+            </div>
+          </div>
         </section>
 
         <section class="porque-cta">
