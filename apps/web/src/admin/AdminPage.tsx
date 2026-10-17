@@ -20,6 +20,55 @@ const STATE_LABELS: Readonly<Record<string, string>> = {
   sin_dato: 'Sin dato de la cadena',
 };
 
+const STYLE_LABELS: Readonly<Record<string, string>> = {
+  ilustracion: 'Ilustración',
+  mano: 'Dibujo a mano',
+  elegante: 'Elegante',
+  propia: 'Con IA / imagen propia',
+  realista: 'Realista',
+};
+const WEEKDAYS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+/** Tabla de motivos: cuántos se crean, se pagan y se abren por ocasión. */
+function Motives({ data, n, pct, usd }: { data: AdminSummary; n: (x: number) => string; pct: (a: number, b: number) => string; usd: (x: number) => string }) {
+  return (
+    <section class="admin-bloque">
+      <h2>Motivos de regalo</h2>
+      {data.motivos.length === 0 ? (
+        <p class="texto-suave">Todavía nada.</p>
+      ) : (
+        <div class="admin-tabla-scroll">
+          <table class="admin-tabla">
+            <thead>
+              <tr>
+                <th>Ocasión</th>
+                <th>Creados</th>
+                <th>Pagados</th>
+                <th>Abiertos</th>
+                <th>% abiertos</th>
+                <th>Monto prom.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.motivos.map((m) => (
+                <tr key={m.ocasion}>
+                  <td>{occasionLabel(m.ocasion, 'es')}</td>
+                  <td>{n(m.creados)}</td>
+                  <td>{n(m.pagados)}</td>
+                  <td>{n(m.abiertos)}</td>
+                  <td>{pct(m.abiertos, m.pagados)}</td>
+                  <td>{m.usdPromedio === null ? '—' : usd(m.usdPromedio)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {data.regalos.parcial && <small class="texto-suave">Pagados y abiertos: sobre los {n(data.regalos.muestra)} regalos más recientes.</small>}
+    </section>
+  );
+}
+
 function Tile({ label, value, detail }: { label: string; value: string; detail?: string | undefined }) {
   return (
     <div class="admin-tile">
@@ -142,10 +191,35 @@ export function AdminPage() {
         </div>
         {data.regalos.parcial && <Notice>Estados y montos de los {n(data.regalos.muestra)} regalos más recientes.</Notice>}
         <Days data={data.porDia} />
+        <Bars title="Embudo" data={{ 'Creados': data.regalos.muestra, 'Pagados': paid, 'Abiertos': opened }} />
+        <Motives data={data} n={n} pct={pct} usd={(x) => formatUsd(x, lang)} />
+        {Object.keys(data.ocasionesLibres).length > 0 && <Bars title="Ocasiones escritas a mano (usadas por 3 o más)" data={data.ocasionesLibres} />}
+        <Bars title="Montos (en dólares al crear el regalo)" data={data.montosUsd.rangos} label={(k) => `US$ ${k}`} />
+        <p class="texto-suave">
+          Promedio {data.montosUsd.promedio === null ? '—' : formatUsd(data.montosUsd.promedio, lang)} · mediana{' '}
+          {data.montosUsd.mediana === null ? '—' : formatUsd(data.montosUsd.mediana, lang)}
+        </p>
         <Bars title="Estado de los regalos" data={data.regalos.porEstado} label={(k) => STATE_LABELS[k] ?? k} />
-        <Bars title="Ocasiones" data={data.porOcasion} label={(k) => occasionLabel(k, 'es')} />
+        <Bars title="Tiempo hasta que lo abren" data={data.tiempoHastaAbrir.rangos} />
+        {data.tiempoHastaAbrir.medianaHoras !== null && <p class="texto-suave">Mediana: {n(data.tiempoHastaAbrir.medianaHoras)} h desde que se creó.</p>}
+        <Bars title="Estilo de tarjeta" data={data.porEstilo} label={(k) => STYLE_LABELS[k] ?? k} />
+        <Bars title="Día de la semana (hora de Argentina)" data={data.porDiaSemana} label={(k) => WEEKDAYS[Number(k)] ?? k} />
+        <Bars title="Hora del día (Argentina)" data={data.porHora} label={(k) => `${k.padStart(2, '0')} h`} />
         <Bars title="Idioma de quien recibe" data={data.porIdioma} label={(k) => k.toUpperCase()} />
         <Bars title="Moneda elegida" data={data.porMoneda} />
+        <Bars title="Regalos por cuenta (quién vuelve a regalar)" data={data.regalosPorCuenta} label={(k) => `${k} regalo${k === '1' ? '' : 's'}`} />
+        <section class="admin-bloque">
+          <h2>La tarjeta y el reclamo</h2>
+          <ul class="admin-lista">
+            <li>Con mensaje: {pct(data.tarjeta.conMensaje, data.regalos.total)}{data.tarjeta.largoMensaje !== null && ` (≈ ${n(data.tarjeta.largoMensaje)} caracteres)`}</li>
+            <li>Con nombre de quien regala: {pct(data.tarjeta.conRemitente, data.regalos.total)}</li>
+            <li>Reclamados por quien recibe: {n(data.reclamos.reclamados)} · recuperados por quien regaló: {n(data.reclamos.recuperados)}</li>
+            <li>Reclamos esperando que baje la comisión: {n(data.reclamos.programadosEsperando)}</li>
+          </ul>
+        </section>
+        <p class="texto-suave admin-privacidad">
+          Solo números agregados: este panel no muestra mails, nombres, mensajes ni direcciones. Los textos escritos a mano aparecen solo si los usaron 3 personas o más.
+        </p>
       </div>
     );
   }

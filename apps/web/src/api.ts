@@ -87,6 +87,16 @@ export interface AdminSummary {
   readonly porIdioma: Record<string, number>;
   readonly porMoneda: Record<string, number>;
   readonly porDia: { creados: Record<string, number>; reclamados: Record<string, number> };
+  readonly motivos: readonly { ocasion: string; creados: number; usdPromedio: number | null; muestra: number; pagados: number; abiertos: number; satsRecibidos: string }[];
+  readonly ocasionesLibres: Record<string, number>;
+  readonly montosUsd: { rangos: Record<string, number>; promedio: number | null; mediana: number | null };
+  readonly porEstilo: Record<string, number>;
+  readonly porDiaSemana: Record<string, number>;
+  readonly porHora: Record<string, number>;
+  readonly tiempoHastaAbrir: { rangos: Record<string, number>; medianaHoras: number | null };
+  readonly regalosPorCuenta: Record<string, number>;
+  readonly tarjeta: { conMensaje: number; conRemitente: number; largoMensaje: number | null };
+  readonly reclamos: { reclamados: number; recuperados: number; programadosEsperando: number };
 }
 
 export const api = {

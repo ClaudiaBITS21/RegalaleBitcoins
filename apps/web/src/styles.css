@@ -2581,3 +2581,11 @@ svg.tarjeta-imagen {
     padding: 12px 28px;
   }
 }
+.admin-tabla-scroll { overflow-x: auto; }
+.admin-tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.admin-tabla th, .admin-tabla td { padding: 6px 8px; border-bottom: 1px solid var(--borde); text-align: right; white-space: nowrap; }
+.admin-tabla th:first-child, .admin-tabla td:first-child { text-align: left; white-space: normal; }
+.admin-tabla th { font-weight: 700; color: var(--suave); }
+.admin-lista { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.admin-privacidad { font-size: 0.8rem; }
+.admin > * { min-width: 0; }

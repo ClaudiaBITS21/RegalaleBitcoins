@@ -240,7 +240,25 @@ describe('Cuentas con passkey', () => {
     assert.deepEqual(body.regalos.porEstado, { esperando: 1 });
     assert.deepEqual(body.porOcasion, { cumple: 1 });
     assert.equal(body.sats.esperados, '30000');
-    const text = JSON.stringify(body);
+    const extra = body as unknown as {
+      motivos: Array<{ ocasion: string; creados: number; abiertos: number }>;
+      porEstilo: Record<string, number>;
+      tarjeta: { conMensaje: number };
+      regalosPorCuenta: Record<string, number>;
+      ocasionesLibres: Record<string, number>;
+      montosUsd: { rangos: Record<string, number> };
+    };
+    assert.deepEqual(extra.motivos.map((m) => [m.ocasion, m.creados, m.abiertos]), [['cumple', 1, 0]]);
+    assert.deepEqual(extra.porEstilo, { ilustracion: 1 });
+    assert.equal(extra.tarjeta.conMensaje, 1);
+    assert.deepEqual(extra.regalosPorCuenta, { '1': 1 });
+    assert.equal(Object.values(extra.montosUsd.rangos).reduce((a, b) => a + b, 0), 1);
+    // Una ocasión libre escrita por menos de 3 personas no aparece (podría identificar a alguien).
+    const g2 = deriveGift(root, 1, 'es', signet);
+    await req('/api/gifts', { direccion: g2.address, idioma: 'es', ocasion: 'otra', ocasionLibre: 'Cumple de Tomi', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 1 }, ana.cookie);
+    const fresh = (await (await req('/api/admin/resumen?fresco=1', undefined, admin.cookie)).json()) as { ocasionesLibres: Record<string, number> };
+    assert.deepEqual(fresh.ocasionesLibres, {});
+    const text = JSON.stringify(body) + JSON.stringify(fresh);
     for (const leak of ['ana@example.com', 'Tomi', 'secreto', g.address]) assert.ok(!text.includes(leak), `no expone ${leak}`);
   });
 });
