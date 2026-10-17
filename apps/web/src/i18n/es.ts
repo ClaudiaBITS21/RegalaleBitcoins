@@ -170,6 +170,7 @@ export const es = {
   'regalar.mandar.copiar': 'Copiar',
   'regalar.mandar.mano': 'Se las doy en persona',
   'regalar.mandar.mismoCanal': 'Las palabras no van por el mismo medio que el link.',
+  'regalar.mandar.mismoCanalLink': 'El link no puede ir por el mismo canal que las palabras: elegí otro.',
   'regalar.mandar.hecho': 'Elegiste: {canal}.',
   'regalar.mandar.mensajeLink': '{para}, te hice un regalo: {link}\nPara abrirlo vas a necesitar 4 palabras que te paso por otro lado.',
   'regalar.mandar.mensajePalabras': 'Las 4 palabras para abrir tu regalo: {palabras}',

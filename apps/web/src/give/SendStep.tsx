@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
@@ -7,6 +7,31 @@ import type { MadeGift } from './GivePage.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
 type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
+const CHANNELS = ['whatsapp', 'mail', 'copiar', 'mano'] as const;
+
+/**
+ * Por qué canal salió el link y por cuál las palabras, recordado mientras dure la pestaña
+ * (solo el nombre del canal, nunca el link ni las palabras).
+ */
+function useSentBy(giftId: string, part: 'link' | 'palabras'): [Channel | null, (c: Channel) => void] {
+  const key = `envio:${giftId}:${part}`;
+  const [value, setValue] = useState<Channel | null>(() => {
+    try {
+      const v = sessionStorage.getItem(key);
+      return (CHANNELS as readonly string[]).includes(v ?? '') ? (v as Channel) : null;
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      if (value !== null) sessionStorage.setItem(key, value);
+    } catch {
+      // Sin almacenamiento (modo privado): se recuerda solo mientras no se recargue.
+    }
+  }, [key, value]);
+  return [value, setValue];
+}
 
 /**
  * Mandar el regalo: el link por un canal y las 4 palabras por otro distinto. Los mensajes
@@ -15,8 +40,9 @@ type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
 export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceilingUsd: number; onAnother: () => void }) {
   const { t, lang } = useI18n();
   const { view } = useGiftStatus(gift.id);
-  const [linkBy, setLinkBy] = useState<Channel | null>(null);
-  const [wordsBy, setWordsBy] = useState<Channel | null>(null);
+  // El link y las palabras nunca por el mismo canal: quien vea los dos se queda con el regalo.
+  const [linkBy, setLinkBy] = useSentBy(gift.id, 'link');
+  const [wordsBy, setWordsBy] = useSentBy(gift.id, 'palabras');
   const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars);
 
   const linkText = r('regalar.mandar.mensajeLink', { para: gift.to, link: gift.link });
@@ -56,17 +82,30 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
           {gift.link}
         </p>
         <div class="canales">
-          <a class="boton boton-contorno" href={href('whatsapp', linkText, '')} target="_blank" rel="noopener noreferrer" onClick={() => setLinkBy('whatsapp')}>
-            {t('regalar.mandar.whatsapp')}
-          </a>
-          <a class="boton boton-contorno" href={href('mail', linkText, r('regalar.mandar.asunto'))} onClick={() => setLinkBy('mail')}>
-            {t('regalar.mandar.mail')}
-          </a>
+          {(['whatsapp', 'mail'] as const).map((c) =>
+            c === wordsBy ? (
+              <button type="button" key={c} class="boton boton-contorno" disabled title={t('regalar.mandar.mismoCanal')}>
+                {t(`regalar.mandar.${c}`)}
+              </button>
+            ) : (
+              <a
+                key={c}
+                class="boton boton-contorno"
+                href={href(c, linkText, r('regalar.mandar.asunto'))}
+                target={c === 'whatsapp' ? '_blank' : undefined}
+                rel="noopener noreferrer"
+                onClick={() => setLinkBy(c)}
+              >
+                {t(`regalar.mandar.${c}`)}
+              </a>
+            ),
+          )}
           <Button kind="contorno" onClick={() => void copy(gift.link, setLinkBy)}>
             {t('regalar.mandar.copiar')}
           </Button>
         </div>
         {linkBy !== null && <small class="texto-suave">{t('regalar.mandar.hecho', { canal: t(`regalar.mandar.${linkBy}` as Key) })}</small>}
+        {(wordsBy === 'whatsapp' || wordsBy === 'mail') && <small class="texto-suave">{t('regalar.mandar.mismoCanalLink')}</small>}
       </section>
 
       <section class="caja envio">

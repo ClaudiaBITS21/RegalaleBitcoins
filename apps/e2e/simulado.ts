@@ -264,6 +264,17 @@ try {
   const waHref = await page.getByRole('link', { name: 'WhatsApp' }).first().getAttribute('href');
   if (waHref === null || !decodeURIComponent(waHref).includes('Ana, eu te dei um presente')) fail('el mensaje del link no está en el idioma de quien recibe');
   if (decodeURIComponent(waHref).includes(giftWords[0] as string)) fail('el mensaje del link incluye las palabras');
+  // El link y las palabras nunca por el mismo canal, en los dos sentidos.
+  await page.evaluate(() =>
+    document.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a[href^="mailto:"], a[href*="wa.me"]')) e.preventDefault();
+    }, true),
+  );
+  const [linkBox, wordsBox] = [page.locator('.envio').nth(0), page.locator('.envio').nth(1)];
+  await wordsBox.getByRole('link', { name: 'Mail' }).click();
+  if (!(await linkBox.getByRole('button', { name: 'Mail' }).isDisabled())) fail('mandar las palabras por mail no bloquea el mail para el link');
+  await linkBox.getByRole('link', { name: 'WhatsApp' }).click();
+  if (!(await wordsBox.getByRole('button', { name: 'WhatsApp' }).isDisabled())) fail('mandar el link por WhatsApp no bloquea WhatsApp para las palabras');
   chain.confirmAll();
   await page.getByText('El pago está confirmado: el regalo ya se puede abrir.').waitFor({ timeout: 15_000 });
   await shot('r6-mandar');

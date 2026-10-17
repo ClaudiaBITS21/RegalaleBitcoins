@@ -171,6 +171,7 @@ export const en: Dict = {
   'regalar.mandar.copiar': 'Copy',
   'regalar.mandar.mano': 'I’ll give them in person',
   'regalar.mandar.mismoCanal': 'The words don’t go through the same channel as the link.',
+  'regalar.mandar.mismoCanalLink': 'The link can’t go through the same channel as the words: pick another.',
   'regalar.mandar.hecho': 'You chose: {canal}.',
   'regalar.mandar.mensajeLink': '{para}, I got you a gift: {link}\nTo open it you’ll need 4 words that I’ll send you another way.',
   'regalar.mandar.mensajePalabras': 'The 4 words to open your gift: {palabras}',
