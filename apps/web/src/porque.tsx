@@ -151,7 +151,7 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
                 </a>
               </p>
               {CUENTO_URL !== null ? (
-                <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download>
+                <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download="Una-Natividad-Moderna-RegalaleBitcoins.pdf">
                   {t('porque.cuento.bajar')}
                 </a>
               ) : (
