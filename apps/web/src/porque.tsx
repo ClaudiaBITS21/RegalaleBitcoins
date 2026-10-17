@@ -23,6 +23,8 @@ const AGES = [
  * acá su ruta, por ejemplo '/el-cuento-de-navidad.pdf'; mientras sea null el botón dice "Muy pronto".
  */
 const CUENTO_URL: string | null = '/cuento-navidad.pdf';
+/** Canal con los cuentos de Florando Dragones. */
+const MAS_CUENTOS_URL = 'https://www.youtube.com/@NaryanayNarydu';
 
 /** Tarjeta de una franja de edad: frente con la ilustración, dorso con el porqué. */
 function AgeCard({ n, range, color }: (typeof AGES)[number]) {
@@ -143,6 +145,11 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
               <p class="kicker kicker-naranja">{t('porque.cuento.kicker')}</p>
               <h2 id="porque-cuento">{t('porque.cuento.titulo')}</h2>
               <p>{t('porque.cuento.texto')}</p>
+              <p>
+                <a class="porque-cuento-mas" href={MAS_CUENTOS_URL} target="_blank" rel="noopener noreferrer">
+                  {t('porque.cuento.mas')}
+                </a>
+              </p>
               {CUENTO_URL !== null ? (
                 <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download>
                   {t('porque.cuento.bajar')}

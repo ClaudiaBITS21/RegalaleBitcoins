@@ -22,6 +22,8 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
+- En todo texto (web, mails, PDFs, materiales) la dirección del sitio es siempre
+  `regalalebitcoins.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
 - Textos de la interfaz en castellano rioplatense (voseo), con traducciones pt/en/it.
   Comentarios de código en castellano.
 - Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con

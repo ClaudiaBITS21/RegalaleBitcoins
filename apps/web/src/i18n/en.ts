@@ -376,6 +376,7 @@ export const en: Dict = {
   'porque.cuento.kicker': 'To read as a family',
   'porque.cuento.titulo': 'The story',
   'porque.cuento.texto': '“Una Natividad Moderna”, a little Christmas story by Florando Dragones, author of Aventuras en Levitania. To download, print and read as a family.',
+  'porque.cuento.mas': 'More stories by Florando Dragones on YouTube →',
   'porque.cuento.bajar': 'Download the story',
   'porque.cuento.pronto': 'Coming soon',
   'porque.cuento.imagen': 'The three Wise Men reach the manger under the star; one of them brings a gold bitcoin coin.',
