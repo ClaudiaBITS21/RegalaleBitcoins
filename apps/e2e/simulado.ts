@@ -355,7 +355,7 @@ try {
   const lupeAddress = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   chain.pay(lupeAddress, 25_000n, true);
   await giver.getByRole('heading', { name: '¡Pago recibido! Mandá el regalo' }).waitFor({ timeout: 15_000 });
-  const ownImg = await giver.locator('.arte-propia img').evaluate(async (img: HTMLImageElement) => {
+  const ownImg = await giver.locator('.vista-tarjeta .arte-propia img').evaluate(async (img: HTMLImageElement) => {
     await img.decode().catch(() => undefined);
     return { w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute('src') };
   });
