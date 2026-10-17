@@ -36,7 +36,7 @@ Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías pro
 
 ### 2. Página "¿Por qué Bitcoin?"
 
-Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas de edad) → "Nuestra historia" (firma Rodolfo Andragnes) → disclaimer → CTA. Los textos por edad también pueden mostrarse contextualmente al elegir ocasión en el flujo de regalo (bautismo → bebés, etc.).
+Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas de edad) → "Nuestra historia" (sin firma ni nombres propios, sin primera persona: decisión de la responsable, 17/10/2026) → disclaimer → CTA. Los textos por edad también pueden mostrarse contextualmente al elegir ocasión en el flujo de regalo (bautismo → bebés, etc.).
 
 ### 3. Tarjeta imprimible (feature del lanzamiento)
 
@@ -90,12 +90,13 @@ Descartadas: "mandar hoy y cargar después" (no va en el producto), "si no lo qu
 
 ## Nuestra historia
 
-En la Navidad de 2012 escribí una obrita de teatro para la fiesta familiar: una "Natividad Moderna", con José, María y un Gabriel Arcángel que llamaba a la carpintería. Al final, el mago Baltazar hacía aparecer una moneda detrás de la oreja del niño: "No es oro. Es bitcoin, el oro del futuro".
+Todo empezó en la Navidad de 2012, con una obrita de teatro para la fiesta familiar: una "Natividad Moderna", con José, María y un Gabriel Arcángel que llamaba a la carpintería. Al final, el mago Baltazar hacía aparecer una moneda detrás de la oreja del niño: "No es oro. Es bitcoin, el oro del futuro".
 
-Esa noche le regalé a cada invitado una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.
+Esa noche, cada invitado se llevó una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.
 
 Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.
-— Rodolfo Andragnes
+
+(Sin firma. El cuento completo, "Una Natividad Moderna", es de Florando Dragones.)
 
 ## Por qué bitcoin, según quién lo recibe
 

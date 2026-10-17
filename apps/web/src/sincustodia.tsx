@@ -119,6 +119,21 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
             <p>{t('custodia.desaparece.p1')}</p>
             <p>{t('custodia.desaparece.p2')}</p>
             <p>{t('custodia.desaparece.p3')}</p>
+            <p>
+              {t('custodia.desaparece.ayuda')}{' '}
+              <a class="custodia-link" href="https://bitcoin.ar" target="_blank" rel="noopener noreferrer">
+                bitcoin.ar
+              </a>
+              .
+            </p>
+          </article>
+        </section>
+
+        <section class="seccion" aria-labelledby="custodia-confianza">
+          <article class="historia custodia-bloque">
+            <h2 id="custodia-confianza">{t('custodia.confianza.titulo')}</h2>
+            <p>{t('custodia.confianza.p1')}</p>
+            <p>{t('custodia.confianza.p2')}</p>
           </article>
         </section>
 

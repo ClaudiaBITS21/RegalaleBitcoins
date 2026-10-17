@@ -300,8 +300,8 @@ export const es = {
   'porque.edad5.d': '¿Qué le regalás a alguien que ya tiene todo? Algo totalmente inesperado, que lo mete en una de las conversaciones de esta época. Si necesita ayuda para reclamarlo, es la excusa perfecta para sentarse juntos un rato.',
   'porque.historia.kicker': 'Navidad de 2012',
   'porque.historia.titulo': 'Nuestra historia',
-  'porque.historia.p1': 'En la Navidad de 2012 escribí una obrita de teatro para la fiesta familiar: una “Natividad Moderna”, con José, María y un Gabriel Arcángel que llamaba a la carpintería. Al final, el mago Baltazar hacía aparecer una moneda detrás de la oreja del niño: “No es oro. Es bitcoin, el oro del futuro”.',
-  'porque.historia.p2': 'Esa noche le regalé a cada invitado una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.',
+  'porque.historia.p1': 'Todo empezó en la Navidad de 2012, con una obrita de teatro para la fiesta familiar: una “Natividad Moderna”, con José, María y un Gabriel Arcángel que llamaba a la carpintería. Al final, el mago Baltazar hacía aparecer una moneda detrás de la oreja del niño: “No es oro. Es bitcoin, el oro del futuro”.',
+  'porque.historia.p2': 'Esa noche, cada invitado se llevó una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.',
   'porque.historia.p3': 'Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.',
   'porque.cta.titulo': '¿Regalamos?',
   'porque.cta.texto': 'Elegís la ocasión y el monto, escribís tu mensaje y le llega por WhatsApp, por mail o en una tarjeta.',
@@ -379,6 +379,10 @@ export const es = {
   'porque.cuento.bajar': 'Bajar el cuento',
   'porque.cuento.pronto': 'Muy pronto',
   'porque.cuento.imagen': 'Los tres Reyes Magos llegan al pesebre bajo la estrella; uno de ellos trae una moneda dorada de bitcoin.',
+  'custodia.desaparece.ayuda': 'Si necesitás ayuda para hacerlo, pedí asistencia a la comunidad de',
+  'custodia.confianza.titulo': 'En qué sí confiás en nosotros',
+  'custodia.confianza.p1': 'Hay un punto que es justo que sepas: el programa que corre en esta página lo publicamos nosotros. Si alguien lo alterara —nosotros mismos o alguien que entrara a nuestros sistemas—, podría robar la llave en el momento en que creás o abrís un regalo.',
+  'custodia.confianza.p2': 'Por eso cuidamos mucho quién puede publicar cambios, y vamos a publicar la huella de cada versión para que cualquiera pueda comprobar que la página es la que dice ser.',
 } as const;
 
 export type Key = keyof typeof es;
