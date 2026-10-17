@@ -81,7 +81,7 @@ function ReceiveItems() {
   );
 }
 
-/** Encabezado del sitio: marca, menú (Regalar / Recibir / 21 razones) e idioma. */
+/** Encabezado del sitio: marca, menú (Regalar / Recibir / 21 razones / Sin custodia) e idioma. */
 export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -116,6 +116,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         <a class="link-nav" href="/por-que">
           {t('menu.razones')}
         </a>
+        <a class="link-nav custodia-link-nav" href="/sin-custodia">
+          {t('custodia.menu')}
+        </a>
         <LangPill />
       </nav>
       <div class="nav-movil" ref={mobileRef}>
@@ -138,6 +141,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
             <a class="menu-link" href="/por-que" onClick={() => setMobileOpen(false)}>
               {t('razones.titulo')}
             </a>
+            <a class="menu-link" href="/sin-custodia" onClick={() => setMobileOpen(false)}>
+              {t('custodia.pie')}
+            </a>
           </div>
         )}
       </div>
@@ -152,6 +158,9 @@ export function SiteFooter() {
       <Wordmark />
       <span>{t('pie.custodia')}</span>
       <span>{t('pie')}</span>
+      <a class="custodia-link-pie" href="/sin-custodia">
+        {t('custodia.pie')}
+      </a>
     </footer>
   );
 }

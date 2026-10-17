@@ -15,6 +15,7 @@ import { OpenGiftPage } from './open.tsx';
 import { AdminPage } from './admin/AdminPage.tsx';
 import { PanelPage } from './panel/PanelPage.tsx';
 import { WhyPage } from './porque.tsx';
+import { NoCustodyPage } from './sincustodia.tsx';
 import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
@@ -63,6 +64,8 @@ function App() {
         <OpenGiftPage />
       ) : /^\/por-que\/?$/.test(path) ? (
         <WhyPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/sin-custodia\/?$/.test(path) ? (
+        <NoCustodyPage testnet={!ALLOW_MAINNET} />
       ) : (
         <Home testnet={!ALLOW_MAINNET} />
       )}

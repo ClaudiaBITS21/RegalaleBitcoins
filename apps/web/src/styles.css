@@ -1751,6 +1751,8 @@ textarea {
   gap: 8px;
   padding-top: 6px;
   border-top: 1px dashed var(--borde);
+}
+
 /* Imagen ilustrada de la tarjeta (content/GiftCardArt.tsx) */
 
 .arte-tarjeta {
@@ -2089,3 +2091,216 @@ svg.tarjeta-imagen {
 .admin-dias { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 8px; border: 2px solid var(--borde); border-radius: var(--radio); background: var(--papel); }
 .admin-dia { flex: 1; height: 100%; display: flex; align-items: flex-end; }
 .admin-dia-barra { display: block; width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--naranja); }
+
+/* Sin custodia (sincustodia.tsx) */
+
+.custodia-link-pie {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--tinta);
+}
+
+.custodia-hero-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custodia-ilustracion {
+  align-self: center;
+  width: 150px;
+  height: auto;
+}
+
+.custodia-pasos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.custodia-paso {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 22px;
+  background: #fff1e3;
+}
+
+.custodia-paso h3 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.custodia-paso p {
+  margin: 0;
+  color: var(--suave);
+}
+
+.custodia-paso-numero {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--blanco);
+  font: 800 20px var(--titulos);
+  color: #e06a00;
+}
+
+.custodia-paso-2 {
+  background: #ffeaf0;
+}
+
+.custodia-paso-2 .custodia-paso-numero {
+  color: #d6305f;
+}
+
+.custodia-paso-3 {
+  background: #e6f7fd;
+}
+
+.custodia-paso-3 .custodia-paso-numero {
+  color: #127a9c;
+}
+
+.custodia-paso-4 {
+  background: var(--ok);
+}
+
+.custodia-paso-4 .custodia-paso-numero {
+  color: #2f6b1a;
+}
+
+.custodia-listas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.custodia-lista {
+  padding: 20px;
+  border-radius: 22px;
+  border: 2px solid var(--borde);
+  background: var(--blanco);
+}
+
+.custodia-lista h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.custodia-lista ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custodia-lista li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.custodia-marca {
+  flex: none;
+  margin-top: 1px;
+  padding: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.custodia-lista-si .custodia-marca {
+  background: var(--ok);
+  color: #2f6b1a;
+}
+
+.custodia-lista-no {
+  background: var(--papel);
+}
+
+.custodia-lista-no .custodia-marca {
+  background: var(--error);
+  color: var(--error-tinta);
+}
+
+.custodia-bloque h2 {
+  margin-bottom: 4px;
+}
+
+.custodia-otra {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 20px;
+  border-radius: 26px;
+  background: var(--amarillo);
+}
+
+.custodia-otra p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+@media (min-width: 640px) {
+  .custodia-pasos,
+  .custodia-listas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .custodia-hero-cuerpo {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+  }
+
+  .custodia-ilustracion {
+    flex: 0 0 240px;
+    width: 240px;
+  }
+
+  .custodia-pasos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .custodia-listas {
+    gap: 16px;
+  }
+
+  .custodia-lista {
+    padding: 28px;
+  }
+
+  .custodia-otra {
+    width: 100%;
+    max-width: 780px;
+    align-self: center;
+    padding: 40px 48px;
+  }
+
+  .custodia-otra p {
+    font-size: 18px;
+  }
+}
+
+/* En compus angostas el menú no entra entero: "Sin custodia" queda en el pie y en el menú móvil. */
+@media (max-width: 1099px) {
+  .custodia-link-nav {
+    display: none;
+  }
+}
