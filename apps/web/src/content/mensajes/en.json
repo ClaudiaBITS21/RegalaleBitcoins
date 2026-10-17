@@ -1,0 +1,767 @@
+{
+  "_revisar": ["nacimiento", "comunion", "mitzva", "recibido", "jubilacion", "casanueva", "anionuevo", "sanvalentin", "pascuas", "dianino", "amigo", "abuelos", "maestro", "pizzaday", "genesis", "whitepaper", "halving", "trabajo", "gracias", "mejorate", "graduacion"],
+  "cumple": {
+    "mensajes": [
+      "{nombre}: here's a little piece of bitcoin. It's not for spending tomorrow: it's for keeping, understanding and looking after. Happy birthday!",
+      "Happy birthday, {nombre}! This gift won't break, won't go out of style and takes up no space. Keep it safe.",
+      "{nombre}, another year and a different kind of gift: something to discover over time. Whenever you like, we'll open it together and I'll explain everything.",
+      "For {nombre}, who already has everything: something you surely didn't have yet. Happy birthday!",
+      "{nombre}: this year I didn't have to guess your size or favorite color. I'm giving you bitcoin, and I hope it starts lots of conversations. Happy birthday!",
+      "Happy birthday, {nombre}! The candles go out and the cake runs out. This, you keep.",
+      "{nombre}, here's a little piece of something nobody can manufacture. Many happy returns!",
+      "For {nombre}: some gifts get used once, others stay with you. I hope this is one of the second kind. Happy birthday!",
+      "{nombre}: when you open it, you'll have your own wallet, and from then on the gift is yours. Happy birthday!",
+      "Happy birthday, {nombre}! Make a wish, blow out the candles, then open this when you have a quiet moment."
+    ],
+    "remates": [
+      "Many happy returns!",
+      "The candles go out. This, you keep.",
+      "Now you hold the key.",
+      "Another year, a new key.",
+      "No batteries, no sizes, no returns.",
+      "Happy birthday. Keep it safe."
+    ]
+  },
+  "quince": {
+    "mensajes": [
+      "{nombre}: for your 15th, a gift to look after. It's not for spending tomorrow: it's for keeping and understanding. Enjoy your party!",
+      "Happy 15th, {nombre}! Tonight you dance till late; tomorrow, take your time and open this.",
+      "{nombre}, 15 is a great age to have something of your own. This key is yours. Enjoy your night!",
+      "For {nombre}, turning 15: the waltz, the photos and the party become memories. This, you also get to keep.",
+      "{nombre}: your first wallet, for your 15th. Ask, explore and learn. I'm here for whatever you need.",
+      "Happy 15th, {nombre}! A different kind of gift for a night you'll always remember.",
+      "{nombre}, this gift is an invitation: to save, to ask questions and to think big.",
+      "For your 15th, {nombre}: a little piece of something nobody can manufacture. Shine tonight!",
+      "{nombre}: of all the gifts today, this is the one that won't break or go out of style. Enjoy your party!",
+      "Happy 15th, {nombre}! May this be the first of many decisions of your own."
+    ],
+    "remates": [
+      "15 years, your first key.",
+      "Now you hold the key.",
+      "Dance tonight. Keep it forever.",
+      "Shine tonight and always.",
+      "What's yours is yours.",
+      "Think big."
+    ]
+  },
+  "aniversario": {
+    "mensajes": [
+      "{nombre}: another year by your side, and a gift to keep, the way we keep what we have. Happy anniversary!",
+      "Happy anniversary, {nombre}. I'm giving you something that, like us, grows with time.",
+      "{nombre}, for everything we share: a different kind of gift, to open slowly.",
+      "To {nombre}, with love: some things can't be made in endless supply. You, for example.",
+      "{nombre}: another year, another key. This one is yours alone.",
+      "Happy anniversary, {nombre}. Thank you for every day. This is for the long run, like us.",
+      "{nombre}, I'm not giving you flowers that wilt: I'm giving you something to keep.",
+      "For {nombre}: what we have comes with no return policy. Neither does this gift.",
+      "{nombre}, may this gift be an excuse to keep learning new things together.",
+      "Happy anniversary, {nombre}. Here's to many more years."
+    ],
+    "remates": [
+      "Here's to many more years.",
+      "For the long run, like us.",
+      "What we have has no return policy.",
+      "Now you hold the key.",
+      "Another year, by your side.",
+      "Some things can't be made endlessly."
+    ]
+  },
+  "egresados": {
+    "mensajes": [
+      "{nombre}: one chapter ends and another begins. Here's something to help you start off on the right foot. Congratulations!",
+      "Congratulations, {nombre}! You've learned so much; this is one more thing to keep learning about.",
+      "{nombre}, your first wallet for this new chapter. Take good care of it.",
+      "For {nombre}, who just finished a huge chapter: a gift for thinking long term.",
+      "{nombre}: the diploma goes on the wall. This goes in your wallet. Congratulations!",
+      "You did it, {nombre}! A different kind of gift for a huge achievement.",
+      "{nombre}, now that your own path begins, may your savings begin too.",
+      "Congratulations, {nombre}. A little piece of something nobody can manufacture, for someone who earned it.",
+      "{nombre}: you made it. Now keep asking and exploring, this included.",
+      "Congratulations, {nombre}! May this be the first of many things of your own."
+    ],
+    "remates": [
+      "Congratulations. This is yours too.",
+      "New chapter, new key.",
+      "You did it.",
+      "Diploma on the wall. This, in the vault.",
+      "Now you hold the key.",
+      "Stay curious."
+    ]
+  },
+  "navidad": {
+    "mensajes": [
+      "{nombre}: this year, something different under the tree. Merry Christmas!",
+      "Merry Christmas, {nombre}! It takes no room under the tree, but there's a gift inside.",
+      "{nombre}, a gift to open today and understand over time. Happy holidays!",
+      "For {nombre}: no last-minute shopping, just lots of love. Merry Christmas!",
+      "{nombre}: now you'll have something to talk about at the dinner table. Happy holidays!",
+      "Merry Christmas, {nombre}! A gift that won't break before New Year's.",
+      "{nombre}, here's a little piece of something nobody can manufacture. Happy holidays!",
+      "{nombre}: keep it safe, like the best memory of these holidays.",
+      "For {nombre}, with love this Christmas: some gifts get used and some get kept. This one gets kept.",
+      "Happy holidays, {nombre}! Open it whenever you like, even after the toast."
+    ],
+    "remates": [
+      "Merry Christmas!",
+      "This year, something different.",
+      "Happy holidays. Keep it safe.",
+      "Now you hold the key.",
+      "No batteries, no sizes, no returns.",
+      "To open after the toast."
+    ]
+  },
+  "reyes": {
+    "mensajes": [
+      "{nombre}: Melchior brought gold, Caspar brought frankincense and Balthazar… this. Happy Three Kings Day!",
+      "Hi, {nombre}! We left this next to your shoes. Ask a grown-up to help you open it.",
+      "{nombre}: the camels drank their water, and we left you a gift to look after for a long time.",
+      "For {nombre}: this gift came from very far away, by camel, and takes up no space. May it be kept safe at home until you grow up.",
+      "{nombre}, you've been very good. This gift is a special coin: thousands of people all over the world look after it.",
+      "Happy Three Kings Day, {nombre}! A real coin, to start saving.",
+      "{nombre}: it's not a toy, but it lasts longer than any of them. With love, the Three Kings.",
+      "{nombre}, this year the Three Kings went digital. Enjoy!",
+      "For {nombre}: a coin to keep and a story to tell when you grow up.",
+      "{nombre}: leave the grass and water for the camels, and keep this for yourself."
+    ],
+    "remates": [
+      "With love, the Three Kings.",
+      "Lasts longer than any toy.",
+      "The Three Kings went digital.",
+      "To keep until you grow up.",
+      "A real coin.",
+      "Happy Three Kings Day!"
+    ]
+  },
+  "diapadre": {
+    "mensajes": [
+      "{nombre}: you taught me to look after what matters. Now I'm giving you something to look after. Happy Father's Day!",
+      "Happy Father's Day, {nombre}! This year, no tie and no socks: bitcoin.",
+      "{nombre}, you explained so many things to me. Today it's my turn: open this and I'll tell you all about it.",
+      "For {nombre}, the best dad: a gift for the long run.",
+      "{nombre}: thank you for everything. Here's a little piece of something nobody can manufacture.",
+      "Happy Father's Day, {nombre}! A different kind of gift for someone who already has everything.",
+      "{nombre}, let this gift be the excuse to sit down for a while so I can show you how it works.",
+      "Happy Father's Day, {nombre}. What you taught me about saving, I'm giving back like this.",
+      "{nombre}: it won't break, won't go out of style and never needs exchanging. Happy Father's Day!",
+      "For {nombre}, with all my love on your day."
+    ],
+    "remates": [
+      "No tie, no socks.",
+      "Now it's my turn.",
+      "Happy Father's Day!",
+      "Now you hold the key.",
+      "For the best dad.",
+      "Thank you for everything."
+    ]
+  },
+  "diamadre": {
+    "mensajes": [
+      "{nombre}: you taught me to look after what matters. Now I'm giving you something to look after. Happy Mother's Day!",
+      "Happy Mother's Day, {nombre}! This year, something that won't wilt.",
+      "{nombre}, you explained so many things to me. Today it's my turn: open this and I'll tell you all about it.",
+      "For {nombre}, the best mom: a gift for the long run.",
+      "{nombre}: thank you for everything. Here's a little piece of something nobody can manufacture.",
+      "Happy Mother's Day, {nombre}! A different kind of gift for someone who always thinks of others.",
+      "{nombre}, let this gift be the excuse for a cup of tea together so I can show you how it works.",
+      "Happy Mother's Day, {nombre}. What you taught me about saving, I'm giving back like this.",
+      "{nombre}: it won't break, won't go out of style and never needs exchanging. Happy Mother's Day!",
+      "For {nombre}, with all my love on your day."
+    ],
+    "remates": [
+      "Something that won't wilt.",
+      "Now it's my turn.",
+      "Happy Mother's Day!",
+      "For the best mom.",
+      "Now you hold the key.",
+      "Thank you for everything."
+    ]
+  },
+  "bautismo": {
+    "mensajes": [
+      "{nombre}: people used to give a little medal to stay with you for life. This is the same idea, just digital.",
+      "For {nombre}, on your baptism: a gift that will be kept safe at home until you grow up.",
+      "{nombre}: by the time you can read this, I hope you're still keeping it. With all my love.",
+      "{nombre}, to welcome you into the family, a gift to keep for a lifetime.",
+      "For {nombre}: you won't understand this today, and that's fine. Someday you'll hear the story of this gift.",
+      "{nombre}: a modern keepsake medal, to stay with you always.",
+      "For {nombre}, on this very special day: a little piece of something nobody can manufacture, for when you grow up.",
+      "{nombre}, may this gift always remind you of the people who loved you from day one.",
+      "For {nombre}: a key that's kept safe at home today and that you'll hold one day.",
+      "{nombre}, with lots of love on your baptism. Keep it for when you grow up."
+    ],
+    "remates": [
+      "A modern keepsake medal.",
+      "For when you grow up.",
+      "A key for a lifetime.",
+      "With love, from day one.",
+      "Kept for you today. Yours tomorrow.",
+      "Welcome to the family."
+    ]
+  },
+  "babyshower": {
+    "mensajes": [
+      "For you, who haven't arrived yet: your first gift is already waiting for you.",
+      "Before you're even born, you already have something to keep. We can't wait to meet you.",
+      "A gift for someone we haven't met yet and already love so much.",
+      "For the little one on the way: a gift for when you grow up.",
+      "For the little one on the way: a gift that takes no room in a nursery full of diapers.",
+      "Someone is already looking after your first gift. We can't wait to meet you.",
+      "For a growing family: a gift to keep until the little one grows up.",
+      "We haven't seen your face yet, but we already know we'll love you so much. This is for you.",
+      "For the little one on the way: a little piece of something nobody can manufacture.",
+      "Not clothes you'll outgrow in a month, not another rattle: something to keep for many years."
+    ],
+    "remates": [
+      "We can't wait to meet you.",
+      "Your first gift.",
+      "For when you grow up.",
+      "Takes no room in the nursery.",
+      "Already loved.",
+      "For the little one on the way."
+    ]
+  },
+  "casamiento": {
+    "mensajes": [
+      "{nombre}: for the life you're starting together, a gift for the long run. Congratulations!",
+      "Congratulations, {nombre}! No duplicate blenders: a gift to keep.",
+      "{nombre}, may this gift be the first savings of the family you're starting.",
+      "For {nombre}: some things can't be made in endless supply. Love, for example. And this.",
+      "{nombre}: it takes no room in your new home. Wishing you every happiness!",
+      "Here's to the happy couple! {nombre}, a little piece of something nobody can manufacture, to keep together.",
+      "{nombre}, look after it patiently, like everything worthwhile.",
+      "For {nombre}, with lots of love on your wedding day: a different kind of gift for a one-of-a-kind day.",
+      "{nombre}: today we raise a glass. Tomorrow, take your time and open this.",
+      "Congratulations, {nombre}! May this key be one of the first things you share."
+    ],
+    "remates": [
+      "Here's to the happy couple!",
+      "To keep together.",
+      "Today we toast. Tomorrow, we save.",
+      "No duplicate blenders.",
+      "For the long run.",
+      "Wishing you every happiness."
+    ]
+  },
+  "porque": {
+    "mensajes": [
+      "{nombre}: there's no occasion. I'm giving you this just because.",
+      "{nombre}, I saw this and thought of you. It's yours to keep.",
+      "For {nombre}: some gifts get used once, others stay with you. I hope this is one of the second kind.",
+      "{nombre}: this is bitcoin, money nobody can print more of. Here's a little so you can get to know it.",
+      "{nombre}, I didn't know what to get you, so here's something to discover.",
+      "{nombre}, here's a little piece of something nobody can manufacture. I hope it starts lots of conversations.",
+      "For {nombre}, with love: a different kind of gift, to open today and understand over time.",
+      "{nombre}: when you open it, you'll have your own wallet, and from then on the gift is yours.",
+      "{nombre}, this card holds a gift and an invitation: to save, to ask questions and to think long term.",
+      "{nombre}: look after this key the way you look after the important things. What it holds is yours."
+    ],
+    "remates": [
+      "Just because.",
+      "Now you hold the key.",
+      "No batteries, no sizes, no returns.",
+      "Some gifts get used. This one gets kept.",
+      "A piece of something nobody can make.",
+      "A small gift with a big message."
+    ]
+  },
+  "nacimiento": {
+    "mensajes": [
+      "{nombre}: you just arrived and you already have your first gift. It will be kept safe at home until you grow up.",
+      "For {nombre}, who just came into the world: a gift to keep for a lifetime.",
+      "{nombre}: when you can read this, you'll know how eagerly we were waiting for you. This gift is from that day.",
+      "For {nombre}: your first key, from your very first day.",
+      "{nombre}, you arrived and changed everything. Here's something to keep you company as you grow.",
+      "For {nombre}: a gift that takes no room among all the diapers and onesies.",
+      "{nombre}: some gifts are outgrown in a month. Not this one.",
+      "For {nombre}, with so much love on your arrival: a little piece of something nobody can make more of.",
+      "{nombre}, may this gift always remind you how lovingly we welcomed you.",
+      "For {nombre}: it's kept safe at home for now; when you grow up, you'll hold the key."
+    ],
+    "remates": [
+      "Your first gift, from day one.",
+      "You're here. This is for you.",
+      "For when you grow up.",
+      "You won't outgrow this one.",
+      "A key from day one.",
+      "Kept for you today. Yours tomorrow."
+    ]
+  },
+  "comunion": {
+    "mensajes": [
+      "{nombre}: on your First Communion, a gift to keep and look after for a long time.",
+      "For {nombre}, on this very special day: something different to stay with you as you grow.",
+      "{nombre}, today is a day to remember. May this gift always remind you of it.",
+      "For {nombre}: a gift that will be kept safe at home until you grow up. With all our love.",
+      "{nombre}: people used to give a little medal or a rosary. This year, something to keep as well.",
+      "Congratulations on your First Communion, {nombre}! A little piece of something nobody can make more of.",
+      "{nombre}, may this day stay with you always, and this gift too.",
+      "For {nombre}: it's not a toy, but it lasts longer than any of them. With love on your First Communion.",
+      "{nombre}: a gift to keep today and understand over time. Ask as many questions as you like.",
+      "With lots of love for {nombre}, on your First Communion."
+    ],
+    "remates": [
+      "To keep for a long time.",
+      "A day to remember.",
+      "With love, on your First Communion.",
+      "For when you grow up.",
+      "Kept for you today. Yours tomorrow.",
+      "Lasts longer than any toy."
+    ]
+  },
+  "mitzva": {
+    "mensajes": [
+      "Mazel tov, {nombre}! A gift for a new chapter, to keep and understand over time.",
+      "{nombre}: today you start taking charge of your own decisions. Here's something to look after.",
+      "For {nombre}, on this very important day: a different kind of gift, with lots of love.",
+      "{nombre}, your very own first wallet, for your new chapter. Mazel tov!",
+      "{nombre}: the party ends, the photos stay, and this you keep. Mazel tov!",
+      "For {nombre}: a little piece of something nobody can make more of, for someone taking a huge step today.",
+      "{nombre}, may this gift be an invitation to ask, to study and to think long term.",
+      "Mazel tov, {nombre}! May this be the first of many things of your own.",
+      "{nombre}: today we listened to you with such pride. Now, take your time and open this.",
+      "With lots of love for {nombre}, on a day you'll always remember."
+    ],
+    "remates": [
+      "Mazel tov!",
+      "A new chapter, a new key.",
+      "What's yours is yours.",
+      "Now you hold the key.",
+      "For thinking long term.",
+      "Today, a huge step."
+    ]
+  },
+  "recibido": {
+    "mensajes": [
+      "Congratulations, {nombre}! So many years of study deserve a different kind of gift.",
+      "{nombre}: you graduated! After all those exams and papers, something to keep and enjoy slowly.",
+      "For {nombre}: the diploma gets framed; this gets kept. Congratulations!",
+      "{nombre}, you finished your degree. May this be the start of what comes next.",
+      "You did it, {nombre}! A gift to start your career thinking long term.",
+      "{nombre}: all those late nights studying paid off. This is to celebrate, and to keep.",
+      "Congratulations, {nombre}. You learned how to really study; here's something new to dig into.",
+      "For {nombre}, closing a huge chapter today: a little piece of something nobody can make more of.",
+      "{nombre}: no more finals. Now, take your time and open this.",
+      "Congratulations, {nombre}! May the curiosity that got you here keep you going."
+    ],
+    "remates": [
+      "You graduated. This is yours too.",
+      "No more finals.",
+      "The diploma gets framed. This gets kept.",
+      "You did it.",
+      "Stay curious.",
+      "New chapter, new key."
+    ]
+  },
+  "jubilacion": {
+    "mensajes": [
+      "{nombre}: after so many years of work, a gift to explore at your own pace, now that there's time to spare.",
+      "Happy retirement, {nombre}! No more alarm clocks. Open this whenever you like.",
+      "For {nombre}: so many years thinking about work; now, time to learn something new.",
+      "{nombre}, now that you have time, here's something to discover without hurry.",
+      "{nombre}: thank you for everything you taught over the years. This is for the chapter that's starting.",
+      "For {nombre}, in a new chapter: a little piece of something nobody can make more of.",
+      "{nombre}: no more clocks. Your time is yours now, and this gift will be too, once you open it.",
+      "Congratulations, {nombre}! May this chapter bring long coffees, travel and new conversations, like the one this gift starts.",
+      "{nombre}, you've earned your rest. And a new topic for dinner conversations.",
+      "For {nombre}: some gifts get used once, others stay with you. May this one stay with you in your new chapter."
+    ],
+    "remates": [
+      "Your time is yours now.",
+      "Goodbye, alarm clock.",
+      "You've earned your rest.",
+      "A new chapter, a new key.",
+      "To discover without hurry.",
+      "Happy retirement."
+    ]
+  },
+  "casanueva": {
+    "mensajes": [
+      "{nombre}: new home, new key. This one doesn't open any doors, but keep it anyway.",
+      "Congratulations on your new home, {nombre}! A gift that takes no room in the moving truck.",
+      "For {nombre}: among all those boxes, a gift that needs no packing.",
+      "{nombre}, may your new home fill up with good things. Let's start with this one.",
+      "{nombre}: no houseplant, no set of glasses. A gift to keep in your new home.",
+      "For {nombre}, in your new home: a little piece of something nobody can make more of.",
+      "{nombre}: walls get repainted and furniture gets replaced. This, you keep.",
+      "Enjoy it, {nombre}! And may this gift be a topic at the first dinner in your new place.",
+      "{nombre}, one more key for your key ring. This one is digital.",
+      "For {nombre}: may your new home bring good light, good neighbors and lots of visitors. This is for keeping."
+    ],
+    "remates": [
+      "New home, new key.",
+      "Takes no room in the moving truck.",
+      "No boxes, no packing.",
+      "One more key for your key ring.",
+      "Enjoy your new home.",
+      "Walls get repainted. This gets kept."
+    ]
+  },
+  "anionuevo": {
+    "mensajes": [
+      "Happy New Year, {nombre}! A gift to start the year with something of your own.",
+      "{nombre}: new year, new key. May this year bring good news.",
+      "For {nombre}: between the toast and the fireworks, a gift to open slowly.",
+      "{nombre}, if saving is one of your resolutions this year, here's a first nudge.",
+      "{nombre}: a countdown, a few wishes and a gift to keep. Happy New Year!",
+      "Happy New Year, {nombre}! May it be a year of learning new things. This could be the first.",
+      "For {nombre}: a little piece of something nobody can make more of, to kick off the year.",
+      "{nombre}: New Year's resolutions are forgotten by February. This gift gets kept.",
+      "{nombre}, may this year find you healthy, surrounded by good people and with a bit of bitcoin saved.",
+      "Happy holidays and Happy New Year, {nombre}! Open it once the toast is over."
+    ],
+    "remates": [
+      "New year, new key.",
+      "Happy New Year!",
+      "A resolution you'll actually keep.",
+      "To kick off the year.",
+      "Open it after the toast.",
+      "Here's to a great year."
+    ]
+  },
+  "sanvalentin": {
+    "mensajes": [
+      "{nombre}: happy Valentine's Day. I'm giving you something to keep, the way I keep what we have.",
+      "For {nombre}, with love: no chocolates that run out, no flowers that wilt.",
+      "{nombre}: very few things are truly one of a kind. You're one of them.",
+      "Happy Valentine's Day, {nombre}. A different kind of gift for the person who changed my days.",
+      "{nombre}: you already have my heart. Now you have a key too.",
+      "For {nombre}: a gift to discover together, slowly, over coffee.",
+      "{nombre}, I love you today, tomorrow and in the long run.",
+      "Happy Valentine's Day, {nombre}. This is for the long run, like us.",
+      "{nombre}: this year, instead of a teddy bear, something that lasts longer.",
+      "With all my love, {nombre}. Happy Valentine's Day."
+    ],
+    "remates": [
+      "Happy Valentine's Day.",
+      "With all my love.",
+      "My heart and a key.",
+      "For the long run, like us.",
+      "Something that won't wilt.",
+      "Together, always."
+    ]
+  },
+  "pascuas": {
+    "mensajes": [
+      "Happy Easter, {nombre}! This year, besides the chocolate egg, a different kind of surprise.",
+      "{nombre}: chocolate disappears fast. This, you keep.",
+      "For {nombre}: a surprise that doesn't come inside an egg, but is just as sweet.",
+      "{nombre}, among all that chocolate, a gift with zero calories.",
+      "Happy Easter, {nombre}! May it be a season of renewal, and of something new to keep.",
+      "For {nombre}: a little piece of something nobody can make more of. Happy Easter!",
+      "{nombre}: this time the surprise isn't hidden behind the couch. It's on this card.",
+      "{nombre}, here's something to open today and understand over time. Happy Easter!",
+      "For {nombre}, with love this Easter: some gifts get eaten and some get kept. This one gets kept.",
+      "Happy Easter, {nombre}! May the chocolate come with plenty of good conversation."
+    ],
+    "remates": [
+      "Happy Easter!",
+      "Chocolate disappears. This gets kept.",
+      "A different kind of surprise.",
+      "A gift with zero calories.",
+      "This egg won't crack.",
+      "Some gifts get eaten. This gets kept."
+    ]
+  },
+  "dianino": {
+    "mensajes": [
+      "Happy Children's Day, {nombre}! This year, besides toys, a real coin to start saving.",
+      "{nombre}: a gift that won't break, won't get lost under the bed and needs no batteries.",
+      "For {nombre}: a special coin that thousands of people all over the world look after. Ask a grown-up to help you open it.",
+      "{nombre}, this gift will be kept safe at home until you grow up. Happy Children's Day!",
+      "{nombre}: today is your day. Play lots, and keep this for when you grow up.",
+      "Happy Children's Day, {nombre}! A digital piggy bank, to start saving right now.",
+      "For {nombre}: a coin to keep and a question to ask: how does it work? Ask everything.",
+      "{nombre}, never stop playing or asking questions. This is for you.",
+      "{nombre}: this gift will be with you as you grow. When you're older, I'll tell you its story.",
+      "For {nombre}, with lots of love on your day."
+    ],
+    "remates": [
+      "Happy Children's Day!",
+      "A digital piggy bank.",
+      "No batteries, no cables.",
+      "For when you grow up.",
+      "A real coin.",
+      "Play lots. Keep this."
+    ]
+  },
+  "amigo": {
+    "mensajes": [
+      "{nombre}: thanks for always being there. Here's something to keep, the way I keep our friendship.",
+      "Happy Friendship Day, {nombre}! For all the talks, the laughs and the ones still to come.",
+      "For {nombre}: some friendships can't be made in endless supply. Ours, for example.",
+      "{nombre}, here's a little piece of bitcoin and an excuse to get together and talk about it.",
+      "{nombre}: you always listen to me. Now it's your turn to hear me talk about bitcoin for a bit.",
+      "Happy Friendship Day, {nombre}. A different kind of gift for someone who makes everything better.",
+      "For {nombre}: what we have won't break or go out of style. Neither will this gift.",
+      "{nombre}, I know you didn't need anything. That's exactly why.",
+      "{nombre}: here's to you, and to many more years of this friendship.",
+      "Happy Friendship Day, {nombre}! Thanks for being you."
+    ],
+    "remates": [
+      "Thanks for always being there.",
+      "To many more years of friendship.",
+      "I know you didn't need anything.",
+      "Happy Friendship Day.",
+      "What we have never goes out of style.",
+      "Thanks for being you."
+    ]
+  },
+  "abuelos": {
+    "mensajes": [
+      "{nombre}: you taught me to keep what matters. Today I'm giving you something to keep.",
+      "Happy Grandparents' Day, {nombre}! For all the afternoons, the stories and the snacks.",
+      "For {nombre}: you told me so many times how things used to be. Today I'm telling you something new.",
+      "{nombre}, this gift is the perfect excuse for a long visit so I can show you how it works.",
+      "{nombre}: people used to save in a jar or under the mattress. I'm bringing you a new way.",
+      "For {nombre}, with all my love: a little piece of something nobody can make more of.",
+      "Happy Grandparents' Day, {nombre}! Thank you for so much patience and so much love.",
+      "{nombre}: it's never too late to learn something new. This time, I'm the teacher.",
+      "For {nombre}: a modern gift for the person who taught me the timeless things.",
+      "{nombre}, with lots of love on your day. Open it slowly, and call me if you want help."
+    ],
+    "remates": [
+      "This time, I'm the teacher.",
+      "Thank you for so much.",
+      "A new way to save.",
+      "With all my love.",
+      "It's never too late to learn.",
+      "Happy Grandparents' Day!"
+    ]
+  },
+  "maestro": {
+    "mensajes": [
+      "{nombre}: thank you for teaching with so much patience. Today I'm giving you something to learn.",
+      "Happy Teachers' Day, {nombre}! For every question you answered and every one you made us ask.",
+      "For {nombre}: teaching means giving something that never runs out. This gift is for keeping.",
+      "{nombre}, today the roles are reversed: it's your turn to learn. Happy Teachers' Day!",
+      "{nombre}: thank you for sparking so much curiosity. Here's something to spark yours.",
+      "For {nombre}, with gratitude: a little piece of something nobody can make more of.",
+      "Happy Teachers' Day! Thank you, {nombre}, for everything you taught us this year.",
+      "{nombre}: this year, instead of an apple for your desk, something to keep.",
+      "{nombre}: homework assignment: open this gift and find out how it works. Happy Teachers' Day!",
+      "For {nombre}, with lots of love on your day. Thank you for teaching."
+    ],
+    "remates": [
+      "Thank you for teaching.",
+      "Homework: find out how it works.",
+      "Today, you're the student.",
+      "Happy Teachers' Day!",
+      "Teaching never runs out.",
+      "With gratitude."
+    ]
+  },
+  "pizzaday": {
+    "mensajes": [
+      "{nombre}: on May 22, 2010, someone paid for two pizzas with 10,000 bitcoin. Today I'm giving you a little piece, no pizza included.",
+      "Happy Bitcoin Pizza Day, {nombre}! The most famous purchase in bitcoin history was two pizzas. This one isn't for eating: it's for keeping.",
+      "For {nombre}: today we celebrate the most famous pizza in history. I'm bringing the bitcoin; the pepperoni's on you.",
+      "{nombre}: in 2010, Laszlo traded bitcoin for two pizzas. You keep this, and we'll order pizza separately.",
+      "{nombre}, happy Pizza Day. May this gift last longer than a large cheese pizza.",
+      "For {nombre}: some pizzas get eaten and some get remembered. Today we remember the ones from 2010.",
+      "{nombre}: today bitcoiners eat pizza and tell a story. Here's a little piece of that story.",
+      "Happy Bitcoin Pizza Day, {nombre}! A slice of bitcoin, hold the olives.",
+      "{nombre}, if anyone asks why I'm giving you this today, look up the story of the two pizzas from 2010.",
+      "For {nombre}: a May 22, two pizzas and a story told every year. Open it with a slice in hand."
+    ],
+    "remates": [
+      "A slice of bitcoin, hold the olives.",
+      "Not for eating. For keeping.",
+      "Happy Bitcoin Pizza Day.",
+      "Two pizzas, one story.",
+      "The pepperoni's on you.",
+      "May 22, 2010."
+    ]
+  },
+  "genesis": {
+    "mensajes": [
+      "{nombre}: on January 3, 2009, the first bitcoin block was mined. Today we celebrate its birthday with you.",
+      "Happy birthday, genesis block! And for you, {nombre}, a gift to celebrate.",
+      "For {nombre}: the genesis block stored a newspaper headline from that day. This card stores a gift.",
+      "{nombre}, it all started with one block. May this gift be the start of your own story with bitcoin.",
+      "{nombre}: on January 3, bitcoiners celebrate an unusual birthday: block 0's. Consider yourself invited.",
+      "For {nombre}: since the genesis block, the chain has kept adding blocks. Here's your little piece.",
+      "{nombre}, today is the birthday of a block that changed a lot of things. Here's a little so you can get to know it.",
+      "Happy genesis block day, {nombre}! A gift to open today and understand over time.",
+      "{nombre}: blow out the candles for block 0. The gift is on me.",
+      "For {nombre}: in 2009 someone mined the first block. Today you receive a little piece of that story."
+    ],
+    "remates": [
+      "Happy birthday, genesis block.",
+      "It all started with one block.",
+      "Block 0, gift 1.",
+      "January 3, 2009.",
+      "Since the very first block.",
+      "Blow out the candles for block 0."
+    ]
+  },
+  "whitepaper": {
+    "mensajes": [
+      "{nombre}: on October 31, 2008, Satoshi Nakamoto published nine pages that changed a lot of things. Here's a little piece of what came next.",
+      "Happy birthday, whitepaper! {nombre}, here's a gift and some recommended reading: it's only nine pages.",
+      "For {nombre}: it all started with a nine-page document. Read it, then open this.",
+      "{nombre}, today is the bitcoin whitepaper's birthday. Here's a little so you can get to know it up close.",
+      "{nombre}: “A Peer-to-Peer Electronic Cash System”. That's how it all began. Here's your share.",
+      "For {nombre}: on October 31, 2008, the big Halloween surprise wasn't a scare; it was a whitepaper. Happy anniversary!",
+      "{nombre}, happy whitepaper anniversary. A gift to read about, ask about and keep.",
+      "{nombre}: nine pages, one idea and many years of history. Here's a little piece.",
+      "For {nombre}: Satoshi wrote the whitepaper; I'm writing you this card. The rest is inside.",
+      "{nombre}: if you've ever wondered what bitcoin is, start with the whitepaper. And with this gift."
+    ],
+    "remates": [
+      "Nine pages, one idea.",
+      "Happy birthday, whitepaper.",
+      "Recommended reading: nine pages.",
+      "October 31, 2008.",
+      "Peer to peer.",
+      "Satoshi wrote. I'm gifting."
+    ]
+  },
+  "halving": {
+    "mensajes": [
+      "{nombre}: roughly every four years, the issuance of new bitcoin is cut in half. Today we celebrate with a gift.",
+      "Happy halving, {nombre}! Every 210,000 blocks, the reward is split in two. This gift, whole, is for you.",
+      "For {nombre}: today miners get half of what they got yesterday. You get a gift.",
+      "{nombre}, the halving is a reminder: bitcoin's rules don't change at anyone's whim. Here's a little piece.",
+      "{nombre}: half for the miners, and twice the excitement to give you this. Happy halving!",
+      "For {nombre}: something that happens every four years, and a gift to celebrate it.",
+      "{nombre}: less new bitcoin is issued each time, and today a little is for you.",
+      "Happy halving, {nombre}! Take your time opening it: the next one is about four years away.",
+      "{nombre}, this halving comes with a gift. Keep it until the next one, and the one after, and the one after that.",
+      "For {nombre}: today bitcoin issuance is split in two. The love in this gift isn't."
+    ],
+    "remates": [
+      "Happy halving.",
+      "Every 210,000 blocks.",
+      "Half for the miners.",
+      "See you next halving.",
+      "The rules don't change.",
+      "A whole gift, mid-halving."
+    ]
+  },
+  "trabajo": {
+    "mensajes": [
+      "Congratulations on the new job, {nombre}! May this first day be the start of something big.",
+      "{nombre}: new job, new chapter. Here's something to start off thinking long term.",
+      "For {nombre}: you earned it. A different kind of gift to celebrate.",
+      "{nombre}, may your first paycheck come quickly. In the meantime, here's a gift to keep.",
+      "{nombre}: best of luck with the new role. This is for keeping, whatever happens.",
+      "For {nombre}: new desk, new team and a new key.",
+      "{nombre}, may you learn a lot and enjoy it even more. Congratulations!",
+      "Way to go, {nombre}! A little piece of something nobody can make more of, for someone who earned it.",
+      "{nombre}: when your first paycheck arrives, remember to save a little. To get you started, here's this.",
+      "For {nombre}, hoping everything goes brilliantly in the new job."
+    ],
+    "remates": [
+      "You earned it.",
+      "New job, new key.",
+      "Hope it goes brilliantly.",
+      "Best of luck with the new role.",
+      "For keeping, whatever happens.",
+      "Way to go!"
+    ]
+  },
+  "gracias": {
+    "mensajes": [
+      "{nombre}: thank you. For everything, and so much more. This is a small way of saying it.",
+      "For {nombre}: some things can't be repaid, but they can be appreciated. Thank you, from the heart.",
+      "{nombre}, you gave me a huge hand. Here's a little piece of something to keep in return.",
+      "Thank you, {nombre}. I didn't know how to say it, so I'm giving you this.",
+      "{nombre}: thanks for being there when it mattered. This gift is for you.",
+      "For {nombre}, with gratitude: a little piece of something nobody can make more of.",
+      "{nombre}, a big thank-you in a small gift.",
+      "{nombre}: I know, you didn't have to. But I wanted you to have something to keep and remember.",
+      "Thank you, {nombre}, for the patience, the help and the good vibes.",
+      "For {nombre}: what you did is priceless. This is just a thank-you."
+    ],
+    "remates": [
+      "Thank you, from the heart.",
+      "A big thank-you in a small gift.",
+      "For everything, and so much more.",
+      "Some things can't be repaid.",
+      "Thanks for being there.",
+      "With gratitude."
+    ]
+  },
+  "mejorate": {
+    "mensajes": [
+      "{nombre}: get well soon. I'm sending you a gift to keep you entertained while you rest.",
+      "For {nombre}: rest, some pampering and something new to discover slowly. Get well soon!",
+      "{nombre}, since you have to take it easy, here's something to explore without hurry.",
+      "Hang in there, {nombre}! A little gift to keep you company these days.",
+      "{nombre}: flowers wilt and grapes run out. This will be waiting until you feel better.",
+      "For {nombre}: wishing you a speedy recovery. Open it when you feel like it, no rush.",
+      "{nombre}, sending you a big hug and a little piece of something nobody can make more of.",
+      "{nombre}: take good care of yourself. This gift can wait; you come first.",
+      "For {nombre}, with all my love: I hope we're talking about this in person very soon.",
+      "{nombre}: today is for resting. When you feel better, we'll open it and I'll explain everything."
+    ],
+    "remates": [
+      "Get well soon.",
+      "You first. This can wait.",
+      "A big hug.",
+      "Hang in there!",
+      "Open it when you feel like it.",
+      "Rest, pampering and bitcoin."
+    ]
+  },
+  "graduacion": {
+    "mensajes": [
+      "Congratulations, {nombre}! A huge achievement deserves a different kind of gift.",
+      "{nombre}: you closed a chapter. Here's something to start the next one.",
+      "For {nombre}, on your graduation: a gift for thinking long term.",
+      "{nombre}, all that effort deserves a reward. This is a little piece of it.",
+      "You did it, {nombre}! Keep this safe, like the memory of today.",
+      "{nombre}: today we celebrate everything you've learned. This is to keep learning.",
+      "For {nombre}: a little piece of something nobody can make more of, for someone who earned every step.",
+      "{nombre}, may this key be the first of many things of your own.",
+      "Congratulations, {nombre}. Today, photos and celebrating; tomorrow, take your time and open this.",
+      "Congratulations, {nombre}! May what comes next be as good as what you've achieved."
+    ],
+    "remates": [
+      "Congratulations. You did it.",
+      "New chapter, new key.",
+      "Today we celebrate. Tomorrow, we save.",
+      "For the long run.",
+      "You earned it.",
+      "Now you hold the key."
+    ]
+  },
+  "listas_uno": {
+    "mensajes": [
+      "{nombres}: my contribution to your list. Enjoy!",
+      "For {nombres}, with love: one more grain for your gift.",
+      "{nombres}, what a great idea this list is! Here's my part.",
+      "{nombres}: together we make it bigger. This is my little piece.",
+      "A small contribution with a big hug. For you, {nombres}!",
+      "{nombres}, may you keep it for a long time. With love.",
+      "For {nombres}: sats with love.",
+      "Adding to your stack, {nombres}.",
+      "Congratulations, {nombres}! Here's my contribution.",
+      "My grain of sand for you, {nombres}. Big hug!",
+      "{nombres}: may this contribution become part of your story.",
+      "For {nombres}! Hodl with love.",
+      "{nombres}: so you keep stacking. Big hug!",
+      "With lots of love for {nombres}. May it be the first of many.",
+      "{nombres}: just a little, but with love."
+    ]
+  },
+  "listas_varios": {
+    "mensajes": [
+      "{nombres}: my contribution to your list. Enjoy it together!",
+      "For {nombres}, with love: one more grain for your gift.",
+      "{nombres}, what a great idea this list is! Here's my part.",
+      "{nombres}: together we make it bigger. This is my little piece.",
+      "A small contribution with a big hug for {nombres}.",
+      "{nombres}, may you keep it for a long time. With love to you all.",
+      "For {nombres}: sats with love.",
+      "Adding to your stack, {nombres}.",
+      "Congratulations, {nombres}! Here's my contribution.",
+      "My grain of sand for you all, {nombres}. Big hug!",
+      "{nombres}: may this contribution become part of your story together.",
+      "For {nombres}! Hodl with love.",
+      "{nombres}: so you all keep stacking. Big hug!",
+      "With lots of love for {nombres}. May it be the first of many.",
+      "{nombres}: just a little, but with love."
+    ]
+  }
+}
