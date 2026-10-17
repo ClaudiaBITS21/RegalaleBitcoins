@@ -98,6 +98,7 @@ export function NewListPage() {
         titulo: title.trim(),
         para: forWhom.trim(),
         varios: several,
+        semilla: keyMode === 'semilla',
         ocasion: occasion.key,
         ...(occasion.key === 'otra' && occasion.free ? { ocasionLibre: occasion.free } : {}),
         mensaje: message.trim(),

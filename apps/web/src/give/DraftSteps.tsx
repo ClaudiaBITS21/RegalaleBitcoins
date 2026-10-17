@@ -133,7 +133,8 @@ interface Market {
   readonly arsPerBtc: number | null;
   readonly arsSource: 'criptoya' | 'bitso' | null;
   readonly minSats: bigint;
-  readonly maxSats: bigint;
+  /** null = sin tope. */
+  readonly maxSats: bigint | null;
 }
 
 type Unit = 'USD' | 'ARS' | 'SAT';
@@ -143,12 +144,15 @@ export function AmountStep({
   draft,
   error,
   ceilingUsd,
+  presets,
   onNext,
 }: {
   draft: Draft;
   error: Key | null;
-  /** Techo por regalo que informa la API (/api/salud). */
-  ceilingUsd: number;
+  /** Techo por regalo que informa la API (/api/salud); null = sin tope (listas con billetera propia). */
+  ceilingUsd: number | null;
+  /** Montos sugeridos en dólares; si no, salen del techo. */
+  presets?: readonly number[];
   onNext: (a: Pick<Draft, 'currency' | 'amount' | 'sats'>) => void;
 }) {
   const { t, lang } = useI18n();
@@ -160,7 +164,7 @@ export function AmountStep({
     setFailed(false);
     try {
       const [{ usdPorBtc: usdPerBtc, arsPorBtc: arsPerBtc, fuenteArs: arsSource }, fees] = await Promise.all([api.price(), api.fees()]);
-      setMarket({ usdPerBtc, arsPerBtc, arsSource, minSats: minimumGiftAmount(fees.halfHour), maxSats: usdCentsToSats(BigInt(Math.round(ceilingUsd * 100)), usdPerBtc) });
+      setMarket({ usdPerBtc, arsPerBtc, arsSource, minSats: minimumGiftAmount(fees.halfHour), maxSats: ceilingUsd === null ? null : usdCentsToSats(BigInt(Math.round(ceilingUsd * 100)), usdPerBtc) });
     } catch {
       setFailed(true);
     }
@@ -199,7 +203,7 @@ export function AmountStep({
   }
   if (picked !== null && picked.sats < market.minSats) {
     problem = t('regalar.cuanto.minimo', { minimo: formatSats(market.minSats, lang) });
-  } else if (picked !== null && picked.sats > market.maxSats) {
+  } else if (picked !== null && market.maxSats !== null && ceilingUsd !== null && picked.sats > market.maxSats) {
     problem = t('regalar.cuanto.maximo', { maximo: formatUsd(ceilingUsd, lang) });
   }
   const valid = picked !== null && problem === null;
@@ -222,7 +226,7 @@ export function AmountStep({
     >
       <StepTitle>{t('regalar.cuanto.titulo')}</StepTitle>
       <div class="opciones-monto">
-        {presetsUsd(ceilingUsd).map((usd) => {
+        {(presets ?? presetsUsd(ceilingUsd ?? 100)).map((usd) => {
           const tooSmall = usdCentsToSats(BigInt(usd * 100), market.usdPerBtc) < market.minSats;
           const on = choice?.kind === 'preset' && choice.usd === usd;
           return (

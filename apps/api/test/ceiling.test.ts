@@ -6,9 +6,9 @@ import { CEILING_USD, effectiveCeilingUsd, MAINNET_CEILING_USD } from '../src/ap
 describe('techo por regalo', () => {
   it('en mainnet nunca supera el autorizado, aunque la variable diga otra cosa', () => {
     const mainnet = getNetwork('mainnet', { allowMainnet: true });
-    assert.equal(MAINNET_CEILING_USD, 20);
-    assert.equal(effectiveCeilingUsd(mainnet, undefined), 20);
-    assert.equal(effectiveCeilingUsd(mainnet, 100), 20);
+    assert.equal(MAINNET_CEILING_USD, 100);
+    assert.equal(effectiveCeilingUsd(mainnet, undefined), 100);
+    assert.equal(effectiveCeilingUsd(mainnet, 500), 100);
     assert.equal(effectiveCeilingUsd(mainnet, 10), 10);
   });
 

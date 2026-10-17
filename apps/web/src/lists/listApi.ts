@@ -31,7 +31,8 @@ export interface PublicList {
   readonly fecha: string | null;
   readonly idioma: string;
   readonly abierta: boolean;
-  readonly topeUsd: number;
+  /** Tope por aporte en dólares; null en listas con billetera propia (sin tope). */
+  readonly topeUsd: number | null;
   /** Quien armó la lista acepta transferencias en pesos a su alias. */
   readonly aceptaPesos: boolean;
   /** Para quién es ({nombres} en los ejemplos) y si es de varias personas. */
@@ -103,6 +104,8 @@ export interface NewList {
   readonly primeraDireccion: string;
   readonly para: string;
   readonly varios: boolean;
+  /** Armada con "Semilla nueva" (lleva el tope de los regalos). */
+  readonly semilla: boolean;
   readonly alias?: string;
   readonly aliasTitular?: string;
   readonly convertir?: boolean;

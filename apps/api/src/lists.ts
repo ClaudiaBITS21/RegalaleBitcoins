@@ -51,6 +51,7 @@ interface ListRow {
   cerrada: Date | null;
   para: string | null;
   varios: boolean;
+  semilla: boolean;
 }
 
 interface ContributionRow {
@@ -120,6 +121,12 @@ async function mapLimit<T, R>(items: readonly T[], n: number, fn: (item: T) => P
   return out;
 }
 
+/**
+ * Tope por aporte: las listas con billetera propia (cold wallet) no tienen; las de "Semilla nueva",
+ * el mismo que los regalos (autorizado el 17/10/2026, docs/mainnet.md).
+ */
+const listCeiling = (l: Pick<ListRow, 'semilla'>, ceilingUsd: number): number | null => (l.semilla ? ceilingUsd : null);
+
 const publicList = (l: ListRow, ceilingUsd: number) => ({
   id: l.id,
   red: l.red,
@@ -130,7 +137,7 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   fecha: l.fecha === null ? null : l.fecha.toISOString().slice(0, 10),
   idioma: l.idioma,
   abierta: l.cerrada === null,
-  topeUsd: ceilingUsd,
+  topeUsd: listCeiling(l, ceilingUsd),
   aceptaPesos: l.alias !== null,
   para: l.para,
   varios: l.varios,
@@ -188,11 +195,11 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     }
     const id = newGiftId();
     await sql`
-      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular, para, varios)
+      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular, para, varios, semilla)
       values (${id}, ${network.name}, ${account.id}, ${xpub}, ${text(b.titulo, LIST_LIMITS.title, true)}, ${b.ocasion},
               ${b.ocasion === 'otra' ? text(b.ocasionLibre, LIST_LIMITS.freeOccasion, false) : null},
               ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${alias}, ${holder},
-              ${text(b.para, 60, false)}, ${b.varios === true})`;
+              ${text(b.para, 60, false)}, ${b.varios === true}, ${b.semilla === true})`;
     return c.json({ id }, 201);
   });
 
@@ -230,7 +237,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       price.btcUsd(),
       amount.currency === 'ARS' ? (deps.arsPrice?.btcArs().then((q) => q.price) ?? Promise.reject(new ApiError(422, 'monto_invalido'))) : null,
     ]);
-    checkAmount(amount, usdPerBtc, arsPerBtc, MIN_CONTRIBUTION_SATS, deps.ceilingUsd);
+    checkAmount(amount, usdPerBtc, arsPerBtc, MIN_CONTRIBUTION_SATS, listCeiling(list, deps.ceilingUsd) ?? Number.POSITIVE_INFINITY);
     const name = text(b.nombre, LIST_LIMITS.name, false);
     const message = text(b.mensaje, LIST_LIMITS.message, false) ?? '';
     const key = parseAccountKey(list.xpub, network);

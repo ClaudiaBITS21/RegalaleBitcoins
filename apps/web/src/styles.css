@@ -2669,3 +2669,9 @@ svg.tarjeta-imagen {
 .lista-modo { display: grid; gap: 6px; justify-items: start; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 2px solid var(--borde); }
 .lista-modo:hover, .lista-modo:focus-visible { border-color: var(--tinta); }
 .lista-modo strong { font-family: var(--titulos); font-size: 1.2rem; }
+
+/* QR que copia el link de pago al tocarlo */
+.qr-copiar { display: grid; justify-items: center; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: copy; }
+.qr-copiar-texto { font-size: 0.85rem; color: var(--suave); }
+.pago .botones-copiar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.pago .botones-copiar > :first-child { grid-column: 1 / -1; }

@@ -131,7 +131,7 @@ function presetOccasion(): OccasionChoice | null {
 export function GivePage() {
   const { t, lang } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
-  const [ceilingUsd, setCeilingUsd] = useState(20);
+  const [ceilingUsd, setCeilingUsd] = useState(100);
   const [netError, setNetError] = useState<'mainnet' | 'sin_red' | null>(null);
   // Si viene de la home con la ocasión elegida (/regalar?ocasion=…&libre=…), arranca en "Para quién".
   const [preset] = useState(presetOccasion);
