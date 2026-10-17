@@ -245,7 +245,7 @@ export function ListPage({ id }: { id: string }) {
                 {r.shown ?? r.value}
               </dd>
               <button type="button" class="boton boton-contorno boton-chico" onClick={() => void copy(r.k, r.value)}>
-                {copied === r.k ? t('regalar.pagar.copiado') : t('lista.copiar')}
+                {copied === r.k ? t('regalar.pagar.copiado') : t('regalar.mandar.copiar')}
               </button>
             </div>
           ))}

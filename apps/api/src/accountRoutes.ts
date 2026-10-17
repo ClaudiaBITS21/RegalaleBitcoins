@@ -44,6 +44,8 @@ export interface AccountConfig {
 export const SESSION_COOKIE = '__session';
 const VAULT = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{20,400}$/;
 const LINK_MINUTES = 20;
+/** Nombres de error de WebAuthn que se aceptan en el diagnóstico (nada libre llega al log). */
+const WEBAUTHN_ERRORS = new Set(['NotAllowedError', 'AbortError', 'InvalidStateError', 'NotSupportedError', 'SecurityError', 'ConstraintError', 'UnknownError', 'TypeError', 'Error']);
 
 export async function currentAccount(sql: Sql, c: Context): Promise<Account | null> {
   return sessionAccount(sql, getCookie(c, SESSION_COOKIE));
@@ -84,8 +86,15 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     const ip = deps.clientIp(c);
     if (!challengeLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     challengeLimiter.record(ip);
-    const { tipo } = await body(c);
+    const { tipo, email } = await body(c);
     if (tipo !== 'registro' && tipo !== 'ingreso') throw new ApiError(400, 'pedido_invalido');
+    // Antes de crear una passkey nueva se revisa el mail: si ya tiene cuenta, el navegador no
+    // llega a crear la passkey (quedaría huérfana en el llavero y se ofrecería al entrar).
+    if (tipo === 'registro' && email !== undefined) {
+      const normalized = normalizeEmail(email);
+      if (normalized === null) throw new ApiError(400, 'pedido_invalido');
+      if ((await findAccountByEmail(sql, normalized)) !== null) throw new ApiError(409, 'cuenta_existente', 'Mail con cuenta (antes de crear la passkey).');
+    }
     return c.json({ desafio: await createChallenge(sql, tipo) });
   });
 
@@ -122,7 +131,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     const input = (b.credencial ?? {}) as Parameters<typeof verifyAssertion>[0];
     const id = typeof input.id === 'string' ? input.id : '';
     const credential = await findCredential(sql, id);
-    if (credential === null) throw new ApiError(401, 'passkey_invalida', 'Passkey desconocida.');
+    if (credential === null) throw new ApiError(401, 'passkey_desconocida', 'Passkey desconocida.');
     let result;
     try {
       result = verifyAssertion(input, credential, config.origins);
@@ -136,6 +145,20 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     if (row === undefined) throw new ApiError(401, 'passkey_invalida');
     await startSession(c, { id: credential.accountId, email: row.email, lang: isLang(row.idioma) ? row.idioma : 'es' });
     return c.json({ email: row.email, credencial: credential.id, boveda: credential.vault });
+  });
+
+  /**
+   * El navegador cuenta por qué falló la passkey (solo el nombre del error de WebAuthn y el
+   * paso), para distinguir en los logs "canceló" de "este teléfono no tiene la passkey".
+   */
+  app.post('/api/cuenta/diagnostico', async (c) => {
+    const ip = deps.clientIp(c);
+    if (!challengeLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
+    challengeLimiter.record(ip);
+    const { paso, error } = await body(c);
+    if ((paso !== 'registro' && paso !== 'ingreso') || typeof error !== 'string' || !WEBAUTHN_ERRORS.has(error)) throw new ApiError(400, 'pedido_invalido');
+    console.warn(`cuenta: passkey falló en el navegador (${paso}): ${error}`);
+    return c.body(null, 204);
   });
 
   app.post('/api/cuenta/salir', async (c) => {

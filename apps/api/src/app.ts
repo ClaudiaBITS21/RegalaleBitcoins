@@ -119,7 +119,11 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.onError((error, c) => {
-    if (error instanceof ApiError) return c.json({ error: error.code, detalle: error.message }, error.status);
+    if (error instanceof ApiError) {
+      // Rechazos de cuenta y passkey al log, con el motivo (nunca el mail ni la credencial).
+      if (c.req.path.startsWith('/api/cuenta/') && error.status !== 429) console.warn(`cuenta: ${c.req.path} ${error.status} ${error.code}: ${error.message}`);
+      return c.json({ error: error.code, detalle: error.message }, error.status);
+    }
     if (error instanceof ChainError) return c.json({ error: 'cadena_no_disponible' }, 502);
     console.error(error);
     return c.json({ error: 'error_interno' }, 500);

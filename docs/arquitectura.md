@@ -122,8 +122,16 @@ cada visita sin código arma una clave maestra nueva.
   "listo para mandar" con link de acceso al panel (3 días).
 - Las passkeys quedan atadas al dominio (rpId): las creadas en `regalalebitcoins.web.app` no
   sirven en `regalalebitcoins.com`. Al mudar de dominio, entrar por mail y crear otra.
+- **Passkeys huérfanas** (bug del 17/10/2026, `docs/handoff/2026-10-17/bug-login-passkey.md`):
+  el desafío de registro lleva el mail y el servidor responde `409 cuenta_existente` *antes* de
+  que el navegador cree la passkey. Una passkey que el servidor no conoce da
+  `passkey_desconocida` y la web le pide al llavero que la borre (`signalUnknownCredential`,
+  donde exista). Los rechazos de `/api/cuenta/*` van al log con su motivo (sin mail) y el
+  navegador informa el nombre del error de WebAuthn a `/api/cuenta/diagnostico` (lista cerrada
+  de nombres). Si la passkey falla, la salida es "Entrar con mis 12 palabras"; crear una cuenta
+  nueva pide confirmar que no recupera los regalos de la anterior.
 
-## Listas de regalos (etapa 7, solo BTC)
+## Listas de regalos (etapa 7)
 
 - Quien arma la lista (con cuenta) pega la **zpub** de su billetera (vpub en pruebas; solo
   BIP84, se rechazan claves privadas y xpub genéricas) y confirma que su billetera muestra la
@@ -135,7 +143,14 @@ cada visita sin código arma una clave maestra nueva.
   previos se saltea. Así no se abren huecos grandes (las billeteras miran ~20 sin usar).
 - El panel de quien armó la lista muestra todos los aportes y **vuelve a derivar cada dirección
   en el navegador**: si el servidor mostrara una que no sale de la llave, avisa en rojo.
-- Publicar listas es gratis en la beta. Sin alias/CBU (después del lanzamiento).
+- Publicar listas es gratis en la beta.
+- **Pesos (excepción aprobada el 17/10/2026, solo en listas):** quien arma la lista puede poner
+  un alias (solo alias, sin CBU) y el titular, con el compromiso de convertir a bitcoin. El
+  invitado elige "Transferir pesos", escribe el monto (sin tope) y recibe alias, titular y un
+  código `RB-XXXX` único para el concepto, más su link privado. La plataforma no recibe ni ve
+  los pesos: quien armó la lista marca anunciada → recibida → convertida (con los sats que
+  compró) y el invitado ve ese estado. El alias solo se muestra después de anunciar
+  (tabla `transferencias`, migración 007).
 
 ## Seguridad web
 

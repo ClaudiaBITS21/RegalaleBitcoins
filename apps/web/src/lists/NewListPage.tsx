@@ -1,12 +1,11 @@
 import { deriveListAddress, isCoreError, parseAccountKey } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
-import { accountApi, createAccess, signIn } from '../account.ts';
+import { accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { OccasionPicker, type OccasionChoice } from '../content/OccasionPicker.tsx';
 import { groupAddress } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
-import { PasskeyError } from '../passkey.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { ALIAS, listApi, listUrl } from './listApi.ts';
 import { useNetwork } from './useNetwork.ts';
@@ -74,9 +73,7 @@ export function NewListPage() {
       else await signIn();
       setStep('datos');
     } catch (e) {
-      if (e instanceof PasskeyError) setError(e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.passkeyInvalida');
-      else if (e instanceof ApiFailure && e.code === 'cuenta_existente') setError('guardar.yaExiste');
-      else setError('guardar.passkeyInvalida');
+      setError(accessErrorKey(e));
     } finally {
       setBusy(false);
     }

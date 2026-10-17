@@ -15,6 +15,7 @@ export type ErrorCode =
   | 'no_autorizado'
   | 'cuenta_existente'
   | 'passkey_invalida'
+  | 'passkey_desconocida'
   | 'sesion_requerida'
   | 'link_invalido'
   | 'no_encontrado';

@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks';
-import { accountApi, createAccess, signIn } from '../account.ts';
+import { accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import type { Key } from '../i18n/index.ts';
-import { PasskeyError, passkeysAvailable } from '../passkey.ts';
+import { passkeysAvailable } from '../passkey.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 
 // Paso 4: "Guardá tu regalo". Con el mail y una passkey (cara, huella o PIN) se crea la
@@ -17,6 +17,8 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
+  // Pasar de "entrar" a "cuenta nueva" pide confirmar: la cuenta nueva no recupera los regalos de la anterior.
+  const [confirmNew, setConfirmNew] = useState(false);
   const supported = passkeysAvailable();
 
   const finish = async (master: string | null) => {
@@ -41,12 +43,9 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
     try {
       await finish((await action()).master);
     } catch (e) {
-      if (e instanceof PasskeyError) setError(e.kind === 'cancelada' ? 'guardar.cancelada' : 'guardar.noSoportada');
-      else if (e instanceof ApiFailure && e.code === 'cuenta_existente') {
-        setMode('entrar');
-        setError('guardar.yaExiste');
-      } else if (e instanceof ApiFailure && e.code === 'passkey_invalida') setError('guardar.passkeyInvalida');
-      else setError('regalar.error');
+      // Mail con cuenta: directo a entrar (la passkey nueva no se llegó a crear).
+      if (e instanceof ApiFailure && e.code === 'cuenta_existente') setMode('entrar');
+      setError(accessErrorKey(e));
     } finally {
       setBusy(false);
     }
@@ -85,12 +84,44 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
       </ul>
       {!supported && <Notice kind="error">{t('guardar.noSoportada')}</Notice>}
       {error !== null && <Notice kind={error === 'guardar.sinPrf' || error === 'guardar.yaExiste' ? 'info' : 'error'}>{t(error)}</Notice>}
-      <button type="button" class="boton-texto enlace-centrado" onClick={() => setMode(mode === 'crear' ? 'entrar' : 'crear')}>
-        {t(mode === 'crear' ? 'guardar.yaTengo' : 'guardar.soyNuevo')}
-      </button>
-      <button type="button" class="boton-texto enlace-centrado" onClick={() => onNeedCode(false)}>
-        {t('guardar.prefieroCodigo')}
-      </button>
+      {mode === 'entrar' ? (
+        <>
+          <Button kind="contorno" onClick={() => onNeedCode(true)}>
+            {t('guardar.entrarPalabras')}
+          </Button>
+          {confirmNew ? (
+            <div class="caja">
+              <Notice>{t('guardar.nuevaAviso')}</Notice>
+              <Button
+                kind="contorno"
+                onClick={() => {
+                  setConfirmNew(false);
+                  setError(null);
+                  setMode('crear');
+                }}
+              >
+                {t('guardar.nuevaConfirmar')}
+              </Button>
+              <button type="button" class="boton-texto enlace-centrado" onClick={() => setConfirmNew(false)}>
+                {t('guardar.nuevaVolver')}
+              </button>
+            </div>
+          ) : (
+            <button type="button" class="boton-texto enlace-centrado" onClick={() => setConfirmNew(true)}>
+              {t('guardar.soyNuevo')}
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <button type="button" class="boton-texto enlace-centrado" onClick={() => setMode('entrar')}>
+            {t('guardar.yaTengo')}
+          </button>
+          <button type="button" class="boton-texto enlace-centrado" onClick={() => onNeedCode(false)}>
+            {t('guardar.prefieroCodigo')}
+          </button>
+        </>
+      )}
     </div>
   );
 }

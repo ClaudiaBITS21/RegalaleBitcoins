@@ -18,9 +18,12 @@ export const fromB64url = (s: string): Uint8Array => {
 
 export class PasskeyError extends Error {
   readonly kind: 'cancelada' | 'no_soportada' | 'error';
-  constructor(kind: 'cancelada' | 'no_soportada' | 'error', message: string = kind) {
+  /** Nombre del error de WebAuthn (NotAllowedError, InvalidStateError, …), para el diagnóstico. */
+  readonly domName: string | null;
+  constructor(kind: 'cancelada' | 'no_soportada' | 'error', message: string = kind, domName: string | null = null) {
     super(message);
     this.kind = kind;
+    this.domName = domName;
   }
 }
 
@@ -35,10 +38,24 @@ function prfOf(cred: PublicKeyCredential): PrfResults | undefined {
 }
 
 function wrap(error: unknown): PasskeyError {
-  const name = (error as { name?: string }).name;
-  if (name === 'NotAllowedError' || name === 'AbortError') return new PasskeyError('cancelada');
-  if (name === 'NotSupportedError' || name === 'SecurityError') return new PasskeyError('no_soportada', String(error));
-  return new PasskeyError('error', String(error));
+  const name = (error as { name?: string }).name ?? null;
+  // En iOS, NotAllowedError es tanto "canceló" como "no hay passkey de este sitio en el teléfono".
+  if (name === 'NotAllowedError' || name === 'AbortError') return new PasskeyError('cancelada', String(error), name);
+  if (name === 'NotSupportedError' || name === 'SecurityError') return new PasskeyError('no_soportada', String(error), name);
+  return new PasskeyError('error', String(error), name);
+}
+
+/**
+ * Le avisa al llavero que una passkey de este sitio no existe en el servidor, para que la
+ * borre (WebAuthn Signal API; Safari 26 y Chrome 132 en adelante). Si no está, no pasa nada.
+ */
+export async function signalUnknownPasskey(credentialId: string): Promise<void> {
+  const pkc = (window as { PublicKeyCredential?: { signalUnknownCredential?: (o: { rpId: string; credentialId: string }) => Promise<void> } }).PublicKeyCredential;
+  try {
+    await pkc?.signalUnknownCredential?.({ rpId: window.location.hostname, credentialId });
+  } catch {
+    // Navegador sin la API o que la rechaza: la passkey queda, el mensaje explica qué hacer.
+  }
 }
 
 const prfExtension = () => ({ prf: { eval: { first: PRF_SALT as BufferSource } } }) as AuthenticationExtensionsClientInputs;

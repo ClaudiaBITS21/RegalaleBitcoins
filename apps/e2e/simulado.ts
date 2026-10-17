@@ -363,6 +363,35 @@ try {
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
 
+  // Passkey huérfana (bug del 17/10): "crear cuenta" con un mail que ya tiene cuenta no llega a
+  // crear la passkey en el teléfono y lleva directo a entrar.
+  const other = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  other.on('pageerror', (e) => problems.push(`error de página (otra passkey): ${e.message}`));
+  const cdp2 = await other.context().newCDPSession(other);
+  await cdp2.send('WebAuthn.enable', { enableUI: false });
+  const { authenticatorId } = (await cdp2.send('WebAuthn.addVirtualAuthenticator', {
+    options: { protocol: 'ctap2', ctap2Version: 'ctap2_1', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, hasPrf: true, automaticPresenceSimulation: true },
+  })) as { authenticatorId: string };
+  await other.goto(`${BASE}/regalar?ocasion=cumple`);
+  await other.getByLabel('Su nombre').fill('Nico');
+  await other.getByRole('button', { name: 'Seguir' }).click();
+  await other.getByRole('button', { name: 'US$ 5' }).click();
+  await other.getByRole('button', { name: 'Seguir' }).click();
+  await other.getByLabel('Tu mail').fill('LUPE.e2e@example.com');
+  await other.getByRole('button', { name: 'Crear mi acceso' }).click();
+  await other.getByRole('heading', { name: 'Entrá a tu cuenta' }).waitFor();
+  await other.getByText('Ya hay una cuenta con ese mail').waitFor();
+  const orphans = (await cdp2.send('WebAuthn.getCredentials', { authenticatorId })) as { credentials: unknown[] };
+  if (orphans.credentials.length !== 0) fail('con un mail existente se creó igual una passkey (quedaría huérfana)');
+  await other.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await other.getByText(/no encontró tu passkey/).waitFor();
+  await other.getByRole('button', { name: 'Crear una cuenta nueva' }).click();
+  await other.getByText(/una cuenta nueva no puede recuperar los regalos/).waitFor();
+  await shot2(other, 'r4-passkey-salida');
+  await other.getByRole('button', { name: 'Entrar con mis 12 palabras' }).click();
+  await other.getByRole('heading', { name: /código/i }).first().waitFor();
+  await other.close();
+
   // Lista de regalos: Lupe la arma con la vpub de su billetera; un invitado regala desde otro navegador.
   const vpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
   const listAddr = (i: number) => deriveListAddress(parseAccountKey(vpub, signet), i).address;
@@ -370,6 +399,11 @@ try {
   await giver.getByRole('heading', { name: 'Armá tu lista de regalos' }).waitFor();
   await giver.getByLabel('Nombre de la lista').fill('Casamiento de Lupe');
   await giver.locator('.selector-ocasiones button, .ocasiones button').filter({ hasText: 'Casamiento' }).first().click();
+  await giver.getByText('También acepto transferencias en pesos').click();
+  await giver.getByLabel('Alias').fill('Lupe.E2E.mp');
+  await giver.getByLabel('Titular de la cuenta').fill('Lupe Pérez');
+  if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con pesos se puede seguir sin el compromiso de convertir');
+  await giver.getByText('Me comprometo a convertir a bitcoin').click();
   await giver.getByRole('button', { name: 'Seguir' }).click();
   await giver.getByRole('heading', { name: '¿Dónde te llegan los regalos?' }).waitFor();
   await giver.getByLabel('Llave pública de prueba (vpub)').fill(vpub);
@@ -387,7 +421,7 @@ try {
   await guest.goto(listLink);
   await guest.getByRole('heading', { name: 'Casamiento de Lupe' }).waitFor();
   await shot2(guest, 'l2-invitado');
-  await guest.getByRole('button', { name: 'Hacer mi regalo' }).click();
+  await guest.getByRole('button', { name: 'Regalar bitcoin' }).click();
   await guest.getByRole('button', { name: 'US$ 25' }).click();
   await guest.getByRole('button', { name: 'Seguir' }).click();
   await guest.getByLabel('Tu nombre (opcional)').fill('Tía Marta');
@@ -412,11 +446,40 @@ try {
   if ((await giver.getByText('alguna dirección no sale de tu llave').count()) > 0) fail('el panel marca como ajena una dirección propia');
   await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l4-panel.png') });
 
+  // Transferencia en pesos: otro invitado anuncia, recibe alias y código; Lupe la marca.
+  const cousin = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  cousin.on('pageerror', (e) => problems.push(`invitado pesos: ${e.message}`));
+  await cousin.goto(listLink);
+  await cousin.getByRole('button', { name: 'Transferir pesos' }).click();
+  await cousin.getByLabel('Monto en pesos').fill('40.000,5');
+  await cousin.getByLabel('Tu nombre (opcional)').fill('Primo Juan');
+  await cousin.getByRole('button', { name: /^Voy a transferir .*40\.000,50/ }).click();
+  await cousin.getByRole('heading', { name: 'Transferí con estos datos' }).waitFor({ timeout: 15_000 });
+  const refCode = (await cousin.locator('.dato-transferencia dd').nth(3).innerText()).trim();
+  if (!/^RB-[A-Z2-9]{4}$/.test(refCode)) fail(`código de referencia inválido: ${refCode}`);
+  if ((await cousin.locator('.dato-transferencia dd').first().innerText()).trim() !== 'lupe.e2e.mp') fail('el alias no se muestra en minúsculas');
+  await shot2(cousin, 'l5-pesos');
+  const cousinMine = await cousin.locator('.caja .enlace-regalo').innerText();
+  await giver.goto(`${BASE}/panel`);
+  const row = giver.locator('.lista-transferencias li').filter({ hasText: refCode });
+  await row.getByText('Anunciada').waitFor({ timeout: 15_000 });
+  await row.getByRole('button', { name: 'Ya me llegó' }).click();
+  await row.getByText('Recibida').waitFor();
+  await row.getByRole('button', { name: 'Ya la convertí' }).click();
+  await row.getByLabel('Sats que compraste').fill('35.000');
+  await row.getByRole('button', { name: 'Confirmar 35.000 sats' }).click();
+  await row.getByText('Convertida').waitFor();
+  await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l6-panel-pesos.png') });
+  await cousin.goto(cousinMine);
+  await cousin.getByText(/Ya se convirtió en 35\.000 sats/).waitFor({ timeout: 15_000 });
+
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
+  console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida.');
+  console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();

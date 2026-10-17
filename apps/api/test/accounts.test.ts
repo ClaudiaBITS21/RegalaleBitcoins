@@ -142,6 +142,20 @@ describe('Cuentas con passkey', () => {
     assert.equal((await signUp('ANA@example.com')).res.status, 409);
   });
 
+  it('passkey huérfana: el mail se revisa antes de crear la passkey, y una passkey desconocida tiene su propio código', async () => {
+    await signUp('ana@example.com');
+    const pre = await req('/api/cuenta/desafio', { tipo: 'registro', email: 'ANA@example.com' });
+    assert.equal(pre.status, 409);
+    assert.equal(((await pre.json()) as { error: string }).error, 'cuenta_existente');
+    assert.equal((await req('/api/cuenta/desafio', { tipo: 'registro', email: 'beto@example.com' })).status, 200);
+    const orphan = new FakePasskey();
+    const res = await req('/api/cuenta/ingreso', { credencial: orphan.assert(await challenge('ingreso')) });
+    assert.equal(res.status, 401);
+    assert.equal(((await res.json()) as { error: string }).error, 'passkey_desconocida');
+    assert.equal((await req('/api/cuenta/diagnostico', { paso: 'ingreso', error: 'NotAllowedError' })).status, 204);
+    assert.equal((await req('/api/cuenta/diagnostico', { paso: 'ingreso', error: 'ana@example.com' })).status, 400);
+  });
+
   it('ingreso con passkey: firma verificada, devuelve la bóveda; el desafío sirve una sola vez', async () => {
     const { pk } = await signUp('ana@example.com');
     pk.counter = 1;

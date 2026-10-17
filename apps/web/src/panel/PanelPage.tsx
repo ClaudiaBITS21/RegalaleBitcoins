@@ -1,13 +1,12 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
-import { accountApi, type AccountView, signIn } from '../account.ts';
+import { accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
-import { PasskeyError } from '../passkey.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 
 // Panel de quien regala: sus regalos con el estado que calcula el servidor desde la
@@ -89,7 +88,7 @@ export function PanelPage() {
       setMaster(res.master);
       return res.master;
     } catch (e) {
-      setError(e instanceof PasskeyError && e.kind === 'cancelada' ? 'guardar.cancelada' : 'guardar.passkeyInvalida');
+      setError(accessErrorKey(e));
       return null;
     } finally {
       setBusy(false);
@@ -104,7 +103,7 @@ export function PanelPage() {
       if (res.master !== null) setMaster(res.master);
       await load();
     } catch (e) {
-      setError(e instanceof PasskeyError && e.kind === 'cancelada' ? 'guardar.cancelada' : 'guardar.passkeyInvalida');
+      setError(accessErrorKey(e));
     } finally {
       setBusy(false);
     }
