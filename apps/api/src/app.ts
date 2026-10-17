@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
-import { findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
+import { clearClaim, findGift, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
@@ -155,11 +155,15 @@ export function createApp(deps: AppDeps): Hono {
     const g = parseNewGift(await c.req.json().catch(() => null), network);
     // Con sesión, el regalo queda en la cuenta (con su índice, para volver a derivarlo desde la bóveda).
     const account = await currentAccount(sql, c);
-    const [usdPerBtc, fees, arsPerBtc] = await Promise.all([
+    const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),
       chain.fees(),
       g.currency === 'ARS' ? (deps.arsPrice?.btcArs().then((q) => q.price) ?? Promise.reject(new ApiError(422, 'monto_invalido'))) : null,
+      chain.addressStats(g.address),
     ]);
+    // Una dirección con movimientos ya se usó (por ejemplo, una base restaurada que perdió
+    // regalos): quien recibió ese regalo antes tiene link y palabras. Se trata como existente.
+    if (history.txCount > 0) throw new ApiError(409, 'regalo_existente');
     checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy), ceilingUsd);
     try {
       const gift = await insertGift(sql, {
@@ -217,8 +221,26 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   /** UTXO confirmados con su transacción completa: el navegador verifica los montos contra el txid. */
+  /**
+   * Un reclamo difundido que la red olvidó (expulsado de la mempool, nunca confirmado) con los
+   * fondos todavía en la dirección del regalo no lo deja trabado: se libera para firmar otra vez.
+   */
+  const releaseStaleClaim = async (gift: Gift): Promise<Gift> => {
+    if (gift.claimTxid === null) return gift;
+    if (confirmedUtxos(await chain.addressUtxos(gift.address)).length === 0) return gift;
+    try {
+      await chain.txHex(gift.claimTxid);
+      return gift;
+    } catch (error) {
+      if (!(error instanceof ChainError) || error.status !== 404) throw error;
+      await clearClaim(sql, gift.id, gift.claimTxid);
+      return { ...gift, claimTxid: null, claimKind: null };
+    }
+  };
+
   app.get('/api/gifts/:id/utxos', async (c) => {
-    const gift = await giftOr404(sql, c.req.param('id'));
+    const gift = await releaseStaleClaim(await giftOr404(sql, c.req.param('id')));
+    if (gift.network !== network.name) throw new ApiError(404, 'regalo_no_encontrado');
     if (gift.claimTxid !== null) throw new ApiError(409, 'ya_reclamado');
     const utxos = confirmedUtxos(await chain.addressUtxos(gift.address));
     const txids = [...new Set(utxos.map((u) => u.txid))];
@@ -233,7 +255,8 @@ export function createApp(deps: AppDeps): Hono {
     if (body === null || typeof body.hex !== 'string' || (body.modo !== 'ahora' && body.modo !== 'esperar')) {
       throw new ApiError(400, 'pedido_invalido');
     }
-    const gift = await giftOr404(sql, c.req.param('id'));
+    const gift = await releaseStaleClaim(await giftOr404(sql, c.req.param('id')));
+    if (gift.network !== network.name) throw new ApiError(404, 'regalo_no_encontrado');
     if (gift.claimTxid !== null) throw new ApiError(409, 'ya_reclamado');
     const utxos = await chain.addressUtxos(gift.address);
     if (confirmedUtxos(utxos).length === 0) throw new ApiError(409, 'regalo_no_disponible');

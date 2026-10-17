@@ -40,6 +40,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   // Mainnet solo con autorización explícita del responsable del proyecto.
   const network = getNetwork(name, { allowMainnet: env.ALLOW_MAINNET === 'autorizado' });
   if (env.TOPE_USD !== undefined && !(Number(env.TOPE_USD) > 0)) throw new Error(`TOPE_USD inválido: ${env.TOPE_USD}`);
+  // En mainnet, sin mailer real los links de acceso al panel irían a los logs.
+  if (name === 'mainnet' && !env.RESEND_API_KEY) throw new Error('En mainnet hace falta RESEND_API_KEY.');
   const port = Number(env.PORT ?? 8787);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error(`PORT inválido: ${env.PORT}`);
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');

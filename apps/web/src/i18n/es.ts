@@ -76,6 +76,8 @@ export const es = {
   'confirmar.calculando': 'Calculando la comisión…',
   'confirmar.enviando': 'Enviando tu regalo…',
   'confirmar.polvo': 'Con la comisión de hoy no queda nada para enviar. Probá más tarde, cuando baje.',
+  'confirmar.soloEsperar': 'Con la comisión de hoy no alcanza para mandarlo ya. Lo dejamos firmado y sale solo cuando baje.',
+  'confirmar.aceptoComision': 'Entiendo que la comisión se lleva {parte} del regalo y quiero seguir igual.',
   'confirmar.cambio': 'Cambió algo en el regalo mientras confirmabas. Revisalo de nuevo.',
   'confirmar.error': 'No pudimos enviar tu regalo. Probá de nuevo en un rato.',
 

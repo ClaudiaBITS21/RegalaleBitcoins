@@ -287,7 +287,7 @@ export function GivePage() {
   }
 
   return (
-    <Layout testnet={!ALLOW_MAINNET} onBack={back}>
+    <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'} onBack={back}>
       {network !== null && netError === null && (
         <div class="progreso" role="progressbar" aria-valuemin={1} aria-valuemax={5} aria-valuenow={PROGRESS[step]} aria-label={t('regalar.paso', { n: PROGRESS[step] })}>
           <span class="progreso-texto">{t('regalar.paso', { n: PROGRESS[step] })}</span>

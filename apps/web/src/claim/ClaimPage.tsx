@@ -195,7 +195,7 @@ export function ClaimPage({ id }: { id: string }) {
   }
 
   return (
-    <Layout testnet={!ALLOW_MAINNET} onBack={back}>
+    <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'} onBack={back}>
       {body}
     </Layout>
   );

@@ -130,6 +130,13 @@ export async function recordClaim(sql: Sql, id: string, claim: { txid: string; k
   return rows.length === 1;
 }
 
+/** Libera un reclamo cuya transacción desapareció de la red (expulsada de la mempool). */
+export async function clearClaim(sql: Sql, id: string, txid: string): Promise<void> {
+  await sql`
+    update regalos set reclamo_txid = null, reclamo_tipo = null, reclamo_destino = null, reclamado = null
+    where id = ${id} and reclamo_txid = ${txid}`;
+}
+
 export interface PendingBroadcast {
   readonly id: number;
   readonly giftId: string;

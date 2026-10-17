@@ -77,6 +77,8 @@ export const en: Dict = {
   'confirmar.calculando': 'Calculating the fee…',
   'confirmar.enviando': 'Sending your gift…',
   'confirmar.polvo': 'With today’s fee there is nothing left to send. Try later, when it goes down.',
+  'confirmar.soloEsperar': 'With today’s fee it can’t go out right away. We leave it signed and it goes out by itself when fees drop.',
+  'confirmar.aceptoComision': 'I understand the fee takes {parte} of the gift and I want to continue anyway.',
   'confirmar.cambio': 'Something changed in the gift while you were confirming. Please review it again.',
   'confirmar.error': 'We could not send your gift. Please try again shortly.',
 

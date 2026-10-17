@@ -59,7 +59,9 @@ class FakeChain implements ChainClient {
     if (this.rejectBroadcast !== null) throw this.rejectBroadcast;
     this.broadcasts.push(hex);
     const { inspectTransaction } = await import('@regalale/core');
-    return inspectTransaction(hex).txid;
+    const { txid } = inspectTransaction(hex);
+    this.raw.set(txid, hex); // queda en la mempool
+    return txid;
   }
   async fees(): Promise<FeeRates> {
     return this.feeRates;
@@ -160,6 +162,20 @@ describe('API del reclamo', () => {
     assert.equal(gift?.claimTxid, sweep.txid);
     const again = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' });
     assert.equal(again.status, 409);
+  });
+
+  it('un reclamo que la red olvidó (expulsado de la mempool) se libera para firmar otra vez', async () => {
+    chain.fund(50_000n);
+    const sweep = await signedSweep(3);
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' })).status, 200);
+    // La red expulsa el barrido de la mempool y los fondos siguen en el regalo.
+    chain.raw.delete(sweep.txid);
+    const utxos = await app.request(`/api/gifts/${giftId}/utxos`);
+    assert.equal(utxos.status, 200);
+    assert.equal((await findGift(sql, giftId))?.claimTxid, null);
+    // Si la red sí la conoce, el regalo sigue reclamado.
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' })).status, 200);
+    assert.equal((await app.request(`/api/gifts/${giftId}/utxos`)).status, 409);
   });
 
   it('rechaza transacciones que no son un barrido completo del regalo', async () => {
@@ -292,6 +308,13 @@ describe('API para regalar', () => {
     const again = await post('/api/gifts', nuevo(1));
     assert.equal(again.status, 409);
     assert.deepEqual(await again.json(), { error: 'regalo_existente', detalle: 'regalo_existente' });
+  });
+
+  it('una dirección con movimientos previos cuenta como usada (base perdida o restaurada)', async () => {
+    chain.fund(1_000n);
+    const res = await post('/api/gifts', nuevo(1));
+    assert.equal(res.status, 409);
+    assert.equal(((await res.json()) as { error: string }).error, 'regalo_existente');
   });
 
   it('montos: en sats, mínimo de la red, techo y coherencia con los dólares', async () => {

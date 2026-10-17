@@ -259,7 +259,7 @@ export function PanelPage() {
     );
   }
 
-  return <Layout testnet={!ALLOW_MAINNET}>{body}</Layout>;
+  return <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'}>{body}</Layout>;
 }
 
 const roots = new Map<string, ReturnType<typeof masterRootFromMnemonic>>();
