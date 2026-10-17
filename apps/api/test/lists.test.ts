@@ -98,7 +98,7 @@ describe('listas de regalos', () => {
     const { id } = (await ok.json()) as { id: string };
     const pub = (await (await req(`/api/listas/${id}`, undefined, false)).json()) as Record<string, unknown>;
     assert.equal(pub.titulo, 'Casamiento de Ana y Leo');
-    assert.equal(pub.topeUsd, 20);
+    assert.equal(pub.topeUsd, null);
     assert.ok(!JSON.stringify(pub).includes(VPUB), 'la página pública no muestra la llave');
   });
 
@@ -119,11 +119,18 @@ describe('listas de regalos', () => {
     assert.deepEqual(panel.listas[0]?.aportes.map((x) => [x.nombre, x.estado]), [['Tía Marta', 'recibido'], ['Primo Juan', 'esperando']]);
   });
 
-  it('tope de USD 20 por aporte y mínimo de 1.000 sats', async () => {
-    const { id } = (await (await newList()).json()) as { id: string };
-    assert.equal((await aporte(id, { monto: 25, sats: '25000' })).status, 422);
-    assert.equal((await aporte(id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
-    assert.equal((await aporte(id, { monto: 20, sats: '20000' })).status, 201);
+  it('tope por aporte solo en listas de semilla nueva; mínimo de 1.000 sats en todas', async () => {
+    const seeded = (await (await newList({ semilla: true })).json()) as { id: string };
+    assert.equal(((await (await req(`/api/listas/${seeded.id}`)).json()) as { topeUsd: number | null }).topeUsd, 20);
+    assert.equal((await aporte(seeded.id, { monto: 25, sats: '25000' })).status, 422);
+    assert.equal((await aporte(seeded.id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
+    assert.equal((await aporte(seeded.id, { monto: 20, sats: '20000' })).status, 201);
+    // Billetera propia (cold wallet): sin tope. (Misma llave de prueba: se limpian los aportes anteriores.)
+    await sql`delete from aportes`;
+    const own = (await (await newList()).json()) as { id: string };
+    assert.equal(((await (await req(`/api/listas/${own.id}`)).json()) as { topeUsd: number | null }).topeUsd, null);
+    assert.equal((await aporte(own.id, { monto: 150, sats: '150000' })).status, 201);
+    assert.equal((await aporte(own.id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
   });
 
   it('una dirección abandonada se recicla solo si nunca recibió nada; una usada afuera se saltea', async () => {

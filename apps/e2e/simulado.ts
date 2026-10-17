@@ -449,18 +449,27 @@ try {
   await guest.getByRole('heading', { name: 'Casamiento de Lupe' }).waitFor();
   await shot2(guest, 'l2-invitado');
   await guest.getByRole('button', { name: 'Regalar bitcoin' }).click();
-  await guest.getByRole('button', { name: 'US$ 25' }).click();
+  // Lista con billetera propia: sin tope, con sugeridos de 50, 100 y 150 dólares.
+  for (const usd of ['US$ 50', 'US$ 100']) await guest.getByRole('button', { name: usd }).waitFor();
+  await guest.getByRole('button', { name: 'US$ 150' }).click();
   await guest.getByRole('button', { name: 'Seguir' }).click();
   await guest.getByLabel('Tu nombre (opcional)').fill('Tía Marta');
   const guestExample = await guest.getByLabel('Tu mensaje (opcional)').inputValue();
   if (!guestExample.includes('Lupe y Tomi')) fail(`el invitado no recibió un ejemplo del mazo con los nombres: ${guestExample}`);
   await guest.getByLabel('Tu mensaje (opcional)').fill('¡Que sean muy felices!');
   await guest.getByRole('button', { name: /^Confirmar y pagar/ }).click();
-  await guest.getByRole('heading', { name: 'Pagá 25.000 sats' }).waitFor({ timeout: 15_000 });
+  await guest.getByRole('heading', { name: 'Pagá 150.000 sats' }).waitFor({ timeout: 15_000 });
+  // Tocar el QR copia el link de pago (dirección y monto), que las billeteras completan solas.
+  await guest.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await guest.locator('.qr-copiar').click();
+  const copiedUri = await guest.evaluate(() => navigator.clipboard.readText());
+  if (!/^bitcoin:tb1[a-z0-9]+\?amount=0\.0015$/.test(copiedUri)) fail(`el QR no copió el link de pago: ${copiedUri}`);
+  await guest.getByRole('button', { name: 'Copiar dirección', exact: true }).click();
+  if (!(await guest.evaluate(() => navigator.clipboard.readText())).startsWith('tb1')) fail('"Copiar dirección" no copió solo la dirección');
   const guestAddr = (await guest.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   if (guestAddr !== listAddr(0)) fail(`la dirección del invitado no sale de la llave de la lista: ${guestAddr}`);
   await shot2(guest, 'l3-pagar');
-  chain.pay(guestAddr, 25_000n, true);
+  chain.pay(guestAddr, 150_000n, true);
   await guest.getByRole('heading', { name: '¡Gracias por tu regalo!' }).waitFor({ timeout: 15_000 });
   const mineLink = await guest.locator('.caja .enlace-regalo').innerText();
   await guest.goto(mineLink);

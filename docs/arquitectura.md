@@ -153,7 +153,7 @@ cada visita sin código arma una clave maestra nueva.
   BIP84, se rechazan claves privadas y xpub genéricas) y confirma que su billetera muestra la
   misma primera dirección, calculada en su navegador. La llave solo permite generar direcciones.
 - Cada invitado que confirma un aporte recibe la próxima dirección `m/0/i` de esa llave; la
-  plata va directo a la billetera de quien armó la lista. Tope por aporte: USD 20 en mainnet.
+  plata va directo a la billetera de quien armó la lista. Tope por aporte: ninguno si la lista usa billetera propia (cold wallet); USD 100 en mainnet si se armó con "Semilla nueva".
 - El invitado ve solo su aporte, con un link privado `/aporte#<token>` (se guarda el hash).
 - Una dirección sin pagar a las 72 h se recicla si nunca recibió nada; una con movimientos
   previos se saltea. Así no se abren huecos grandes (las billeteras miran ~20 sin usar).

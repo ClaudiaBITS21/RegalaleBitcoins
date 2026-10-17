@@ -6,7 +6,7 @@ import { ALLOW_MAINNET } from '../config.ts';
 /** Red y tope por aporte que informa la API. */
 export function useNetwork(): { network: Network | null; ceilingUsd: number; error: boolean } {
   const [network, setNetwork] = useState<Network | null>(null);
-  const [ceilingUsd, setCeiling] = useState(20);
+  const [ceilingUsd, setCeiling] = useState(100);
   const [error, setError] = useState(false);
   useEffect(() => {
     api

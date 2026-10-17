@@ -149,6 +149,8 @@ export const en: Dict = {
   'regalar.pagar.texto': 'Scan the code with your wallet, or send to this address from your wallet or an exchange withdrawal.',
   'regalar.pagar.qr': 'QR code to pay for the gift',
   'regalar.pagar.direccion': 'Gift address',
+  'regalar.pagar.copiarAmbos': "Copy address and amount",
+  'regalar.pagar.qrCopiar': "Tap the QR to copy address and amount",
   'regalar.pagar.copiarDireccion': 'Copy address',
   'regalar.pagar.copiarMonto': 'Copy amount in BTC',
   'regalar.pagar.copiado': 'Copied',

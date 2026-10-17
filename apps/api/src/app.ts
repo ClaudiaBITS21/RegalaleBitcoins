@@ -42,7 +42,7 @@ export const CEILING_USD = 100;
  * Techo en mainnet autorizado por la responsable del proyecto (docs/mainnet.md). Subirlo
  * requiere una nueva autorización explícita, no solo cambiar la variable de entorno.
  */
-export const MAINNET_CEILING_USD = 20;
+export const MAINNET_CEILING_USD = 100;
 
 /** Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. */
 export function effectiveCeilingUsd(network: Network, configured: number | undefined): number {

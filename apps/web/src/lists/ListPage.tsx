@@ -7,7 +7,7 @@ import { occasionLabel } from '../content/occasions.ts';
 import { formatArsExact, formatSats, groupAddress, parseAmount, paymentUri, satsToBtcString } from '../format.ts';
 import { AmountStep } from '../give/DraftSteps.tsx';
 import type { Draft } from '../give/GivePage.tsx';
-import { Qr } from '../give/Qr.tsx';
+import { PayBox } from '../give/PayBox.tsx';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { contributionUrl, listApi, type PublicList } from './listApi.ts';
@@ -20,6 +20,8 @@ type Amount = Pick<Draft, 'currency' | 'amount' | 'sats'>;
 type Step = 'lista' | 'cuanto' | 'firma' | 'pagar' | 'pesos' | 'transferir';
 type Announced = { codigo: string; alias: string; titular: string; monto: number; token: string };
 const POLL_MS = 5_000;
+/** Sugeridos en listas con billetera propia (sin tope); "Otro" deja poner cualquier monto. */
+const LIST_PRESETS_USD = [50, 100, 150] as const;
 
 export function ListPage({ id }: { id: string }) {
   const { t, lang } = useI18n();
@@ -196,7 +198,8 @@ export function ListPage({ id }: { id: string }) {
       <AmountStep
         draft={{} as Draft}
         error={error}
-        ceilingUsd={Math.min(ceilingUsd, list.topeUsd)}
+        ceilingUsd={list.topeUsd === null ? null : Math.min(ceilingUsd, list.topeUsd)}
+        {...(list.topeUsd === null ? { presets: LIST_PRESETS_USD } : {})}
         onNext={(a) => {
           setAmount(a);
           setError(null);
@@ -279,24 +282,7 @@ export function ListPage({ id }: { id: string }) {
           <>
             <StepTitle>{t('regalar.pagar.titulo', { monto: formatSats(pay.sats, lang) })}</StepTitle>
             <p class="texto-suave">{t('lista.pagar.texto')}</p>
-            <div class="pago">
-              <Qr text={paymentUri(pay.direccion, pay.sats)} label={t('regalar.pagar.qr')} />
-              <p class="monto-btc">
-                <strong>{satsToBtcString(pay.sats)} BTC</strong>
-                {network.name !== 'mainnet' && <span class="texto-suave"> ({network.name})</span>}
-              </p>
-              <p class="mono direccion-completa" translate={false}>
-                {groupAddress(pay.direccion)}
-              </p>
-              <div class="botones-copiar">
-                <Button kind="contorno" onClick={() => void copy('direccion', pay.direccion)}>
-                  {copied === 'direccion' ? t('regalar.pagar.copiado') : t('regalar.pagar.copiarDireccion')}
-                </Button>
-                <Button kind="contorno" onClick={() => void copy('monto', satsToBtcString(pay.sats))}>
-                  {copied === 'monto' ? t('regalar.pagar.copiado') : t('regalar.pagar.copiarMonto')}
-                </Button>
-              </div>
-            </div>
+            <PayBox address={pay.direccion} sats={pay.sats} network={network.name} />
             <p class="esperando" role="status">
               {t('regalar.pagar.esperando')}
             </p>

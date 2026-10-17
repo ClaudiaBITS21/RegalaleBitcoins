@@ -11,8 +11,9 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   quien arma una lista puede aceptar transferencias en pesos a su alias y se compromete a
   convertirlas a bitcoin. Van de persona a persona: la plataforma solo muestra el alias y un código
   de referencia, nunca recibe ni convierte pesos.
-- Desarrollo y pruebas en signet/testnet. **Mainnet autorizado el 17/10/2026 con tope de USD 20
-  por regalo y por aporte a una lista** (`docs/mainnet.md`); cualquier cambio de tope o de alcance en mainnet necesita una
+- Desarrollo y pruebas en signet/testnet. **Mainnet autorizado el 17/10/2026 con tope de USD 100
+  por regalo** (subido de 20 el mismo día); en listas, sin tope por aporte si usan billetera propia
+  y USD 100 si se armaron con "Semilla nueva" (`docs/mainnet.md`); cualquier cambio de tope o de alcance en mainnet necesita una
   nueva autorización explícita de la responsable.
 - Pocas dependencias criptográficas (familia @scure/@noble), con versión exacta. No agregar
   ninguna dependencia criptográfica sin aprobación. Aleatoriedad solo con `crypto.getRandomValues`.

@@ -149,6 +149,8 @@ export const it: Dict = {
   'regalar.pagar.texto': 'Scansiona il codice con il tuo portafoglio, oppure invia a questo indirizzo dal tuo portafoglio o con un prelievo dal tuo exchange.',
   'regalar.pagar.qr': 'Codice QR per pagare il regalo',
   'regalar.pagar.direccion': 'Indirizzo del regalo',
+  'regalar.pagar.copiarAmbos': "Copia indirizzo e importo",
+  'regalar.pagar.qrCopiar': "Tocca il QR per copiare indirizzo e importo",
   'regalar.pagar.copiarDireccion': 'Copia indirizzo',
   'regalar.pagar.copiarMonto': 'Copia importo in BTC',
   'regalar.pagar.copiado': 'Copiato',

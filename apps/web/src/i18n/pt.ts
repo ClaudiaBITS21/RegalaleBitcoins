@@ -150,6 +150,8 @@ export const pt: Dict = {
   'regalar.pagar.texto': 'Escaneie o código com sua carteira, ou envie para este endereço pela sua carteira ou pelo saque da sua exchange.',
   'regalar.pagar.qr': 'Código QR para pagar o presente',
   'regalar.pagar.direccion': 'Endereço do presente',
+  'regalar.pagar.copiarAmbos': "Copiar endereço e valor",
+  'regalar.pagar.qrCopiar': "Toque no QR para copiar endereço e valor",
   'regalar.pagar.copiarDireccion': 'Copiar endereço',
   'regalar.pagar.copiarMonto': 'Copiar valor em BTC',
   'regalar.pagar.copiado': 'Copiado',

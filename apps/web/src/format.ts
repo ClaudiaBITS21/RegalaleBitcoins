@@ -80,9 +80,12 @@ export function satsToBtcString(sats: bigint): string {
   return fraction === '' ? whole.toString() : `${whole}.${fraction}`;
 }
 
-/** Link de pago BIP21: las billeteras completan dirección y monto al escanear el QR. */
-export function paymentUri(address: string, sats: bigint): string {
-  return `bitcoin:${address.toUpperCase()}?amount=${satsToBtcString(sats)}`;
+/**
+ * Link de pago BIP21: las billeteras completan dirección y monto al escanear el QR o pegarlo.
+ * En mayúsculas el QR sale más chico (modo alfanumérico); para copiar y pegar, en minúsculas.
+ */
+export function paymentUri(address: string, sats: bigint, upper = true): string {
+  return `bitcoin:${upper ? address.toUpperCase() : address}?amount=${satsToBtcString(sats)}`;
 }
 
 /** Centavos (de dólar o de peso) a sats con la cotización de 1 BTC en esa moneda. */

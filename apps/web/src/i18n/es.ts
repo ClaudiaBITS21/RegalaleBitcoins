@@ -148,6 +148,8 @@ export const es = {
   'regalar.pagar.texto': 'Escaneá el código con tu billetera, o mandá a esta dirección desde tu billetera o el retiro de tu exchange.',
   'regalar.pagar.qr': 'Código QR para pagar el regalo',
   'regalar.pagar.direccion': 'Dirección del regalo',
+  'regalar.pagar.copiarAmbos': "Copiar dirección y monto",
+  'regalar.pagar.qrCopiar': "Tocá el QR para copiar dirección y monto",
   'regalar.pagar.copiarDireccion': 'Copiar dirección',
   'regalar.pagar.copiarMonto': 'Copiar monto en BTC',
   'regalar.pagar.copiado': 'Copiado',
