@@ -7,7 +7,7 @@
 | 17/10/2026 | Claudia (responsable del proyecto) | "Autorizo Mainnet con tope de 20 hasta ver que funciona todo." |
 | 17/10/2026 | Claudia | Listas de regalos en mainnet: "Si" a tope de USD 20 por aporte de cada invitado. Publicar listas, gratis en la beta. Sin guía de billetera (solo para quien ya tiene). Cada invitado ve solo su aporte. |
 | 17/10/2026 | Claudia | Listas con transferencias en pesos: excepción a "solo bitcoin" solo en listas; sin tope; solo alias; estados anunciada → recibida → convertida que marca quien armó la lista. |
-| 17/10/2026 | Claudia (Rodolfo es la misma persona) | Sin consulta legal para las listas con alias: "Sé que no nos convierte en intermediarios. Orgullosamente no inscripto en la CNV." Las listas con alias van desde ya, no después del lanzamiento. Mostrar los sats de una transferencia convertida está bien: "Es una división entre los sats comprados entre todos los aportes marcados como usados para esa compra. No es una promesa de nada." |
+| 17/10/2026 | Claudia (Rodolfo es la misma persona) | Sin consulta legal para las listas con alias: "Sé que no nos convierte en intermediarios. Orgullosamente no inscripto en la CNV." Las listas con alias van desde ya, no después del lanzamiento. Para armar una lista, dos botones: "Mi cold wallet (recomendado)" o "Semilla nueva" (abre las listas a quien no tiene billetera). Mostrar los sats de una transferencia convertida está bien: "Es una división entre los sats comprados entre todos los aportes marcados como usados para esa compra. No es una promesa de nada." |
 
 - Tope: **USD 20 por regalo**, fijo en el código (`MAINNET_CEILING_USD` en `apps/api/src/app.ts`).
   La variable `TOPE_USD` solo puede bajarlo. Subirlo requiere una nueva autorización explícita
