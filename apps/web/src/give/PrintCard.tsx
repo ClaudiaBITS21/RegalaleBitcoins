@@ -1,6 +1,7 @@
 import type { Lang } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import type { GiftView } from '../api.ts';
+import { BitcoinB } from '../content/BitcoinB.tsx';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { examplesFor, looksLikeLink, pickExample, REMATE_MAX, useExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
@@ -21,9 +22,7 @@ function Coin({ size }: { size: number }) {
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="32" fill="#FF8A1F" stroke="#1A1530" stroke-width="4" />
       <circle cx="36" cy="36" r="23" fill="none" stroke="#1A1530" stroke-width="2" />
-      <text x="36" y="49" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="34" fill="#1A1530">
-        ₿
-      </text>
+      <BitcoinB cx={36} cy={36} h={37} color="#1A1530" />
     </svg>
   );
 }

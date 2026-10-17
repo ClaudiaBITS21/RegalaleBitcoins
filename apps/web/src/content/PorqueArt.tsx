@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { BitcoinB } from './BitcoinB.tsx';
 
 // Ilustraciones de la página "¿Por qué Bitcoin?": una alegoría por franja de edad y la escena
 // de los Reyes Magos llevando bitcoin al pesebre. Mismo estilo que GiftCardArt (plano,
@@ -23,9 +24,7 @@ function Coin({ cx, cy, r }: { cx: number; cy: number; r: number }) {
     <g>
       <circle cx={cx} cy={cy} r={r} fill={AMARILLO} {...S} stroke-width={r > 12 ? 3.5 : 3} />
       <circle cx={cx} cy={cy} r={r * 0.72} fill="none" stroke="#E0A800" stroke-width="1.5" />
-      <text x={cx} y={cy + r * 0.4} text-anchor="middle" font-family="Bricolage Grotesque, system-ui, sans-serif" font-weight="800" font-size={r * 1.15} fill={T}>
-        ₿
-      </text>
+      <BitcoinB cx={cx} cy={cy} h={r * 1.05} color={T} />
     </g>
   );
 }
