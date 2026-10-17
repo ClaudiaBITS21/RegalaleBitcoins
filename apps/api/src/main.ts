@@ -33,5 +33,5 @@ if (config.webDist !== null) {
 if (config.broadcasterLoop) startBroadcaster({ sql, chain, network: config.network });
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {
-  console.log(`API de RegalaleBitcoins en http://localhost:${info.port} (red: ${config.network.name}, cadena: ${config.esploraUrl}${config.esploraFallbackUrl === null ? '' : `, respaldo: ${config.esploraFallbackUrl}`})`);
+  console.log(`API de RegalaleBitcoin en http://localhost:${info.port} (red: ${config.network.name}, cadena: ${config.esploraUrl}${config.esploraFallbackUrl === null ? '' : `, respaldo: ${config.esploraFallbackUrl}`})`);
 });

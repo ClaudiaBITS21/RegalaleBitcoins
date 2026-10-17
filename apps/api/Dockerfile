@@ -1,4 +1,4 @@
-# API de RegalaleBitcoins para Cloud Run. Se construye desde la raíz del repo:
+# API de RegalaleBitcoin para Cloud Run. Se construye desde la raíz del repo:
 #   docker build -f apps/api/Dockerfile .
 FROM node:24-slim
 WORKDIR /app

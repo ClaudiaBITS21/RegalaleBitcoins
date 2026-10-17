@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 // Dirección pública para las vistas previas de links (og:image tiene que ser absoluta). Hasta que
-// regalalebitcoins.com apunte al sitio, va web.app; con el dominio: VITE_PUBLIC_URL=https://regalalebitcoins.com
+// regalalebitcoin.com apunte al sitio, va web.app; con el dominio: VITE_PUBLIC_URL=https://regalalebitcoin.com
 process.env.VITE_PUBLIC_URL ??= 'https://regalalebitcoins.web.app';
 
 export default defineConfig({

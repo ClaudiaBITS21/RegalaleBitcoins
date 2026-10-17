@@ -76,7 +76,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     publicUrl,
     allowedOrigins: [publicUrl, ...(env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter((o) => o !== '')],
-    mailFrom: env.MAIL_FROM ?? 'RegalaleBitcoins <onboarding@resend.dev>',
+    mailFrom: env.MAIL_FROM ?? 'RegalaleBitcoin <onboarding@resend.dev>',
     resendApiKey: env.RESEND_API_KEY !== undefined && env.RESEND_API_KEY !== '' ? env.RESEND_API_KEY : null,
     cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
     adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e !== ''),

@@ -39,10 +39,10 @@ export const consoleMailer: Mailer = {
 type Texts = { subject: string; body: string };
 
 const LOGIN: Readonly<Record<Lang, Texts>> = {
-  es: { subject: 'Tu acceso a RegalaleBitcoins', body: 'Hola. Entrá a tu panel con este link (vale 20 minutos y sirve una sola vez):\n\n{link}\n\nSi no lo pediste, ignorá este mail.' },
-  pt: { subject: 'Seu acesso ao RegalaleBitcoins', body: 'Olá. Entre no seu painel com este link (vale 20 minutos e funciona uma vez só):\n\n{link}\n\nSe você não pediu, ignore este e-mail.' },
-  en: { subject: 'Your RegalaleBitcoins access', body: 'Hi. Open your dashboard with this link (valid for 20 minutes, single use):\n\n{link}\n\nIf you didn’t ask for it, ignore this email.' },
-  it: { subject: 'Il tuo accesso a RegalaleBitcoins', body: 'Ciao. Entra nel tuo pannello con questo link (vale 20 minuti, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
+  es: { subject: 'Tu acceso a RegalaleBitcoin', body: 'Hola. Entrá a tu panel con este link (vale 20 minutos y sirve una sola vez):\n\n{link}\n\nSi no lo pediste, ignorá este mail.' },
+  pt: { subject: 'Seu acesso ao RegalaleBitcoin', body: 'Olá. Entre no seu painel com este link (vale 20 minutos e funciona uma vez só):\n\n{link}\n\nSe você não pediu, ignore este e-mail.' },
+  en: { subject: 'Your RegalaleBitcoin access', body: 'Hi. Open your dashboard with this link (valid for 20 minutes, single use):\n\n{link}\n\nIf you didn’t ask for it, ignore this email.' },
+  it: { subject: 'Il tuo accesso a RegalaleBitcoin', body: 'Ciao. Entra nel tuo pannello con questo link (vale 20 minuti, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
 };
 
 const READY: Readonly<Record<Lang, Texts>> = {

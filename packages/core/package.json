@@ -2,7 +2,7 @@
   "name": "@regalale/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Núcleo criptográfico de RegalaleBitcoins: claves, BIP85, passphrase, direcciones BIP84 y barrido.",
+  "description": "Núcleo criptográfico de RegalaleBitcoin: claves, BIP85, passphrase, direcciones BIP84 y barrido.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

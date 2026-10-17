@@ -94,7 +94,7 @@ Todo empezó en la Navidad de 2012, con una obrita de teatro para la fiesta fami
 
 Esa noche, cada invitado se llevó una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.
 
-Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.
+Ese mismo espíritu tiene RegalaleBitcoin: un regalo simple, con un mensaje, que se puede guardar por años.
 
 (Sin firma. El cuento completo, "Una Natividad Moderna", es de Florando Dragones.)
 
@@ -118,7 +118,7 @@ Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, qu
 - **Tapa:** diseño de la ocasión + nombre de quien recibe (máx. 30 caracteres).
 - **Interior izquierdo:** el mensaje de quien regala + su firma/nombre.
 - **Interior derecho:** QR al link de reclamo + "cómo reclamarlo" en 3 pasos + recuadro para escribir a mano las 4 palabras (4 renglones numerados).
-- **Contratapa:** logo RegalaleBitcoins.com + leyenda corta.
+- **Contratapa:** logo RegalaleBitcoin.com + leyenda corta.
 
 **Passphrase:** nunca impresa por la web. Recuadro manual opcional, adentro de la tarjeta (cerrada no se ve). Microcopy: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte. Guardá esta tarjeta como si fuera efectivo." El PDF se genera en el navegador: el link nunca pasa por el servidor.
 

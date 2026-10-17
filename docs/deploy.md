@@ -49,6 +49,31 @@ npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitc
 
 ## Dominio
 
-`regalalebitcoins.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
-Registrador Metaregistrar, pero los nameservers vigentes son de AWS Route 53 (decisión pendiente de dónde cargar los registros). Registros: A `@` 199.36.158.100, TXT `@` `hosting-site=regalalebitcoins`, CNAME `www`
-`regalalebitcoins.web.app.`
+Desde el 17/10/2026 el dominio y la marca son **`regalalebitcoin.com`** / **RegalaleBitcoin**
+(singular). El `.com` viejo, `regalalebitcoins.com`, se conserva solo para redirigir al nuevo
+(links impresos o compartidos con el nombre anterior, typos y anti-phishing).
+
+Los identificadores de infraestructura **no cambian** (no se pueden renombrar sin rehacer todo):
+proyecto GCP y sitio Firebase `regalalebitcoins`, `regalalebitcoins.web.app`, servicios Cloud Run,
+Artifact Registry, Cloud SQL, paquetes `@regalale/*`. Tampoco cambian las constantes de la bóveda
+(`"regalalebitcoins/boveda/v1/..."` en `docs/derivacion.md`): son dominio de separación
+criptográfico, cambiarlas deja inaccesibles las bóvedas existentes.
+
+| Dominio | En Firebase Hosting (sitio `regalalebitcoins`, mainnet) | DNS |
+|---|---|---|
+| `regalalebitcoin.com` | dominio principal | A `@` 199.36.158.100 · TXT `@` `hosting-site=regalalebitcoins` (+ el `_acme-challenge` si la consola lo pide) |
+| `www.regalalebitcoin.com` | redirige a `regalalebitcoin.com` | CNAME `www` → `regalalebitcoins.web.app.` |
+| `regalalebitcoins.com` y `www` | redirigen (301) a `regalalebitcoin.com` | los mismos registros que ya estaban (Route 53) |
+
+Los valores exactos los da la consola de Firebase al agregar cada dominio: si difieren, mandan
+los de la consola.
+
+Al apuntar el dominio:
+
+- Web: `VITE_PUBLIC_URL=https://regalalebitcoin.com pnpm build:mainnet` y deploy.
+- API mainnet: `PUBLIC_URL=https://regalalebitcoin.com` (base de los links y rpId de las passkeys)
+  y `ALLOWED_ORIGINS=https://regalalebitcoins.web.app` mientras convivan.
+- Passkeys hechas en web.app no sirven en el dominio nuevo: entrar por mail y crear otra, o
+  *Related Origin Requests* (ver `mainnet.md`).
+- Resend: verificar `regalalebitcoin.com` (o un subdominio de envío) y cambiar `MAIL_FROM`
+  a `RegalaleBitcoin <hola@regalalebitcoin.com>`.

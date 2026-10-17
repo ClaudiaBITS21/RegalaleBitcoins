@@ -11,11 +11,11 @@ export interface I18n {
 export const I18nContext = createContext<I18n>({ lang: 'es', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
 export const useI18n = (): I18n => useContext(I18nContext);
 
-/** La marca como texto: "regalale" en tinta y "bitcoins" en el color de acento. */
+/** La marca como texto: "regalale" en tinta y "bitcoin" en el color de acento. */
 export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
   return (
     <span class={`marca-texto${onOrange ? ' sobre-naranja' : ''}`}>
-      regalale<span>bitcoins</span>
+      regalale<span>bitcoin</span>
     </span>
   );
 }

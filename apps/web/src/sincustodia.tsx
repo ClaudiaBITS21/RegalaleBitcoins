@@ -57,7 +57,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
   const { t, lang } = useI18n();
 
   useEffect(() => {
-    document.title = `${t('custodia.titulo')} · Regalale Bitcoins`;
+    document.title = `${t('custodia.titulo')} · Regalale Bitcoin`;
   }, [lang]);
 
   return (

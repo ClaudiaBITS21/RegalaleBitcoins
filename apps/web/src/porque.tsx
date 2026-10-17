@@ -65,7 +65,7 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
   const reasons = REASONS[lang];
 
   useEffect(() => {
-    document.title = `${t('porque.titulo')} · Regalale Bitcoins`;
+    document.title = `${t('porque.titulo')} · Regalale Bitcoin`;
   }, [lang]);
 
   return (
@@ -151,7 +151,7 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
                 </a>
               </p>
               {CUENTO_URL !== null ? (
-                <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download="Una-Natividad-Moderna-RegalaleBitcoins.pdf">
+                <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download="Una-Natividad-Moderna-RegalaleBitcoin.pdf">
                   {t('porque.cuento.bajar')}
                 </a>
               ) : (
