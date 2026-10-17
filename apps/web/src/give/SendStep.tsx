@@ -5,6 +5,7 @@ import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
 import { PrintCard } from './PrintCard.tsx';
+import { numberedWords, WordsList } from './WordsList.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
 type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
@@ -47,7 +48,7 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
   const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars);
 
   const linkText = r('regalar.mandar.mensajeLink', { para: gift.to, link: gift.link });
-  const wordsText = r('regalar.mandar.mensajePalabras', { palabras: gift.words.join(' ') });
+  const wordsText = r('regalar.mandar.mensajePalabras', { palabras: numberedWords(gift.words) });
   const href = (channel: 'whatsapp' | 'mail', text: string, subject: string) =>
     channel === 'whatsapp'
       ? `https://wa.me/?text=${encodeURIComponent(text)}`
@@ -112,11 +113,10 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
       <section class="caja envio">
         <h3>{t('regalar.mandar.palabras')}</h3>
         <p class="texto-suave">{t('regalar.mandar.palabrasTexto')}</p>
-        <ol class="palabras-regalo" translate={false}>
-          {gift.words.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ol>
+        <WordsList words={gift.words} />
+        <p class="texto-suave">
+          <strong>{t('regalar.mandar.orden')}</strong>
+        </p>
         <div class="canales">
           {(['whatsapp', 'mail'] as const).map((c) =>
             c === linkBy ? (
@@ -136,7 +136,7 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
               </a>
             ),
           )}
-          <Button kind="contorno" onClick={() => void copy(gift.words.join(' '), setWordsBy)}>
+          <Button kind="contorno" onClick={() => void copy(numberedWords(gift.words), setWordsBy)}>
             {t('regalar.mandar.copiar')}
           </Button>
           <Button kind="contorno" onClick={() => setWordsBy('mano')}>
