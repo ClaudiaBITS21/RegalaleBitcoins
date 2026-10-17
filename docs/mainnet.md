@@ -34,7 +34,7 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
 ## Antes de abrir
 
 1. Revisión de seguridad de lo que mueve fondos, con los bloqueantes resueltos.
-2. Prueba corta en signet con un celular y una billetera reales.
+2. ~~Prueba corta en signet~~: salteada por decisión de la responsable (17/10/2026).
 3. Primer regalo real de la responsable (≈ USD 5) de punta a punta: regalar, pagar, abrir,
    reclamar a una billetera propia.
 4. Recién ahí, compartir el link.
@@ -54,7 +54,7 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 
 | Hallazgo | Estado |
 |---|---|
-| **B1.** Mismo código de recuperación → mismo link y palabras en signet y mainnet (el esquema no separa redes) | **Pendiente de decisión de la responsable** |
+| **B1.** Mismo código de recuperación → mismo link y palabras en signet y mainnet (el esquema no separa redes) | Esquema sin cambios (opción B, 17/10/2026): la responsable no usa signet. Regla: nunca usar en mainnet un código de recuperación usado en signet. Se puede revisar antes del lanzamiento público |
 | I1. Tasa de comisión del servidor sin tope en el navegador | Arreglado: tope de 500 sat/vB y confirmación aparte si la comisión supera el 25 % |
 | I2. Si "ahora" no alcanzaba, no se ofrecía "esperar" | Arreglado: se arman por separado, con la tasa mínima como último recurso |
 | I3. Un reclamo expulsado de la mempool trababa el regalo | Arreglado: se libera si la red no conoce la transacción y los fondos siguen ahí |
