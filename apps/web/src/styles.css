@@ -2323,3 +2323,261 @@ svg.tarjeta-imagen {
     display: none;
   }
 }
+
+/* ¿Por qué Bitcoin? — abanico, tarjetas por edad y el cuento (porque.tsx, PorqueArt.tsx) */
+
+.porque-lista-seccion {
+  padding-top: 20px;
+}
+
+.porque-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.porque-lista summary {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2px solid var(--tinta);
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.porque-lista summary::-webkit-details-marker {
+  display: none;
+}
+
+.porque-lista summary::after {
+  content: '+';
+  font: 800 20px var(--titulos);
+}
+
+.porque-lista[open] summary::after {
+  content: '−';
+}
+
+.porque-lista summary:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+}
+
+.porque-lista[open] summary {
+  margin-bottom: 14px;
+}
+
+.porque-lista .aviso-precio {
+  margin-top: 14px;
+}
+
+.porque-edades {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.porque-edad-item {
+  display: flex;
+}
+
+.porque-edad {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  perspective: 1400px;
+  border-radius: 24px;
+}
+
+.porque-edad:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 4px;
+}
+
+/* Las dos caras en la misma celda: la tarjeta toma el alto de la más alta. */
+.porque-edad-giro {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.porque-edad-giro.abierta {
+  transform: rotateY(180deg);
+}
+
+.porque-edad-cara {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 20px;
+  border: 3px solid var(--tinta);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 var(--tinta);
+  margin-bottom: 6px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.porque-edad-frente {
+  align-items: flex-start;
+}
+
+.porque-edad-dorso {
+  transform: rotateY(180deg);
+  background: var(--blanco);
+  justify-content: center;
+}
+
+.porque-edad-arte {
+  display: block;
+  width: 100%;
+  max-width: 270px;
+  height: auto;
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+.porque-edad-rango {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--blanco);
+  border: 2px solid var(--tinta);
+  font: 800 15px var(--titulos);
+}
+
+.porque-edad-nombre {
+  font: 800 24px/1.05 var(--titulos);
+  letter-spacing: -0.01em;
+}
+
+.porque-edad-texto {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.porque-edad-pista {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tinta);
+}
+
+.porque-edad-dorso .porque-edad-pista {
+  margin-top: 6px;
+  color: var(--naranja-texto);
+}
+
+.porque-cuento {
+  display: flex;
+  flex-direction: column;
+  border-radius: 26px;
+  border: 2px solid var(--borde);
+  background: var(--papel);
+  overflow: hidden;
+}
+
+.porque-cuento-arte {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.porque-cuento-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 20px 24px;
+}
+
+.porque-cuento-texto p {
+  margin: 0;
+}
+
+.porque-cuento-texto p:not(.kicker) {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.porque-cuento-boton {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.porque-pronto {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--amarillo);
+  color: var(--tinta);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .porque-edad-giro {
+    transition: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .porque-edades {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  /* 3 arriba y 2 abajo, centradas. */
+  .porque-edades {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .porque-edad-item {
+    grid-column: span 2;
+  }
+
+  .porque-edad-item:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .porque-cuento {
+    width: 100%;
+    max-width: 980px;
+    align-self: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .porque-cuento-arte {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .porque-cuento-texto {
+    padding: 32px 36px;
+  }
+
+  .porque-cuento-boton {
+    align-self: flex-start;
+    padding: 12px 28px;
+  }
+}

@@ -367,6 +367,17 @@ export const es = {
   'custodia.otra.p2': 'Cuidalos como cuidarías un billete.',
   'custodia.cta.titulo': '¿Regalamos?',
   'custodia.cta.texto': 'Un regalo que es de quien lo recibe desde el primer momento.',
+  'porque.razones.verTodas': 'Ver las 21 en una lista',
+  'porque.edades.ayuda': 'Tocá una tarjeta para ver por qué.',
+  'porque.edad.anios': '{rango} años',
+  'porque.edad.tocar': 'Tocá para ver por qué',
+  'porque.edad.volver': 'Tocá para volver',
+  'porque.cuento.kicker': 'Para leer en familia',
+  'porque.cuento.titulo': 'El cuento',
+  'porque.cuento.texto': 'Un cuentito de Navidad para bajar, imprimir y leer en familia.',
+  'porque.cuento.bajar': 'Bajar el cuento',
+  'porque.cuento.pronto': 'Muy pronto',
+  'porque.cuento.imagen': 'Los tres Reyes Magos llegan al pesebre bajo la estrella; uno de ellos trae una moneda dorada de bitcoin.',
 } as const;
 
 export type Key = keyof typeof es;
