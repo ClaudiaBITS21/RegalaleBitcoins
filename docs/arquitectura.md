@@ -131,6 +131,22 @@ cada visita sin código arma una clave maestra nueva.
   de nombres). Si la passkey falla, la salida es "Entrar con mis 12 palabras"; crear una cuenta
   nueva pide confirmar que no recupera los regalos de la anterior.
 
+## Mensajes de ejemplo y tarjeta imprimible (handoff 17/10/2026)
+
+- El mensaje de la tarjeta llega cargado con un ejemplo real de la ocasión, al azar
+  (`crypto.getRandomValues`), en el idioma de quien recibe: `apps/web/src/content/mensajes/<idioma>.json`
+  (sets del handoff de Rodolfo; los que escribimos nosotros figuran en `_revisar`). Se edita en el
+  lugar; "Otra idea" cambia el ejemplo y ofrece deshacer si ya lo había tocado; si lo manda sin
+  tocar, aparece "¿Le agregás algo tuyo?" sin trabar nada. Ocasión libre o sin set: `porque`.
+- Listas: quien arma la lista dice para quién es y si es de una persona o de varias. Cada invitado
+  recibe el siguiente ejemplo del mazo de la lista: el servidor solo reparte el turno
+  (`POST /api/listas/:id/ejemplo`, columna `mazo`, migración 008) y el navegador mezcla con el id.
+- Tarjeta para dar en mano, en el paso "Mandá el regalo": una hoja A4 de un solo lado que, doblada en
+  cuatro, queda en A6 (arriba girados 180°: tapa y contratapa; abajo: mensaje y "Abrí tu regalo"
+  con el QR del link). **Las 4 palabras no se imprimen**: hay renglones para escribirlas a mano.
+  La contratapa lleva la frase de remate (ejemplo al azar, editable, 60 caracteres, sin nada con
+  forma de link o dominio) y "Hecho con regalalebitcoins.com". Se arma e imprime en el navegador.
+
 ## Listas de regalos (etapa 7)
 
 - Quien arma la lista (con cuenta) pega la **zpub** de su billetera (vpub en pruebas; solo

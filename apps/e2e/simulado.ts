@@ -182,10 +182,19 @@ try {
   await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
-  if ((await page.getByLabel('Tu mensaje').inputValue()) !== '¡Feliz Navidad! Un regalo chiquito para guardar mucho tiempo.') {
-    fail('no sugirió el mensaje de la ocasión');
-  }
+  // El mensaje llega con un ejemplo real de la ocasión; el nombre se completa solo y "Otra idea" lo cambia.
+  const msg = page.getByLabel('Tu mensaje');
+  await page.waitForFunction(() => (document.querySelector('textarea') as HTMLTextAreaElement | null)?.value !== '');
   await page.getByLabel('Su nombre').fill('Ana');
+  const firstExample = await msg.inputValue();
+  if (firstExample.includes('{nombre}') || firstExample.includes('…')) fail(`el ejemplo no tomó el nombre: ${firstExample}`);
+  await page.getByText('Es un ejemplo: ¿le agregás algo tuyo?').waitFor();
+  await page.getByRole('button', { name: 'Otra idea' }).click();
+  if ((await msg.inputValue()) === firstExample) fail('"Otra idea" no cambió el ejemplo');
+  await msg.fill('Lo escribí yo');
+  await page.getByRole('button', { name: 'Otra idea' }).click();
+  await page.getByRole('button', { name: 'Deshacer' }).click();
+  if ((await msg.inputValue()) !== 'Lo escribí yo') fail('"Deshacer" no recuperó lo escrito');
   await page.getByLabel('Tu nombre (opcional)').fill('Rodo');
   await page.getByLabel('Tu mensaje').fill('x'.repeat(281));
   await page.getByText('Te pasaste por 1 caracteres.').waitFor();
@@ -278,6 +287,21 @@ try {
   chain.confirmAll();
   await page.getByText('El pago está confirmado: el regalo ya se puede abrir.').waitFor({ timeout: 15_000 });
   await shot('r6-mandar');
+  // Tarjeta imprimible: A4 con cuatro paneles, el QR del link y sin las palabras.
+  const remate = page.getByLabel('Frase de la contratapa');
+  await page.waitForFunction(() => [...document.querySelectorAll('input')].some((i) => i.closest('.imprimir') && i.value !== ''));
+  await remate.fill('visitá regalo.xyz');
+  await page.getByText('Sin links ni direcciones web en la contratapa.').waitFor();
+  if (!(await page.getByRole('button', { name: 'Imprimir tarjeta' }).isDisabled())) fail('se puede imprimir un remate con un dominio');
+  await remate.fill('La llave ahora la tenés vos.');
+  await page.emulateMedia({ media: 'print' });
+  const sheet = page.locator('.hoja-a4');
+  const sheetText = await sheet.innerText();
+  if (giftWords.some((w) => sheetText.includes(w))) fail('la tarjeta impresa muestra las palabras');
+  if ((await sheet.locator('.panel').count()) !== 4 || (await sheet.locator('.qr').count()) !== 1) fail('la hoja A4 no tiene los cuatro paneles con el QR');
+  await page.pdf({ path: join(SHOTS, 'tarjeta-a4.pdf'), format: 'A4', printBackground: true });
+  await sheet.screenshot({ path: join(SHOTS, 't1-tarjeta-a4.png') });
+  await page.emulateMedia({ media: 'screen' });
   const created = (await sql`select id, para, de, idioma, ocasion, imagen, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
   if (created === undefined || created.para !== 'Ana' || created.idioma !== 'pt' || created.imagen !== 3 || created.sats_esperados !== '30500') {
     fail(`el regalo quedó mal registrado: ${JSON.stringify(created)}`);
@@ -398,6 +422,8 @@ try {
   await giver.goto(`${BASE}/listas/nueva`);
   await giver.getByRole('heading', { name: 'Armá tu lista de regalos' }).waitFor();
   await giver.getByLabel('Nombre de la lista').fill('Casamiento de Lupe');
+  await giver.getByLabel('¿Para quién es la lista?').fill('Lupe y Tomi');
+  await giver.getByRole('radio', { name: 'Dos o más' }).click();
   await giver.locator('.selector-ocasiones button, .ocasiones button').filter({ hasText: 'Casamiento' }).first().click();
   await giver.getByText('También acepto transferencias en pesos').click();
   await giver.getByLabel('Alias').fill('Lupe.E2E.mp');
@@ -425,6 +451,8 @@ try {
   await guest.getByRole('button', { name: 'US$ 25' }).click();
   await guest.getByRole('button', { name: 'Seguir' }).click();
   await guest.getByLabel('Tu nombre (opcional)').fill('Tía Marta');
+  const guestExample = await guest.getByLabel('Tu mensaje (opcional)').inputValue();
+  if (!guestExample.includes('Lupe y Tomi')) fail(`el invitado no recibió un ejemplo del mazo con los nombres: ${guestExample}`);
   await guest.getByLabel('Tu mensaje (opcional)').fill('¡Que sean muy felices!');
   await guest.getByRole('button', { name: /^Confirmar y pagar/ }).click();
   await guest.getByRole('heading', { name: 'Pagá 25.000 sats' }).waitFor({ timeout: 15_000 });

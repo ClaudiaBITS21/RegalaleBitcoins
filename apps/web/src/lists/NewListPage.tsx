@@ -34,6 +34,8 @@ export function NewListPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
   const [title, setTitle] = useState('');
+  const [forWhom, setForWhom] = useState('');
+  const [several, setSeveral] = useState(false);
   const [occasion, setOccasion] = useState<OccasionChoice | null>(null);
   const [message, setMessage] = useState('');
   const [date, setDate] = useState('');
@@ -86,6 +88,8 @@ export function NewListPage() {
     try {
       const { id } = await listApi.create({
         titulo: title.trim(),
+        para: forWhom.trim(),
+        varios: several,
         ocasion: occasion.key,
         ...(occasion.key === 'otra' && occasion.free ? { ocasionLibre: occasion.free } : {}),
         mensaje: message.trim(),
@@ -128,7 +132,7 @@ export function NewListPage() {
   } else if (step === 'datos') {
     const aliasOk = ALIAS.test(alias.trim().toLowerCase());
     const pesosOk = !pesos || (aliasOk && holder.trim() !== '' && convert);
-    const ok = title.trim() !== '' && [...title.trim()].length <= LIMITS.title && occasion !== null && [...message].length <= LIMITS.message && pesosOk;
+    const ok = forWhom.trim() !== '' && title.trim() !== '' && [...title.trim()].length <= LIMITS.title && occasion !== null && [...message].length <= LIMITS.message && pesosOk;
     body = (
       <form
         class="paso"
@@ -143,6 +147,17 @@ export function NewListPage() {
           <span>{t('lista.campo.titulo')}</span>
           <input type="text" value={title} maxLength={LIMITS.title} placeholder={t('lista.campo.tituloEj')} onInput={(e) => setTitle((e.currentTarget as HTMLInputElement).value)} />
         </label>
+        <label class="campo">
+          <span>{t('lista.campo.para')}</span>
+          <input type="text" value={forWhom} maxLength={60} placeholder={t('lista.campo.paraEj')} onInput={(e) => setForWhom((e.currentTarget as HTMLInputElement).value)} />
+        </label>
+        <div class="estilos" role="radiogroup" aria-label={t('lista.campo.cuantos')}>
+          {([false, true] as const).map((v) => (
+            <button type="button" role="radio" key={String(v)} aria-checked={several === v} class={`estilo-opcion${several === v ? ' elegida' : ''}`} onClick={() => setSeveral(v)}>
+              {t(v ? 'lista.campo.varios' : 'lista.campo.uno')}
+            </button>
+          ))}
+        </div>
         <fieldset class="campo">
           <legend>{t('lista.campo.ocasion')}</legend>
           <OccasionPicker value={occasion} onPick={setOccasion} />

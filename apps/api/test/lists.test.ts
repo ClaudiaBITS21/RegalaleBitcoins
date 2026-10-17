@@ -148,6 +148,17 @@ describe('listas de regalos', () => {
     assert.equal((await aporte(id)).status, 409);
   });
 
+  it('mazo de ejemplos: para quién es, una o varias personas, y un turno distinto por invitado', async () => {
+    const { id } = (await (await newList({ para: 'Ana y Juan', varios: true })).json()) as { id: string };
+    const pub = (await (await req(`/api/listas/${id}`)).json()) as { para: string; varios: boolean };
+    assert.equal(pub.para, 'Ana y Juan');
+    assert.equal(pub.varios, true);
+    const turns = [];
+    for (let i = 0; i < 3; i++) turns.push(((await (await req(`/api/listas/${id}/ejemplo`, {})).json()) as { turno: number }).turno);
+    assert.deepEqual(turns, [0, 1, 2]);
+    assert.equal((await req('/api/listas/nada/ejemplo', {})).status, 404);
+  });
+
   it('pesos: alias con compromiso de convertir; código único por invitado; solo quien armó la lista marca el estado', async () => {
     assert.equal((await newList({ alias: 'ana.leo.mp', aliasTitular: 'Ana Pérez' })).status, 400, 'sin compromiso de convertir');
     assert.equal((await newList({ alias: 'no vale!', aliasTitular: 'Ana', convertir: true })).status, 400);

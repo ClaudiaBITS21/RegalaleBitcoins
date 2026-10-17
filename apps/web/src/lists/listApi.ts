@@ -34,6 +34,9 @@ export interface PublicList {
   readonly topeUsd: number;
   /** Quien armó la lista acepta transferencias en pesos a su alias. */
   readonly aceptaPesos: boolean;
+  /** Para quién es ({nombres} en los ejemplos) y si es de varias personas. */
+  readonly para: string | null;
+  readonly varios: boolean;
 }
 
 export interface Transfer {
@@ -98,6 +101,8 @@ export interface NewList {
   readonly idioma: string;
   readonly xpub: string;
   readonly primeraDireccion: string;
+  readonly para: string;
+  readonly varios: boolean;
   readonly alias?: string;
   readonly aliasTitular?: string;
   readonly convertir?: boolean;
@@ -108,6 +113,7 @@ export const listApi = {
   get: (id: string) => call<PublicList>(`/api/listas/${encodeURIComponent(id)}`),
   contribute: (id: string, a: { nombre?: string; mensaje?: string; moneda: string; monto: number; sats: string }) =>
     call<{ direccion: string; sats: string; token: string }>(`/api/listas/${encodeURIComponent(id)}/aportes`, a),
+  turn: (id: string) => call<{ turno: number }>(`/api/listas/${encodeURIComponent(id)}/ejemplo`, {}),
   mine: (token: string) => call<MyGift>('/api/aportes/consulta', { token }),
   announce: (id: string, t: { nombre?: string; mensaje?: string; monto: number }) =>
     call<{ codigo: string; alias: string; titular: string; monto: number; token: string }>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),

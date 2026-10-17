@@ -1,0 +1,351 @@
+Handoff 17/10/2026: mensajes y remates de ejemplo
+por ocasión
+Ruta sugerida en el repo: docs/handoff/2026-10-17/mensajes-ejemplo.md
+Decisión de Rodolfo, 17/10/2026: el mensaje de la tarjeta y la frase de remate de la
+contratapa
+vienen siempre cargados con un ejemplo acorde a la ocasión, elegido al azar. La persona
+lo
+edita en el lugar (una palabra, una parte o todo) o pide otro.
+
+Reglas de producto
+1. Texto real, no placeholder. El campo viene con el texto cargado; no es un texto gris
+que
+desaparece al tocarlo. Se edita en el lugar.
+2. "Otra idea" carga otro ejemplo al azar de la misma ocasión, sin repetir el actual. Si la
+persona ya había editado el texto, se ofrece deshacer.
+3. Límites: mensaje 280 caracteres (contador visible, aviso desde 240). Remate 60
+caracteres.
+Mismos límites para web, WhatsApp, mail y tarjeta.
+4. Remate propio: permitido, pero sin links ni dominios. Se valida en el navegador y se
+bloquea cualquier cosa con forma de URL (anti-phishing: el remate va al lado de nuestra
+marca).
+5. {nombre} se reemplaza por el nombre de quien recibe (o los nombres, en casamiento).
+En
+Baby shower el nombre puede no existir todavía: por eso esos ejemplos no lo usan.
+6. Listas: mazo por lista. Se mezcla el set una vez por lista y cada invitado recibe el
+siguiente; cuando se termina, se vuelve a mezclar. El servidor ya guarda los aportes de
+la
+lista, así que sabe cuáles salieron (no toca nada de custodia). Set listas_uno si el
+dueño
+es una persona, listas_varios si son dos o más. {nombres} = dueño(s) de la lista.
+7. Empujoncito, sin trabar: si el ejemplo se manda sin tocar, se muestra "¿Le agregás
+algo
+tuyo?". Nunca bloquear el envío.
+
+8. Ocasión libre (escrita en el buscador) o sin set propio: usar porque_si .
+
+Reglas de contenido (para estos y para los que se agreguen)
+Cero promesas de precio. Nada de "va a valer", "fortuna", "inversión", "oro del futuro".
+Sin género gramatical hacia quien recibe ("juntos", "bienvenido", "querida"): que sirva
+para
+cualquiera. Excepción: ocasiones con destinatario definido (Día de la Madre / del Padre).
+No suponer estructura familiar ("tus papás", "tus padrinos"): "en tu casa", "tu familia".
+Nada que no sea cierto antes del reclamo ("nadie lo puede tocar"). "Cuando lo abrís, es
+tuyo",
+sí.
+Rioplatense con vos; en casamiento y listas de varios, ustedes.
+
+Esquema sugerido ( contenido/mensajes.<locale>.json )
+{
+"cumpleanos": { "mensajes": ["..."], "remates": ["..."] },
+"listas_uno": { "mensajes": ["..."] },
+"listas_varios": { "mensajes": ["..."] }
+}
+
+Claves de ocasión iguales a las del selector de ocasiones.
+
+Tarea para Code
+Crear contenido/mensajes.es.json con los sets de abajo. Para cada ocasión que ya
+exista en el
+código y no esté acá, escribir un set propio con la misma cantidad (10 mensajes, 6
+remates) y
+las mismas reglas de contenido, y marcarlo para revisión de Rodolfo. Otros idiomas:
+misma
+estructura, mismos criterios.
+
+Cumpleaños ( cumpleanos )
+Mensajes:
+1. {nombre}: te regalo un pedacito de bitcoin. No es para gastarlo mañana: es para que lo
+
+guardes, lo entiendas y lo cuides. ¡Feliz cumple!
+2. ¡Feliz cumple, {nombre}! Este regalo no se rompe, no pasa de moda y no ocupa lugar.
+Guardalo bien.
+3. {nombre}, un año más y un regalo distinto: algo para descubrir con tiempo. Cuando
+quieras, lo abrimos y te cuento todo.
+4. Para {nombre}, que ya tiene de todo: algo que seguro no tenía. ¡Feliz cumpleaños!
+5. {nombre}: este año no adiviné talle ni color. Te regalo bitcoin, y que sea el comienzo de
+muchas charlas. ¡Feliz cumple!
+6. ¡Feliz cumple, {nombre}! Las velas se apagan y la torta se termina. Esto se guarda.
+7. {nombre}, te regalo un pedacito de algo que nadie puede fabricar. ¡Que cumplas muchos
+más!
+8. Para {nombre}: hay regalos que se usan una vez y regalos que te acompañan. Ojalá este
+sea de los segundos. ¡Feliz cumple!
+9. {nombre}: cuando lo abras vas a tener tu propia billetera, y desde ahí el regalo es tuyo.
+¡Feliz cumpleaños!
+10. ¡Feliz cumple, {nombre}! Pedí un deseo, soplá las velas y después abrí esto con calma.
+Remates: ¡Que cumplas muchos más! · Las velas se apagan. Esto se guarda. · La llave ahora
+la tenés vos. · Un año más, una llave nueva. · Sin pilas, sin talle, sin ticket de cambio. · Feliz
+cumple. Guardalo bien.
+
+Fiesta de 15 ( fiesta_15 )
+Mensajes:
+1. {nombre}: para tus 15, un regalo para cuidar. No es para gastarlo mañana: es para que lo
+guardes y lo entiendas. ¡Feliz fiesta!
+2. ¡Feliz 15, {nombre}! Hoy bailás toda la noche; mañana, con calma, abrís esto.
+3. {nombre}, 15 años es un buen momento para tener algo propio. Esta llave es tuya.
+¡Disfrutá tu noche!
+4. Para {nombre}, en sus 15: el vals, las fotos y la fiesta quedan en el recuerdo. Esto,
+además, se guarda.
+5. {nombre}: tu primera billetera, para tus 15. Preguntá, investigá y aprendé. Acá estoy para
+lo que necesites.
+6. ¡Feliz 15, {nombre}! Un regalo distinto para una noche que vas a recordar siempre.
+7. {nombre}, este regalo es una invitación: a ahorrar, a preguntar y a pensar en grande.
+8. Para tus 15, {nombre}: un pedacito de algo que nadie puede fabricar. ¡Brillá esta noche!
+9. {nombre}: entre todos los regalos de hoy, este es el que no se rompe ni pasa de moda.
+
+¡Feliz fiesta!
+10. ¡Feliz 15, {nombre}! Que esta sea la primera de muchas decisiones propias.
+Remates: 15 años, tu primera llave. · La llave ahora la tenés vos. · Bailá hoy. Guardalo
+siempre. · Que brilles esta noche y siempre. · Lo tuyo es tuyo. · Pensá en grande.
+
+Aniversario ( aniversario )
+Pensado de pareja a pareja (vos). Si regalan amigos a la pareja, usar casamiento o
+porque_si .
+
+Mensajes:
+1. {nombre}: un año más a tu lado, y un regalo para guardar, como guardamos lo nuestro.
+¡Feliz aniversario!
+2. Feliz aniversario, {nombre}. Te regalo algo que, como lo nuestro, se construye con el
+tiempo.
+3. {nombre}, por todo lo que compartimos: un regalo distinto, para abrir con calma.
+4. A {nombre}, con amor: hay cosas que no se fabrican de más. Vos, por ejemplo.
+5. {nombre}: otro año, otra llave. Esta es solo tuya.
+6. Feliz aniversario, {nombre}. Gracias por cada día. Esto es para el largo plazo, como
+nosotros.
+7. {nombre}, no te regalo flores que se marchitan: te regalo algo para guardar.
+8. Para {nombre}: lo nuestro no tiene ticket de cambio. Este regalo tampoco.
+9. {nombre}, que este regalo sea una excusa para seguir aprendiendo cosas de a dos.
+10. Feliz aniversario, {nombre}. Por muchos años más.
+Remates: Por muchos años más. · Para el largo plazo, como nosotros. · Lo nuestro no tiene
+ticket de cambio. · La llave ahora la tenés vos. · Un año más, a tu lado. · Hay cosas que no
+se fabrican de más.
+
+Egreso ( egreso )
+Mensajes:
+1. {nombre}: terminaste una etapa y empieza otra. Te regalo algo para que arranques con
+el pie derecho. ¡Felicitaciones!
+2. ¡Felicitaciones, {nombre}! Aprendiste mucho; esto es algo más para seguir aprendiendo.
+3. {nombre}, tu primera billetera para tu nueva etapa. Cuidala bien.
+4. Para {nombre}, que terminó una etapa enorme: un regalo para pensar en el largo plazo.
+
+5. {nombre}: el título se cuelga en la pared. Esto se guarda en tu billetera. ¡Felicitaciones!
+6. ¡Lo lograste, {nombre}! Un regalo distinto para un logro enorme.
+7. {nombre}, ahora que empieza lo tuyo, que también empiece tu ahorro.
+8. Felicitaciones, {nombre}. Un pedacito de algo que nadie puede fabricar, para alguien
+que se lo ganó.
+9. {nombre}: terminaste. Ahora seguí preguntando e investigando, también con esto.
+10. ¡Felicitaciones, {nombre}! Que sea la primera de muchas cosas propias.
+Remates: Felicitaciones. Esto también es tuyo. · Nueva etapa, nueva llave. · Lo lograste. · El
+título a la pared. Esto, a guardar. · La llave ahora la tenés vos. · Que siga la curiosidad.
+
+Navidad ( navidad )
+Mensajes:
+1. {nombre}: este año, algo distinto debajo del árbol. ¡Feliz Navidad!
+2. ¡Feliz Navidad, {nombre}! No ocupa lugar debajo del arbolito, pero adentro hay un
+regalo.
+3. {nombre}, un regalo para abrir hoy y entender con el tiempo. ¡Felices fiestas!
+4. Para {nombre}: sin shopping de último momento, pero con mucho cariño. ¡Feliz Navidad!
+5. {nombre}: en la sobremesa vas a tener tema de charla. ¡Felices fiestas!
+6. ¡Feliz Navidad, {nombre}! Un regalo que no se rompe antes de Reyes.
+7. {nombre}, te regalo un pedacito de algo que nadie puede fabricar. ¡Felices fiestas!
+8. {nombre}: guardalo bien, como el mejor recuerdo de estas fiestas.
+9. Para {nombre}, con cariño en esta Navidad: hay regalos que se usan y regalos que se
+guardan. Este se guarda.
+10. ¡Felices fiestas, {nombre}! Abrilo cuando quieras, aunque sea después del brindis.
+Remates: ¡Feliz Navidad! · Este año, algo distinto. · Felices fiestas. Guardalo bien. · La llave
+ahora la tenés vos. · Sin pilas, sin talle, sin ticket de cambio. · Para abrir después del brindis.
+
+Reyes ( reyes )
+Pensado para chicos; quien regala puede firmar como "los Reyes".
+Mensajes:
+1. {nombre}: Melchor trajo oro, Gaspar incienso y Baltasar… esto. ¡Feliz Día de Reyes!
+2. ¡Hola, {nombre}! Dejamos esto al lado de tus zapatos. Pedile a alguien grande que te
+ayude a abrirlo.
+
+3. {nombre}: los camellos tomaron el agua, y nosotros te dejamos un regalo para cuidar
+mucho tiempo.
+4. Para {nombre}: este regalo vino de muy lejos, en camello, y no ocupa lugar. Que lo
+cuiden en tu casa hasta que seas grande.
+5. {nombre}, te portaste muy bien. Este regalo es una moneda especial: la cuidan miles de
+personas en todo el mundo.
+6. ¡Feliz Día de Reyes, {nombre}! Una moneda de verdad, para empezar a ahorrar.
+7. {nombre}: no es un juguete, pero dura más que cualquiera. Con cariño, los Reyes.
+8. {nombre}, este año los Reyes se modernizaron. ¡Que lo disfrutes!
+9. Para {nombre}: una moneda para guardar y una historia para contar cuando seas
+grande.
+10. {nombre}: dejá el pasto y el agua para los camellos, y esto guardalo para vos.
+Remates: Con cariño, los Reyes. · Dura más que cualquier juguete. · Los Reyes se
+modernizaron. · Para guardar hasta que seas grande. · Una moneda de verdad. · ¡Feliz Día
+de Reyes!
+
+Día del Padre ( dia_del_padre )
+Mensajes:
+1. {nombre}: me enseñaste a cuidar lo que importa. Ahora te regalo algo para cuidar. ¡Feliz
+día!
+2. ¡Feliz Día del Padre, {nombre}! Este año, ni corbata ni medias: bitcoin.
+3. {nombre}, tantas veces me explicaste cosas. Hoy me toca a mí: abrí esto y te cuento.
+4. Para {nombre}, el mejor: un regalo para el largo plazo.
+5. {nombre}: gracias por todo. Te regalo un pedacito de algo que nadie puede fabricar.
+6. ¡Feliz día, {nombre}! Un regalo distinto para alguien que ya tiene de todo.
+7. {nombre}, que este regalo sea la excusa para sentarnos un rato y que te muestre cómo
+funciona.
+8. Feliz Día del Padre, {nombre}. Lo que me enseñaste sobre ahorrar, te lo devuelvo así.
+9. {nombre}: no se rompe, no pasa de moda y no hay que cambiarlo. ¡Feliz día!
+10. Para {nombre}, con todo mi cariño en tu día.
+Remates: Ni corbata ni medias. · Ahora me toca a mí. · ¡Feliz Día del Padre! · La llave ahora la
+tenés vos. · Para el mejor. · Gracias por todo.
+
+Día de la Madre ( dia_de_la_madre )
+
+Mensajes:
+1. {nombre}: me enseñaste a cuidar lo que importa. Ahora te regalo algo para cuidar. ¡Feliz
+día!
+2. ¡Feliz Día de la Madre, {nombre}! Este año, algo que no se marchita.
+3. {nombre}, tantas veces me explicaste cosas. Hoy me toca a mí: abrí esto y te cuento.
+4. Para {nombre}, la mejor: un regalo para el largo plazo.
+5. {nombre}: gracias por todo. Te regalo un pedacito de algo que nadie puede fabricar.
+6. ¡Feliz día, {nombre}! Un regalo distinto para alguien que siempre piensa en los demás.
+7. {nombre}, que este regalo sea la excusa para tomar unos mates y que te muestre cómo
+funciona.
+8. Feliz Día de la Madre, {nombre}. Lo que me enseñaste sobre ahorrar, te lo devuelvo así.
+9. {nombre}: no se rompe, no pasa de moda y no hay que cambiarlo. ¡Feliz día!
+10. Para {nombre}, con todo mi cariño en tu día.
+Remates: Algo que no se marchita. · Ahora me toca a mí. · ¡Feliz Día de la Madre! · Para la
+mejor. · La llave ahora la tenés vos. · Gracias por todo.
+
+Bautismo ( bautismo )
+Dirigidos al bebé, para que lo lea de grande.
+Mensajes:
+1. {nombre}: antes se regalaba una medallita para que acompañara toda la vida. Esto es lo
+mismo, pero en digital.
+2. Para {nombre}, en tu bautismo: un regalo que van a cuidar en tu casa hasta que seas
+grande.
+3. {nombre}: cuando puedas leer esto, ojalá lo sigas guardando. Con todo mi cariño.
+4. {nombre}, para recibirte en la familia, un regalo para guardar toda la vida.
+5. Para {nombre}: hoy no lo vas a entender, y está bien. Algún día te van a contar la historia
+de este regalo.
+6. {nombre}: una medallita moderna, para que te acompañe siempre.
+7. Para {nombre}, en este día tan especial: un pedacito de algo que nadie puede fabricar,
+para cuando seas grande.
+8. {nombre}, que este regalo te recuerde siempre a quienes te quisieron desde el primer
+día.
+9. Para {nombre}: una llave que hoy cuidan en tu casa y mañana vas a tener vos.
+10. {nombre}, con mucho amor en tu bautismo. Guardalo para cuando seas grande.
+
+Remates: Una medallita moderna. · Para cuando seas grande. · Una llave para toda la vida. ·
+Con amor, desde el primer día. · Hoy lo cuidan. Mañana es tuyo. · Para recibirte en la familia.
+
+Baby shower ( baby_shower )
+Sin {nombre} : muchas veces todavía no hay nombre.
+Mensajes:
+1. Para vos, que todavía no llegaste: ya tenés tu primer regalo esperándote.
+2. Antes de nacer ya tenés algo para guardar. Te esperamos con muchas ganas.
+3. Un regalo para alguien que todavía no conocemos y ya queremos mucho.
+4. Para quien está por llegar: un regalo para cuando sea grande.
+5. Para quien está por llegar: un regalo que no ocupa lugar en un cuarto lleno de pañales.
+6. Ya hay alguien cuidando tu primer regalo. Te esperamos.
+7. Para la familia que crece: un regalo para guardar hasta que sea grande.
+8. Todavía no conocemos tu cara, pero ya sabemos que te vamos a querer mucho. Esto es
+para vos.
+9. Para quien está por llegar: un pedacito de algo que nadie puede fabricar.
+10. Ni ropa que te va a quedar chica en un mes ni otro sonajero: algo para guardar muchos
+años.
+Remates: Te esperamos. · Tu primer regalo. · Para cuando seas grande. · No ocupa lugar en
+el cuarto. · Ya te queremos. · Para quien está por llegar.
+
+Casamiento ( casamiento )
+Dirigidos a la pareja (ustedes). {nombre} = "Ana y Juan".
+Mensajes:
+1. {nombre}: para la vida que empiezan de a dos, un regalo para el largo plazo.
+¡Felicitaciones!
+2. ¡Felicitaciones, {nombre}! Nada de batidoras repetidas: un regalo para guardar.
+3. {nombre}, que este regalo sea el primer ahorro de la familia que empiezan.
+4. Para {nombre}: hay cosas que no se fabrican de más. El amor, por ejemplo. Y esto.
+5. {nombre}: no ocupa lugar en la casa nueva. ¡Que sean muy felices!
+6. ¡Vivan los novios! {nombre}, un pedacito de algo que nadie puede fabricar, para guardar
+de a dos.
+7. {nombre}, que lo cuiden con paciencia, como todo lo que vale la pena.
+
+8. Para {nombre}, con mucho cariño en su casamiento: un regalo distinto para un día único.
+9. {nombre}: hoy brindamos. Mañana, con calma, abran esto.
+10. ¡Felicitaciones, {nombre}! Que esta llave sea de las primeras que comparten.
+Remates: ¡Vivan los novios! · Para guardar de a dos. · Hoy brindamos. Mañana, a guardar. ·
+Nada de batidoras repetidas. · Para el largo plazo. · Que sean muy felices.
+
+Porque sí ( porque_si ) — también respaldo para ocasiones libres
+Mensajes:
+1. {nombre}: no hay ninguna ocasión. Te regalo esto porque sí.
+2. {nombre}, te vi y me acordé de vos. Esto es para que lo guardes.
+3. Para {nombre}: hay regalos que se usan una vez y regalos que te acompañan. Ojalá este
+sea de los segundos.
+4. {nombre}: esto es bitcoin, una moneda que nadie puede imprimir de más. Te regalo un
+poquito para que la conozcas.
+5. {nombre}, no sabía qué regalarte, así que te regalo algo para descubrir.
+6. {nombre}, te regalo un pedacito de algo que nadie puede fabricar. Que sea el comienzo
+de muchas charlas.
+7. Para {nombre}, con cariño: un regalo distinto, para abrir hoy y entender con el tiempo.
+8. {nombre}: cuando lo abras vas a tener tu propia billetera, y desde ahí el regalo es tuyo.
+9. {nombre}, esta tarjeta guarda un regalo y una invitación: a ahorrar, a preguntar y a
+pensar en el largo plazo.
+10. {nombre}: cuidá esta llave como cuidás las cosas importantes. Lo que guarda es tuyo.
+Remates: Porque sí. · La llave ahora la tenés vos. · Sin pilas, sin talle, sin ticket de cambio. ·
+Hay regalos que se usan. Este se guarda. · Un pedacito de algo que nadie puede fabricar. ·
+Un regalo chiquito con un mensaje grande.
+
+Listas: dueño una persona ( listas_uno )
+Voz del invitado. Las listas son para público bitcoiner: se permite algo de jerga (sats, stack,
+hodl).
+1. {nombres}: mi aporte para tu lista. ¡Que lo disfrutes!
+2. Para {nombres}, con cariño: un granito más para tu regalo.
+3. {nombres}, ¡qué buena idea esta lista! Acá va mi parte.
+4. {nombres}: entre todos lo hacemos más grande. Este es mi pedacito.
+
+5. Un aporte chiquito con un abrazo grande. ¡Para vos, {nombres}!
+6. {nombres}, que lo guardes mucho tiempo. Con cariño.
+7. Para {nombres}: sats con cariño.
+8. Sumando a tu stack, {nombres}.
+9. ¡Felicitaciones, {nombres}! Acá dejo mi aporte.
+10. Mi granito de arena para vos, {nombres}. ¡Abrazo!
+11. {nombres}: que este aporte sea parte de tu historia.
+12. ¡Para {nombres}! Hodl con cariño.
+13. {nombres}: para que sigas sumando. ¡Abrazo grande!
+14. Con mucho cariño para {nombres}. Que sea el primero de muchos.
+15. {nombres}: poquito, pero con amor.
+
+Listas: dueños varios ( listas_varios )
+1. {nombres}: mi aporte para su lista. ¡Que lo disfruten!
+2. Para {nombres}, con cariño: un granito más para su regalo.
+3. {nombres}, ¡qué buena idea esta lista! Acá va mi parte.
+4. {nombres}: entre todos lo hacemos más grande. Este es mi pedacito.
+5. Un aporte chiquito con un abrazo grande para {nombres}.
+6. {nombres}, que lo guarden mucho tiempo. Con cariño.
+7. Para {nombres}: sats con cariño.
+8. Sumando a su stack, {nombres}.
+9. ¡Felicitaciones, {nombres}! Acá dejo mi aporte.
+10. Mi granito de arena para ustedes, {nombres}. ¡Abrazo!
+11. {nombres}: que este aporte sea parte de su historia.
+12. ¡Para {nombres}! Hodl con cariño.
+13. {nombres}: para que sigan sumando. ¡Abrazo grande!
+14. Con mucho cariño para {nombres}. Que sea el primero de muchos.
+15. {nombres}: poquito, pero con amor.
+
+ABIERTO
+Listas: 15 por set alcanzan para listas chicas; con más invitados el mazo se remezcla.
+Ampliar a
+25–30 si hace falta.
+Lista definitiva de ocasiones (Rodolfo tiene una más larga; Code ya tiene otras creadas).
+
+Sets específicos por ocasión para listas (casamiento, baby shower), si se ve que hace
+falta.
+
+

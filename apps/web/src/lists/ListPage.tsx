@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { ApiFailure } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
+import { deckPick, fillName, loadExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatArsExact, formatSats, groupAddress, parseAmount, paymentUri, satsToBtcString } from '../format.ts';
 import { AmountStep } from '../give/DraftSteps.tsx';
@@ -43,6 +44,22 @@ export function ListPage({ id }: { id: string }) {
       .then(setList)
       .catch(() => setMissing(true));
   }, [id]);
+
+  // El mensaje viene cargado con el próximo ejemplo del mazo de la lista (editable).
+  const [example, setExample] = useState<string | null>(null);
+  useEffect(() => {
+    if (list === null || !list.abierta) return;
+    void Promise.all([loadExamples(lang), listApi.turn(id)])
+      .then(([ex, { turno }]) => {
+        const set = ex[list.varios ? 'listas_varios' : 'listas_uno'] as { mensajes?: readonly string[] } | undefined;
+        const pick = deckPick(set?.mensajes ?? [], id, turno);
+        if (pick === undefined) return;
+        const filled = fillName(pick, list.para ?? list.titulo, list.titulo);
+        setExample(filled);
+        setMessage((m) => (m === '' ? filled : m));
+      })
+      .catch(() => undefined);
+  }, [list?.id, lang]);
 
   // Mientras espera el pago, consulta el estado de su propio aporte.
   useEffect(() => {
@@ -137,6 +154,7 @@ export function ListPage({ id }: { id: string }) {
       <label class="campo">
         <span>{t('lista.firma.mensaje')}</span>
         <textarea rows={3} maxLength={280} value={message} onInput={(e) => setMessage((e.currentTarget as HTMLTextAreaElement).value)} />
+        {example !== null && message === example && <small class="texto-suave">{t('regalar.mensaje.empujoncito')}</small>}
       </label>
       <small class="texto-suave">{t('lista.firma.privado')}</small>
     </>

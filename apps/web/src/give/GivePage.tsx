@@ -10,7 +10,7 @@ import { DICTS, type Key, translate } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
 import { SaveStep } from './SaveStep.tsx';
-import { AmountStep, CardStep, OccasionStep } from './DraftSteps.tsx';
+import { AmountStep, CardStep, isUntouched, OccasionStep } from './DraftSteps.tsx';
 import { PayStep } from './PayStep.tsx';
 import { SendStep } from './SendStep.tsx';
 
@@ -38,6 +38,10 @@ export interface Draft {
   to: string;
   from: string;
   message: string;
+  /** Ejemplo cargado en el mensaje (con {nombre} sin reemplazar); null si no hay. */
+  example: string | null;
+  /** Lo que había escrito antes de "Otra idea", para deshacer. */
+  undo: string | null;
   image: number;
   /** Estilo de la tarjeta; con 'propia', la imagen ya procesada en el navegador. */
   style: CardStyle;
@@ -124,12 +128,6 @@ function presetOccasion(): OccasionChoice | null {
   return { key };
 }
 
-/** Mensaje sugerido para la ocasión, si hay uno; si no, vacío para que escriba el suyo. */
-function suggestedMessage(key: string, t: (k: Key) => string): string {
-  const k = `regalar.sugerido.${key}`;
-  return k in DICTS.es ? t(k as Key) : '';
-}
-
 export function GivePage() {
   const { t, lang } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
@@ -143,7 +141,9 @@ export function GivePage() {
     occasionFree: preset?.free ?? '',
     to: '',
     from: '',
-    message: preset === null ? '' : suggestedMessage(preset.key, (k) => translate(lang, k)),
+    message: '',
+    example: null,
+    undo: null,
     image: 1,
     style: 'ilustracion',
     ownImage: null,
@@ -218,7 +218,7 @@ export function GivePage() {
 
   const another = () => {
     setGift(null);
-    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', image: 1, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
+    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, image: 1, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
     setSteps(['ocasion']);
   };
 
@@ -243,7 +243,8 @@ export function GivePage() {
             ...d,
             occasion: choice.key,
             occasionFree: choice.free ?? '',
-            message: d.message === '' || d.occasion !== choice.key ? suggestedMessage(choice.key, t) : d.message,
+            // Otra ocasión: el ejemplo se vuelve a elegir (lo escrito a mano se conserva).
+            ...(d.occasion !== choice.key && (d.example === null ? d.message === '' : isUntouched(d)) ? { message: '', example: null, undo: null } : {}),
           }));
           go('para');
         }}

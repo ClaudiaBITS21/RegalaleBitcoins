@@ -2,6 +2,7 @@ import { LANGS, type Lang, minimumGiftAmount } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
+import { examplesFor, fillName, pickExample, useExamples } from '../content/mensajes.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -33,8 +34,35 @@ export function OccasionStep({ value, onPick }: { value: OccasionChoice | null; 
   );
 }
 
-export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: (p: Partial<Draft>) => void; onNext: () => void }) {
+/** Hueco para el nombre mientras no lo escribió. */
+const NO_NAME = '…';
+
+/** El mensaje es el ejemplo tal cual vino (con el nombre de ahora). */
+export function isUntouched(d: Pick<Draft, 'message' | 'example' | 'to'>): boolean {
+  return d.example !== null && d.message === fillName(d.example, d.to, NO_NAME);
+}
+
+export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; onChange: (p: Partial<Draft>) => void; onNext: () => void }) {
   const { t } = useI18n();
+  const examples = useExamples(draft.lang);
+  const list = examples === null ? [] : examplesFor(examples, draft.occasion, 'mensajes');
+  // Si cambia el nombre o el idioma y el mensaje sigue siendo el ejemplo, se actualiza con ellos.
+  const onChange = (p: Partial<Draft>) => {
+    if (isUntouched(draft) && draft.example !== null && p.to !== undefined) p = { ...p, message: fillName(draft.example, p.to, NO_NAME) };
+    if (isUntouched(draft) && p.lang !== undefined && p.lang !== draft.lang) p = { ...p, message: '', example: null, undo: null };
+    change(p);
+  };
+  // Llega con un ejemplo real cargado, nunca vacío (salvo que lo haya borrado a propósito).
+  useEffect(() => {
+    if (draft.example !== null || draft.message !== '' || list.length === 0) return;
+    const ex = pickExample(list);
+    if (ex !== null) change({ example: ex, message: fillName(ex, draft.to, NO_NAME), undo: null });
+  }, [list.length, draft.example, draft.lang]);
+  const another = () => {
+    const ex = pickExample(list, draft.example);
+    if (ex === null) return;
+    change({ example: ex, message: fillName(ex, draft.to, NO_NAME), undo: isUntouched(draft) || draft.message === '' ? null : draft.message });
+  };
   const left = LIMITS.message - charCount(draft.message);
   const toOk = charCount(draft.to) > 0 && charCount(draft.to) <= LIMITS.to;
   const fromOk = charCount(draft.from) <= LIMITS.from;
@@ -61,7 +89,20 @@ export function CardStep({ draft, onChange, onNext }: { draft: Draft; onChange: 
       </label>
       <label class="campo">
         <span>{t('regalar.para.mensaje')}</span>
-        <textarea rows={4} value={draft.message} onInput={(e) => onChange({ message: (e.currentTarget as HTMLTextAreaElement).value })} />
+        <textarea rows={5} value={draft.message} onInput={(e) => onChange({ message: (e.currentTarget as HTMLTextAreaElement).value, undo: null })} />
+        <span class="mensaje-acciones">
+          {list.length > 1 && (
+            <button type="button" class="boton-texto" onClick={another}>
+              {t('regalar.mensaje.otraIdea')}
+            </button>
+          )}
+          {draft.undo !== null && (
+            <button type="button" class="boton-texto" onClick={() => change({ message: draft.undo as string, example: null, undo: null })}>
+              {t('regalar.mensaje.deshacer')}
+            </button>
+          )}
+        </span>
+        {isUntouched(draft) && <small class="texto-suave">{t('regalar.mensaje.empujoncito')}</small>}
         <small class={left < 0 ? 'error-campo' : left <= LIMITS.message - LIMITS.messageWarn ? 'contador contador-aviso' : 'contador'} aria-live="polite">
           {left < 0 ? t('regalar.para.sobran', { n: -left }) : t('regalar.para.quedan', { n: left })}
         </small>

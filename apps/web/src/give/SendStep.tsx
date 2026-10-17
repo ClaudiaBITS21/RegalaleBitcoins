@@ -4,6 +4,7 @@ import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
+import { PrintCard } from './PrintCard.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
 type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
@@ -145,6 +146,8 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
         {linkBy !== null && linkBy !== 'copiar' && <small class="texto-suave">{t('regalar.mandar.mismoCanal')}</small>}
         {wordsBy !== null && <small class="texto-suave">{t('regalar.mandar.hecho', { canal: t(`regalar.mandar.${wordsBy}` as Key) })}</small>}
       </section>
+
+      {view !== null && <PrintCard link={gift.link} view={view} />}
 
       <Notice>{t('regalar.mandar.guarda')}</Notice>
       <Button kind="acento" onClick={onAnother}>

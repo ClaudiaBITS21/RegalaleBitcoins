@@ -49,6 +49,8 @@ interface ListRow {
   idioma: Lang;
   creada: Date;
   cerrada: Date | null;
+  para: string | null;
+  varios: boolean;
 }
 
 interface ContributionRow {
@@ -130,6 +132,8 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   abierta: l.cerrada === null,
   topeUsd: ceilingUsd,
   aceptaPesos: l.alias !== null,
+  para: l.para,
+  varios: l.varios,
 });
 
 const transferView = (r: TransferRow) => ({
@@ -184,10 +188,11 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     }
     const id = newGiftId();
     await sql`
-      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular)
+      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular, para, varios)
       values (${id}, ${network.name}, ${account.id}, ${xpub}, ${text(b.titulo, LIST_LIMITS.title, true)}, ${b.ocasion},
               ${b.ocasion === 'otra' ? text(b.ocasionLibre, LIST_LIMITS.freeOccasion, false) : null},
-              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${alias}, ${holder})`;
+              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${alias}, ${holder},
+              ${text(b.para, 60, false)}, ${b.varios === true})`;
     return c.json({ id }, 201);
   });
 
@@ -196,6 +201,17 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     const list = await findList(sql, c.req.param('id'));
     if (list === null || list.red !== network.name) throw new ApiError(404, 'no_encontrado');
     return c.json(publicList(list, deps.ceilingUsd));
+  });
+
+  /**
+   * Turno del mazo de mensajes de ejemplo: cada invitado que abre la lista recibe el siguiente
+   * (la mezcla la hace el navegador con el id de la lista). No toca nada de fondos.
+   */
+  app.post('/api/listas/:id/ejemplo', async (c) => {
+    const [row] = await sql<{ turno: number }[]>`
+      update listas set mazo = mazo + 1 where id = ${c.req.param('id')} and red = ${network.name} and cerrada is null returning mazo - 1 as turno`;
+    if (row === undefined) throw new ApiError(404, 'no_encontrado');
+    return c.json({ turno: row.turno });
   });
 
   /** Un invitado confirma su aporte: recibe la dirección para pagar y su link privado. */
