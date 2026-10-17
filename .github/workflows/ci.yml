@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: regalale
+          POSTGRES_PASSWORD: regalale
+          POSTGRES_DB: regalale_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U regalale" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://regalale:regalale@127.0.0.1:5432/regalale_test
+      DATABASE_URL_TEST: postgres://regalale:regalale@127.0.0.1:5432/regalale_test
+    steps:
+      # Actions fijadas por commit, no por tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @regalale/web build
+      # Reclamo de punta a punta en un navegador real contra una cadena simulada (sin red externa).
+      - run: pnpm --filter @regalale/e2e simulado
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome

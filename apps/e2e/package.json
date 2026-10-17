@@ -1,0 +1,17 @@
+{
+  "name": "@regalale/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "simulado": "node simulado.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "signet": "node signet.ts"
+  },
+  "dependencies": {
+    "@regalale/core": "workspace:*"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}

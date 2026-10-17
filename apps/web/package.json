@@ -1,0 +1,24 @@
+{
+  "name": "@regalale/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:mainnet": "VITE_ALLOW_MAINNET=autorizado vite build --outDir dist-mainnet",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fontsource/bricolage-grotesque": "5.3.0",
+    "@fontsource/caveat": "5.3.0",
+    "@fontsource/dm-sans": "5.3.0",
+    "@regalale/core": "workspace:*",
+    "preact": "11.0.0",
+    "qr": "0.7.2"
+  },
+  "devDependencies": {
+    "vite": "8.3.2"
+  }
+}

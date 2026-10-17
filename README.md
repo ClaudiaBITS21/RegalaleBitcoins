@@ -22,8 +22,11 @@ para recibirlo, sin que la plataforma custodie nunca los fondos.
 ```
 packages/core     Núcleo criptográfico aislado: clave maestra, BIP85, passphrase,
                   direcciones BIP84, link del regalo y barrido. Sin DOM ni red.
-apps/             (próximas etapas) web y API
-docs/             Arquitectura y esquema de derivación
+apps/api          API (Hono + Postgres): regalos, estado desde la cadena, difusión
+                  de barridos verificados. Sirve la web con CSP estricta.
+apps/web          Web (Vite + Preact), es/pt/en/it. Por ahora: inicio y reclamo.
+apps/e2e          Pruebas de punta a punta en Chromium (cadena simulada y signet).
+docs/             Arquitectura, esquema de derivación y desarrollo local
 ```
 
 ## Desarrollo
@@ -33,7 +36,9 @@ Requiere Node ≥ 22.18 (producción: Node 24 LTS) y pnpm 10 (`corepack enable`)
 ```sh
 pnpm install --frozen-lockfile
 pnpm typecheck
-pnpm test
+pnpm test            # necesita Postgres local (ver docs/desarrollo.md)
+pnpm build
+pnpm e2e:simulado
 ```
 
 Los tests del núcleo validan contra los vectores oficiales de BIP39, BIP32, BIP84,
@@ -43,3 +48,4 @@ BIP85, BIP143 y BIP350 (ver `packages/core/test/vectors/README.md`).
 
 - [Arquitectura y decisiones](docs/arquitectura.md)
 - [Esquema de derivación de un regalo](docs/derivacion.md): base técnica de la guía de recuperación.
+- [Desarrollo local](docs/desarrollo.md)

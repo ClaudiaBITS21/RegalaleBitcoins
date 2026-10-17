@@ -1,8 +1,19 @@
 node_modules/
 dist/
+dist-mainnet/
 coverage/
 *.log
 .env
 .env.*
 !.env.example
 .DS_Store
+
+# Secretos de desarrollo (signet), nunca al repo
+.dev/
+apps/e2e/capturas/
+
+# Caché local de firebase-tools
+.firebase/
+
+# Copias de trabajo de agentes
+.claude/worktrees/

@@ -1,0 +1,134 @@
+Handoff 17/10/2026: recupero avanzado con billetera
+propia (xpub)
+Ruta sugerida en el repo: docs/handoff/2026-10-17/recupero-avanzado.md
+Decisión de Rodolfo, 17/10/2026: agregar una opción avanzada para que el que regala use
+su
+propia billetera (hardware o software) como clave de recupero, en vez de la que genera la
+web.
+Solo para usuarios avanzados; se explica en el momento de elegirla.
+No cambia las reglas de docs/operacion.md : las refuerza. En este modo la web no genera
+ni ve
+nada que pueda mover los fondos del que regala.
+
+Qué es
+Cada regalo queda en una dirección multifirma 1-de-2 (P2WSH): se gasta con la clave del
+regalo (quien recibe) o con la clave del que regala (su billetera). Sin timelock: el que
+regala puede recuperar en cualquier momento antes del reclamo, igual que hoy (razón 13).
+Descriptor por regalo:
+wsh(sortedmulti(1, [huella/48'/0'/0'/2']xpub/0/i, <clave pública del regalo>))
+
+Flujo
+Configurar (una vez, en la cuenta): "¿Cómo querés recuperar tus regalos?" → Con
+esta web
+(passkey o 12 palabras, como hoy) o Con mi propia billetera (avanzado). En el avanzado:
+pega o escanea la xpub con origen (huella + ruta, preferentemente exportación multisig
+BIP48),
+la web muestra la primera dirección y el usuario la confirma en la pantalla de su
+dispositivo. Sin esa confirmación, el modo no se activa.
+Crear regalo: igual que hoy. Se deriva una clave hija nueva (índice i ) por regalo y se
+ofrece descargar el archivo de recupero (descriptor). Línea en el resumen:
+"Recuperable con
+
+tu billetera ·huella·".
+Ver: sin cambios. El panel se abre con passkey (solo identidad, no mueve fondos).
+Reclamar (quien recibe): sin cambios visibles. El navegador firma el input multisig con
+la
+clave del regalo.
+Recuperar: la web arma una PSBT, la exporta (archivo y QR), el usuario la firma en su
+billetera y la sube; la web la retransmite. Alternativa sin la web: abrir el descriptor en
+Sparrow (o similar) y recuperar desde ahí.
+Cambiar de modo: afecta solo a los regalos nuevos.
+
+Texto de la opción (es-AR)
+Se muestra al elegir el modo avanzado. Mismo tono que el resto de la web: sin tecnicismos
+en
+los títulos; los términos técnicos solo en "¿Es para mí?".
+Recuperar con mi propia billetera (avanzado)
+¿Qué es?
+Cada regalo es como una cajita con dos cerraduras, y se abre con cualquiera de las dos
+llaves.
+Una la tiene quien recibe el regalo. La otra, vos.
+En el modo común, tu llave te la damos nosotros (tu passkey o tus 12 palabras). En el modo
+avanzado usás la llave de tu propia billetera, y nosotros nunca la vemos ni la generamos.
+Solo
+nos pasás tu clave pública: sirve para armar la cerradura, no para abrirla.
+¿Por qué no veo el regalo en mi billetera?
+Porque tu billetera guarda tu llave, no la cajita. La cajita está en una dirección nueva, armada
+con las dos cerraduras, y tu billetera no sabe que existe. Tus regalos los ves en tu panel. Si
+alguno no lo reclaman y lo recuperás, ahí sí aparece en tu billetera, como cualquier bitcoin
+que
+te llega.
+¿Qué tengo que guardar?
+El archivo de recupero de cada regalo. Es el plano de la cajita: le dice a tu billetera dónde
+está y cómo abrirla. Sin ese archivo, tu llave sola no la encuentra. Quien recibe el regalo lo
+puede abrir igual.
+Antes de activarlo
+Te vamos a mostrar una dirección de prueba. Fijate en la pantalla de tu dispositivo que sea
+
+la
+misma. Si no coincide, no sigas.
+¿Es para mí?
+Si ya usás una billetera de hardware y te suenan palabras como multifirma, xpub o PSBT, sí.
+Si
+no, quedate con la opción común: es la indicada para la mayoría.
+
+Texto general: ¿dónde está mi llave? (es-AR)
+Misma analogía de la cajita con dos cerraduras, para usar en el modo común y en las
+páginas
+"Cómo funciona" / "Sin custodia". Así el modo avanzado se entiende como "lo mismo, pero
+tu llave
+la traés vos".
+Cada regalo es una cajita con dos cerraduras
+Se abre con cualquiera de las dos llaves: una es de quien lo recibe, la otra es tuya. Nosotros
+no
+tenemos ninguna de las dos.
+¿Por qué no veo mi llave?
+Porque no hace falta que la veas. Tu llave está en una caja fuerte que solo se abre con tu
+cara o
+tu huella, y eso nunca sale de tu celular. Nosotros guardamos la caja cerrada y no la
+podemos
+abrir.
+¿Y las 12 palabras?
+Son tu llave escrita en papel, por si algún día no tenés tu celular a mano. Guardalas como
+guardarías la llave de tu casa: en un lugar seguro, sin foto y sin compartirlas.
+¿Y si pierdo el celular?
+Si tu passkey está sincronizada (iCloud, Google), tu llave te sigue en tu celular nuevo. Si no,
+la recuperás con tus 12 palabras. Si no tenés ninguna de las dos, no vas a poder recuperar
+los
+regalos que no se reclamaron, pero quien los recibe los puede abrir igual.
+¿Y la llave de quien recibe?
+Viene partida en dos: una mitad es el link y la otra son las 4 palabras. Con una sola mitad no
+se abre nada. Si no se lo das en mano, mandá cada mitad por un camino distinto.
+Resuelto: en etapa-4-regalar la clave maestra (12 palabras) se guarda cifrada en la
+
+bóveda
+con la PRF de la passkey ( apps/web/src/account.ts ), así que el texto usa la imagen de la
+caja
+fuerte.
+
+Reglas de implementación
+1. La xpub nunca se guarda en el servidor (con ella se ven todas las direcciones del
+usuario).
+Va en la bóveda cifrada con la PRF de la passkey, junto con el índice i .
+2. El servidor guarda por regalo solo dirección y descriptor (claves públicas).
+3. Nunca pedir una clave privada ni una semilla generada afuera. Se trae lo público y
+se
+firma afuera.
+4. Sin Trezor Connect ni WebUSB de terceros (CSP, regla 7): firma por PSBT en archivo o
+QR.
+5. packages/core/src/sweep.ts : aceptar inputs P2WSH 1-de-2 manteniendo una sola
+salida
+(regla 3). Test de regresión para este tipo de input.
+6. El archivo de recupero se ofrece en cada regalo, no solo al configurar.
+
+ABIERTO (consultar con Rodolfo)
+Cuándo entra: sugerencia, después del lanzamiento.
+Aceptar también xpub single-sig (BIP84) o exigir BIP48.
+Privacidad: en el gasto se ve que era 1-de-2 y el patrón identifica a la plataforma.
+Taproot
+(clave del que recibe como interna + hoja del que regala) lo resuelve; queda como
+mejora futura.
+Versiones EN / PT / IT del texto.
+Mención en la página "Sin custodia".
+
+

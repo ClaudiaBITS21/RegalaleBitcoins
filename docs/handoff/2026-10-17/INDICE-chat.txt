@@ -1,0 +1,153 @@
+Handoff 17/10/2026 (chat con Rodolfo): índice de
+todo lo del día
+Ruta sugerida en el repo: docs/handoff/2026-10-17/ (este archivo como INDICE-chat.md ).
+Complementa el HANDOFF.md de operación sin custodia del mismo día.
+
+
+     Archivo         Qué es                                            Estado
+
+                                                                       Exploración;
+     este archivo,   Entropía y verificabilidad de las claves que
+                                                                       decisiones
+     sección 1       genera la web
+                                                                       ABIERTAS
+
+     recupero-       Modo avanzado: recupero con la xpub de tu         Decidido; cuándo
+     avanzado.md     propia billetera (1-de-2) + textos                entra, ABIERTO
+
+     este archivo,
+                     Tarjeta imprimible: formato, contratapa, frases   Decidido
+     sección 3
+
+     mensajes-       Mensajes y remates de ejemplo por ocasión y       Decidido; revisar
+     ejemplo.md      para listas                                       textos
+
+     bug-login-                                                        Prioridad: antes de
+                     Bug: passkey huérfana impide volver a entrar
+     passkey.md                                                        difundir
+
+
+Orden sugerido para Code: 1) bug de login, 2) tarjeta y mensajes, 3) recupero avanzado y
+verificabilidad (post-lanzamiento).
+
+
+
+
+1. Entropía y verificabilidad
+Pregunta de Rodolfo: a alguien le puede preocupar, con razón, la entropía con la que la
+web
+genera las claves. ¿Se puede ofrecer "construí tu propia entropía" (dados o monedas) con
+el
+checksum calculado en su navegador? ¿Y combinar con una llave de su Trezor u otro
+dispositivo?
+
+
+Qué claves genera la web hoy
+   Clave maestra de quien regala (12 palabras, en la bóveda cifrada): larga vida, controla
+   el
+   recupero. Es donde la entropía más importa.
+   Semilla del regalo + 4 palabras: efímera, vive hasta el reclamo. Quien recibe barre a su
+   propia billetera, así que su clave de largo plazo nunca la genera la web.
+
+
+Análisis
+   crypto.getRandomValues del navegador es buena entropía. El riesgo real no es un RNG
+   débil
+   sino JavaScript comprometido (regla 7 de operacion.md ): un JS malicioso puede
+   ignorar
+   los dados, mezclarlos con algo conocido o mandarlos afuera. "Que pase en su página y
+   no en la
+   nuestra" no es del todo cierto: el JS lo servimos nosotros.
+   Por eso los dados solos agregan poco. Lo que sí agrega es verificabilidad: que el
+   usuario
+   pueda comprobar con una herramienta independiente que la web no hizo trampa.
+
+
+Propuestas
+1. HTML offline verificable (como bitaddress.org, que Rodolfo usó en el RegalaleBitcoins
+   original): un archivo descargable, con hash publicado, que genera claves sin conexión.
+   Junto
+   con el build reproducible ya previsto en la regla 7, es lo que más confianza da y sirve a
+   todos los usuarios. Mencionarlo en la página "Sin custodia".
+2. Entropía con dados o monedas (opcional, modo avanzado): 50 tiradas de dado (o
+   128 de
+   moneda) para 12 palabras; 99 tiradas para 24; unas 17 para las 4 palabras del regalo. La
+   web
+   calcula el checksum BIP39. La persona puede verificar la frase y la primera dirección en
+   otra
+   herramienta (Coldcard, SeedSigner, BIP39 tool offline). Advertir sobre dados sesgados.
+3. "Traé lo público, firmá afuera": la web nunca acepta una clave privada ni una semilla
+   generada en otro lado (tipear en una web la semilla de un Trezor anula la razón de
+   tenerlo).
+   Sí acepta claves públicas (xpub). De acá sale el modo avanzado: ver recupero-
+   avanzado.md .
+
+
+Recomendación (no decidida)
+Verificabilidad (1) como compromiso de "Sin custodia". Recupero con xpub como modo
+avanzado
+post-lanzamiento (decidido). Dados (2), como mucho, una opción dentro del modo
+avanzado.
+
+ABIERTO (Rodolfo): si se hace el HTML offline y cuándo; si se ofrecen dados.
+
+
+
+
+2. Recupero avanzado con xpub
+Todo en recupero-avanzado.md . Resumen de lo decidido: opción avanzada en la
+configuración de
+la cuenta; el regalo queda en una multifirma 1-de-2 P2WSH (clave del regalo o clave de
+quien regala), sin timelock (Rodolfo no lo quiere; la razón 13 sigue valiendo); la xpub va en
+la bóveda, nunca en el servidor; confirmación de dirección en el dispositivo; archivo de
+recupero
+(descriptor) por regalo; recupero por PSBT o desde Sparrow. Incluye la explicación para el
+usuario con la analogía de la cajita con dos cerraduras, que se usa también para el modo
+común.
+
+
+
+
+3. Tarjeta imprimible: decisiones
+Diseño de referencia (canvas): https://claude.ai/artifact/Pz3yMAs6bgGs5QLhxDg1Cc
+
+   Formato (reemplaza el de la spec v2): 1 tarjeta por A4, impresa de un solo lado,
+   doblada en cuatro, queda en A6 (10,5 × 14,8 cm). Sin cortar. Mitad de arriba girada
+   180°:
+   arriba izq. = tapa, arriba der. = contratapa; abajo izq. = interior izquierdo, abajo der. =
+   interior derecho. Se dobla primero por la mitad horizontal hacia atrás (impreso hacia
+   afuera)
+   y después por la vertical. Contenido a ≥10 mm del borde (impresoras hogareñas). Se
+   elimina "2
+   tarjetas A5 por hoja". La versión A5 doble faz se dibujó y quedó descartada.
+   Contratapa (nueva): es el cierre de quien regala, no un slogan de marca. Arriba,
+   imagen
+   chica (moneda con confeti); al medio, frase de remate grande; abajo, chico, "Hecho
+   con
+   RegalaleBitcoins.com". Artboard "Contratapa con remate (nueva)" en el canvas.
+   Remate: viene uno de ejemplo al azar según la ocasión; "Otra idea" lo cambia; puede
+      escribir uno propio de hasta 60 caracteres, sin links ni dominios (anti-phishing).
+      Mensaje interior: viene cargado con un ejemplo real al azar según la ocasión (no
+      placeholder); se edita en el lugar, todo o una parte; "Otra idea" con deshacer; 280
+      caracteres. En listas, mazo por lista para que los invitados no repitan. Detalle y textos en
+      mensajes-ejemplo.md .
+
+      Microcopy del recuadro de las 4 palabras: sin cambios.
+      "Si no se lo das en mano, mandá cada mitad (link y palabras) por un camino distinto"
+      (coherente
+      con el commit ad60456).
+
+
+
+
+4. Bug de login (prioridad)
+Todo en bug-login-passkey.md . Causa probable encontrada en el código: "crear cuenta"
+con un mail
+existente crea la passkey en el navegador antes de que el servidor rechace el mail, y queda
+una
+passkey huérfana que el iPhone ofrece al entrar. Incluye arreglos, correcciones de texto de
+esa
+pantalla y el criterio sobre las 12 palabras: mostrar las mismas de la cuenta, nunca
+generar
+una clave nueva; primero se arregla el acceso.
+

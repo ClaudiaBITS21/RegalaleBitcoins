@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "lib": ["es2022", "es2023.intl", "dom", "dom.iterable"],
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "test", "vite.config.ts"]
+}

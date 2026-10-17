@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "regalalebitcoins"
+  },
+  "targets": {
+    "regalalebitcoins": {
+      "hosting": {
+        "mainnet": [
+          "regalalebitcoins"
+        ],
+        "signet": [
+          "regalalebitcoins-signet"
+        ]
+      }
+    }
+  }
+}

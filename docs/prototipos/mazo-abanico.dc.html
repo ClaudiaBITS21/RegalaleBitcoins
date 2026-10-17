@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>21 razones — mazo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#11151D}
+.mz-card{position:absolute;left:80px;top:40px;width:230px;height:320px;perspective:1200px;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;transform-origin:50% 90%;transition:transform .55s cubic-bezier(.2,.75,.25,1),opacity .45s ease;border-radius:22px}
+.mz-card.dragging{transition:none}
+.mz-card:focus-visible{outline:3px solid #F2B544;outline-offset:4px}
+.mz-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.mz-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:22px;box-sizing:border-box;box-shadow:0 14px 32px rgba(0,0,0,.5)}
+.mz-back{transform:rotateY(180deg)}
+.mz-coin{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFE29A 0%,#F2B544 38%,#C98A1B 75%,#9A6510 100%);box-shadow:inset 0 0 0 8px rgba(255,255,255,.18),inset 0 -8px 16px rgba(0,0,0,.25),0 14px 30px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.mz-nav{width:52px;height:52px;border-radius:50%;border:1px solid #3A4352;background:transparent;color:#EDEFF3;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mz-nav:disabled{opacity:.3;cursor:default}
+@media (prefers-reduced-motion:reduce){.mz-card,.mz-inner{transition:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 32px 20px 24px; background: #11151D; color: #EDEFF3; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; align-items: center; gap: 22px">
+<div style="display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center">
+<p style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #F2B544">Solo hay 21 millones de bitcoin</p>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1">21 razones para regalar Bitcoin</h1>
+<p style="margin: 0; font-size: 14px; color: #AEB5C2">Deslizá o tocá una carta del costado: la que llega al centro se da vuelta sola.</p>
+</div>
+
+<div onTouchStart="{{touchStart}}" onTouchMove="{{touchMove}}" onTouchEnd="{{touchEnd}}" style="position: relative; width: 390px; height: 400px; margin: 0 -20px; overflow: hidden; touch-action: pan-y">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="21">
+<button class="{{c.cls}}" onClick="{{c.tap}}" tabindex="{{c.tab}}" aria-hidden="{{c.hidden}}" aria-label="{{c.label}}" style="transform: {{c.pos}}; opacity: {{c.op}}; z-index: {{c.z}}; pointer-events: {{c.pe}}">
+<div class="mz-inner" style="transform: {{c.rot}}">
+<div class="mz-face" style="background: #1A202B; border: 1px solid #2E3746; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px">
+<div class="mz-coin" aria-hidden="true">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 46px; line-height: 1; color: #5A3A05">{{c.n}}</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1; color: #6B4508; margin-top: 4px">₿</span>
+</div>
+<span style="font-size: 13px; color: #8A93A3; letter-spacing: .08em">{{c.n}} / 21</span>
+</div>
+<div class="mz-face mz-back" style="background: #F6EFE1; color: #1B1F27; padding: 22px 20px; display: flex; flex-direction: column; justify-content: center; gap: 10px; overflow: auto">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; color: #9A6510">{{c.n}} / 21</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">{{c.t}}</span>
+<span style="font-size: 15px; line-height: 1.4; color: #424957">{{c.d}}</span>
+</div>
+</div>
+</button>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: center; gap: 22px">
+<button class="mz-nav" onClick="{{prev}}" disabled="{{atStart}}" aria-label="Razón anterior">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+</button>
+<span style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; color: #CDD2DB; min-width: 120px; text-align: center">Diste vuelta <strong style="color: #F2B544">{{count}}</strong> de 21</span>
+<button class="mz-nav" onClick="{{next}}" disabled="{{atEnd}}" aria-label="Razón siguiente">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+</button>
+</div>
+
+<div style="width: 300px; height: 6px; background: #2A3240; border-radius: 3px; overflow: hidden">
+<div style="height: 100%; background: #F2B544; border-radius: 3px; transition: width .4s; width: {{pct}}"></div>
+</div>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<a href="#" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 28px; border-radius: 12px; background: #F2B544; color: #1B1F27; text-decoration: none; font-weight: 700; font-size: 17px">¡Las 21! ¿Regalamos?</a>
+</sc-if>
+<a href="Main.dc.html" style="margin-top: auto; font-size: 14px; color: #F2B544">← Prototipo: volver a la grilla</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { i: 0, flipped: {}, seen: {}, drag: 0, dragging: false };
+    this.tx = null;
+    this.timer = null;
+  }
+  componentDidMount() { this.reveal(0); }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); }
+  reveal(j) {
+    var self = this;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(function () {
+      var nf = Object.assign({}, self.state.flipped); nf[j] = true;
+      var ns = Object.assign({}, self.state.seen); ns[j] = true;
+      self.setState({ flipped: nf, seen: ns });
+    }, 500);
+  }
+  go(d) {
+    var j = Math.max(0, Math.min(20, this.state.i + d));
+    if (j === this.state.i) { this.setState({ drag: 0, dragging: false }); return; }
+    var nf = Object.assign({}, this.state.flipped); nf[j] = false;
+    this.setState({ i: j, flipped: nf, drag: 0, dragging: false });
+    this.reveal(j);
+  }
+  renderVals() {
+    var R = [
+      ["Es original.", "Seguro que nadie más en la mesa regala lo mismo."],
+      ["No hay que adivinar el talle, el color ni el gusto.", "Ni guardar el ticket de cambio."],
+      ["No ocupa lugar, no se rompe, no se vence.", "Entra en el celular o en un papelito, y dura más que cualquier juguete."],
+      ["Se ajusta a tu bolsillo.", "No hace falta regalar un bitcoin entero: se divide en 100 millones de partes."],
+      ["Sirve para cualquier edad.", "Desde un bautismo hasta los 90 años del abuelo."],
+      ["Es el mismo regalo para todos, pero cada uno lo vive distinto.", "A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar."],
+      ["Va a disparar una linda charla, seguro.", "Alguien pregunta qué es, y la sobremesa ya está armada."],
+      ["Une generaciones.", "El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más."],
+      ["Llega aunque estés lejos.", "Sin envío, sin aduana y sin cambio de moneda."],
+      ["Se arma en dos minutos.", "Desde el celular, también la noche anterior, y sin que se note."],
+      ["No hace falta una computadora para recibirlo.", "Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera."],
+      ["Se puede regalar entre varios.", "Cada uno pone lo que puede y le llega todo junto."],
+      ["Si no lo quiere, vos lo recuperás o él lo canjea por dinero.", "No hay regalo que quede tirado."],
+      ["Es de quien lo recibe, de verdad.", "Queda en su propia billetera: nadie se lo puede congelar ni quitar."],
+      ["Lleva un mensaje.", "Una invitación a pensar en el ahorro y en el largo plazo."],
+      ["Es personal.", "Tu mensaje, su nombre y una imagen hecha para la ocasión."],
+      ["Viene con instrucciones.", "Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas."],
+      ["Sabés si lo reclamó.", "Ves cuándo lo hizo, sin tener que preguntar."],
+      ["Funciona desde 2009 y nunca cerró.", "Ni un feriado, ni un domingo, ni un 25 de diciembre."],
+      ["Se lo podés regalar a alguien que todavía no nació.", "Ideal para el baby shower."],
+      ["Nunca va a haber más de 21 millones.", "Le estás regalando un pedacito de algo que nadie puede fabricar."]
+    ];
+
+    var self = this;
+    var st = this.state;
+    var i = st.i;
+    var dx = st.drag;
+    var k = Math.max(-1, Math.min(1, dx / 160));
+    var count = 0;
+    for (var s in st.seen) { if (st.seen[s]) count++; }
+    var cards = R.map(function (r, j) {
+      var off = j - i;
+      var pos, op = 1, z = 0, pe = "none";
+      var L = "translateX(-82px) rotate(-14deg) scale(.9)";
+      var Rt = "translateX(82px) rotate(14deg) scale(.9)";
+      if (off === 0) {
+        pos = "translateX(" + dx + "px) rotate(" + (dx / 14) + "deg)";
+        z = 30; pe = "auto";
+      } else if (off === 1) {
+        var p = Math.max(0, -k);
+        pos = "translateX(" + (82 - 82 * p) + "px) rotate(" + (14 - 14 * p) + "deg) scale(" + (0.9 + 0.1 * p) + ")";
+        z = 20; pe = "auto";
+      } else if (off === -1) {
+        var q = Math.max(0, k);
+        pos = "translateX(" + (-82 + 82 * q) + "px) rotate(" + (-14 + 14 * q) + "deg) scale(" + (0.9 + 0.1 * q) + ")";
+        z = 20; pe = "auto";
+      } else if (off < -1) {
+        pos = "translateX(-150px) rotate(-22deg) scale(.75)";
+        op = 0;
+      } else {
+        pos = "translateX(150px) rotate(22deg) scale(.75)";
+        op = 0;
+      }
+      var on = off === 0 && !!st.flipped[j];
+      return {
+        n: j + 1, t: r[0], d: r[1],
+        pos: pos, op: op, z: z, pe: pe,
+        cls: "mz-card" + (st.dragging && off >= -1 && off <= 1 ? " dragging" : ""),
+        tab: off >= -1 && off <= 1 ? "0" : "-1",
+        hidden: off >= -1 && off <= 1 ? "false" : "true",
+        rot: on ? "rotateY(180deg)" : "rotateY(0deg)",
+        label: off === 0 ? ("Razón " + (j + 1) + " de 21" + (on ? ": " + r[0] + " " + r[1] : ". Tocá para darla vuelta.")) : ("Ir a la razón " + (j + 1)),
+        tap: function () {
+          var o = j - self.state.i;
+          if (o === 0) {
+            if (!self.state.seen[j]) { self.reveal(j); return; }
+            var nf = Object.assign({}, self.state.flipped); nf[j] = !nf[j];
+            self.setState({ flipped: nf });
+          } else { self.go(o); }
+        }
+      };
+    });
+    return {
+      cards: cards,
+      atStart: i === 0,
+      atEnd: i === 20,
+      count: count,
+      pct: Math.round(count / 21 * 100) + "%",
+      done: count === 21,
+      prev: function () { self.go(-1); },
+      next: function () { self.go(1); },
+      touchStart: function (e) { self.tx = e.touches && e.touches[0] ? e.touches[0].clientX : null; self.setState({ dragging: true }); },
+      touchMove: function (e) {
+        if (self.tx === null || !e.touches || !e.touches[0]) return;
+        self.setState({ drag: e.touches[0].clientX - self.tx });
+      },
+      touchEnd: function () {
+        var d = self.state.drag;
+        self.tx = null;
+        if (d < -60) self.go(1); else if (d > 60) self.go(-1); else self.setState({ drag: 0, dragging: false });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
