@@ -1,5 +1,6 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
+import { WordsList } from '../give/WordsList.tsx';
 import { accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
@@ -195,11 +196,10 @@ export function PanelPage() {
                       <p class="mono enlace-regalo" translate={false}>
                         {`${window.location.origin}/r/${g.id}#${encodeGiftFragment(derived.entropy)}`}
                       </p>
-                      <ol class="palabras-regalo" translate={false}>
-                        {derived.passphraseWords.map((w, i) => (
-                          <li key={i}>{w}</li>
-                        ))}
-                      </ol>
+                      <WordsList words={derived.passphraseWords} />
+                      <small class="texto-suave">
+                        <strong>{t('regalar.mandar.orden')}</strong>
+                      </small>
                       <small class="texto-suave">{t('regalar.mandar.palabrasTexto')}</small>
                     </div>
                   )}

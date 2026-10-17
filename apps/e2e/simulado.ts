@@ -266,7 +266,7 @@ try {
   await page.getByRole('heading', { name: '¡Pago recibido! Mandá el regalo' }).waitFor({ timeout: 15_000 });
   await page.getByText('La red está confirmando el pago').waitFor();
   const giftLink = await page.locator('.enlace-regalo').innerText();
-  const giftWords = await page.locator('.palabras-regalo li').allInnerTexts();
+  const giftWords = await page.locator('.palabras-regalo li strong').allInnerTexts();
   if (giftWords.join(' ') !== expected.passphraseWords.join(' ')) fail('las palabras mostradas no son las del regalo');
   if (!giftLink.includes('#1')) fail('el link no lleva la semilla en el fragmento');
   await page.getByRole('link', { name: 'WhatsApp' }).first().evaluate((a) => a.removeAttribute('target'));
@@ -364,7 +364,7 @@ try {
   if (stored?.tipo !== 'image/webp' || stored.estilo !== 'propia') fail(`imagen propia mal guardada: ${JSON.stringify(stored)}`);
   await shot2(giver, 'r6-mandar-propia');
   const lupeLink = await giver.locator('.enlace-regalo').innerText();
-  const lupeWords = await giver.locator('.palabras-regalo li').allInnerTexts();
+  const lupeWords = await giver.locator('.palabras-regalo li strong').allInnerTexts();
   const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
   if (account === undefined || account.indice !== 0 || account.email !== 'lupe.e2e@example.com' || !String(account.boveda).startsWith('v1.')) {
     fail(`el regalo no quedó en la cuenta con su bóveda: ${JSON.stringify(account)}`);
@@ -378,7 +378,7 @@ try {
   await giver.getByRole('button', { name: 'Ver link y palabras' }).click();
   await giver.locator('.regalo-secretos').waitFor({ timeout: 15_000 });
   if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('el panel no reconstruyó el mismo link');
-  if ((await giver.locator('.regalo-secretos .palabras-regalo li').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
+  if ((await giver.locator('.regalo-secretos .palabras-regalo li strong').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   await shot2(giver, 'p1-panel');
