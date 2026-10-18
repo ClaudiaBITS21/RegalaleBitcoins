@@ -55,40 +55,45 @@ function Verify() {
     <article class="historia custodia-bloque custodia-verificar">
       <h2 id="custodia-verificar">{t('custodia.verificar.titulo')}</h2>
       <p>{t('custodia.verificar.p1')}</p>
-      {v !== null && (
-        <dl class="custodia-huella">
-          <dt>{t('custodia.verificar.huella')}</dt>
-          <dd>
-            <code translate={false}>{v.huella}</code>
-          </dd>
-          <dt>{t('custodia.verificar.commit')}</dt>
-          <dd>
-            <a href={`${REPO}/commit/${v.commit}`} target="_blank" rel="noopener noreferrer">
-              <code translate={false}>{v.commit.slice(0, 12)}</code>
+      {/* Lo largo (la huella y los pasos) va plegado para no cortar la lectura. */}
+      <details class="desplegable">
+        <summary>{t('custodia.verificar.mas')}</summary>
+        {v !== null && <p>{t('custodia.verificar.esta')}</p>}
+        {v !== null && (
+          <dl class="custodia-huella">
+            <dt>{t('custodia.verificar.huella')}</dt>
+            <dd>
+              <code translate={false}>{v.huella}</code>
+            </dd>
+            <dt>{t('custodia.verificar.commit')}</dt>
+            <dd>
+              <a href={`${REPO}/commit/${v.commit}`} target="_blank" rel="noopener noreferrer">
+                <code translate={false}>{v.commit.slice(0, 12)}</code>
+              </a>
+            </dd>
+          </dl>
+        )}
+        <p>{t('custodia.verificar.p2')}</p>
+        <ol>
+          <li>
+            {t('custodia.verificar.paso1')}{' '}
+            <a href={`${REPO}/blob/main/docs/versiones.md`} target="_blank" rel="noopener noreferrer">
+              docs/versiones.md
             </a>
-          </dd>
-        </dl>
-      )}
-      <p>{t('custodia.verificar.p2')}</p>
-      <ol>
-        <li>
-          {t('custodia.verificar.paso1')}{' '}
-          <a href={`${REPO}/blob/main/docs/versiones.md`} target="_blank" rel="noopener noreferrer">
-            docs/versiones.md
-          </a>
-        </li>
-        <li>{t('custodia.verificar.paso2')}</li>
-        <li>
-          {t('custodia.verificar.paso3')}
-          <pre translate={false}>
-            <code>{`git clone ${REPO}
+          </li>
+          <li>{t('custodia.verificar.paso2')}</li>
+          <li>
+            {t('custodia.verificar.paso3')}
+            <pre translate={false}>
+              <code>{`git clone ${REPO}
 cd RegalaleBitcoins && git checkout ${v?.commit.slice(0, 12) ?? '<commit>'}
 pnpm install --frozen-lockfile
 pnpm build:mainnet`}</code>
-          </pre>
-        </li>
-      </ol>
-      <p class="texto-suave">{t('custodia.verificar.limite')}</p>
+            </pre>
+          </li>
+        </ol>
+        <p class="texto-suave">{t('custodia.verificar.limite')}</p>
+      </details>
 
       <h3>{t('custodia.offline.titulo')}</h3>
       <p>{t('custodia.offline.p1')}</p>
@@ -101,18 +106,21 @@ pnpm build:mainnet`}</code>
           {t('custodia.offline.bajar')}
         </a>
       </p>
-      {v?.herramienta != null && (
-        <p>
-          {t('custodia.offline.huella')} <code translate={false}>{v.herramienta}</code>
-        </p>
-      )}
-      <p class="texto-suave">{t('custodia.offline.comprobar')}</p>
-      <pre translate={false}>
-        <code>{`sha256sum regalalebitcoin-sin-conexion.html        # Linux
+      <details class="desplegable">
+        <summary>{t('custodia.offline.mas')}</summary>
+        {v?.herramienta != null && (
+          <p>
+            {t('custodia.offline.huella')} <code translate={false}>{v.herramienta}</code>
+          </p>
+        )}
+        <p class="texto-suave">{t('custodia.offline.comprobar')}</p>
+        <pre translate={false}>
+          <code>{`sha256sum regalalebitcoin-sin-conexion.html        # Linux
 shasum -a 256 regalalebitcoin-sin-conexion.html    # Mac
 certutil -hashfile regalalebitcoin-sin-conexion.html SHA256   # Windows`}</code>
-      </pre>
-      <p class="texto-suave">{t('custodia.offline.usar')}</p>
+        </pre>
+        <p class="texto-suave">{t('custodia.offline.usar')}</p>
+      </details>
     </article>
   );
 }
