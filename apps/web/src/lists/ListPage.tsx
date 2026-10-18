@@ -24,7 +24,7 @@ const POLL_MS = 5_000;
 const LIST_PRESETS_USD = [50, 100, 150] as const;
 
 export function ListPage({ id }: { id: string }) {
-  const { t, lang } = useI18n();
+  const { t, lang, trato } = useI18n();
   const { network, ceilingUsd } = useNetwork();
   const [list, setList] = useState<PublicList | null>(null);
   const [missing, setMissing] = useState(false);
@@ -51,7 +51,7 @@ export function ListPage({ id }: { id: string }) {
   const [example, setExample] = useState<string | null>(null);
   useEffect(() => {
     if (list === null || !list.abierta) return;
-    void Promise.all([loadExamples(lang), listApi.turn(id)])
+    void Promise.all([loadExamples(lang, trato), listApi.turn(id)])
       .then(([ex, { turno }]) => {
         const set = ex[list.varios ? 'listas_varios' : 'listas_uno'] as { mensajes?: readonly string[] } | undefined;
         const pick = deckPick(set?.mensajes ?? [], id, turno);
@@ -61,7 +61,7 @@ export function ListPage({ id }: { id: string }) {
         setMessage((m) => (m === '' ? filled : m));
       })
       .catch(() => undefined);
-  }, [list?.id, lang]);
+  }, [list?.id, lang, trato]);
 
   // Mientras espera el pago, consulta el estado de su propio aporte.
   useEffect(() => {

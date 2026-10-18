@@ -551,6 +551,19 @@ export const es = {
   'lista.estado.recibido': 'Recibido',
   'lista.estado.enCamino': 'En camino',
   'lista.estado.esperando': 'Esperando',
+
+  'instalar.boton': '📲 Agregar a mi inicio',
+  'instalar.titulo': 'Tenelo a mano en tu celu',
+  'instalar.bajada': 'Queda un ícono en tu pantalla de inicio, como el de una app, que abre regalalebitcoin.com.',
+  'instalar.ios.1': 'Tocá Compartir, en la barra de abajo (en iPad, arriba). Si no lo ves, tocá primero «⋯».',
+  'instalar.ios.2': 'Bajá y elegí «Agregar a pantalla de inicio».',
+  'instalar.android.1': 'Tocá el menú ⋮ del navegador, arriba a la derecha.',
+  'instalar.android.2': 'Elegí «Instalar app» o «Agregar a la pantalla principal».',
+  'instalar.final': 'Confirmá con «Agregar». Listo: el ícono queda en tu inicio.',
+  'instalar.iosotro': 'Desde este navegador quizás no aparezca la opción. Si pasa eso, copiá el link, abrilo en Safari y seguí estos pasos.',
+  'instalar.copiar': 'Copiar el link',
+  'instalar.copiado': '¡Copiado! Pegalo en Safari',
+  'instalar.listo': 'Entendido',
 } as const;
 
 export type Key = keyof typeof es;

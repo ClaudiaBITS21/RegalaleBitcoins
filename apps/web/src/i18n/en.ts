@@ -552,4 +552,17 @@ export const en: Dict = {
   'lista.estado.recibido': 'Received',
   'lista.estado.enCamino': 'On its way',
   'lista.estado.esperando': 'Waiting',
+
+  'instalar.boton': '📲 Add to my home screen',
+  'instalar.titulo': 'Keep it handy on your phone',
+  'instalar.bajada': 'You get an icon on your home screen, like an app, that opens regalalebitcoin.com.',
+  'instalar.ios.1': 'Tap Share, in the bottom bar (on iPad, at the top). If you don’t see it, tap “⋯” first.',
+  'instalar.ios.2': 'Scroll down and choose “Add to Home Screen”.',
+  'instalar.android.1': 'Tap the browser’s ⋮ menu, top right.',
+  'instalar.android.2': 'Choose “Install app” or “Add to Home screen”.',
+  'instalar.final': 'Confirm with “Add”. Done: the icon is on your home screen.',
+  'instalar.iosotro': 'This browser may not offer the option. If so, copy the link, open it in Safari and follow these steps.',
+  'instalar.copiar': 'Copy the link',
+  'instalar.copiado': 'Copied! Paste it in Safari',
+  'instalar.listo': 'Got it',
 };

@@ -11,6 +11,7 @@ import {
   openGiftWallet,
   passphraseFromWords,
 } from '@regalale/core';
+import { browserTrato } from '../i18n/trato.ts';
 
 // Herramienta sin conexión (un solo archivo HTML, sin servidor ni internet). Hace lo mismo que la
 // sección 6 de docs/derivacion.md: con el link y las 4 palabras da las 12 palabras y la contraseña
@@ -43,7 +44,7 @@ const TEXTS: Record<'es' | 'pt' | 'en' | 'it', T> = {
     errLink: 'El link no es válido o está incompleto.',
     errPalabra: 'Alguna palabra no está en la lista de ese idioma.',
     errCodigo: 'El código de recuperación no es válido: revisá las 12 palabras.',
-    huella: 'Huella de este archivo: compárala con la publicada en regalalebitcoins.com/sin-custodia y en GitHub.',
+    huella: 'Huella de este archivo: compárala con la publicada en regalalebitcoin.com/sin-custodia y en GitHub.',
   },
   pt: {
     titulo: 'Ferramenta offline',
@@ -69,7 +70,7 @@ const TEXTS: Record<'es' | 'pt' | 'en' | 'it', T> = {
     errLink: 'O link não é válido ou está incompleto.',
     errPalabra: 'Alguma palavra não está na lista desse idioma.',
     errCodigo: 'O código de recuperação não é válido: revise as 12 palavras.',
-    huella: 'Impressão digital deste arquivo: compare com a publicada em regalalebitcoins.com/sin-custodia e no GitHub.',
+    huella: 'Impressão digital deste arquivo: compare com a publicada em regalalebitcoin.com/sin-custodia e no GitHub.',
   },
   en: {
     titulo: 'Offline tool',
@@ -95,7 +96,7 @@ const TEXTS: Record<'es' | 'pt' | 'en' | 'it', T> = {
     errLink: 'The link is invalid or incomplete.',
     errPalabra: 'A word isn’t in that language’s list.',
     errCodigo: 'The recovery code is invalid: check the 12 words.',
-    huella: 'This file’s fingerprint: compare it with the one published at regalalebitcoins.com/sin-custodia and on GitHub.',
+    huella: 'This file’s fingerprint: compare it with the one published at regalalebitcoin.com/sin-custodia and on GitHub.',
   },
   it: {
     titulo: 'Strumento offline',
@@ -121,13 +122,24 @@ const TEXTS: Record<'es' | 'pt' | 'en' | 'it', T> = {
     errLink: 'Il link non è valido o è incompleto.',
     errPalabra: 'Una parola non è nella lista di quella lingua.',
     errCodigo: 'Il codice di recupero non è valido: controlla le 12 parole.',
-    huella: 'Impronta di questo file: confrontala con quella pubblicata su regalalebitcoins.com/sin-custodia e su GitHub.',
+    huella: 'Impronta di questo file: confrontala con quella pubblicata su regalalebitcoin.com/sin-custodia e su GitHub.',
   },
 };
+/** Castellano con tú (docs: CLAUDE.md, "vos y tú"): solo lo que cambia respecto del voseo. */
+const TU: T = {
+  intro: 'Abre un regalo o recupera los tuyos sin depender de la web. Desconecta internet antes de escribir palabras: esta página no necesita red.',
+  enLinea: 'Tienes internet conectado. Para más seguridad, desconéctalo antes de escribir palabras.',
+  resultado: 'Impórtalo en Sparrow o Electrum: elige "importar semilla BIP39", escribe las 12 palabras, activa "passphrase" y escribe la contraseña tal cual, y elige segwit nativo (BIP84).',
+  listaTexto: 'Busca estas direcciones en tu billetera o en un explorador (desde otro dispositivo). En la que tenga saldo, toca "ver" e importa esas 12 palabras con su contraseña.',
+  errCodigo: 'El código de recuperación no es válido: revisa las 12 palabras.',
+};
 const LANG_NAMES: Record<Lang, string> = { es: 'Español', pt: 'Português', en: 'English', it: 'Italiano' };
+type Ui = 'es' | 'es-tu' | 'pt' | 'en' | 'it';
+const UI_NAMES: Record<Ui, string> = { es: 'ES (vos)', 'es-tu': 'ES (tú)', pt: 'Português', en: 'English', it: 'Italiano' };
 
-let ui: keyof typeof TEXTS = ((navigator.language || 'es').slice(0, 2) as keyof typeof TEXTS) in TEXTS ? ((navigator.language || 'es').slice(0, 2) as keyof typeof TEXTS) : 'es';
-const t = (k: string) => TEXTS[ui][k] ?? k;
+const nav = (navigator.language || 'es').slice(0, 2);
+let ui: Ui = nav === 'es' ? (browserTrato() === 'tu' ? 'es-tu' : 'es') : nav === 'pt' || nav === 'en' || nav === 'it' ? nav : 'es';
+const t = (k: string) => (ui === 'es-tu' ? (TU[k] ?? TEXTS.es[k]) : TEXTS[ui][k]) ?? k;
 
 /** Crea un elemento con texto y atributos (sin innerHTML). */
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<Record<string, string>> = {}, ...children: Array<Node | string>): HTMLElementTagNameMap[K] {
@@ -147,17 +159,17 @@ const out = (label: string, value: string) => el('div', { class: 'dato' }, el('s
 function render(): void {
   const root = document.getElementById('app') as HTMLElement;
   root.replaceChildren();
-  document.documentElement.lang = ui;
-  const uiSel = select((['es', 'pt', 'en', 'it'] as const).map((l) => [l, LANG_NAMES[l]]), ui);
+  document.documentElement.lang = ui === 'es-tu' ? 'es' : ui;
+  const uiSel = select((Object.keys(UI_NAMES) as Ui[]).map((l) => [l, UI_NAMES[l]]), ui);
   uiSel.addEventListener('change', () => {
-    ui = uiSel.value as typeof ui;
+    ui = uiSel.value as Ui;
     render();
   });
   const netSel = select([['mainnet', 'Bitcoin (mainnet)'], ['signet', 'Signet (prueba)']], 'mainnet');
   const net = () => getNetwork(netSel.value as 'mainnet' | 'signet', { allowMainnet: true });
 
   root.append(
-    el('header', {}, el('h1', {}, `regalalebitcoins.com · ${t('titulo')}`), uiSel),
+    el('header', {}, el('h1', {}, `regalalebitcoin.com · ${t('titulo')}`), uiSel),
     el('p', {}, t('intro')),
   );
   if (navigator.onLine) root.append(el('p', { class: 'aviso' }, t('enLinea')));

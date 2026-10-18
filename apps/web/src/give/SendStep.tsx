@@ -40,12 +40,12 @@ function useSentBy(giftId: string, part: 'link' | 'palabras'): [Channel | null, 
  * van en el idioma de quien recibe. Todo sale del navegador: el servidor no ve el link.
  */
 export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceilingUsd: number; onAnother: () => void }) {
-  const { t, lang } = useI18n();
+  const { t, lang, trato } = useI18n();
   const { view } = useGiftStatus(gift.id);
   // El link y las palabras nunca por el mismo canal: quien vea los dos se queda con el regalo.
   const [linkBy, setLinkBy] = useSentBy(gift.id, 'link');
   const [wordsBy, setWordsBy] = useSentBy(gift.id, 'palabras');
-  const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars);
+  const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars, trato);
 
   const linkText = r('regalar.mandar.mensajeLink', { para: gift.to, link: gift.link });
   const wordsText = r('regalar.mandar.mensajePalabras', { palabras: numberedWords(gift.words) });

@@ -552,4 +552,17 @@ export const it: Dict = {
   'lista.estado.recibido': 'Ricevuto',
   'lista.estado.enCamino': 'In arrivo',
   'lista.estado.esperando': 'In attesa',
+
+  'instalar.boton': '📲 Aggiungi alla mia schermata Home',
+  'instalar.titulo': 'Tienilo a portata di mano',
+  'instalar.bajada': 'Sulla schermata Home compare un’icona, come quella di un’app, che apre regalalebitcoin.com.',
+  'instalar.ios.1': 'Tocca Condividi, nella barra in basso (su iPad, in alto). Se non lo vedi, tocca prima «⋯».',
+  'instalar.ios.2': 'Scorri e scegli «Aggiungi alla schermata Home».',
+  'instalar.android.1': 'Tocca il menu ⋮ del browser, in alto a destra.',
+  'instalar.android.2': 'Scegli «Installa app» o «Aggiungi a schermata Home».',
+  'instalar.final': 'Conferma con «Aggiungi». Fatto: l’icona è nella tua schermata Home.',
+  'instalar.iosotro': 'Questo browser potrebbe non avere l’opzione. In quel caso copia il link, aprilo in Safari e segui questi passi.',
+  'instalar.copiar': 'Copia il link',
+  'instalar.copiado': 'Copiato! Incollalo in Safari',
+  'instalar.listo': 'Capito',
 };

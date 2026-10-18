@@ -43,8 +43,8 @@ export function isUntouched(d: Pick<Draft, 'message' | 'example' | 'to'>): boole
 }
 
 export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; onChange: (p: Partial<Draft>) => void; onNext: () => void }) {
-  const { t } = useI18n();
-  const examples = useExamples(draft.lang);
+  const { t, trato } = useI18n();
+  const examples = useExamples(draft.lang, trato);
   const list = examples === null ? [] : examplesFor(examples, draft.occasion, 'mensajes');
   // Si cambia el nombre o el idioma y el mensaje sigue siendo el ejemplo, se actualiza con ellos.
   const onChange = (p: Partial<Draft>) => {

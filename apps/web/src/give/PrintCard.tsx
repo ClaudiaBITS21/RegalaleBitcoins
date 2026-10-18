@@ -28,10 +28,11 @@ function Coin({ size }: { size: number }) {
 }
 
 export function PrintCard({ link, view }: { link: string; view: GiftView }) {
-  const { t } = useI18n();
+  const { t, trato } = useI18n();
   const lang = view.idioma as Lang;
-  const r = (key: Key, vars?: Record<string, string>) => translate(lang, key, vars);
-  const examples = useExamples(lang);
+  // En el idioma de quien recibe; en castellano, con el trato de quien regala (suelen ser del mismo lugar).
+  const r = (key: Key, vars?: Record<string, string>) => translate(lang, key, vars, trato);
+  const examples = useExamples(lang, trato);
   const remates = examples === null ? [] : examplesFor(examples, view.ocasion, 'remates');
   const [example, setExample] = useState<string | null>(null);
   const [remate, setRemate] = useState('');
@@ -102,7 +103,7 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
           <Coin size={96} />
           <p class="contratapa-remate">{ok ? remate : ''}</p>
           <p class="contratapa-marca">
-            <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoins.com</strong>
+            <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoin.com</strong>
           </p>
         </div>
         <div class="panel panel-mensaje">
