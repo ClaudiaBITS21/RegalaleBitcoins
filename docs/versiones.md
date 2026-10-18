@@ -21,3 +21,4 @@ La página `/sin-custodia` explica todo esto para cualquier persona.
 
 | Fecha | Commit | Huella del sitio | Herramienta sin conexión |
 |---|---|---|---|
+| 18/10/2026 | [`9e05660`](https://github.com/ClaudiaBITS21/RegalaleBitcoins/commit/9e05660646dba892c65322b7643ff56800778c01) | `00ffa4da54549ccb79e7a55eb1925035fcd97031a53eaaab429ded2e6b9ceb7f` | `aeb36ff270cf2a8f9c0fb4b9e168b71b55cd206f77980436275afe72e84e809e` |
