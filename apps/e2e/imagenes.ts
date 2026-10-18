@@ -44,7 +44,7 @@ const OG = `<!doctype html><meta charset="utf-8"><style>${FONTS}</style>
 <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#FF8A1F;color:#1A1530;font-family:'DM Sans',sans-serif">
 ${confetti}
 <div style="position:absolute;left:80px;top:96px;width:640px;display:flex;flex-direction:column;gap:26px">
-  <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:104px;line-height:0.95;letter-spacing:0">REGALALE<br>BITCOIN</div>
+  <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:104px;line-height:0.95;letter-spacing:-0.02em">Regalale<br>bitcoin</div>
   <div style="font-size:36px;font-weight:500;line-height:1.25;max-width:600px">Un regalo que, cuando lo abrís, es tuyo de verdad.</div>
   <div style="align-self:flex-start;margin-top:22px;padding:14px 26px;border-radius:999px;background:#1A1530;color:#FFD23F;font-weight:700;font-size:30px">regalalebitcoin.com</div>
 </div>

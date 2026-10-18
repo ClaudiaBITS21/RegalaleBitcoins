@@ -65,7 +65,7 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
   const reasons = REASONS[lang];
 
   useEffect(() => {
-    document.title = `${t('porque.titulo')} · REGALALE BITCOIN`;
+    document.title = `${t('porque.titulo')} · Regalale Bitcoins`;
   }, [lang]);
 
   return (
