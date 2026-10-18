@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:mainnet": "VITE_ALLOW_MAINNET=autorizado vite build --outDir dist-mainnet",
+    "build:mainnet": "VITE_ALLOW_MAINNET=autorizado vite build --outDir dist-mainnet && vite build -c vite.offline.config.ts && cp dist-offline/offline.html dist-mainnet/herramienta-sin-conexion.html && node scripts/huella.mjs dist-mainnet",
     "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "build:offline": "vite build -c vite.offline.config.ts"
   },
   "dependencies": {
     "@fontsource/bricolage-grotesque": "5.3.0",

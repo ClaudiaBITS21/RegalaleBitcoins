@@ -36,6 +36,14 @@ export interface GiftSecrets {
   readonly passphraseWords: readonly string[];
 }
 
+/** Las 16 bytes de la semilla de un regalo (las del link) como 12 palabras BIP39 en inglés. */
+export function giftMnemonicFromEntropy(entropy: Uint8Array): string {
+  if (entropy.length !== GIFT_ENTROPY_BYTES) {
+    throw new CoreError('INVALID_ENTROPY', `La semilla del regalo tiene que tener ${GIFT_ENTROPY_BYTES} bytes.`);
+  }
+  return entropyToMnemonic(entropy, ENGLISH as string[]);
+}
+
 /** Deriva semilla y passphrase del regalo `index` desde la clave maestra. */
 export function deriveGiftSecrets(root: HDKey, index: number, lang: Lang): GiftSecrets {
   assertIndex(index);

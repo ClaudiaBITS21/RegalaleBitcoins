@@ -6,7 +6,8 @@
   "scripts": {
     "simulado": "node simulado.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "signet": "node signet.ts"
+    "signet": "node signet.ts",
+    "sin-conexion": "node sin-conexion.ts"
   },
   "dependencies": {
     "@regalale/core": "workspace:*"

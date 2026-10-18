@@ -39,6 +39,7 @@ export {
   deriveGift,
   deriveGiftSecrets,
   GIFT_ENTROPY_BYTES,
+  giftMnemonicFromEntropy,
   giftMnemonicPath,
   giftPassphrasePath,
   type GiftSecrets,

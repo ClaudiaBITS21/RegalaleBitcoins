@@ -52,3 +52,11 @@ npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitc
 `regalalebitcoins.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
 Registrador Metaregistrar, pero los nameservers vigentes son de AWS Route 53 (decisión pendiente de dónde cargar los registros). Registros: A `@` 199.36.158.100, TXT `@` `hosting-site=regalalebitcoins`, CNAME `www`
 `regalalebitcoins.web.app.`
+
+## Huella de cada versión (desde el 18/10/2026)
+
+`pnpm build:mainnet` compila el sitio, arma la herramienta sin conexión
+(`herramienta-sin-conexion.html`) y escribe `version.json` con la huella. Después de cada
+`firebase deploy --only hosting:mainnet`, agregar una fila a `docs/versiones.md` con la fecha, el
+commit, la huella del sitio y la de la herramienta, y subirla. `/sin-custodia` explica cómo
+comprobarla.
