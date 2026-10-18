@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { es } from '../src/i18n/es.ts';
+import { REASONS } from '../src/content/razones.ts';
+import { esTu } from '../src/content/razones-tu.ts';
 import { translate } from '../src/i18n/index.ts';
 import { detectTrato } from '../src/i18n/trato.ts';
 import { tu } from '../src/i18n/tu.ts';
@@ -41,6 +44,26 @@ describe('Vos o tú según dónde está la persona', () => {
   it('con tú no queda ningún texto en voseo', () => {
     const quedan = (Object.keys(es) as (keyof typeof es)[]).filter((k) => VOSEO.test(translate('es', k, undefined, 'tu')));
     assert.deepEqual(quedan, []);
+  });
+
+  it('las 21 razones y los mensajes de ejemplo también van con tú, con la misma forma', () => {
+    assert.equal(esTu.length, REASONS.es.length);
+    for (const [titulo, detalle] of esTu) assert.ok(!VOSEO.test(titulo) && !VOSEO.test(detalle), `${titulo} ${detalle}`);
+    const leer = (f: string) => JSON.parse(readFileSync(new URL(`../src/content/mensajes/${f}`, import.meta.url), 'utf8')) as Record<string, unknown>;
+    const vos = leer('es.json');
+    const conTu = leer('es-tu.json');
+    assert.deepEqual(Object.keys(conTu), Object.keys(vos));
+    const textos = (v: unknown): string[] => (typeof v === 'string' ? [v] : Array.isArray(v) ? v.flatMap(textos) : v !== null && typeof v === 'object' ? Object.values(v).flatMap(textos) : []);
+    for (const k of Object.keys(vos)) {
+      if (k === '_revisar') continue;
+      const a = textos(vos[k]);
+      const b = textos(conTu[k]);
+      assert.equal(b.length, a.length, k);
+      b.forEach((t, i) => {
+        assert.ok(!VOSEO.test(t), `${k}: ${t}`);
+        assert.deepEqual(placeholders(t), placeholders(a[i] ?? ''), `${k}: ${t}`);
+      });
+    }
   });
 
   it('con vos, todo sigue igual que antes', () => {

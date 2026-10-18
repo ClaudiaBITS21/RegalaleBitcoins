@@ -106,7 +106,7 @@ export const REASONS: Readonly<Record<UiLang, readonly Reason[]>> = { es, pt, en
 
 /** Las razones en el idioma y el trato de quien lee. */
 export function reasonsFor(lang: UiLang, trato: Trato): readonly Reason[] {
-  return lang === 'es' && trato === 'tu' && esTu.length > 0 ? esTu : REASONS[lang];
+  return lang === 'es' && trato === 'tu' ? esTu : REASONS[lang];
 }
 
 /** Colores de las monedas del abanico (rotan). */
