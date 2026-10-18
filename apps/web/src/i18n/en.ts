@@ -386,6 +386,7 @@ export const en: Dict = {
   'custodia.desaparece.ayuda': 'If you need help doing it, ask the community at',
   'custodia.confianza.titulo': 'What you do trust us with',
   'custodia.confianza.p1': 'There is one thing it’s only fair you know: we publish the program that runs on this page. If someone altered it — ourselves or someone who broke into our systems — they could steal the key at the moment you create or open a gift.',
+  'custodia.confianza.cold': "If you set up a list with your own wallet (cold wallet), your key never passes through this page: you only give us the public key, which can receive but not spend. What’s already in your wallet can’t be touched from here. The worst a tampered page could do is show a wrong address for a new contribution; that’s why we ask you to compare the first address on your device, and your dashboard checks every address.",
   'custodia.confianza.p2': 'That’s why we carefully limit who can publish changes, and we will publish the fingerprint of each version so anyone can check that the page is what it claims to be.',
   'lista.nueva.titulo': 'Create your gift list',
   'lista.nueva.texto': 'For weddings, baby showers, birthdays or whatever you celebrate: your guests give you bitcoin and it goes straight to your wallet.',

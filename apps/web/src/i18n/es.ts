@@ -385,6 +385,7 @@ export const es = {
   'custodia.desaparece.ayuda': 'Si necesitás ayuda para hacerlo, pedí asistencia a la comunidad de',
   'custodia.confianza.titulo': 'En qué sí confiás en nosotros',
   'custodia.confianza.p1': 'Hay un punto que es justo que sepas: el programa que corre en esta página lo publicamos nosotros. Si alguien lo alterara —nosotros mismos o alguien que entrara a nuestros sistemas—, podría robar la llave en el momento en que creás o abrís un regalo.',
+  'custodia.confianza.cold': "Si armás una lista con tu propia billetera (cold wallet), tu llave nunca pasa por esta página: solo nos das la llave pública, que sirve para recibir y no para gastar. Lo que ya tenés en tu billetera nadie lo puede tocar desde acá. Lo peor que podría hacer una página alterada es mostrar una dirección equivocada para un aporte nuevo; por eso te pedimos comparar la primera dirección en tu dispositivo, y tu panel controla cada dirección.",
   'custodia.confianza.p2': 'Por eso cuidamos mucho quién puede publicar cambios, y vamos a publicar la huella de cada versión para que cualquiera pueda comprobar que la página es la que dice ser.',
   'lista.nueva.titulo': 'Armá tu lista de regalos',
   'lista.nueva.texto': 'Para casamientos, baby showers, cumples o lo que festejes: tus invitados te regalan bitcoin y llega directo a tu billetera.',

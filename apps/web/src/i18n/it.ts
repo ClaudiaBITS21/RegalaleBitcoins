@@ -386,6 +386,7 @@ export const it: Dict = {
   'custodia.desaparece.ayuda': 'Se ti serve aiuto per farlo, chiedi assistenza alla comunità di',
   'custodia.confianza.titulo': 'In cosa ti fidi di noi',
   'custodia.confianza.p1': 'C’è un punto che è giusto tu sappia: il programma che gira su questa pagina lo pubblichiamo noi. Se qualcuno lo alterasse — noi stessi o qualcuno entrato nei nostri sistemi —, potrebbe rubare la chiave nel momento in cui crei o apri un regalo.',
+  'custodia.confianza.cold': "Se crei una lista con il tuo portafoglio (cold wallet), la tua chiave non passa mai da questa pagina: ci dai solo la chiave pubblica, che serve a ricevere e non a spendere. Quello che hai già nel portafoglio nessuno può toccarlo da qui. Il peggio che potrebbe fare una pagina alterata è mostrare un indirizzo sbagliato per un nuovo contributo; per questo ti chiediamo di confrontare il primo indirizzo sul tuo dispositivo, e il tuo pannello controlla ogni indirizzo.",
   'custodia.confianza.p2': 'Per questo controlliamo con cura chi può pubblicare modifiche, e pubblicheremo l’impronta di ogni versione perché chiunque possa verificare che la pagina è quella che dice di essere.',
   'lista.nueva.titulo': 'Crea la tua lista regali',
   'lista.nueva.texto': 'Per matrimoni, baby shower, compleanni o qualsiasi festa: i tuoi invitati ti regalano bitcoin e arriva dritto nel tuo portafoglio.',

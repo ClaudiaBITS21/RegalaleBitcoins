@@ -133,6 +133,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
           <article class="historia custodia-bloque">
             <h2 id="custodia-confianza">{t('custodia.confianza.titulo')}</h2>
             <p>{t('custodia.confianza.p1')}</p>
+            <p>{t('custodia.confianza.cold')}</p>
             <p>{t('custodia.confianza.p2')}</p>
           </article>
         </section>
