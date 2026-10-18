@@ -26,7 +26,7 @@ Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías pro
 - Contador "Diste vuelta X de 21" + barra. Botón "Ver todas" / "Darlas vuelta de nuevo".
 - Al completar 21: bloque de cierre con CTA "¿Regalamos?" → flujo de regalo.
 - Diseño de moneda propio (no imitar monedas físicas reales/comerciales).
-- **Home:** mismo componente con las 6 destacadas (`destacadas_home` en el JSON) + link "Ver las 21".
+- **Home:** el abanico con las 21 (decisión de la responsable, 18/10/2026) + link a "¿Por qué Bitcoin?". `destacadas_home` queda en el JSON como selección de 6 para otros usos, pero la home no la usa.
 - **Mazo en abanico** (**RESUELTO, 18/10/2026:** abanico en celular y en compu, en home y en /por-que; la grilla queda reemplazada por la lista desplegable "Ver las 21"). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
   - 3 cartas como en la mano: **centro = actual** (adelante, más grande, se da vuelta sola ~0,5 s después de llegar y muestra frase + explicación); **izquierda = anterior**, **derecha = siguiente**, inclinadas ±14°, escala 0,9, mostrando la moneda con su número. En la 1 no hay izquierda; en la 21 no hay derecha.
   - Pasar: swipe, flechas, o tocar una lateral (pasa al centro). Animación: todas las cartas se desplazan a su nuevo lugar (transform + opacity, ~0,55 s); la que sale se desvanece hacia atrás, la que entra aparece desde atrás.
@@ -60,7 +60,7 @@ Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas d
 
 **Formato (decisión):** tarjetas que se dan vuelta. Frente = moneda con su número (sin texto); dorso = frase corta + explicación debajo. Botón "Ver todas". Prototipo: https://claude.ai/artifact/8XCsPQyMRrbokMb6uEPuQv Flip por tap/clic (no hover). Texto de ambas caras en el HTML (SEO + accesibilidad). Mobile: 2 columnas o mazo con swipe (a definir). Opcional: contador "diste vuelta X de 21" con cierre + CTA al completar.
 
-**Home (6 destacadas):** 1, 2, 4, 11, 13, 18. El resto en la página "¿Por qué Bitcoin?".
+**Home:** las 21 en el abanico (18/10/2026). Destacadas en el JSON (`destacadas_home`), sin uso en la home: 1, 2, 4, 11, 13, 18.
 
 **Orden por bloques (reorden del 18/10/2026, `docs/handoff/2026-10-18/reorden-21-razones.md`):** regalo (1–5) → emocional (6–10) → práctico (11–17) → bitcoiner (18–21). La 18 (autocustodia) y la 19 (contra los vales) van juntas a propósito: no fusionarlas. La 19 no nombra marcas.
 
