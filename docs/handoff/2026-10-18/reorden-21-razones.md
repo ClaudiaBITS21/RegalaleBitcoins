@@ -1,6 +1,6 @@
 # Handoff 18/10/2026: reorden de las 21 razones
 
-Estado: PENDIENTE
+Estado: INTEGRADO (commit 5ac848c)
 
 Trabajado con Rodolfo en Cowork el 18/10/2026. Cowork no pudo subir la rama `cowork/razones`;
 el contenido llegó por el chat y se integró desde `main`.
