@@ -32,7 +32,8 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   se lanza en `regalalebitcoin.com` hasta que la responsable confirme, con sus palabras, la
   verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
   (Metaregistrar/AWS), Resend y su mail. Ver `docs/mainnet.md`. Este punto va **siempre** en cada
-  listado de pendientes hasta que esté confirmado.
+  listado de pendientes hasta que esté confirmado. **Confirmado por la responsable el 18/10/2026**
+  (AWS quedó fuera por decisión suya).
 
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
@@ -53,6 +54,10 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   la persona se leen con el separador de su idioma (en es, `1.234` son mil doscientos treinta y
   cuatro y `0,5` es medio), con confirmación del monto interpretado antes de pagar. Montos internos
   siempre en sats enteros (bigint); nada de `parseFloat` sobre lo que tipea el usuario.
+
+## Handoffs
+
+Al arrancar cada sesión, revisá docs/handoff/. Integrá los handoffs con "Estado: PENDIENTE" y cuando termines cambialos a "Estado: INTEGRADO (commit xxxx)". Si algo está marcado ABIERTO, no lo implementes: preguntale a Rodolfo.
 
 ## Comandos
 

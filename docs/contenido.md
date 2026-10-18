@@ -27,12 +27,12 @@ Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías pro
 - Al completar 21: bloque de cierre con CTA "¿Regalamos?" → flujo de regalo.
 - Diseño de moneda propio (no imitar monedas físicas reales/comerciales).
 - **Home:** mismo componente con las 6 destacadas (`destacadas_home` en el JSON) + link "Ver las 21".
-- **Mazo en abanico** (a Rodolfo le gustó el diseño; **ABIERTO**: confirmar si en celular reemplaza a la grilla y qué va en compu). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
+- **Mazo en abanico** (**RESUELTO, 18/10/2026:** abanico en celular y en compu, en home y en /por-que; la grilla queda reemplazada por la lista desplegable "Ver las 21"). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
   - 3 cartas como en la mano: **centro = actual** (adelante, más grande, se da vuelta sola ~0,5 s después de llegar y muestra frase + explicación); **izquierda = anterior**, **derecha = siguiente**, inclinadas ±14°, escala 0,9, mostrando la moneda con su número. En la 1 no hay izquierda; en la 21 no hay derecha.
   - Pasar: swipe, flechas, o tocar una lateral (pasa al centro). Animación: todas las cartas se desplazan a su nuevo lugar (transform + opacity, ~0,55 s); la que sale se desvanece hacia atrás, la que entra aparece desde atrás.
   - Mientras se arrastra, la central sigue el dedo con leve rotación y la que viene se acerca al centro proporcionalmente; si se suelta antes de ~60 px vuelve a su lugar.
   - Tocar la central la da vuelta (moneda ↔ texto). Contador cuenta cartas reveladas. `prefers-reduced-motion`: sin animación.
-- **ABIERTO:** razón 20 (baby shower) confirmada o reemplazar.
+- **RESUELTO (18/10/2026):** sale la razón del baby shower; entra «No es un vale, es bitcoin de verdad» (19).
 
 ### 2. Página "¿Por qué Bitcoin?"
 
@@ -48,8 +48,8 @@ Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas d
 ### 4. Decisiones de producto relacionadas
 
 - Listas de regalo: entran en el lanzamiento, **solo BTC**, pensadas para compartir en grupos bitcoiners. Mercado Pago/tarjeta, después.
-- "Regalar entre varios" (razón 12): una dirección on-chain acepta varios depósitos; el que recibe debería ver quién aportó qué.
-- Razón 13 ("vos lo recuperás"): la cancelación solo aplica mientras el regalo no fue reclamado.
+- "Regalar entre varios" (razón 15): una dirección on-chain acepta varios depósitos; el que recibe debería ver quién aportó qué.
+- Razón 17 ("vos lo recuperás"): la cancelación solo aplica mientras el regalo no fue reclamado.
 - Descartado: "mandar hoy y cargar después" (no está en el producto).
 
 ## Textos
@@ -60,31 +60,33 @@ Orden sugerido: componente 21 razones → "Según quién lo recibe" (5 franjas d
 
 **Formato (decisión):** tarjetas que se dan vuelta. Frente = moneda con su número (sin texto); dorso = frase corta + explicación debajo. Botón "Ver todas". Prototipo: https://claude.ai/artifact/8XCsPQyMRrbokMb6uEPuQv Flip por tap/clic (no hover). Texto de ambas caras en el HTML (SEO + accesibilidad). Mobile: 2 columnas o mazo con swipe (a definir). Opcional: contador "diste vuelta X de 21" con cierre + CTA al completar.
 
-**Home (6 destacadas):** 1, 2, 4, 9, 11, 14. El resto en la página "¿Por qué Bitcoin?".
+**Home (6 destacadas):** 1, 2, 4, 11, 13, 18. El resto en la página "¿Por qué Bitcoin?".
+
+**Orden por bloques (reorden del 18/10/2026, `docs/handoff/2026-10-18/reorden-21-razones.md`):** regalo (1–5) → emocional (6–10) → práctico (11–17) → bitcoiner (18–21). La 18 (autocustodia) y la 19 (contra los vales) van juntas a propósito: no fusionarlas. La 19 no nombra marcas.
 
 1. **Es original.** Seguro que nadie más en la mesa regala lo mismo.
 2. **No hay que adivinar el talle, el color ni el gusto.** Ni guardar el ticket de cambio.
-3. **No ocupa lugar, no se rompe, no se vence.** Entra en el celular o en un papelito, y dura más que cualquier juguete.
+3. **No ocupa lugar y no se rompe.** Entra en el celular o en un papelito, y dura más que cualquier juguete.
 4. **Se ajusta a tu bolsillo.** No hace falta regalar un bitcoin entero: se divide en 100 millones de partes, así que podés regalar desde muy poquito.
 5. **Sirve para cualquier edad.** Desde un bautismo hasta los 90 años del abuelo.
-6. **Es el mismo regalo para todos, pero cada uno lo vive distinto.** A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar.
-7. **Va a disparar una linda charla, seguro.** Alguien pregunta qué es, y la sobremesa ya está armada.
-8. **Une generaciones.** El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más.
-9. **Llega aunque estés lejos.** Sin envío, sin aduana y sin cambio de moneda: el mismo regalo vale para tu sobrino en Brasil y para tu abuela en Italia.
-10. **Se arma en dos minutos.** Desde el celular, también la noche anterior, y sin que se note que fue de último momento.
-11. **No hace falta una computadora para recibirlo.** Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera.
-12. **Se puede regalar entre varios.** Cada uno pone lo que puede y le llega todo junto.
-13. **Si no lo quiere, vos lo recuperás o él lo canjea por dinero.** No hay regalo que quede tirado.
-14. **Una vez que lo reclama, es suyo de verdad.** Pasa a su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar.
-15. **Lleva un mensaje.** Es una invitación a pensar en el ahorro y en el largo plazo.
-16. **Es personal.** Tu mensaje, su nombre y una imagen hecha para la ocasión.
-17. **Viene con instrucciones.** Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas.
-18. **Sabés si lo reclamó.** Ves cuándo lo hizo, sin tener que preguntar.
-19. **Funciona desde 2009 y nunca cerró.** Ni un feriado, ni un domingo, ni un 25 de diciembre.
-20. **Se lo podés regalar a alguien que todavía no nació.** Ideal para el baby shower.
+6. **Es personal.** Tu mensaje, su nombre y una imagen hecha para la ocasión.
+7. **Lleva un mensaje.** Es una invitación a pensar en el ahorro y en el largo plazo.
+8. **Es el mismo regalo para todos, pero cada uno lo vive distinto.** A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar.
+9. **Va a disparar una linda charla, seguro.** Alguien pregunta qué es, y la sobremesa ya está armada.
+10. **Une generaciones.** El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más.
+11. **Llega aunque estés lejos.** Sin envío, sin aduana y sin cambio de moneda: el mismo regalo vale para tu sobrino en Brasil y para tu abuela en Italia.
+12. **Se arma en dos minutos.** Desde el celular, también la noche anterior, y sin que se note que fue de último momento.
+13. **No hace falta una computadora para recibirlo.** Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera.
+14. **Viene con instrucciones.** Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas.
+15. **Se puede regalar entre varios.** Cada uno pone lo que puede y le llega todo junto.
+16. **Sabés si lo reclamó.** Ves cuándo lo hizo, sin tener que preguntar.
+17. **Si no lo quiere, vos lo recuperás o él lo canjea por dinero.** No hay regalo que quede tirado.
+18. **Es de quien lo recibe, de verdad.** Queda en su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar.
+19. **No es un vale, es bitcoin de verdad.** Un vale tiene fecha, un catálogo y una empresa detrás que lo tiene que honrar. Esto ya es bitcoin desde el primer día, no vence y lo usa como quiera.
+20. **Funciona desde 2009 y nunca cerró.** Ni un feriado, ni un domingo, ni un 25 de diciembre.
 21. **Nunca va a haber más de 21 millones.** Le estás regalando un pedacito de algo que nadie puede fabricar.
 
-Descartadas: "mandar hoy y cargar después" (no va en el producto), "si no lo quiere, otro se lo compra", "más interesante mientras más lo guardan", "enseña sin sermonear" (reemplazada por 7), "no junta polvo".
+Descartadas: "mandar hoy y cargar después" (no va en el producto), "si no lo quiere, otro se lo compra", "más interesante mientras más lo guardan", "enseña sin sermonear" (reemplazada por la 9, antes 7), "no junta polvo", "se lo podés regalar a alguien que todavía no nació" (baby shower, 18/10).
 
 > **Importante:** el precio de bitcoin sube y baja, y lo que pasó antes no garantiza lo que vaya a pasar. Regalá lo que tenga sentido para vos, como cualquier otro regalo.
 
@@ -131,6 +133,8 @@ Nada de shopping el 24 a la noche: se arma en dos minutos desde el celular, tamb
 ## Revisión técnica (Code, 13/10/2026)
 
 Cruce del contenido con el modelo del producto. Lo marcado **A CONFIRMAR** espera respuesta.
+Los números son los de antes del reorden del 18/10: la 12 es hoy la 15, la 13 la 17, la 14 la 18
+y la 18 la 16.
 
 1. **RESUELTO (Claudia, 13/10) — razón 14 contradecía la 13; texto actualizado.** La 14 dice "queda en su propia billetera: ni
    nosotros ni nadie se lo puede quitar", pero la 13 (y el modelo: la semilla del regalo se
@@ -144,7 +148,7 @@ Cruce del contenido con el modelo del producto. Lo marcado **A CONFIRMAR** esper
 3. **Razones que prometen funciones que todavía no existen.** La 12 ("quién aportó qué") pide
    que cada aporte pase por nuestro flujo (on-chain no hay nombres); la 18 ("sabés si lo
    reclamó") llega con los paneles (etapa 6). Se publican cuando la función exista o se
-   ajusta el texto.
+   ajusta el texto. **Decisión (18/10/2026):** la 15 y la 16 (números nuevos) quedan como están.
 4. **SEO.** La web hoy es una SPA; para que el texto de las 21 razones esté en el HTML se
    prerenderizan home y /por-que en el build (Preact a HTML estático, sin servidor nuevo).
 5. **Listas solo BTC en el lanzamiento** cambia la especificación v0.1 (xpub + alias bancario):

@@ -7,9 +7,9 @@
     1,
     2,
     4,
-    9,
     11,
-    14
+    13,
+    18
   ],
   "disclaimer": "El precio de bitcoin sube y baja, y lo que pasó antes no garantiza lo que vaya a pasar. Regalá lo que tenga sentido para vos, como cualquier otro regalo.",
   "cierre": {
@@ -29,7 +29,7 @@
     },
     {
       "n": 3,
-      "titulo": "No ocupa lugar, no se rompe, no se vence.",
+      "titulo": "No ocupa lugar y no se rompe.",
       "explicacion": "Entra en el celular o en un papelito, y dura más que cualquier juguete."
     },
     {
@@ -44,78 +44,78 @@
     },
     {
       "n": 6,
-      "titulo": "Es el mismo regalo para todos, pero cada uno lo vive distinto.",
-      "explicacion": "A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar."
-    },
-    {
-      "n": 7,
-      "titulo": "Va a disparar una linda charla, seguro.",
-      "explicacion": "Alguien pregunta qué es, y la sobremesa ya está armada."
-    },
-    {
-      "n": 8,
-      "titulo": "Une generaciones.",
-      "explicacion": "El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más."
-    },
-    {
-      "n": 9,
-      "titulo": "Llega aunque estés lejos.",
-      "explicacion": "Sin envío, sin aduana y sin cambio de moneda: el mismo regalo vale para tu sobrino en Brasil y para tu abuela en Italia."
-    },
-    {
-      "n": 10,
-      "titulo": "Se arma en dos minutos.",
-      "explicacion": "Desde el celular, también la noche anterior, y sin que se note que fue de último momento."
-    },
-    {
-      "n": 11,
-      "titulo": "No hace falta una computadora para recibirlo.",
-      "explicacion": "Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera."
-    },
-    {
-      "n": 12,
-      "titulo": "Se puede regalar entre varios.",
-      "explicacion": "Cada uno pone lo que puede y le llega todo junto."
-    },
-    {
-      "n": 13,
-      "titulo": "Si no lo quiere, vos lo recuperás o él lo canjea por dinero.",
-      "explicacion": "No hay regalo que quede tirado."
-    },
-    {
-      "n": 14,
-      "titulo": "Una vez que lo reclama, es suyo de verdad.",
-      "explicacion": "Pasa a su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar."
-    },
-    {
-      "n": 15,
-      "titulo": "Lleva un mensaje.",
-      "explicacion": "Es una invitación a pensar en el ahorro y en el largo plazo."
-    },
-    {
-      "n": 16,
       "titulo": "Es personal.",
       "explicacion": "Tu mensaje, su nombre y una imagen hecha para la ocasión."
     },
     {
-      "n": 17,
+      "n": 7,
+      "titulo": "Lleva un mensaje.",
+      "explicacion": "Es una invitación a pensar en el ahorro y en el largo plazo."
+    },
+    {
+      "n": 8,
+      "titulo": "Es el mismo regalo para todos, pero cada uno lo vive distinto.",
+      "explicacion": "A uno le despierta curiosidad, otro lo guarda y otro arranca a investigar."
+    },
+    {
+      "n": 9,
+      "titulo": "Va a disparar una linda charla, seguro.",
+      "explicacion": "Alguien pregunta qué es, y la sobremesa ya está armada."
+    },
+    {
+      "n": 10,
+      "titulo": "Une generaciones.",
+      "explicacion": "El nieto le explica al abuelo, o el abuelo sorprende al nieto sabiendo más."
+    },
+    {
+      "n": 11,
+      "titulo": "Llega aunque estés lejos.",
+      "explicacion": "Sin envío, sin aduana y sin cambio de moneda: el mismo regalo vale para tu sobrino en Brasil y para tu abuela en Italia."
+    },
+    {
+      "n": 12,
+      "titulo": "Se arma en dos minutos.",
+      "explicacion": "Desde el celular, también la noche anterior, y sin que se note que fue de último momento."
+    },
+    {
+      "n": 13,
+      "titulo": "No hace falta una computadora para recibirlo.",
+      "explicacion": "Lo imprimís en una tarjeta, se lo das en mano y lo reclama cuando quiera."
+    },
+    {
+      "n": 14,
       "titulo": "Viene con instrucciones.",
       "explicacion": "Una guía paso a paso para crear su billetera y reclamarlo. Y sin pilas."
     },
     {
-      "n": 18,
+      "n": 15,
+      "titulo": "Se puede regalar entre varios.",
+      "explicacion": "Cada uno pone lo que puede y le llega todo junto."
+    },
+    {
+      "n": 16,
       "titulo": "Sabés si lo reclamó.",
       "explicacion": "Ves cuándo lo hizo, sin tener que preguntar."
     },
     {
+      "n": 17,
+      "titulo": "Si no lo quiere, vos lo recuperás o él lo canjea por dinero.",
+      "explicacion": "No hay regalo que quede tirado."
+    },
+    {
+      "n": 18,
+      "titulo": "Es de quien lo recibe, de verdad.",
+      "explicacion": "Queda en su propia billetera: ni nosotros ni nadie se lo puede congelar ni quitar."
+    },
+    {
       "n": 19,
-      "titulo": "Funciona desde 2009 y nunca cerró.",
-      "explicacion": "Ni un feriado, ni un domingo, ni un 25 de diciembre."
+      "titulo": "No es un vale, es bitcoin de verdad.",
+      "explicacion": "Un vale tiene fecha, un catálogo y una empresa detrás que lo tiene que honrar. Esto ya es bitcoin desde el primer día, no vence y lo usa como quiera."
     },
     {
       "n": 20,
-      "titulo": "Se lo podés regalar a alguien que todavía no nació.",
-      "explicacion": "Ideal para el baby shower."
+      "titulo": "Funciona desde 2009 y nunca cerró.",
+      "explicacion": "Ni un feriado, ni un domingo, ni un 25 de diciembre."
     },
     {
       "n": 21,

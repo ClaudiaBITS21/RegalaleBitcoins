@@ -45,7 +45,15 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
 4. **Verificación en dos pasos confirmada por la responsable** (bloqueante pedido por ella):
    Google (claudia@, rodo@ y toda cuenta con acceso al proyecto), GitHub, Metaregistrar/AWS
    (DNS), Resend y su mail. Sin esa confirmación no se publica la nueva landing ni se lanza en
-   `regalalebitcoin.com`. Estado: **pendiente**.
+   `regalalebitcoin.com`. Estado: **confirmado por la responsable el 18/10/2026.**
+   Confirmado por la responsable el 18/10/2026 («Google, Meta, Github listos. […] Resend hecho»):
+   - Google: claudia@ y rodo@ («Lo tengo en ambas»). Hecho.
+   - GitHub: hecho.
+   - Metaregistrar: hecho.
+   - Resend: hecho.
+   - Su mail: hecho («Mi mail tiene doble»).
+   - AWS: fuera del bloqueante por decisión de la responsable («AWS ya quedamos que no
+     importa»). Queda anotado que `docs/deploy.md` menciona nameservers de AWS Route 53.
 5. ~~Consulta legal de las listas con alias~~: no hace falta, por decisión de la responsable
    (17/10/2026, ver la tabla de autorizaciones).
 6. Recién ahí, compartir el link.
