@@ -54,6 +54,10 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   cuatro y `0,5` es medio), con confirmación del monto interpretado antes de pagar. Montos internos
   siempre en sats enteros (bigint); nada de `parseFloat` sobre lo que tipea el usuario.
 
+## Handoffs
+
+Al arrancar cada sesión, revisá docs/handoff/. Integrá los handoffs con "Estado: PENDIENTE" y cuando termines cambialos a "Estado: INTEGRADO (commit xxxx)". Si algo está marcado ABIERTO, no lo implementes: preguntale a Rodolfo.
+
 ## Comandos
 
 ```sh
