@@ -47,6 +47,12 @@ pnpm build && pnpm build:mainnet
 npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitcoins
 ```
 
+**Mainnet desde GitHub Actions (desde el 18/10/2026):** workflow «Deploy web mainnet»
+(`.github/workflows/deploy.yml`), solo a mano (*Run workflow*) y solo desde `main`. Compila con
+`pnpm build:mainnet`, deja la huella en el resumen de la corrida y publica `hosting:mainnet`.
+Se autentica con federación de identidades (pool `github`, proveedor `github-oidc`) como la cuenta
+de servicio `deploy-hosting@regalalebitcoins.iam.gserviceaccount.com`: no hay claves guardadas.
+
 ## Dominio
 
 `regalalebitcoin.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
