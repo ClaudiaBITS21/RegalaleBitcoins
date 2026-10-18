@@ -52,8 +52,9 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
    - Metaregistrar: hecho.
    - Resend: hecho.
    - Su mail: hecho («Mi mail tiene doble»).
-   - AWS: fuera del bloqueante por decisión de la responsable («AWS ya quedamos que no
-     importa»). Queda anotado que `docs/deploy.md` menciona nameservers de AWS Route 53.
+   - AWS: fuera del bloqueante por decisión de la responsable. El DNS de `regalalebitcoin.com`
+     está en Metaregistrar; en AWS Route 53 solo queda el dominio viejo en plural
+     (`regalalebitcoins.com`).
 5. ~~Consulta legal de las listas con alias~~: no hace falta, por decisión de la responsable
    (17/10/2026, ver la tabla de autorizaciones).
 6. Recién ahí, compartir el link.
