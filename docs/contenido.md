@@ -96,7 +96,7 @@ Todo empezó en la Navidad de 2012, con una obrita de teatro para la fiesta fami
 
 Esa noche, cada invitado se llevó una cajita con una moneda física de bitcoin. En ese momento un bitcoin valía unos 13 dólares. Nadie necesitó una computadora ni una app para recibirla, y muchos todavía la tienen.
 
-Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, que se puede guardar por años.
+Ese mismo espíritu tiene Regalale Bitcoin: un regalo simple, con un mensaje, que se puede guardar por años.
 
 (Sin firma. El cuento completo, "Una Natividad Moderna", es de Florando Dragones.)
 
