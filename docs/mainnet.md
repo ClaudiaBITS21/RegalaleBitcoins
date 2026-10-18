@@ -46,6 +46,9 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
    Google (claudia@, rodo@ y toda cuenta con acceso al proyecto), GitHub, Metaregistrar/AWS
    (DNS), Resend y su mail. Sin esa confirmación no se publica la nueva landing ni se lanza en
    `regalalebitcoin.com`. Estado: **pendiente**.
+   - Google: **confirmado por la responsable el 18/10/2026** en claudia@ y rodo@ («Lo tengo en
+     ambas»). Falta confirmar que no haya otra cuenta con acceso al proyecto.
+   - GitHub, Metaregistrar/AWS (DNS), Resend y su mail: pendientes.
 5. ~~Consulta legal de las listas con alias~~: no hace falta, por decisión de la responsable
    (17/10/2026, ver la tabla de autorizaciones).
 6. Recién ahí, compartir el link.
