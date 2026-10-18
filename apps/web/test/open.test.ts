@@ -9,14 +9,14 @@ describe('Abrir un regalo pegando el link', () => {
   const id = 'A'.repeat(22);
 
   it('acepta el link completo, con o sin dominio, y lo abre en este sitio', () => {
-    assert.equal(parseGiftLink(`https://regalalebitcoins.com/r/${id}${fragment}`), `/r/${id}${fragment}`);
+    assert.equal(parseGiftLink(`https://regalalebitcoin.com/r/${id}${fragment}`), `/r/${id}${fragment}`);
     assert.equal(parseGiftLink(`  regalalebitcoins.web.app/r/${id}${fragment}\n`), `/r/${id}${fragment}`);
     assert.equal(parseGiftLink(`Te hice un regalo: https://otro.sitio/r/${id}${fragment} abrilo`), `/r/${id}${fragment}`);
   });
 
   it('rechaza links sin la semilla o con la semilla rota', () => {
-    assert.equal(parseGiftLink(`https://regalalebitcoins.com/r/${id}`), null);
-    assert.equal(parseGiftLink(`https://regalalebitcoins.com/r/${id}#1abc`), null);
+    assert.equal(parseGiftLink(`https://regalalebitcoin.com/r/${id}`), null);
+    assert.equal(parseGiftLink(`https://regalalebitcoin.com/r/${id}#1abc`), null);
     assert.equal(parseGiftLink('hola'), null);
   });
 });

@@ -1,0 +1,767 @@
+{
+  "_revisar": ["nacimiento", "comunion", "mitzva", "recibido", "jubilacion", "casanueva", "anionuevo", "sanvalentin", "pascuas", "dianino", "amigo", "abuelos", "maestro", "pizzaday", "genesis", "whitepaper", "halving", "trabajo", "gracias", "mejorate", "graduacion"],
+  "cumple": {
+    "mensajes": [
+      "{nombre}: te regalo un pedacito de bitcoin. No es para gastarlo mañana: es para que lo guardes, lo entiendas y lo cuides. ¡Feliz cumpleaños!",
+      "¡Feliz cumpleaños, {nombre}! Este regalo no se rompe, no pasa de moda y no ocupa lugar. Guárdalo bien.",
+      "{nombre}, un año más y un regalo distinto: algo para descubrir con tiempo. Cuando quieras, lo abrimos y te cuento todo.",
+      "Para {nombre}, que ya tiene de todo: algo que seguro no tenía. ¡Feliz cumpleaños!",
+      "{nombre}: este año no adiviné talla ni color. Te regalo bitcoin, y que sea el comienzo de muchas charlas. ¡Feliz cumpleaños!",
+      "¡Feliz cumpleaños, {nombre}! Las velas se apagan y el pastel se termina. Esto se guarda.",
+      "{nombre}, te regalo un pedacito de algo que nadie puede fabricar. ¡Que cumplas muchos más!",
+      "Para {nombre}: hay regalos que se usan una vez y regalos que te acompañan. Ojalá este sea de los segundos. ¡Feliz cumpleaños!",
+      "{nombre}: cuando lo abras vas a tener tu propia billetera, y desde ahí el regalo es tuyo. ¡Feliz cumpleaños!",
+      "¡Feliz cumpleaños, {nombre}! Pide un deseo, sopla las velas y después abre esto con calma."
+    ],
+    "remates": [
+      "¡Que cumplas muchos más!",
+      "Las velas se apagan. Esto se guarda.",
+      "La llave ahora la tienes tú.",
+      "Un año más, una llave nueva.",
+      "Sin pilas, sin talla, sin ticket de cambio.",
+      "Feliz cumpleaños. Guárdalo bien."
+    ]
+  },
+  "quince": {
+    "mensajes": [
+      "{nombre}: para tus 15, un regalo para cuidar. No es para gastarlo mañana: es para que lo guardes y lo entiendas. ¡Feliz fiesta!",
+      "¡Feliz 15, {nombre}! Hoy bailas toda la noche; mañana, con calma, abres esto.",
+      "{nombre}, 15 años es un buen momento para tener algo propio. Esta llave es tuya. ¡Disfruta tu noche!",
+      "Para {nombre}, en sus 15: el vals, las fotos y la fiesta quedan en el recuerdo. Esto, además, se guarda.",
+      "{nombre}: tu primera billetera, para tus 15. Pregunta, investiga y aprende. Aquí estoy para lo que necesites.",
+      "¡Feliz 15, {nombre}! Un regalo distinto para una noche que vas a recordar siempre.",
+      "{nombre}, este regalo es una invitación: a ahorrar, a preguntar y a pensar en grande.",
+      "Para tus 15, {nombre}: un pedacito de algo que nadie puede fabricar. ¡Brilla esta noche!",
+      "{nombre}: entre todos los regalos de hoy, este es el que no se rompe ni pasa de moda. ¡Feliz fiesta!",
+      "¡Feliz 15, {nombre}! Que esta sea la primera de muchas decisiones propias."
+    ],
+    "remates": [
+      "15 años, tu primera llave.",
+      "La llave ahora la tienes tú.",
+      "Baila hoy. Guárdalo siempre.",
+      "Que brilles esta noche y siempre.",
+      "Lo tuyo es tuyo.",
+      "Piensa en grande."
+    ]
+  },
+  "aniversario": {
+    "mensajes": [
+      "{nombre}: un año más a tu lado, y un regalo para guardar, como guardamos lo nuestro. ¡Feliz aniversario!",
+      "Feliz aniversario, {nombre}. Te regalo algo que, como lo nuestro, se construye con el tiempo.",
+      "{nombre}, por todo lo que compartimos: un regalo distinto, para abrir con calma.",
+      "A {nombre}, con amor: hay cosas que no se fabrican de más. Tú, por ejemplo.",
+      "{nombre}: otro año, otra llave. Esta es solo tuya.",
+      "Feliz aniversario, {nombre}. Gracias por cada día. Esto es para el largo plazo, como nosotros.",
+      "{nombre}, no te regalo flores que se marchitan: te regalo algo para guardar.",
+      "Para {nombre}: lo nuestro no tiene ticket de cambio. Este regalo tampoco.",
+      "{nombre}, que este regalo sea una excusa para seguir aprendiendo cosas juntos.",
+      "Feliz aniversario, {nombre}. Por muchos años más."
+    ],
+    "remates": [
+      "Por muchos años más.",
+      "Para el largo plazo, como nosotros.",
+      "Lo nuestro no tiene ticket de cambio.",
+      "La llave ahora la tienes tú.",
+      "Un año más, a tu lado.",
+      "Hay cosas que no se fabrican de más."
+    ]
+  },
+  "egresados": {
+    "mensajes": [
+      "{nombre}: terminaste una etapa y empieza otra. Te regalo algo para que empieces con el pie derecho. ¡Felicidades!",
+      "¡Felicidades, {nombre}! Aprendiste mucho; esto es algo más para seguir aprendiendo.",
+      "{nombre}, tu primera billetera para tu nueva etapa. Cuídala bien.",
+      "Para {nombre}, que terminó una etapa enorme: un regalo para pensar en el largo plazo.",
+      "{nombre}: el título se cuelga en la pared. Esto se guarda en tu billetera. ¡Felicidades!",
+      "¡Lo lograste, {nombre}! Un regalo distinto para un logro enorme.",
+      "{nombre}, ahora que empieza lo tuyo, que también empiece tu ahorro.",
+      "Felicidades, {nombre}. Un pedacito de algo que nadie puede fabricar, para alguien que se lo ganó.",
+      "{nombre}: terminaste. Ahora sigue preguntando e investigando, también con esto.",
+      "¡Felicidades, {nombre}! Que sea la primera de muchas cosas propias."
+    ],
+    "remates": [
+      "Felicidades. Esto también es tuyo.",
+      "Nueva etapa, nueva llave.",
+      "Lo lograste.",
+      "El título a la pared. Esto, a guardar.",
+      "La llave ahora la tienes tú.",
+      "Que siga la curiosidad."
+    ]
+  },
+  "navidad": {
+    "mensajes": [
+      "{nombre}: este año, algo distinto debajo del árbol. ¡Feliz Navidad!",
+      "¡Feliz Navidad, {nombre}! No ocupa lugar debajo del arbolito, pero dentro hay un regalo.",
+      "{nombre}, un regalo para abrir hoy y entender con el tiempo. ¡Felices fiestas!",
+      "Para {nombre}: sin compras de último momento, pero con mucho cariño. ¡Feliz Navidad!",
+      "{nombre}: en la sobremesa vas a tener tema de conversación. ¡Felices fiestas!",
+      "¡Feliz Navidad, {nombre}! Un regalo que no se rompe antes de Reyes.",
+      "{nombre}, te regalo un pedacito de algo que nadie puede fabricar. ¡Felices fiestas!",
+      "{nombre}: guárdalo bien, como el mejor recuerdo de estas fiestas.",
+      "Para {nombre}, con cariño en esta Navidad: hay regalos que se usan y regalos que se guardan. Este se guarda.",
+      "¡Felices fiestas, {nombre}! Ábrelo cuando quieras, aunque sea después del brindis."
+    ],
+    "remates": [
+      "¡Feliz Navidad!",
+      "Este año, algo distinto.",
+      "Felices fiestas. Guárdalo bien.",
+      "La llave ahora la tienes tú.",
+      "Sin pilas, sin talla, sin ticket de cambio.",
+      "Para abrir después del brindis."
+    ]
+  },
+  "reyes": {
+    "mensajes": [
+      "{nombre}: Melchor trajo oro, Gaspar incienso y Baltasar… esto. ¡Feliz Día de Reyes!",
+      "¡Hola, {nombre}! Dejamos esto al lado de tus zapatos. Pídele a un adulto que te ayude a abrirlo.",
+      "{nombre}: los camellos tomaron el agua, y nosotros te dejamos un regalo para cuidar mucho tiempo.",
+      "Para {nombre}: este regalo vino de muy lejos, en camello, y no ocupa lugar. Que lo cuiden en tu casa hasta que seas grande.",
+      "{nombre}, te portaste muy bien. Este regalo es una moneda especial: la cuidan miles de personas en todo el mundo.",
+      "¡Feliz Día de Reyes, {nombre}! Una moneda de verdad, para empezar a ahorrar.",
+      "{nombre}: no es un juguete, pero dura más que cualquiera. Con cariño, los Reyes.",
+      "{nombre}, este año los Reyes se modernizaron. ¡Que lo disfrutes!",
+      "Para {nombre}: una moneda para guardar y una historia para contar cuando seas grande.",
+      "{nombre}: deja la hierba y el agua para los camellos, y esto guárdalo para ti."
+    ],
+    "remates": [
+      "Con cariño, los Reyes.",
+      "Dura más que cualquier juguete.",
+      "Los Reyes se modernizaron.",
+      "Para guardar hasta que seas grande.",
+      "Una moneda de verdad.",
+      "¡Feliz Día de Reyes!"
+    ]
+  },
+  "diapadre": {
+    "mensajes": [
+      "{nombre}: me enseñaste a cuidar lo que importa. Ahora te regalo algo para cuidar. ¡Feliz día!",
+      "¡Feliz Día del Padre, {nombre}! Este año, ni corbata ni calcetines: bitcoin.",
+      "{nombre}, tantas veces me explicaste cosas. Hoy me toca a mí: abre esto y te cuento.",
+      "Para {nombre}, el mejor: un regalo para el largo plazo.",
+      "{nombre}: gracias por todo. Te regalo un pedacito de algo que nadie puede fabricar.",
+      "¡Feliz día, {nombre}! Un regalo distinto para alguien que ya tiene de todo.",
+      "{nombre}, que este regalo sea la excusa para sentarnos un rato y que te muestre cómo funciona.",
+      "Feliz Día del Padre, {nombre}. Lo que me enseñaste sobre ahorrar, te lo devuelvo así.",
+      "{nombre}: no se rompe, no pasa de moda y no hay que cambiarlo. ¡Feliz día!",
+      "Para {nombre}, con todo mi cariño en tu día."
+    ],
+    "remates": [
+      "Ni corbata ni calcetines.",
+      "Ahora me toca a mí.",
+      "¡Feliz Día del Padre!",
+      "La llave ahora la tienes tú.",
+      "Para el mejor.",
+      "Gracias por todo."
+    ]
+  },
+  "diamadre": {
+    "mensajes": [
+      "{nombre}: me enseñaste a cuidar lo que importa. Ahora te regalo algo para cuidar. ¡Feliz día!",
+      "¡Feliz Día de la Madre, {nombre}! Este año, algo que no se marchita.",
+      "{nombre}, tantas veces me explicaste cosas. Hoy me toca a mí: abre esto y te cuento.",
+      "Para {nombre}, la mejor: un regalo para el largo plazo.",
+      "{nombre}: gracias por todo. Te regalo un pedacito de algo que nadie puede fabricar.",
+      "¡Feliz día, {nombre}! Un regalo distinto para alguien que siempre piensa en los demás.",
+      "{nombre}, que este regalo sea la excusa para tomar un café y que te muestre cómo funciona.",
+      "Feliz Día de la Madre, {nombre}. Lo que me enseñaste sobre ahorrar, te lo devuelvo así.",
+      "{nombre}: no se rompe, no pasa de moda y no hay que cambiarlo. ¡Feliz día!",
+      "Para {nombre}, con todo mi cariño en tu día."
+    ],
+    "remates": [
+      "Algo que no se marchita.",
+      "Ahora me toca a mí.",
+      "¡Feliz Día de la Madre!",
+      "Para la mejor.",
+      "La llave ahora la tienes tú.",
+      "Gracias por todo."
+    ]
+  },
+  "bautismo": {
+    "mensajes": [
+      "{nombre}: antes se regalaba una medallita para que acompañara toda la vida. Esto es lo mismo, pero en digital.",
+      "Para {nombre}, en tu bautismo: un regalo que van a cuidar en tu casa hasta que seas grande.",
+      "{nombre}: cuando puedas leer esto, ojalá lo sigas guardando. Con todo mi cariño.",
+      "{nombre}, para recibirte en la familia, un regalo para guardar toda la vida.",
+      "Para {nombre}: hoy no lo vas a entender, y está bien. Algún día te van a contar la historia de este regalo.",
+      "{nombre}: una medallita moderna, para que te acompañe siempre.",
+      "Para {nombre}, en este día tan especial: un pedacito de algo que nadie puede fabricar, para cuando seas grande.",
+      "{nombre}, que este regalo te recuerde siempre a quienes te quisieron desde el primer día.",
+      "Para {nombre}: una llave que hoy cuidan en tu casa y mañana vas a tener tú.",
+      "{nombre}, con mucho amor en tu bautismo. Guárdalo para cuando seas grande."
+    ],
+    "remates": [
+      "Una medallita moderna.",
+      "Para cuando seas grande.",
+      "Una llave para toda la vida.",
+      "Con amor, desde el primer día.",
+      "Hoy lo cuidan. Mañana es tuyo.",
+      "Para recibirte en la familia."
+    ]
+  },
+  "babyshower": {
+    "mensajes": [
+      "Para ti, que estás por llegar: ya tienes tu primer regalo esperándote.",
+      "Antes de nacer ya tienes algo para guardar. Te esperamos con muchas ganas.",
+      "Un regalo para alguien que todavía no conocemos y ya queremos mucho.",
+      "Para quien está por llegar: un regalo para cuando sea grande.",
+      "Para quien está por llegar: un regalo que no ocupa lugar en un cuarto lleno de pañales.",
+      "Ya hay alguien cuidando tu primer regalo. Te esperamos.",
+      "Para la familia que crece: un regalo para guardar hasta que sea grande.",
+      "Todavía no conocemos tu cara, pero ya sabemos que te vamos a querer mucho. Esto es para ti.",
+      "Para quien está por llegar: un pedacito de algo que nadie puede fabricar.",
+      "Ni ropa que se te va a quedar pequeña en un mes ni otro sonajero: algo para guardar muchos años."
+    ],
+    "remates": [
+      "Te esperamos.",
+      "Tu primer regalo.",
+      "Para cuando seas grande.",
+      "No ocupa lugar en el cuarto.",
+      "Ya te queremos.",
+      "Para quien está por llegar."
+    ]
+  },
+  "casamiento": {
+    "mensajes": [
+      "{nombre}: para la vida que empiezan juntos, un regalo para el largo plazo. ¡Felicidades!",
+      "¡Felicidades, {nombre}! Nada de batidoras repetidas: un regalo para guardar.",
+      "{nombre}, que este regalo sea el primer ahorro de la familia que empiezan.",
+      "Para {nombre}: hay cosas que no se fabrican de más. El amor, por ejemplo. Y esto.",
+      "{nombre}: no ocupa lugar en la casa nueva. ¡Que sean muy felices!",
+      "¡Vivan los novios! {nombre}, un pedacito de algo que nadie puede fabricar, para guardar entre los dos.",
+      "{nombre}, que lo cuiden con paciencia, como todo lo que vale la pena.",
+      "Para {nombre}, con mucho cariño en su boda: un regalo distinto para un día único.",
+      "{nombre}: hoy brindamos. Mañana, con calma, abran esto.",
+      "¡Felicidades, {nombre}! Que esta llave sea de las primeras que comparten."
+    ],
+    "remates": [
+      "¡Vivan los novios!",
+      "Para guardar entre los dos.",
+      "Hoy brindamos. Mañana, a guardar.",
+      "Nada de batidoras repetidas.",
+      "Para el largo plazo.",
+      "Que sean muy felices."
+    ]
+  },
+  "porque": {
+    "mensajes": [
+      "{nombre}: no hay ninguna ocasión. Te regalo esto porque sí.",
+      "{nombre}, te vi y me acordé de ti. Esto es para que lo guardes.",
+      "Para {nombre}: hay regalos que se usan una vez y regalos que te acompañan. Ojalá este sea de los segundos.",
+      "{nombre}: esto es bitcoin, una moneda que nadie puede imprimir de más. Te regalo un poquito para que la conozcas.",
+      "{nombre}, no sabía qué regalarte, así que te regalo algo para descubrir.",
+      "{nombre}, te regalo un pedacito de algo que nadie puede fabricar. Que sea el comienzo de muchas charlas.",
+      "Para {nombre}, con cariño: un regalo distinto, para abrir hoy y entender con el tiempo.",
+      "{nombre}: cuando lo abras vas a tener tu propia billetera, y desde ahí el regalo es tuyo.",
+      "{nombre}, esta tarjeta guarda un regalo y una invitación: a ahorrar, a preguntar y a pensar en el largo plazo.",
+      "{nombre}: cuida esta llave como cuidas las cosas importantes. Lo que guarda es tuyo."
+    ],
+    "remates": [
+      "Porque sí.",
+      "La llave ahora la tienes tú.",
+      "Sin pilas, sin talla, sin ticket de cambio.",
+      "Hay regalos que se usan. Este se guarda.",
+      "Un pedacito de algo que nadie puede fabricar.",
+      "Un regalo pequeño con un mensaje grande."
+    ]
+  },
+  "nacimiento": {
+    "mensajes": [
+      "{nombre}: llegaste y ya tienes tu primer regalo. Lo van a cuidar en tu casa hasta que seas grande.",
+      "Para {nombre}, que acaba de llegar al mundo: un regalo para guardar toda la vida.",
+      "{nombre}: cuando puedas leer esto, vas a saber con cuántas ganas te esperábamos. Este regalo es de ese día.",
+      "Para {nombre}: tu primera llave, desde tu primer día.",
+      "{nombre}, llegaste y cambiaste todo. Te regalo algo para que te acompañe mientras creces.",
+      "Para {nombre}: un regalo que no ocupa lugar entre tantos pañales y tanta ropita.",
+      "{nombre}: hay regalos que se te quedan pequeños en un mes. Este no.",
+      "Para {nombre}, con mucho amor en tu llegada: un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}, que este regalo te recuerde siempre con cuánto cariño te recibimos.",
+      "Para {nombre}: hoy lo cuidan en tu casa; cuando seas grande, la llave la vas a tener tú."
+    ],
+    "remates": [
+      "Tu primer regalo, desde el primer día.",
+      "Llegaste. Esto es para ti.",
+      "Para cuando seas grande.",
+      "No se te va a quedar pequeño.",
+      "Una llave desde el primer día.",
+      "Hoy lo cuidan. Mañana es tuyo."
+    ]
+  },
+  "comunion": {
+    "mensajes": [
+      "{nombre}: en tu primera comunión, un regalo para guardar y cuidar mucho tiempo.",
+      "Para {nombre}, en este día tan especial: algo distinto para acompañarte mientras creces.",
+      "{nombre}, hoy es un día para recordar. Que este regalo te lo recuerde siempre.",
+      "Para {nombre}: un regalo que van a cuidar en tu casa hasta que seas grande. Con todo nuestro cariño.",
+      "{nombre}: antes se regalaba una medallita o un rosario. Este año, además, algo para guardar.",
+      "¡Felicidades en tu primera comunión, {nombre}! Un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}, que este día te acompañe siempre, y este regalo también.",
+      "Para {nombre}: no es un juguete, pero dura más que cualquiera. Con mucho cariño en tu comunión.",
+      "{nombre}: un regalo para guardar hoy y entender con el tiempo. Pregunta todo lo que quieras.",
+      "Con mucho amor para {nombre}, en su primera comunión."
+    ],
+    "remates": [
+      "Para guardar mucho tiempo.",
+      "Un día para recordar.",
+      "Con cariño, en tu primera comunión.",
+      "Para cuando seas grande.",
+      "Hoy lo cuidan. Mañana es tuyo.",
+      "Dura más que cualquier juguete."
+    ]
+  },
+  "mitzva": {
+    "mensajes": [
+      "¡Mazal tov, {nombre}! Un regalo para una etapa nueva, para guardar y entender con tiempo.",
+      "{nombre}: hoy empiezas a hacerte cargo de tus propias decisiones. Te regalo algo para cuidar.",
+      "Para {nombre}, en este día tan importante: un regalo distinto, con mucho cariño.",
+      "{nombre}, tu primera billetera propia, para tu nueva etapa. ¡Mazal tov!",
+      "{nombre}: la fiesta se termina, las fotos quedan y esto se guarda. ¡Mazal tov!",
+      "Para {nombre}: un pedacito de algo que nadie puede fabricar de más, para alguien que hoy da un paso enorme.",
+      "{nombre}, que este regalo sea una invitación a preguntar, a estudiar y a pensar en el largo plazo.",
+      "¡Mazal tov, {nombre}! Que sea la primera de muchas cosas propias.",
+      "{nombre}: hoy te escuchamos con orgullo. Ahora, con calma, abre esto.",
+      "Con mucho cariño para {nombre}, en un día que vas a recordar siempre."
+    ],
+    "remates": [
+      "¡Mazal tov!",
+      "Una etapa nueva, una llave nueva.",
+      "Lo tuyo es tuyo.",
+      "La llave ahora la tienes tú.",
+      "Para pensar en el largo plazo.",
+      "Hoy, un paso enorme."
+    ]
+  },
+  "recibido": {
+    "mensajes": [
+      "¡Felicidades, {nombre}! Tantos años de estudio merecen un regalo distinto.",
+      "{nombre}: te graduaste. Después de tantos exámenes, algo para guardar con calma.",
+      "Para {nombre}: el diploma se enmarca; esto se guarda. ¡Felicidades!",
+      "{nombre}, terminaste la carrera. Que esto sea el comienzo de lo que viene.",
+      "¡Lo lograste, {nombre}! Un regalo para empezar tu vida profesional pensando en el largo plazo.",
+      "{nombre}: tantas noches de estudio valieron la pena. Esto es para festejar y para guardar.",
+      "Felicidades, {nombre}. Aprendiste a estudiar en serio; aquí tienes algo nuevo para investigar.",
+      "Para {nombre}, que hoy cierra una etapa enorme: un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}: se acabaron los exámenes. Ahora, con calma, abre esto.",
+      "¡Felicidades, {nombre}! Que la curiosidad que te trajo hasta aquí te siga acompañando."
+    ],
+    "remates": [
+      "Te graduaste. Esto también es tuyo.",
+      "Se acabaron los exámenes.",
+      "El diploma se enmarca. Esto se guarda.",
+      "Lo lograste.",
+      "Que siga la curiosidad.",
+      "Nueva etapa, nueva llave."
+    ]
+  },
+  "jubilacion": {
+    "mensajes": [
+      "{nombre}: después de tantos años de trabajo, un regalo para descubrir con tiempo, que ahora sobra.",
+      "¡Feliz jubilación, {nombre}! Se terminaron los despertadores. Esto, ábrelo cuando quieras.",
+      "Para {nombre}: tantos años pensando en el trabajo; ahora, tiempo para aprender algo nuevo.",
+      "{nombre}, ahora que tienes tiempo, te regalo algo para descubrir sin prisa.",
+      "{nombre}: gracias por todo lo que enseñaste en estos años. Esto es para la etapa que empieza.",
+      "Para {nombre}, en una etapa nueva: un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}: nada de relojes. El tiempo ahora es tuyo, y este regalo, cuando lo abras, también.",
+      "¡Felicidades, {nombre}! Que esta etapa venga con cafés largos, viajes y charlas nuevas, como la de este regalo.",
+      "{nombre}, te ganaste el descanso. Y un tema nuevo para la sobremesa.",
+      "Para {nombre}: hay regalos que se usan una vez y regalos que te acompañan. Que este acompañe tu nueva etapa."
+    ],
+    "remates": [
+      "Ahora el tiempo es tuyo.",
+      "Adiós, despertador.",
+      "Te ganaste el descanso.",
+      "Una etapa nueva, una llave nueva.",
+      "Para descubrir sin prisa.",
+      "Feliz jubilación."
+    ]
+  },
+  "casanueva": {
+    "mensajes": [
+      "{nombre}: casa nueva, llave nueva. Esta no abre ninguna puerta, pero guárdala igual.",
+      "¡Felicidades por la casa nueva, {nombre}! Un regalo que no ocupa lugar en la mudanza.",
+      "Para {nombre}: entre cajas y más cajas, un regalo que no hay que embalar.",
+      "{nombre}, que tu casa nueva se llene de cosas lindas. Empezamos por esta.",
+      "{nombre}: ni plantita ni juego de vasos. Un regalo para guardar en tu nuevo hogar.",
+      "Para {nombre}, en su casa nueva: un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}: las paredes se pintan y los muebles se cambian. Esto se guarda.",
+      "¡Que la disfrutes mucho, {nombre}! Y que este regalo sea tema de conversación en la primera cena en la casa nueva.",
+      "{nombre}, una llave más para tu llavero. Esta es digital.",
+      "Para {nombre}: que la casa nueva traiga buena luz, buenos vecinos y muchas visitas. Esto es para guardar."
+    ],
+    "remates": [
+      "Casa nueva, llave nueva.",
+      "No ocupa lugar en la mudanza.",
+      "Sin cajas ni embalaje.",
+      "Una llave más para tu llavero.",
+      "Que la disfrutes mucho.",
+      "Las paredes se pintan. Esto se guarda."
+    ]
+  },
+  "anionuevo": {
+    "mensajes": [
+      "¡Feliz año nuevo, {nombre}! Un regalo para empezar el año con algo propio.",
+      "{nombre}: año nuevo, llave nueva. Que este año traiga buenas noticias.",
+      "Para {nombre}: entre el brindis y los fuegos artificiales, un regalo para abrir con calma.",
+      "{nombre}, si este año te propusiste ahorrar, aquí tienes un primer empujón.",
+      "{nombre}: doce uvas, doce deseos y un regalo para guardar. ¡Feliz año!",
+      "¡Feliz año, {nombre}! Que sea un año de aprender cosas nuevas. Esta puede ser la primera.",
+      "Para {nombre}: un pedacito de algo que nadie puede fabricar de más, para empezar el año.",
+      "{nombre}: los propósitos de año nuevo se olvidan en febrero. Este regalo se guarda.",
+      "{nombre}, que este año te encuentre con salud, buena gente y algo de bitcoin guardado.",
+      "¡Felices fiestas y feliz año, {nombre}! Ábrelo cuando pase el brindis."
+    ],
+    "remates": [
+      "Año nuevo, llave nueva.",
+      "¡Feliz año nuevo!",
+      "Un propósito que sí se cumple.",
+      "Para empezar el año.",
+      "Ábrelo después del brindis.",
+      "Que sea un gran año."
+    ]
+  },
+  "sanvalentin": {
+    "mensajes": [
+      "{nombre}: feliz San Valentín. Te regalo algo para guardar, como guardo lo nuestro.",
+      "Para {nombre}, con amor: ni chocolates que se terminan ni flores que se marchitan.",
+      "{nombre}: hay pocas cosas únicas de verdad. Tú eres una.",
+      "Feliz San Valentín, {nombre}. Un regalo distinto para quien me cambió los días.",
+      "{nombre}: mi corazón ya lo tienes. Ahora también una llave.",
+      "Para {nombre}: un regalo para descubrir juntos, con tiempo y con café.",
+      "{nombre}, te quiero hoy, mañana y a largo plazo.",
+      "Feliz día de los enamorados, {nombre}. Esto es para el largo plazo, como lo nuestro.",
+      "{nombre}: este año, en vez de un oso de peluche, algo que dura más.",
+      "Con todo mi amor, {nombre}. Feliz San Valentín."
+    ],
+    "remates": [
+      "Feliz San Valentín.",
+      "Con todo mi amor.",
+      "Mi corazón y una llave.",
+      "Para el largo plazo, como lo nuestro.",
+      "Algo que no se marchita.",
+      "Juntos, siempre."
+    ]
+  },
+  "pascuas": {
+    "mensajes": [
+      "¡Felices Pascuas, {nombre}! Este año, además del huevo de chocolate, una sorpresa distinta.",
+      "{nombre}: el chocolate se termina rápido. Esto se guarda.",
+      "Para {nombre}: una sorpresa que no viene dentro de un huevo, pero es igual de linda.",
+      "{nombre}, entre tanto chocolate, un regalo que no engorda.",
+      "¡Felices Pascuas, {nombre}! Que sea un tiempo de renovación, y de algo nuevo para guardar.",
+      "Para {nombre}: un pedacito de algo que nadie puede fabricar de más. ¡Felices Pascuas!",
+      "{nombre}: esta vez la sorpresa no está escondida detrás del sillón. Está en esta tarjeta.",
+      "{nombre}, te regalo algo para abrir hoy y entender con el tiempo. ¡Felices Pascuas!",
+      "Para {nombre}, con cariño en estas Pascuas: hay regalos que se comen y regalos que se guardan. Este se guarda.",
+      "¡Felices Pascuas, {nombre}! Que el chocolate y la familia vengan acompañados de buenas charlas."
+    ],
+    "remates": [
+      "¡Felices Pascuas!",
+      "El chocolate se termina. Esto se guarda.",
+      "Una sorpresa distinta.",
+      "Un regalo que no engorda.",
+      "Este huevo no se rompe.",
+      "Hay regalos que se comen. Este se guarda."
+    ]
+  },
+  "dianino": {
+    "mensajes": [
+      "¡Feliz día, {nombre}! Este año, además de juguetes, una moneda de verdad para empezar a ahorrar.",
+      "{nombre}: un regalo que no se rompe, no se pierde debajo de la cama y no necesita pilas.",
+      "Para {nombre}: una moneda especial que cuidan miles de personas en todo el mundo. Pídele a un adulto que te ayude a abrirla.",
+      "{nombre}, este regalo lo van a cuidar en tu casa hasta que seas grande. ¡Feliz día!",
+      "{nombre}: hoy es tu día. Juega mucho, y esto guárdalo para cuando seas grande.",
+      "¡Feliz día, {nombre}! Una alcancía digital, para empezar a ahorrar desde ahora.",
+      "Para {nombre}: una moneda para guardar y una pregunta para hacer: ¿cómo funciona? Pregunta todo.",
+      "{nombre}, que nunca dejes de jugar ni de preguntar. Esto es para ti.",
+      "{nombre}: este regalo te va a acompañar mientras creces. Cuando seas grande, te cuento su historia.",
+      "Para {nombre}, con mucho cariño en su día."
+    ],
+    "remates": [
+      "¡Feliz día!",
+      "Una alcancía digital.",
+      "Sin pilas y sin cables.",
+      "Para cuando seas grande.",
+      "Una moneda de verdad.",
+      "Juega mucho. Esto, guárdalo."
+    ]
+  },
+  "amigo": {
+    "mensajes": [
+      "{nombre}: gracias por estar siempre. Te regalo algo para guardar, como guardo nuestra amistad.",
+      "¡Feliz día, {nombre}! Por todas las charlas, las risas y las que vienen.",
+      "Para {nombre}: hay amistades que no se fabrican de más. La nuestra, por ejemplo.",
+      "{nombre}, te regalo un pedacito de bitcoin y una excusa para juntarnos a charlar de esto.",
+      "{nombre}: tú siempre me escuchas. Ahora te toca escucharme hablar de bitcoin un rato.",
+      "Feliz día de la amistad, {nombre}. Un regalo distinto para alguien que hace todo mejor.",
+      "Para {nombre}: lo nuestro no se rompe ni pasa de moda. Este regalo, tampoco.",
+      "{nombre}, ya sé que no hacía falta. Por eso mismo.",
+      "{nombre}: brindo por ti y por muchos años más de esta amistad.",
+      "¡Feliz día, {nombre}! Gracias por ser como eres."
+    ],
+    "remates": [
+      "Gracias por estar siempre.",
+      "Por muchos años más de amistad.",
+      "Ya sé que no hacía falta.",
+      "Feliz día de la amistad.",
+      "Lo nuestro no pasa de moda.",
+      "Gracias por ser como eres."
+    ]
+  },
+  "abuelos": {
+    "mensajes": [
+      "{nombre}: me enseñaste a guardar lo que importa. Hoy te regalo algo para guardar.",
+      "¡Feliz día, {nombre}! Por todas las tardes, los cuentos y las meriendas.",
+      "Para {nombre}: tantas veces me contaste cómo era todo antes. Hoy te cuento algo nuevo.",
+      "{nombre}, este regalo es la excusa perfecta para una visita larga y que te muestre cómo funciona.",
+      "{nombre}: antes se ahorraba en un frasco o debajo del colchón. Te traigo una forma nueva.",
+      "Para {nombre}, con todo mi cariño: un pedacito de algo que nadie puede fabricar de más.",
+      "¡Feliz día, {nombre}! Gracias por tanta paciencia y tanto amor.",
+      "{nombre}: nunca es tarde para aprender algo nuevo. Esta vez te enseño yo.",
+      "Para {nombre}: un regalo moderno para quien me enseñó las cosas de siempre.",
+      "{nombre}, con mucho cariño en tu día. Ábrelo con calma y llámame si quieres que te ayude."
+    ],
+    "remates": [
+      "Ahora te enseño yo.",
+      "Gracias por tanto.",
+      "Una forma nueva de guardar.",
+      "Con todo mi cariño.",
+      "Nunca es tarde para aprender.",
+      "¡Feliz día!"
+    ]
+  },
+  "maestro": {
+    "mensajes": [
+      "{nombre}: gracias por enseñar con tanta paciencia. Hoy te regalo algo para aprender.",
+      "¡Feliz día, {nombre}! Por cada pregunta que respondiste y cada una que nos hiciste hacer.",
+      "Para {nombre}: enseñar es dar algo que no se gasta. Este regalo es para guardar.",
+      "{nombre}, hoy los papeles se invierten: te toca aprender a ti. ¡Feliz día!",
+      "{nombre}: gracias por despertar tanta curiosidad. Aquí tienes algo para despertar la tuya.",
+      "Para {nombre}, con agradecimiento: un pedacito de algo que nadie puede fabricar de más.",
+      "¡Feliz día, profe! Gracias, {nombre}, por todo lo que nos enseñaste este año.",
+      "{nombre}: este año, en vez de una manzana para el escritorio, algo para guardar.",
+      "{nombre}: tarea para la casa: abrir este regalo y averiguar cómo funciona. ¡Feliz día!",
+      "Para {nombre}, con mucho cariño en su día. Gracias por enseñar."
+    ],
+    "remates": [
+      "Gracias por enseñar.",
+      "Tarea: averiguar cómo funciona.",
+      "Hoy aprendes tú.",
+      "¡Feliz día, profe!",
+      "Enseñar no se gasta.",
+      "Con agradecimiento."
+    ]
+  },
+  "pizzaday": {
+    "mensajes": [
+      "{nombre}: el 22 de mayo de 2010 alguien pagó dos pizzas con 10.000 bitcoin. Hoy te regalo un pedacito, sin pizza.",
+      "¡Feliz Bitcoin Pizza Day, {nombre}! La compra más famosa de la historia de bitcoin fueron dos pizzas. Esto no se come: se guarda.",
+      "Para {nombre}: hoy se celebra la pizza más famosa de la historia. Yo pongo el bitcoin; la pizza va por tu cuenta.",
+      "{nombre}: en 2010, Laszlo cambió bitcoin por dos pizzas. Tú guárdalo, y la pizza la pedimos aparte.",
+      "{nombre}, feliz Pizza Day. Que este regalo te dure más que una pizza grande de mozzarella.",
+      "Para {nombre}: hay pizzas que se comen y pizzas que se recuerdan. Hoy recordamos las de 2010.",
+      "{nombre}: hoy los bitcoiners comemos pizza y contamos una historia. Te regalo un pedacito de esa historia.",
+      "¡Feliz Bitcoin Pizza Day, {nombre}! Una porción de bitcoin, sin aceitunas.",
+      "{nombre}, si te preguntan por qué te regalo esto hoy, busca la historia de las dos pizzas de 2010.",
+      "Para {nombre}: un 22 de mayo, dos pizzas y una historia que se cuenta cada año. Ábrelo con una porción en la mano."
+    ],
+    "remates": [
+      "Una porción de bitcoin, sin aceitunas.",
+      "Esto no se come. Se guarda.",
+      "Feliz Bitcoin Pizza Day.",
+      "Dos pizzas, una historia.",
+      "La pizza va por tu cuenta.",
+      "22 de mayo de 2010."
+    ]
+  },
+  "genesis": {
+    "mensajes": [
+      "{nombre}: el 3 de enero de 2009 se minó el primer bloque de bitcoin. Hoy le festejamos el cumpleaños contigo.",
+      "¡Feliz cumpleaños, bloque génesis! Y a ti, {nombre}, un regalo para festejarlo.",
+      "Para {nombre}: el bloque génesis guardó el titular de un diario de aquel día. Esta tarjeta guarda un regalo.",
+      "{nombre}, todo empezó con un bloque. Que este regalo sea el comienzo de tu propia historia con bitcoin.",
+      "{nombre}: el 3 de enero, los bitcoiners festejamos un cumpleaños raro: el del bloque 0. Te invito a la fiesta.",
+      "Para {nombre}: desde el bloque génesis, la cadena no dejó de sumar bloques. Aquí va tu pedacito.",
+      "{nombre}, hoy cumple años un bloque que cambió muchas cosas. Te regalo un poquito para que lo conozcas.",
+      "¡Feliz día del bloque génesis, {nombre}! Un regalo para abrir hoy y entender con el tiempo.",
+      "{nombre}: sopla las velas por el bloque 0. Yo pongo el regalo.",
+      "Para {nombre}: en 2009 alguien minó el primer bloque. Hoy recibes un pedacito de esa historia."
+    ],
+    "remates": [
+      "Feliz cumpleaños, bloque génesis.",
+      "Todo empezó con un bloque.",
+      "Bloque 0, regalo 1.",
+      "3 de enero de 2009.",
+      "Desde el primer bloque.",
+      "Sopla las velas por el bloque 0."
+    ]
+  },
+  "whitepaper": {
+    "mensajes": [
+      "{nombre}: el 31 de octubre de 2008, Satoshi Nakamoto publicó nueve páginas que cambiaron muchas cosas. Te regalo un pedacito de lo que vino después.",
+      "¡Feliz cumpleaños, whitepaper! {nombre}, te dejo un regalo y una lectura recomendada: son solo nueve páginas.",
+      "Para {nombre}: todo empezó con un documento de nueve páginas. Léelo, y después abre esto.",
+      "{nombre}, hoy cumple años el whitepaper de bitcoin. Te regalo un poquito para que lo conozcas de cerca.",
+      "{nombre}: «un sistema de efectivo electrónico de persona a persona». Así empezaba todo. Aquí va tu parte.",
+      "Para {nombre}: el 31 de octubre de 2008 no hubo susto de Halloween; hubo whitepaper. ¡Feliz aniversario!",
+      "{nombre}, feliz aniversario del whitepaper. Un regalo para leer, preguntar y guardar.",
+      "{nombre}: nueve páginas, una idea y muchos años de historia. Te regalo un pedacito.",
+      "Para {nombre}: Satoshi escribió el whitepaper; yo te escribo esta tarjeta. Lo demás está dentro.",
+      "{nombre}: si alguna vez te preguntaste qué es bitcoin, empieza por el whitepaper. Y por este regalo."
+    ],
+    "remates": [
+      "Nueve páginas, una idea.",
+      "Feliz cumpleaños, whitepaper.",
+      "Lectura recomendada: nueve páginas.",
+      "31 de octubre de 2008.",
+      "De persona a persona.",
+      "Satoshi escribió. Yo regalo."
+    ]
+  },
+  "halving": {
+    "mensajes": [
+      "{nombre}: cada cuatro años, más o menos, la emisión de bitcoin nuevo se reduce a la mitad. Hoy lo festejamos con un regalo.",
+      "¡Feliz halving, {nombre}! Cada 210.000 bloques, la recompensa se parte en dos. Este regalo, entero, es para ti.",
+      "Para {nombre}: hoy los mineros reciben la mitad que ayer. Tú recibes un regalo.",
+      "{nombre}, el halving es un recordatorio: las reglas de bitcoin no se cambian al gusto de nadie. Te regalo un pedacito.",
+      "{nombre}: la mitad para los mineros y el doble de ganas de regalarte esto. ¡Feliz halving!",
+      "Para {nombre}: algo que pasa cada cuatro años y un regalo para festejarlo.",
+      "{nombre}: cada vez se emite menos bitcoin nuevo, y hoy un poquito es para ti.",
+      "¡Feliz halving, {nombre}! Ábrelo con calma: el próximo es dentro de unos cuatro años.",
+      "{nombre}, este halving viene con regalo. Guárdalo hasta el próximo, y el siguiente, y el siguiente.",
+      "Para {nombre}: hoy la emisión de bitcoin se parte en dos. El cariño de este regalo, no."
+    ],
+    "remates": [
+      "Feliz halving.",
+      "Cada 210.000 bloques.",
+      "La mitad para los mineros.",
+      "Hasta el próximo halving.",
+      "Las reglas no cambian.",
+      "Un regalo entero, en pleno halving."
+    ]
+  },
+  "trabajo": {
+    "mensajes": [
+      "¡Felicidades por el trabajo nuevo, {nombre}! Que este primer día sea el comienzo de algo grande.",
+      "{nombre}: nuevo trabajo, nueva etapa. Te regalo algo para empezar pensando en el largo plazo.",
+      "Para {nombre}: te lo ganaste. Un regalo distinto para festejar.",
+      "{nombre}, que el primer sueldo llegue rápido. Mientras tanto, aquí va un regalo para guardar.",
+      "{nombre}: mucho éxito en lo nuevo. Esto es para guardar, pase lo que pase.",
+      "Para {nombre}: escritorio nuevo, equipo nuevo y una llave nueva.",
+      "{nombre}, que aprendas mucho y lo disfrutes más. ¡Felicidades!",
+      "¡Muy bien, {nombre}! Un pedacito de algo que nadie puede fabricar de más, para alguien que se lo ganó.",
+      "{nombre}: cuando cobres tu primer sueldo, acuérdate de guardar un poquito. Para empezar, aquí va esto.",
+      "Para {nombre}, con muchas ganas de que te vaya genial en lo nuevo."
+    ],
+    "remates": [
+      "Te lo ganaste.",
+      "Nuevo trabajo, nueva llave.",
+      "Que te vaya genial.",
+      "Mucho éxito en lo nuevo.",
+      "Para guardar, pase lo que pase.",
+      "¡Muy bien!"
+    ]
+  },
+  "gracias": {
+    "mensajes": [
+      "{nombre}: gracias. Por todo, y por tanto. Esto es una forma pequeña de decirlo.",
+      "Para {nombre}: hay cosas que no se pagan, pero se agradecen. Gracias de corazón.",
+      "{nombre}, me diste una mano enorme. Te devuelvo un pedacito de algo para guardar.",
+      "Gracias, {nombre}. No sabía cómo decirlo, así que te regalo esto.",
+      "{nombre}: gracias por estar cuando hizo falta. Este regalo es para ti.",
+      "Para {nombre}, con agradecimiento: un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}, un gracias grande en un regalo pequeño.",
+      "{nombre}: no hacía falta, ya sé. Pero quería que tuvieras algo para guardar y para acordarte.",
+      "Gracias, {nombre}, por la paciencia, la ayuda y el buen ánimo.",
+      "Para {nombre}: lo que hiciste no tiene precio. Esto es apenas un gracias."
+    ],
+    "remates": [
+      "Gracias de corazón.",
+      "Un gracias grande en un regalo pequeño.",
+      "Por todo, y por tanto.",
+      "Hay cosas que no se pagan.",
+      "Gracias por estar.",
+      "Con agradecimiento."
+    ]
+  },
+  "mejorate": {
+    "mensajes": [
+      "{nombre}: que te mejores pronto. Te mando un regalo para entretenerte mientras descansas.",
+      "Para {nombre}: reposo, mimos y algo nuevo para descubrir con calma. ¡Mejórate!",
+      "{nombre}, ya que te toca hacer reposo, te dejo algo para investigar sin prisa.",
+      "¡Fuerza, {nombre}! Un regalo pequeño para acompañarte en estos días.",
+      "{nombre}: las flores se marchitan y las uvas se terminan. Esto te espera hasta que te sientas mejor.",
+      "Para {nombre}: que la recuperación sea rápida. Ábrelo cuando tengas ganas, no hay prisa.",
+      "{nombre}, te mando un abrazo grande y un pedacito de algo que nadie puede fabricar de más.",
+      "{nombre}: cuídate mucho. Este regalo puede esperar; tú primero.",
+      "Para {nombre}, con todo el cariño: que pronto estemos charlando de esto en persona.",
+      "{nombre}: hoy toca descansar. Cuando te sientas mejor, lo abrimos y te cuento todo."
+    ],
+    "remates": [
+      "Que te mejores pronto.",
+      "Tú primero. Esto puede esperar.",
+      "Un abrazo grande.",
+      "¡Fuerza!",
+      "Ábrelo cuando tengas ganas.",
+      "Reposo, mimos y bitcoin."
+    ]
+  },
+  "graduacion": {
+    "mensajes": [
+      "¡Felicidades, {nombre}! Un logro enorme merece un regalo distinto.",
+      "{nombre}: cerraste una etapa. Te regalo algo para empezar la que sigue.",
+      "Para {nombre}, en su graduación: un regalo para pensar en el largo plazo.",
+      "{nombre}, tanto esfuerzo tiene su premio. Este es un pedacito.",
+      "¡Lo lograste, {nombre}! Guárdalo bien, como el recuerdo de este día.",
+      "{nombre}: hoy se festeja todo lo que aprendiste. Esto es para seguir aprendiendo.",
+      "Para {nombre}: un pedacito de algo que nadie puede fabricar de más, para alguien que se ganó cada paso.",
+      "{nombre}, que esta llave sea la primera de muchas cosas propias.",
+      "Felicidades, {nombre}. Hoy, fotos y festejo; mañana, con calma, abre esto.",
+      "¡Felicidades, {nombre}! Que lo que viene sea tan bueno como lo que lograste."
+    ],
+    "remates": [
+      "Felicidades. Lo lograste.",
+      "Nueva etapa, nueva llave.",
+      "Hoy festejo. Mañana, a guardar.",
+      "Para el largo plazo.",
+      "Te lo ganaste.",
+      "La llave ahora la tienes tú."
+    ]
+  },
+  "listas_uno": {
+    "mensajes": [
+      "{nombres}: mi aporte para tu lista. ¡Que lo disfrutes!",
+      "Para {nombres}, con cariño: un granito más para tu regalo.",
+      "{nombres}, ¡qué buena idea esta lista! Aquí va mi parte.",
+      "{nombres}: entre todos lo hacemos más grande. Este es mi pedacito.",
+      "Un aporte pequeño con un abrazo grande. ¡Para ti, {nombres}!",
+      "{nombres}, que lo guardes mucho tiempo. Con cariño.",
+      "Para {nombres}: sats con cariño.",
+      "Sumando a tu stack, {nombres}.",
+      "¡Felicidades, {nombres}! Aquí dejo mi aporte.",
+      "Mi granito de arena para ti, {nombres}. ¡Abrazo!",
+      "{nombres}: que este aporte sea parte de tu historia.",
+      "¡Para {nombres}! Hodl con cariño.",
+      "{nombres}: para que sigas sumando. ¡Abrazo grande!",
+      "Con mucho cariño para {nombres}. Que sea el primero de muchos.",
+      "{nombres}: poquito, pero con amor."
+    ]
+  },
+  "listas_varios": {
+    "mensajes": [
+      "{nombres}: mi aporte para su lista. ¡Que lo disfruten!",
+      "Para {nombres}, con cariño: un granito más para su regalo.",
+      "{nombres}, ¡qué buena idea esta lista! Aquí va mi parte.",
+      "{nombres}: entre todos lo hacemos más grande. Este es mi pedacito.",
+      "Un aporte pequeño con un abrazo grande para {nombres}.",
+      "{nombres}, que lo guarden mucho tiempo. Con cariño.",
+      "Para {nombres}: sats con cariño.",
+      "Sumando a su stack, {nombres}.",
+      "¡Felicidades, {nombres}! Aquí dejo mi aporte.",
+      "Mi granito de arena para ustedes, {nombres}. ¡Abrazo!",
+      "{nombres}: que este aporte sea parte de su historia.",
+      "¡Para {nombres}! Hodl con cariño.",
+      "{nombres}: para que sigan sumando. ¡Abrazo grande!",
+      "Con mucho cariño para {nombres}. Que sea el primero de muchos.",
+      "{nombres}: poquito, pero con amor."
+    ]
+  }
+}

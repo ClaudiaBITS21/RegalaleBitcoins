@@ -1,4 +1,4 @@
-# Versiones publicadas de regalalebitcoins.com
+# Versiones publicadas de regalalebitcoin.com
 
 Cada vez que se publica el sitio de mainnet, se anota acá su **huella**: el sha256 del listado de
 todos los archivos publicados (en el formato de `sha256sum`), y la huella de la **herramienta sin

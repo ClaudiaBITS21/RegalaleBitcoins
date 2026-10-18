@@ -38,15 +38,16 @@ export const consoleMailer: Mailer = {
 
 type Texts = { subject: string; body: string };
 
+// En castellano, frases que valen igual con vos y con tú: el trato no se guarda en la cuenta.
 const LOGIN: Readonly<Record<Lang, Texts>> = {
-  es: { subject: 'Tu acceso a RegalaleBitcoins', body: 'Hola. Entrá a tu panel con este link (vale 20 minutos y sirve una sola vez):\n\n{link}\n\nSi no lo pediste, ignorá este mail.' },
-  pt: { subject: 'Seu acesso ao RegalaleBitcoins', body: 'Olá. Entre no seu painel com este link (vale 20 minutos e funciona uma vez só):\n\n{link}\n\nSe você não pediu, ignore este e-mail.' },
-  en: { subject: 'Your RegalaleBitcoins access', body: 'Hi. Open your dashboard with this link (valid for 20 minutes, single use):\n\n{link}\n\nIf you didn’t ask for it, ignore this email.' },
-  it: { subject: 'Il tuo accesso a RegalaleBitcoins', body: 'Ciao. Entra nel tuo pannello con questo link (vale 20 minuti, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
+  es: { subject: 'Tu acceso a Regalale Bitcoin', body: 'Hola. Este es el link para entrar a tu panel (vale 20 minutos y sirve una sola vez):\n\n{link}\n\nSi no lo pediste, no hace falta hacer nada.' },
+  pt: { subject: 'Seu acesso ao Regalale Bitcoin', body: 'Olá. Entre no seu painel com este link (vale 20 minutos e funciona uma vez só):\n\n{link}\n\nSe você não pediu, ignore este e-mail.' },
+  en: { subject: 'Your Regalale Bitcoin access', body: 'Hi. Open your dashboard with this link (valid for 20 minutes, single use):\n\n{link}\n\nIf you didn’t ask for it, ignore this email.' },
+  it: { subject: 'Il tuo accesso a Regalale Bitcoin', body: 'Ciao. Entra nel tuo pannello con questo link (vale 20 minuti, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
 };
 
 const READY: Readonly<Record<Lang, Texts>> = {
-  es: { subject: 'Tu regalo para {para} ya está listo', body: 'Recibimos el pago del regalo para {para}: ya se puede abrir.\n\nEn tu panel ves cómo va, y con tu cara o tu huella podés volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
+  es: { subject: 'Tu regalo para {para} ya está listo', body: 'Recibimos el pago del regalo para {para}: ya se puede abrir.\n\nEn tu panel ves cómo va, y con tu cara o tu huella se pueden volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
   pt: { subject: 'Seu presente para {para} está pronto', body: 'Recebemos o pagamento do presente para {para}: ele já pode ser aberto.\n\nNo seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
   en: { subject: 'Your gift for {para} is ready', body: 'We received the payment for the gift for {para}: it can be opened now.\n\nIn your dashboard you can follow it and, with your face or fingerprint, see the link and the words again:\n\n{link}\n\nWe will never ask for the words of your wallet.' },
   it: { subject: 'Il tuo regalo per {para} è pronto', body: 'Abbiamo ricevuto il pagamento del regalo per {para}: si può già aprire.\n\nNel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole:\n\n{link}\n\nNon ti chiederemo mai le parole del tuo portafoglio.' },

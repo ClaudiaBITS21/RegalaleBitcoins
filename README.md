@@ -1,4 +1,4 @@
-# RegalaleBitcoins.com
+# RegalaleBitcoin.com
 
 Regalá bitcoin por una ocasión (cumpleaños, bautismo, casamiento) o armá una lista
 para recibirlo, sin que la plataforma custodie nunca los fondos.

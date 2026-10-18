@@ -1,4 +1,5 @@
-import type { UiLang } from '../i18n/index.ts';
+import type { Trato, UiLang } from '../i18n/index.ts';
+import { esTu } from './razones-tu.ts';
 
 // Las 21 razones. El castellano es copia exacta de docs/contenido/razones.es.json (fuente
 // de verdad; un test lo controla). pt, en e it son traducciones de ese texto.
@@ -102,6 +103,11 @@ const it: readonly Reason[] = [
 ];
 
 export const REASONS: Readonly<Record<UiLang, readonly Reason[]>> = { es, pt, en, it };
+
+/** Las razones en el idioma y el trato de quien lee. */
+export function reasonsFor(lang: UiLang, trato: Trato): readonly Reason[] {
+  return lang === 'es' && trato === 'tu' ? esTu : REASONS[lang];
+}
 
 /** Colores de las monedas del abanico (rotan). */
 export const COIN_COLORS = ['#ffd23f', '#ff8a1f', '#ff7fa6', '#7fd3ee', '#a8e07f'] as const;

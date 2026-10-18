@@ -54,7 +54,7 @@ encontramos fondos con esas palabras, revisalas."
 ## 4. El link
 
 ```
-https://regalalebitcoins.com/r/<id>#1<base64url sin relleno (semilla[16] ‖ sha256(semilla)[0..2])>
+https://regalalebitcoin.com/r/<id>#1<base64url sin relleno (semilla[16] ‖ sha256(semilla)[0..2])>
 ```
 
 - `<id>` es aleatorio y solo sirve para que el servidor muestre la tarjeta.

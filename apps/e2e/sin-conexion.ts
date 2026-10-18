@@ -23,7 +23,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(pathToFileURL(FILE).href);
 await page.getByRole('heading', { name: 'Abrir un regalo' }).waitFor();
 await page.getByLabel('Red').selectOption('signet');
-await page.getByLabel('Link del regalo').fill(`https://regalalebitcoins.com/r/abc#${encodeGiftFragment(gift.entropy)}`);
+await page.getByLabel('Link del regalo').fill(`https://regalalebitcoin.com/r/abc#${encodeGiftFragment(gift.entropy)}`);
 for (const [i, w] of gift.passphraseWords.entries()) await page.getByLabel(`Palabra ${i + 1}`, { exact: true }).fill(w);
 await page.getByRole('button', { name: 'Calcular' }).click();
 const opened = await page.locator('section').first().locator('code').allInnerTexts();

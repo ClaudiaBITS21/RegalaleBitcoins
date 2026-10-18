@@ -97,7 +97,7 @@ pnpm build:mainnet`}</code>
         <li>{t('custodia.offline.recuperar')}</li>
       </ul>
       <p>
-        <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoins-sin-conexion.html">
+        <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html">
           {t('custodia.offline.bajar')}
         </a>
       </p>
@@ -108,9 +108,9 @@ pnpm build:mainnet`}</code>
       )}
       <p class="texto-suave">{t('custodia.offline.comprobar')}</p>
       <pre translate={false}>
-        <code>{`sha256sum regalalebitcoins-sin-conexion.html        # Linux
-shasum -a 256 regalalebitcoins-sin-conexion.html    # Mac
-certutil -hashfile regalalebitcoins-sin-conexion.html SHA256   # Windows`}</code>
+        <code>{`sha256sum regalalebitcoin-sin-conexion.html        # Linux
+shasum -a 256 regalalebitcoin-sin-conexion.html    # Mac
+certutil -hashfile regalalebitcoin-sin-conexion.html SHA256   # Windows`}</code>
       </pre>
       <p class="texto-suave">{t('custodia.offline.usar')}</p>
     </article>
@@ -138,7 +138,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
   const { t, lang } = useI18n();
 
   useEffect(() => {
-    document.title = `${t('custodia.titulo')} · Regalale Bitcoins`;
+    document.title = `${t('custodia.titulo')} · Regalale Bitcoin`;
   }, [lang]);
 
   return (

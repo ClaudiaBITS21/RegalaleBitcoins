@@ -1,7 +1,7 @@
-# RegalaleBitcoins.com
+# RegalaleBitcoin.com
 
 Web para regalar bitcoin por una ocasión o armar una lista para recibirlo, sin custodia.
-Especificación de producto: "RegalaleBitcoins.com — Especificación v0.1" (doc aparte).
+Especificación de producto: "RegalaleBitcoin.com — Especificación v0.1" (doc aparte).
 Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 
 ## Principios no negociables
@@ -29,7 +29,7 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   handoffs "de Rodolfo" son decisiones de la responsable, no de un tercero.
 
 - **Bloqueante del lanzamiento (pedido de la responsable):** no se publica la nueva landing ni
-  se lanza en `regalalebitcoins.com` hasta que la responsable confirme, con sus palabras, la
+  se lanza en `regalalebitcoin.com` hasta que la responsable confirme, con sus palabras, la
   verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
   (Metaregistrar/AWS), Resend y su mail. Ver `docs/mainnet.md`. Este punto va **siempre** en cada
   listado de pendientes hasta que esté confirmado.
@@ -37,9 +37,17 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
 - En todo texto (web, mails, PDFs, materiales) la dirección del sitio es siempre
-  `regalalebitcoins.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
+  `regalalebitcoin.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
 - Textos de la interfaz en castellano rioplatense (voseo), con traducciones pt/en/it.
   Comentarios de código en castellano.
+- **Castellano con vos y con tú (pedido de la responsable, 18/10/2026):** siempre las dos
+  versiones. `apps/web/src/i18n/es.ts` es el voseo (fuente); `tu.ts` trae solo las claves que
+  cambian con tú (también `content/razones-tu.ts` y `content/mensajes/es-tu.json`). Se elige
+  sola según dónde dice el dispositivo que está la persona (`i18n/trato.ts`: zona horaria y, si
+  no alcanza, región del idioma): vos en Argentina, Uruguay y Paraguay; tú en el resto. El
+  selector ofrece «ES (vos)» y «ES (tú)». Todo texto nuevo en castellano va en las dos
+  versiones; un test controla que con tú no quede voseo. El idioma del regalo (`lang` en
+  `docs/derivacion.md`) sigue siendo `es`: el trato no entra en la derivación.
 - Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con
   `Intl.NumberFormat` (ver `apps/web/src/format.ts`), nunca concatenando. Los montos que escribe
   la persona se leen con el separador de su idioma (en es, `1.234` son mil doscientos treinta y
