@@ -398,7 +398,7 @@ export const en: Dict = {
   'porque.edad.volver': 'Tap to go back',
   'porque.cuento.kicker': 'To read as a family',
   'porque.cuento.titulo': 'The story',
-  'porque.cuento.texto': '“Una Natividad Moderna”, a little Christmas story by Florando Dragones, author of Aventuras en Levitania. It's in Spanish, the language it was written in. To download, print and read as a family.',
+  'porque.cuento.texto': "“Una Natividad Moderna”, a little Christmas story by Florando Dragones, author of Aventuras en Levitania. It's in Spanish, the language it was written in. To download, print and read as a family.",
   'porque.cuento.mas': 'More stories by Florando Dragones on YouTube →',
   'porque.cuento.bajar': 'Download the story',
   'porque.cuento.pronto': 'Coming soon',
