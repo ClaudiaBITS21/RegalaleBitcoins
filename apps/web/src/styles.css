@@ -2845,3 +2845,5 @@ svg.tarjeta-imagen {
 .custodia-huella dt { font-size: 0.85rem; color: var(--suave); }
 .custodia-huella dd { margin: 0 0 6px; }
 .custodia-verificar h3 { margin-top: 18px; }
+/* Dentro del desplegable, aire parejo entre bloques. */
+.historia .desplegable > * + * { margin-top: 12px; }

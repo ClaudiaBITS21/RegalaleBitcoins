@@ -54,10 +54,11 @@ function Verify() {
   return (
     <article class="historia custodia-bloque custodia-verificar">
       <h2 id="custodia-verificar">{t('custodia.verificar.titulo')}</h2>
-      <p>{t('custodia.verificar.p1')}</p>
-      {/* Lo largo (la huella y los pasos) va plegado para no cortar la lectura. */}
+      <p>{t('custodia.verificar.resumen')}</p>
+      {/* Todo lo demás (la huella, los pasos y la herramienta) va plegado para no cortar la lectura. */}
       <details class="desplegable">
         <summary>{t('custodia.verificar.mas')}</summary>
+        <p>{t('custodia.verificar.p1')}</p>
         {v !== null && <p>{t('custodia.verificar.esta')}</p>}
         {v !== null && (
           <dl class="custodia-huella">
@@ -93,21 +94,18 @@ pnpm build:mainnet`}</code>
           </li>
         </ol>
         <p class="texto-suave">{t('custodia.verificar.limite')}</p>
-      </details>
 
-      <h3>{t('custodia.offline.titulo')}</h3>
-      <p>{t('custodia.offline.p1')}</p>
-      <ul>
-        <li>{t('custodia.offline.abrir')}</li>
-        <li>{t('custodia.offline.recuperar')}</li>
-      </ul>
-      <p>
-        <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html">
-          {t('custodia.offline.bajar')}
-        </a>
-      </p>
-      <details class="desplegable">
-        <summary>{t('custodia.offline.mas')}</summary>
+        <h3>{t('custodia.offline.titulo')}</h3>
+        <p>{t('custodia.offline.p1')}</p>
+        <ul>
+          <li>{t('custodia.offline.abrir')}</li>
+          <li>{t('custodia.offline.recuperar')}</li>
+        </ul>
+        <p>
+          <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html">
+            {t('custodia.offline.bajar')}
+          </a>
+        </p>
         {v?.herramienta != null && (
           <p>
             {t('custodia.offline.huella')} <code translate={false}>{v.herramienta}</code>
