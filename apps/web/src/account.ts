@@ -87,7 +87,7 @@ export interface Unlocked {
 export async function createAccess(email: string, lang: string): Promise<Unlocked> {
   // El desafío revisa el mail primero: con cuenta existente no se llega a crear la passkey.
   const ch = await challenge('registro', email);
-  const created = await createPasskey({ challenge: ch, email, rpName: 'RegalaleBitcoins' }).catch(report('registro'));
+  const created = await createPasskey({ challenge: ch, email, rpName: 'Regalale Bitcoin' }).catch(report('registro'));
   let master: string | null = null;
   let vault: string | null = null;
   if (created.prf !== null) {
