@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { BitcoinBIcon } from './BitcoinB.tsx';
 import { useI18n } from '../ui.tsx';
-import { COIN_COLORS, REASONS } from './razones.ts';
+import { COIN_COLORS, reasonsFor } from './razones.ts';
 
 // Las 21 razones en abanico (docs/contenido.md §1 y docs/diseno/DISENO.md §5): tres cartas
 // como en la mano; la del centro se da vuelta sola al llegar. Swipe, flechas o tocar una
@@ -23,8 +23,8 @@ function useMedia(query: string): boolean {
 }
 
 export function ReasonsFan({ ctaHref }: { ctaHref: string }) {
-  const { t, lang } = useI18n();
-  const reasons = REASONS[lang];
+  const { t, lang, trato } = useI18n();
+  const reasons = reasonsFor(lang, trato);
   const wide = useMedia('(min-width: 900px)');
   const still = useMedia('(prefers-reduced-motion: reduce)');
   const [index, setIndex] = useState(0);

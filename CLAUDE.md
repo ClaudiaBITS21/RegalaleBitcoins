@@ -40,6 +40,14 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   `regalalebitcoin.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
 - Textos de la interfaz en castellano rioplatense (voseo), con traducciones pt/en/it.
   Comentarios de código en castellano.
+- **Castellano con vos y con tú (pedido de la responsable, 18/10/2026):** siempre las dos
+  versiones. `apps/web/src/i18n/es.ts` es el voseo (fuente); `tu.ts` trae solo las claves que
+  cambian con tú (también `content/razones-tu.ts` y `content/mensajes/es-tu.json`). Se elige
+  sola según dónde dice el dispositivo que está la persona (`i18n/trato.ts`: zona horaria y, si
+  no alcanza, región del idioma): vos en Argentina, Uruguay y Paraguay; tú en el resto. El
+  selector ofrece «ES (vos)» y «ES (tú)». Todo texto nuevo en castellano va en las dos
+  versiones; un test controla que con tú no quede voseo. El idioma del regalo (`lang` en
+  `docs/derivacion.md`) sigue siendo `es`: el trato no entra en la derivación.
 - Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con
   `Intl.NumberFormat` (ver `apps/web/src/format.ts`), nunca concatenando. Los montos que escribe
   la persona se leen con el separador de su idioma (en es, `1.234` son mil doscientos treinta y

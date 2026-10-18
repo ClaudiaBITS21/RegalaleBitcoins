@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Lang } from '@regalale/core';
+import type { Trato } from '../i18n/trato.ts';
 
 // Mensajes y remates de ejemplo por ocasión (docs/handoff/2026-10-17/mensajes-ejemplo.txt).
 // El campo viene con un ejemplo real, elegido al azar, que la persona edita en el lugar.
@@ -12,31 +13,34 @@ export interface ExampleSet {
 export type Examples = Readonly<Record<string, ExampleSet | readonly string[]>>;
 
 const FILES = import.meta.glob<{ default: Examples }>('./mensajes/*.json');
-const cache = new Map<Lang, Promise<Examples>>();
+const cache = new Map<string, Promise<Examples>>();
 
-export function loadExamples(lang: Lang): Promise<Examples> {
-  let p = cache.get(lang);
+/** En castellano con tú, es-tu.json. */
+export function loadExamples(lang: Lang, trato: Trato = 'vos'): Promise<Examples> {
+  const name = lang === 'es' && trato === 'tu' ? 'es-tu' : lang;
+  let p = cache.get(name);
   if (p === undefined) {
-    const file = FILES[`./mensajes/${lang}.json`] ?? FILES['./mensajes/es.json'];
+    const file = FILES[`./mensajes/${name}.json`] ?? FILES['./mensajes/es.json'];
     p = file === undefined ? Promise.resolve({}) : file().then((m) => m.default);
-    cache.set(lang, p);
+    cache.set(name, p);
   }
   return p;
 }
 
 /** Los ejemplos de un idioma, o null mientras cargan (o si no se pudieron cargar). */
-export function useExamples(lang: Lang): Examples | null {
-  const [data, setData] = useState<{ lang: Lang; ex: Examples } | null>(null);
+export function useExamples(lang: Lang, trato: Trato = 'vos'): Examples | null {
+  const key = `${lang}:${trato}`;
+  const [data, setData] = useState<{ key: string; ex: Examples } | null>(null);
   useEffect(() => {
     let live = true;
-    loadExamples(lang)
-      .then((ex) => live && setData({ lang, ex }))
+    loadExamples(lang, trato)
+      .then((ex) => live && setData({ key, ex }))
       .catch(() => undefined);
     return () => {
       live = false;
     };
-  }, [lang]);
-  return data !== null && data.lang === lang ? data.ex : null;
+  }, [key]);
+  return data !== null && data.key === key ? data.ex : null;
 }
 
 /** Ocasión libre o sin set propio: los de "porque". */

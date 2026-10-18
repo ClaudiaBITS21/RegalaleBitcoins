@@ -1,15 +1,17 @@
 import { type ComponentChildren, createContext } from 'preact';
 import { useContext, useEffect, useRef, useState } from 'preact/hooks';
-import { type Key, LANG_NAMES, translate, UI_LANGS, type UiLang } from './i18n/index.ts';
+import { type Key, LANG_NAMES, translate, type Trato, UI_LANGS, type UiLang } from './i18n/index.ts';
 import { installState, installWay, isStandalone, onInstallChange, promptInstall } from './pwa.ts';
 
 export interface I18n {
   readonly lang: UiLang;
-  readonly setLang: (lang: UiLang) => void;
+  /** En castellano: vos (Argentina, Uruguay, Paraguay) o tú (el resto). */
+  readonly trato: Trato;
+  readonly setLang: (lang: UiLang, trato?: Trato) => void;
   readonly t: (key: Key, vars?: Readonly<Record<string, string | number>>) => string;
 }
 
-export const I18nContext = createContext<I18n>({ lang: 'es', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
+export const I18nContext = createContext<I18n>({ lang: 'es', trato: 'vos', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
 export const useI18n = (): I18n => useContext(I18nContext);
 
 /** La marca como texto: "regalale" en tinta y "bitcoins" en el color de acento. */
@@ -21,15 +23,33 @@ export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
   );
 }
 
+/** Opciones del selector: el castellano va dos veces, con vos y con tú. */
+const LANG_OPTIONS: readonly { value: string; label: string; name: string; lang: UiLang; trato: Trato }[] = UI_LANGS.flatMap((l) =>
+  l === 'es'
+    ? [
+        { value: 'es', label: 'ES (vos)', name: 'Español (vos)', lang: l, trato: 'vos' as const },
+        { value: 'es-tu', label: 'ES (tú)', name: 'Español (tú)', lang: l, trato: 'tu' as const },
+      ]
+    : [{ value: l, label: l.toUpperCase(), name: LANG_NAMES[l], lang: l, trato: 'vos' as const }],
+);
+
 function LangPill() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, trato, setLang } = useI18n();
+  const value = lang === 'es' && trato === 'tu' ? 'es-tu' : lang;
   return (
     <label class="idioma-pill">
       <span class="solo-lector">{t('idioma')}</span>
-      <select value={lang} onChange={(e) => setLang((e.currentTarget as HTMLSelectElement).value as UiLang)}>
-        {UI_LANGS.map((l) => (
-          <option value={l} key={l} aria-label={LANG_NAMES[l]}>
-            {l.toUpperCase()}
+      <select
+        value={value}
+        onChange={(e) => {
+          const o = LANG_OPTIONS.find((x) => x.value === (e.currentTarget as HTMLSelectElement).value);
+          // Al pasar a otro idioma se conserva el trato, para volver al castellano de antes.
+          if (o !== undefined) setLang(o.lang, o.lang === 'es' ? o.trato : trato);
+        }}
+      >
+        {LANG_OPTIONS.map((o) => (
+          <option value={o.value} key={o.value} aria-label={o.name}>
+            {o.label}
           </option>
         ))}
       </select>

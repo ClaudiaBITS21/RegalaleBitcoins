@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { AgeArt, CuentoArt } from './content/PorqueArt.tsx';
 import { ReasonsFan } from './content/ReasonsFan.tsx';
-import { COIN_COLORS, REASONS } from './content/razones.ts';
+import { COIN_COLORS, reasonsFor } from './content/razones.ts';
 import type { Key } from './i18n/index.ts';
 import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
@@ -61,8 +61,8 @@ function AgeCard({ n, range, color }: (typeof AGES)[number]) {
 }
 
 export function WhyPage({ testnet }: { testnet: boolean }) {
-  const { t, lang } = useI18n();
-  const reasons = REASONS[lang];
+  const { t, lang, trato } = useI18n();
+  const reasons = reasonsFor(lang, trato);
 
   useEffect(() => {
     document.title = `${t('porque.titulo')} · Regalale Bitcoins`;
