@@ -398,7 +398,7 @@ export const it: Dict = {
   'porque.edad.volver': 'Tocca per tornare',
   'porque.cuento.kicker': 'Da leggere in famiglia',
   'porque.cuento.titulo': 'Il racconto',
-  'porque.cuento.texto': '“Una Natividad Moderna”, un raccontino di Natale di Florando Dragones, autore di Aventuras en Levitania. Da scaricare, stampare e leggere in famiglia.',
+  'porque.cuento.texto': '“Una Natividad Moderna”, un raccontino di Natale di Florando Dragones, autore di Aventuras en Levitania. È in spagnolo, la lingua in cui è stato scritto. Da scaricare, stampare e leggere in famiglia.',
   'porque.cuento.mas': 'Altri racconti di Florando Dragones su YouTube →',
   'porque.cuento.bajar': 'Scarica il racconto',
   'porque.cuento.pronto': 'Prossimamente',
