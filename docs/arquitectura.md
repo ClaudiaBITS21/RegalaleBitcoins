@@ -1,6 +1,6 @@
 # Arquitectura
 
-Especificación de producto: "RegalaleBitcoins.com — Especificación v0.1" (documento
+Especificación de producto: "RegalaleBitcoin.com — Especificación v0.1" (documento
 aparte). Acá queda lo técnico.
 
 ## Stack
@@ -121,7 +121,7 @@ cada visita sin código arma una clave maestra nueva.
 - Cuando un regalo con cuenta recibe el pago confirmado, la tarea programada manda un aviso
   "listo para mandar" con link de acceso al panel (3 días).
 - Las passkeys quedan atadas al dominio (rpId): las creadas en `regalalebitcoins.web.app` no
-  sirven en `regalalebitcoins.com`. Al mudar de dominio, entrar por mail y crear otra.
+  sirven en `regalalebitcoin.com`. Al mudar de dominio, entrar por mail y crear otra.
 - **Passkeys huérfanas** (bug del 17/10/2026, `docs/handoff/2026-10-17/bug-login-passkey.md`):
   el desafío de registro lleva el mail y el servidor responde `409 cuenta_existente` *antes* de
   que el navegador cree la passkey. Una passkey que el servidor no conoce da
@@ -145,7 +145,7 @@ cada visita sin código arma una clave maestra nueva.
   cuatro, queda en A6 (arriba girados 180°: tapa y contratapa; abajo: mensaje y "Abrí tu regalo"
   con el QR del link). **Las 4 palabras no se imprimen**: hay renglones para escribirlas a mano.
   La contratapa lleva la frase de remate (ejemplo al azar, editable, 60 caracteres, sin nada con
-  forma de link o dominio) y "Hecho con regalalebitcoins.com". Se arma e imprime en el navegador.
+  forma de link o dominio) y "Hecho con regalalebitcoin.com". Se arma e imprime en el navegador.
 
 ## Listas de regalos (etapa 7)
 

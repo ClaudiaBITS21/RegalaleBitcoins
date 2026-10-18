@@ -49,6 +49,6 @@ npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitc
 
 ## Dominio
 
-`regalalebitcoins.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
+`regalalebitcoin.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
 Registrador Metaregistrar, pero los nameservers vigentes son de AWS Route 53 (decisión pendiente de dónde cargar los registros). Registros: A `@` 199.36.158.100, TXT `@` `hosting-site=regalalebitcoins`, CNAME `www`
 `regalalebitcoins.web.app.`

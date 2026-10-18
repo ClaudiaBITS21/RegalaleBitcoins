@@ -118,7 +118,7 @@ Ese mismo espíritu tiene RegalaleBitcoins: un regalo simple, con un mensaje, qu
 - **Tapa:** diseño de la ocasión + nombre de quien recibe (máx. 30 caracteres).
 - **Interior izquierdo:** el mensaje de quien regala + su firma/nombre.
 - **Interior derecho:** QR al link de reclamo + "cómo reclamarlo" en 3 pasos + recuadro para escribir a mano las 4 palabras (4 renglones numerados).
-- **Contratapa:** logo RegalaleBitcoins.com + leyenda corta.
+- **Contratapa:** logo RegalaleBitcoin.com + leyenda corta.
 
 **Passphrase:** nunca impresa por la web. Recuadro manual opcional, adentro de la tarjeta (cerrada no se ve). Microcopy: "Escribí acá las 4 palabras solo si la entregás en mano. No le saques foto a esta parte. Guardá esta tarjeta como si fuera efectivo." El PDF se genera en el navegador: el link nunca pasa por el servidor.
 

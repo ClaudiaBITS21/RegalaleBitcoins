@@ -537,7 +537,7 @@ export const en: Dict = {
 
   'instalar.boton': '📲 Add to my home screen',
   'instalar.titulo': 'Keep it handy on your phone',
-  'instalar.bajada': 'You get an icon on your home screen, like an app, that opens regalalebitcoins.com.',
+  'instalar.bajada': 'You get an icon on your home screen, like an app, that opens regalalebitcoin.com.',
   'instalar.ios.1': 'Tap Share, in the bottom bar (on iPad, at the top). If you don’t see it, tap “⋯” first.',
   'instalar.ios.2': 'Scroll down and choose “Add to Home Screen”.',
   'instalar.android.1': 'Tap the browser’s ⋮ menu, top right.',

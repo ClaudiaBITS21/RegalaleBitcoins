@@ -537,7 +537,7 @@ export const it: Dict = {
 
   'instalar.boton': '📲 Aggiungi alla mia schermata Home',
   'instalar.titulo': 'Tienilo a portata di mano',
-  'instalar.bajada': 'Sulla schermata Home compare un’icona, come quella di un’app, che apre regalalebitcoins.com.',
+  'instalar.bajada': 'Sulla schermata Home compare un’icona, come quella di un’app, che apre regalalebitcoin.com.',
   'instalar.ios.1': 'Tocca Condividi, nella barra in basso (su iPad, in alto). Se non lo vedi, tocca prima «⋯».',
   'instalar.ios.2': 'Scorri e scegli «Aggiungi alla schermata Home».',
   'instalar.android.1': 'Tocca il menu ⋮ del browser, in alto a destra.',

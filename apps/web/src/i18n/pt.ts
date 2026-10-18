@@ -538,7 +538,7 @@ export const pt: Dict = {
 
   'instalar.boton': '📲 Adicionar à minha tela inicial',
   'instalar.titulo': 'Tenha sempre à mão no celular',
-  'instalar.bajada': 'Fica um ícone na sua tela inicial, como o de um app, que abre regalalebitcoins.com.',
+  'instalar.bajada': 'Fica um ícone na sua tela inicial, como o de um app, que abre regalalebitcoin.com.',
   'instalar.ios.1': 'Toque em Compartilhar, na barra de baixo (no iPad, em cima). Se não aparecer, toque antes em «⋯».',
   'instalar.ios.2': 'Role e escolha «Adicionar à Tela de Início».',
   'instalar.android.1': 'Toque no menu ⋮ do navegador, no canto superior direito.',

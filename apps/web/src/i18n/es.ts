@@ -536,7 +536,7 @@ export const es = {
 
   'instalar.boton': '📲 Agregar a mi inicio',
   'instalar.titulo': 'Tenelo a mano en tu celu',
-  'instalar.bajada': 'Queda un ícono en tu pantalla de inicio, como el de una app, que abre regalalebitcoins.com.',
+  'instalar.bajada': 'Queda un ícono en tu pantalla de inicio, como el de una app, que abre regalalebitcoin.com.',
   'instalar.ios.1': 'Tocá Compartir, en la barra de abajo (en iPad, arriba). Si no lo ves, tocá primero «⋯».',
   'instalar.ios.2': 'Bajá y elegí «Agregar a pantalla de inicio».',
   'instalar.android.1': 'Tocá el menú ⋮ del navegador, arriba a la derecha.',

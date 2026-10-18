@@ -1,7 +1,7 @@
-# RegalaleBitcoins.com
+# RegalaleBitcoin.com
 
 Web para regalar bitcoin por una ocasión o armar una lista para recibirlo, sin custodia.
-Especificación de producto: "RegalaleBitcoins.com — Especificación v0.1" (doc aparte).
+Especificación de producto: "RegalaleBitcoin.com — Especificación v0.1" (doc aparte).
 Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 
 ## Principios no negociables
@@ -29,7 +29,7 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   handoffs "de Rodolfo" son decisiones de la responsable, no de un tercero.
 
 - **Bloqueante del lanzamiento (pedido de la responsable):** no se publica la nueva landing ni
-  se lanza en `regalalebitcoins.com` hasta que la responsable confirme, con sus palabras, la
+  se lanza en `regalalebitcoin.com` hasta que la responsable confirme, con sus palabras, la
   verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
   (Metaregistrar/AWS), Resend y su mail. Ver `docs/mainnet.md`. Este punto va **siempre** en cada
   listado de pendientes hasta que esté confirmado.
@@ -37,7 +37,7 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
 - En todo texto (web, mails, PDFs, materiales) la dirección del sitio es siempre
-  `regalalebitcoins.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
+  `regalalebitcoin.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
 - Textos de la interfaz en castellano rioplatense (voseo), con traducciones pt/en/it.
   Comentarios de código en castellano.
 - Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con

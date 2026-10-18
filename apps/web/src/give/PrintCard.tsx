@@ -102,7 +102,7 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
           <Coin size={96} />
           <p class="contratapa-remate">{ok ? remate : ''}</p>
           <p class="contratapa-marca">
-            <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoins.com</strong>
+            <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoin.com</strong>
           </p>
         </div>
         <div class="panel panel-mensaje">
