@@ -2127,6 +2127,91 @@ svg.tarjeta-imagen {
   color: var(--tinta);
 }
 
+/* "Agregar a mi inicio" (ui.tsx): discreto en el pie; los pasos, en un diálogo que se abre solo al tocarlo. */
+.instalar-pie {
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--suave);
+  font: 600 14px var(--texto);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.instalar-dialogo {
+  width: min(400px, calc(100% - 32px));
+  padding: 24px 20px 20px;
+  border: 2px solid var(--tinta);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--tinta);
+  text-align: left;
+}
+
+.instalar-dialogo::backdrop {
+  background: rgb(26 21 48 / 55%);
+}
+
+.instalar-dialogo h2 {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.instalar-dialogo p {
+  margin: 8px 0 0;
+  color: var(--suave);
+  line-height: 1.4;
+}
+
+.instalar-otro {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--crema);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.instalar-otro p {
+  margin: 0;
+  color: var(--tinta);
+}
+
+.instalar-pasos {
+  margin: 18px 0 20px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.instalar-pasos li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.35;
+}
+
+.instalar-icono {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gris);
+  color: var(--tinta);
+}
+
+.instalar-dialogo .boton {
+  width: 100%;
+}
+
 .custodia-hero-cuerpo {
   display: flex;
   flex-direction: column;

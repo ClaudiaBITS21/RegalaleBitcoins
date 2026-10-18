@@ -17,6 +17,7 @@ import { ContributionPage } from './lists/ContributionPage.tsx';
 import { ListPage } from './lists/ListPage.tsx';
 import { NewListPage } from './lists/NewListPage.tsx';
 import { PanelPage } from './panel/PanelPage.tsx';
+import { listenForInstall } from './pwa.ts';
 import { WhyPage } from './porque.tsx';
 import { NoCustodyPage } from './sincustodia.tsx';
 import { I18nContext } from './ui.tsx';
@@ -83,4 +84,5 @@ function App() {
   );
 }
 
+listenForInstall();
 render(<App />, document.getElementById('app') as HTMLElement);

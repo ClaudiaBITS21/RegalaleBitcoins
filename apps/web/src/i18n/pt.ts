@@ -535,4 +535,17 @@ export const pt: Dict = {
   'lista.estado.recibido': 'Recebido',
   'lista.estado.enCamino': 'A caminho',
   'lista.estado.esperando': 'Aguardando',
+
+  'instalar.boton': '📲 Adicionar à minha tela inicial',
+  'instalar.titulo': 'Tenha sempre à mão no celular',
+  'instalar.bajada': 'Fica um ícone na sua tela inicial, como o de um app, que abre regalalebitcoins.com.',
+  'instalar.ios.1': 'Toque em Compartilhar, na barra de baixo (no iPad, em cima). Se não aparecer, toque antes em «⋯».',
+  'instalar.ios.2': 'Role e escolha «Adicionar à Tela de Início».',
+  'instalar.android.1': 'Toque no menu ⋮ do navegador, no canto superior direito.',
+  'instalar.android.2': 'Escolha «Instalar app» ou «Adicionar à tela inicial».',
+  'instalar.final': 'Confirme com «Adicionar». Pronto: o ícone fica na sua tela inicial.',
+  'instalar.iosotro': 'Neste navegador a opção pode não aparecer. Se for assim, copie o link, abra no Safari e siga estes passos.',
+  'instalar.copiar': 'Copiar o link',
+  'instalar.copiado': 'Copiado! Cole no Safari',
+  'instalar.listo': 'Entendi',
 };
