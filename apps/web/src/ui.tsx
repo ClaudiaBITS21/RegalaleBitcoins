@@ -12,11 +12,12 @@ export interface I18n {
 export const I18nContext = createContext<I18n>({ lang: 'es', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
 export const useI18n = (): I18n => useContext(I18nContext);
 
-/** La marca como texto: "regalale" en tinta y "bitcoins" en el color de acento. */
+/** La marca como texto: "REGALALE" en tinta y "BITCOIN" en el color de acento. En mayúsculas el
+ * acento no se escribe, así se lee igual como regalale, regálale, regalá o regala. */
 export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
   return (
     <span class={`marca-texto${onOrange ? ' sobre-naranja' : ''}`}>
-      regalale<span>bitcoins</span>
+      REGALALE<span>BITCOIN</span>
     </span>
   );
 }
