@@ -14,11 +14,51 @@ export interface I18n {
 export const I18nContext = createContext<I18n>({ lang: 'es', trato: 'vos', setLang: () => {}, t: (key, vars) => translate('es', key, vars) });
 export const useI18n = (): I18n => useContext(I18nContext);
 
-/** La marca como texto: "regalale" en tinta y "bitcoins" en el color de acento. */
+type Fondo = 'claro' | 'naranja' | 'negro';
+
+/** Colores de la caja según el fondo: sobre naranja va blanca con la ₿ naranja; sobre negro, naranja con la ₿ blanca. */
+const CAJA: Readonly<Record<Fondo, { caja: string; borde: string; sombra: string; b: string }>> = {
+  claro: { caja: '#FF8A1F', borde: '#1A1530', sombra: '#1A1530', b: '#1A1530' },
+  naranja: { caja: '#FFFFFF', borde: '#1A1530', sombra: '#1A1530', b: '#FF8A1F' },
+  negro: { caja: '#FF8A1F', borde: '#000000', sombra: '#B3470A', b: '#FFFFFF' },
+};
+
+/** El ícono de la marca: una caja de regalo con moño y la ₿ del favicon. */
+export function GiftMark({ fondo = 'claro' }: { fondo?: Fondo }) {
+  const c = CAJA[fondo];
+  return (
+    <svg class="marca-caja" viewBox="38 34 148 160" aria-hidden="true">
+      <g transform="rotate(-10 112 128)">
+        <path d="M108 78c-14-30-46-34-46-14 0 12 24 17 46 14zM108 78c14-30 46-34 46-14 0 12-24 17-46 14z" fill={c.caja} stroke={c.borde} stroke-width="5" stroke-linejoin="round" />
+        <rect x="64" y="86" width="104" height="96" rx="16" fill={c.sombra} />
+        <rect x="56" y="78" width="104" height="96" rx="16" fill={c.caja} stroke={c.borde} stroke-width="5" />
+        <g transform="translate(108 126) scale(1.75) translate(-33 -36)">
+          <path
+            d="M27 22v28M27 22h9.5a7 7 0 0 1 0 14H27M27 36h11a7 7 0 0 1 0 14H27M30.5 17.5V22M36.5 17.5V22M30.5 50v4.5M36.5 50v4.5"
+            fill="none"
+            stroke={c.b}
+            stroke-width="5.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * La marca: la caja y "REGALALE" (600) "BITCOIN" (800). En mayúsculas el acento no se escribe,
+ * así se lee igual como regalale, regálale, regalá o regala. Los lectores de pantalla oyen el nombre, no las letras.
+ */
 export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
   return (
     <span class={`marca-texto${onOrange ? ' sobre-naranja' : ''}`}>
-      regalale<span>bitcoins</span>
+      <span class="solo-lector">Regalale Bitcoin</span>
+      <GiftMark fondo={onOrange ? 'naranja' : 'claro'} />
+      <span class="marca-palabras" aria-hidden="true">
+        REGALALE<span class="marca-bitcoin">BITCOIN</span>
+      </span>
     </span>
   );
 }
@@ -43,9 +83,14 @@ const LANG_OPTIONS: readonly LangOption[] = UI_LANGS.flatMap((l): LangOption[] =
 function LangPill() {
   const { t, lang, trato, setLang } = useI18n();
   const value = lang === 'es' && trato === 'tu' ? 'es-tu' : lang;
+  // Cerrado muestra solo el idioma (ES); vos o tú se ven al desplegarlo. El select nativo queda
+  // encima, transparente, para que la lista sea la del sistema.
   return (
     <label class="idioma-pill">
       <span class="solo-lector">{t('idioma')}</span>
+      <span class="idioma-visible" aria-hidden="true">
+        {lang.toUpperCase()}
+      </span>
       <select
         value={value}
         onChange={(e) => {
