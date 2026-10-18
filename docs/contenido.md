@@ -27,7 +27,7 @@ Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías pro
 - Al completar 21: bloque de cierre con CTA "¿Regalamos?" → flujo de regalo.
 - Diseño de moneda propio (no imitar monedas físicas reales/comerciales).
 - **Home:** mismo componente con las 6 destacadas (`destacadas_home` en el JSON) + link "Ver las 21".
-- **Mazo en abanico** (a Rodolfo le gustó el diseño; **ABIERTO**: confirmar si en celular reemplaza a la grilla y qué va en compu). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
+- **Mazo en abanico** (**RESUELTO, 18/10/2026:** abanico en celular y en compu, en home y en /por-que; la grilla queda reemplazada por la lista desplegable "Ver las 21"). Referencia: `prototipos/mazo-abanico.dc.html` (lógica en la clase `Component`; formato de prototipo, reimplementar en React).
   - 3 cartas como en la mano: **centro = actual** (adelante, más grande, se da vuelta sola ~0,5 s después de llegar y muestra frase + explicación); **izquierda = anterior**, **derecha = siguiente**, inclinadas ±14°, escala 0,9, mostrando la moneda con su número. En la 1 no hay izquierda; en la 21 no hay derecha.
   - Pasar: swipe, flechas, o tocar una lateral (pasa al centro). Animación: todas las cartas se desplazan a su nuevo lugar (transform + opacity, ~0,55 s); la que sale se desvanece hacia atrás, la que entra aparece desde atrás.
   - Mientras se arrastra, la central sigue el dedo con leve rotación y la que viene se acerca al centro proporcionalmente; si se suelta antes de ~60 px vuelve a su lugar.
@@ -148,7 +148,7 @@ y la 18 la 16.
 3. **Razones que prometen funciones que todavía no existen.** La 12 ("quién aportó qué") pide
    que cada aporte pase por nuestro flujo (on-chain no hay nombres); la 18 ("sabés si lo
    reclamó") llega con los paneles (etapa 6). Se publican cuando la función exista o se
-   ajusta el texto.
+   ajusta el texto. **Decisión (18/10/2026):** la 15 y la 16 (números nuevos) quedan como están.
 4. **SEO.** La web hoy es una SPA; para que el texto de las 21 razones esté en el HTML se
    prerenderizan home y /por-que en el build (Preact a HTML estático, sin servidor nuevo).
 5. **Listas solo BTC en el lanzamiento** cambia la especificación v0.1 (xpub + alias bancario):

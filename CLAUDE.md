@@ -32,7 +32,8 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   se lanza en `regalalebitcoin.com` hasta que la responsable confirme, con sus palabras, la
   verificación en dos pasos en Google (toda cuenta con acceso al proyecto), GitHub, el DNS
   (Metaregistrar/AWS), Resend y su mail. Ver `docs/mainnet.md`. Este punto va **siempre** en cada
-  listado de pendientes hasta que esté confirmado.
+  listado de pendientes hasta que esté confirmado. **Confirmado por la responsable el 18/10/2026**
+  (AWS quedó fuera por decisión suya).
 
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
