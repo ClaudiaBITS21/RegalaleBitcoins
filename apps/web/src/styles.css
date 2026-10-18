@@ -2486,7 +2486,8 @@ svg.tarjeta-imagen {
   gap: 14px;
 }
 
-.porque-lista summary {
+.porque-lista summary,
+.desplegable summary {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -2500,25 +2501,30 @@ svg.tarjeta-imagen {
   list-style: none;
 }
 
-.porque-lista summary::-webkit-details-marker {
+.porque-lista summary::-webkit-details-marker,
+.desplegable summary::-webkit-details-marker {
   display: none;
 }
 
-.porque-lista summary::after {
+.porque-lista summary::after,
+.desplegable summary::after {
   content: '+';
   font: 800 20px var(--titulos);
 }
 
-.porque-lista[open] summary::after {
+.porque-lista[open] summary::after,
+.desplegable[open] summary::after {
   content: '−';
 }
 
-.porque-lista summary:focus-visible {
+.porque-lista summary:focus-visible,
+.desplegable summary:focus-visible {
   outline: 3px solid var(--naranja);
   outline-offset: 3px;
 }
 
-.porque-lista[open] summary {
+.porque-lista[open] summary,
+.desplegable[open] summary {
   margin-bottom: 14px;
 }
 
