@@ -24,13 +24,20 @@ export function Wordmark({ onOrange = false }: { onOrange?: boolean }) {
 }
 
 /** Opciones del selector: el castellano va dos veces, con vos y con tú. */
-const LANG_OPTIONS: readonly { value: string; label: string; name: string; lang: UiLang; trato: Trato }[] = UI_LANGS.flatMap((l) =>
+interface LangOption {
+  readonly value: string;
+  readonly label: string;
+  readonly name: string;
+  readonly lang: UiLang;
+  readonly trato: Trato;
+}
+const LANG_OPTIONS: readonly LangOption[] = UI_LANGS.flatMap((l): LangOption[] =>
   l === 'es'
     ? [
-        { value: 'es', label: 'ES (vos)', name: 'Español (vos)', lang: l, trato: 'vos' as const },
-        { value: 'es-tu', label: 'ES (tú)', name: 'Español (tú)', lang: l, trato: 'tu' as const },
+        { value: 'es', label: 'ES (vos)', name: 'Español (vos)', lang: l, trato: 'vos' },
+        { value: 'es-tu', label: 'ES (tú)', name: 'Español (tú)', lang: l, trato: 'tu' },
       ]
-    : [{ value: l, label: l.toUpperCase(), name: LANG_NAMES[l], lang: l, trato: 'vos' as const }],
+    : [{ value: l, label: l.toUpperCase(), name: LANG_NAMES[l], lang: l, trato: 'vos' }],
 );
 
 function LangPill() {
