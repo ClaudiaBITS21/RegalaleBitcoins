@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { Key } from './i18n/index.ts';
 import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
@@ -33,6 +33,87 @@ function TwoLists({ yes, no }: { yes: { title: Key; items: readonly Key[] }; no:
         </article>
       ))}
     </div>
+  );
+}
+
+const REPO = 'https://github.com/ClaudiaBITS21/RegalaleBitcoins';
+
+/**
+ * "Comprobá que la página es la nuestra": la huella de esta versión (de /version.json, que arma
+ * scripts/huella.mjs al compilar), cómo comprobarla afuera y la herramienta sin conexión.
+ */
+function Verify() {
+  const { t } = useI18n();
+  const [v, setV] = useState<{ commit: string; huella: string; herramienta: string | null } | null>(null);
+  useEffect(() => {
+    fetch('/version.json', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: unknown) => setV(j as typeof v))
+      .catch(() => undefined);
+  }, []);
+  return (
+    <article class="historia custodia-bloque custodia-verificar">
+      <h2 id="custodia-verificar">{t('custodia.verificar.titulo')}</h2>
+      <p>{t('custodia.verificar.p1')}</p>
+      {v !== null && (
+        <dl class="custodia-huella">
+          <dt>{t('custodia.verificar.huella')}</dt>
+          <dd>
+            <code translate={false}>{v.huella}</code>
+          </dd>
+          <dt>{t('custodia.verificar.commit')}</dt>
+          <dd>
+            <a href={`${REPO}/commit/${v.commit}`} target="_blank" rel="noopener noreferrer">
+              <code translate={false}>{v.commit.slice(0, 12)}</code>
+            </a>
+          </dd>
+        </dl>
+      )}
+      <p>{t('custodia.verificar.p2')}</p>
+      <ol>
+        <li>
+          {t('custodia.verificar.paso1')}{' '}
+          <a href={`${REPO}/blob/main/docs/versiones.md`} target="_blank" rel="noopener noreferrer">
+            docs/versiones.md
+          </a>
+        </li>
+        <li>{t('custodia.verificar.paso2')}</li>
+        <li>
+          {t('custodia.verificar.paso3')}
+          <pre translate={false}>
+            <code>{`git clone ${REPO}
+cd RegalaleBitcoins && git checkout ${v?.commit.slice(0, 12) ?? '<commit>'}
+pnpm install --frozen-lockfile
+pnpm build:mainnet`}</code>
+          </pre>
+        </li>
+      </ol>
+      <p class="texto-suave">{t('custodia.verificar.limite')}</p>
+
+      <h3>{t('custodia.offline.titulo')}</h3>
+      <p>{t('custodia.offline.p1')}</p>
+      <ul>
+        <li>{t('custodia.offline.abrir')}</li>
+        <li>{t('custodia.offline.recuperar')}</li>
+      </ul>
+      <p>
+        <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoins-sin-conexion.html">
+          {t('custodia.offline.bajar')}
+        </a>
+      </p>
+      {v?.herramienta != null && (
+        <p>
+          {t('custodia.offline.huella')} <code translate={false}>{v.herramienta}</code>
+        </p>
+      )}
+      <p class="texto-suave">{t('custodia.offline.comprobar')}</p>
+      <pre translate={false}>
+        <code>{`sha256sum regalalebitcoins-sin-conexion.html        # Linux
+shasum -a 256 regalalebitcoins-sin-conexion.html    # Mac
+certutil -hashfile regalalebitcoins-sin-conexion.html SHA256   # Windows`}</code>
+      </pre>
+      <p class="texto-suave">{t('custodia.offline.usar')}</p>
+    </article>
   );
 }
 
@@ -133,8 +214,13 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
           <article class="historia custodia-bloque">
             <h2 id="custodia-confianza">{t('custodia.confianza.titulo')}</h2>
             <p>{t('custodia.confianza.p1')}</p>
+            <p>{t('custodia.confianza.cold')}</p>
             <p>{t('custodia.confianza.p2')}</p>
           </article>
+        </section>
+
+        <section class="seccion" aria-labelledby="custodia-verificar">
+          <Verify />
         </section>
 
         <section class="seccion" aria-labelledby="custodia-otra">

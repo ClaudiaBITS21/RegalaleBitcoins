@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <!-- Sin red: ni siquiera puede pedir nada afuera. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'" />
+    <title>regalalebitcoins.com · Herramienta sin conexión</title>
+    <style>
+      :root { color-scheme: light; --tinta: #1a1530; --naranja: #ff8a1f; --borde: #e6e1ee; }
+      body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--tinta); background: #fff; }
+      #app { max-width: 760px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+      header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+      h1 { font-size: 1.3rem; margin: 0; } h2 { font-size: 1.1rem; margin: 0 0 8px; }
+      section { border: 2px solid var(--borde); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+      .campo { display: grid; gap: 4px; font-weight: 600; font-size: 0.9rem; }
+      input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid #bbb; border-radius: 8px; }
+      .palabras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+      button { font: inherit; font-weight: 700; padding: 10px 16px; border: 0; border-radius: 10px; background: var(--tinta); color: #fff; cursor: pointer; justify-self: start; }
+      .dato { display: grid; gap: 2px; } .dato span { font-size: 0.85rem; color: #555; }
+      code { font: 14px ui-monospace, monospace; background: #f4f2f8; padding: 6px 8px; border-radius: 6px; overflow-wrap: anywhere; }
+      .aviso { background: #fff1e3; padding: 10px; border-radius: 10px; } .error { color: #9c1c44; font-weight: 600; }
+      .regalos { padding-left: 0; list-style: none; display: grid; gap: 8px; } .regalos li { display: grid; gap: 4px; border-top: 1px dashed var(--borde); padding-top: 8px; }
+      footer { font-size: 0.85rem; color: #555; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/offline/main.ts"></script>
+  </body>
+</html>

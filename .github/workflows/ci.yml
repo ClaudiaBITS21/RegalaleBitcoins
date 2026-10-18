@@ -36,6 +36,13 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @regalale/web build
+      # Huella de la versión de mainnet (scripts/huella.mjs): queda en este registro como testigo
+      # independiente; tiene que coincidir con la publicada en docs/versiones.md y en el sitio.
+      - run: pnpm build:mainnet
+      # Herramienta sin conexión: abierta desde el disco y sin red, abre y recupera un regalo.
+      - run: pnpm --filter @regalale/e2e sin-conexion
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
       # Reclamo de punta a punta en un navegador real contra una cadena simulada (sin red externa).
       - run: pnpm --filter @regalale/e2e simulado
         env:

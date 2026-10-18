@@ -2687,3 +2687,11 @@ svg.tarjeta-imagen {
 .tanda p { margin: 0; }
 .tanda-elegir { width: 18px; height: 18px; margin: 0 8px 0 0; vertical-align: -3px; accent-color: var(--tinta); }
 .tanda-reparto { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+
+/* Sin custodia: comprobar la versión */
+.custodia-verificar pre { margin: 8px 0; padding: 10px 12px; background: var(--gris); border-radius: 10px; overflow-x: auto; font-size: 0.8rem; }
+.custodia-verificar code { overflow-wrap: anywhere; }
+.custodia-huella { display: grid; gap: 2px 12px; margin: 8px 0; }
+.custodia-huella dt { font-size: 0.85rem; color: var(--suave); }
+.custodia-huella dd { margin: 0 0 6px; }
+.custodia-verificar h3 { margin-top: 18px; }
