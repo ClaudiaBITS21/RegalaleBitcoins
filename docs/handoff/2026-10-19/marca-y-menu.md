@@ -46,18 +46,21 @@ Hecho:
 - Tokens `--marca-titulo` y `--marca-texto`; «Regalale Bitcoin» dentro de los textos de la web en
   naranja (`ConMarca` en `apps/web/src/ui.tsx`), en tinta sobre fondo naranja.
 - Menú de compu, con los cambios que pidió Rodolfo el 19/10 (botón primero, menús después, idioma
-  al final; «Recibir ▾» agrupa Abrir un regalo y las listas, en lugar de «Abrir un regalo» y
-  «Listas» sueltos): [Regalar] · Recibir ▾ (Abrir un regalo, Armar mi lista) · Cómo funciona ▾
-  (Seguridad) · Por qué bitcoin ▾ (21 razones) · idioma. Con sesión iniciada, «Mi cuenta ▾» (Mis
-  regalos) antes del idioma.
+  al final; «Recibir ▾» agrupa Abrir un regalo, las listas y Mis regalos, en lugar de «Abrir un
+  regalo» y «Listas» sueltos y del menú de la cuenta): [Regalar] · Recibir ▾ (Abrir un regalo,
+  Armar mi lista, Mis regalos) · Cómo funciona ▾ (Seguridad) · Por qué bitcoin ▾ (21 razones,
+  Comparativa, Nuestra historia) · idioma.
+- «Nuestra historia» es un ancla dentro de 21 razones (`/por-que#historia`), no una página propia
+  (decisión de Rodolfo, 19/10; resuelve ese punto del ABIERTO).
 - «Recibir ▾» va como botón con marco negro (tinta), sin relleno, sobre cualquier fondo, para
   diferenciarlo de [Regalar], que tiene fondo (decisión de Rodolfo, 19/10).
 - Celular: logo + [Regalar] + ☰; el menú abre con «Recibir» (Abrir un regalo primero) y muestra
   los grupos como secciones abiertas, con el idioma al final.
 - Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).
 
-Falta (se suma cuando exista cada cosa): Paso a paso, Preguntas frecuentes, Comparativa, Precios,
-Mi plan, Mis listas y Mi llave de recuperación en el menú de la cuenta; en el pie, Términos,
+Falta (se suma cuando exista cada cosa): Paso a paso, Preguntas frecuentes, Precios, Según quién
+lo recibe, y Mi plan, Mis listas y Mi llave de recuperación (dónde van, ahora que Mis regalos está
+en Recibir, a definir); en el pie, Términos,
 Privacidad, Botón de arrepentimiento, Cómo operamos, Contacto y Prensa. `MAIL_FROM` es
 configuración de Cloud Run (la cambia Rodolfo). La marca en la tarjeta imprimible y en los mails
 va «a secas» (no tienen color).

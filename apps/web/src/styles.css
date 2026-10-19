@@ -1603,6 +1603,10 @@ textarea {
     width: 300px;
   }
 
+  .panel-grupo-derecha {
+    left: auto;
+    right: 0;
+  }
 
   .marca-texto,
   .cabecera .marca-texto {

@@ -148,22 +148,6 @@ export function ConMarca({ text }: { text: string }) {
   );
 }
 
-/** ¿Hay una sesión iniciada? Se pregunta una vez por carga de página. */
-let sesion: Promise<boolean> | null = null;
-function useSesion(): boolean {
-  const [abierta, setAbierta] = useState(false);
-  useEffect(() => {
-    sesion ??= fetch('/api/cuenta/sesion', { credentials: 'same-origin' })
-      .then((r) => (r.ok ? (r.json() as Promise<{ abierta?: unknown }>) : { abierta: false }))
-      .then(
-        (d) => d.abierta === true,
-        () => false,
-      );
-    void sesion.then(setAbierta);
-  }, []);
-  return abierta;
-}
-
 interface ItemMenu {
   readonly href: string;
   readonly label: Key;
@@ -177,11 +161,13 @@ interface GrupoMenu {
   readonly items: readonly ItemMenu[];
   /** En compu va como botón con marco (sin relleno), al lado de [Regalar] que va con fondo. */
   readonly conMarco?: boolean;
+  /** El panel se abre alineado a la derecha del botón (el último grupo, para no salirse). */
+  readonly alDerecha?: boolean;
 }
 
 // Grupos del menú (handoff 2026-10-19, «marca y menú», con los cambios de Rodolfo del 19/10:
-// «Recibir» agrupa Abrir un regalo y las listas). Solo lo que ya existe: Paso a paso, Preguntas
-// frecuentes, Comparativa, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo entra en un
+// «Recibir» agrupa Abrir un regalo, las listas y Mis regalos). Solo lo que ya existe: Paso a paso,
+// Preguntas frecuentes, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo entra en un
 // grupo existente; arriba, como máximo, 4 links y 2 botones.
 const GRUPOS: readonly GrupoMenu[] = [
   {
@@ -191,19 +177,21 @@ const GRUPOS: readonly GrupoMenu[] = [
     items: [
       { href: '/abrir', label: 'menu.abrirRegalo', desc: 'menu.abrirRegalo.d', destacado: true },
       { href: '/listas/nueva', label: 'menu.lista', desc: 'menu.lista.d' },
+      { href: '/panel', label: 'menu.misRegalos', desc: 'menu.misRegalos.d' },
     ],
   },
   { id: 'como', label: 'menu.comoFunciona', items: [{ href: '/sin-custodia', label: 'menu.seguridad' }] },
   {
     id: 'porque',
     label: 'menu.porQueBitcoin',
+    alDerecha: true,
     items: [
       { href: '/por-que', label: 'menu.razones' },
       { href: '/comparativa', label: 'menu.comparativa' },
+      { href: '/por-que#historia', label: 'menu.historia' },
     ],
   },
 ];
-const CUENTA: GrupoMenu = { id: 'cuenta', label: 'menu.cuenta', items: [{ href: '/panel', label: 'menu.misRegalos' }] };
 
 /** Un ítem: link simple o, si tiene bajada, título y bajada (como en «Recibir»). */
 function ItemDeMenu({ item, onClick }: { item: ItemMenu; onClick?: () => void }) {
@@ -231,7 +219,7 @@ function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: 
         </svg>
       </button>
       {abierto && (
-        <div class="panel-menu panel-grupo">
+        <div class={`panel-menu panel-grupo${grupo.alDerecha === true ? ' panel-grupo-derecha' : ''}`}>
           {grupo.items.map((i) => (
             <ItemDeMenu item={i} key={i.href} />
           ))}
@@ -244,12 +232,10 @@ function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: 
 /** Encabezado del sitio: marca, menú agrupado, idioma, «Abrir un regalo» y [Regalar]. */
 export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   const { t } = useI18n();
-  const conSesion = useSesion();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null);
   const mobileRef = useDismiss(mobileOpen, () => setMobileOpen(false));
   const navRef = useDismiss(grupoAbierto !== null, () => setGrupoAbierto(null));
-  const grupos = conSesion ? [...GRUPOS, CUENTA] : GRUPOS;
   const toggle = (id: string) => setGrupoAbierto((g) => (g === id ? null : id));
   return (
     <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
@@ -264,7 +250,6 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         {GRUPOS.map((g) => (
           <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
         ))}
-        {conSesion && <Desplegable grupo={CUENTA} abierto={grupoAbierto === CUENTA.id} onToggle={() => toggle(CUENTA.id)} />}
         <LangPill />
       </nav>
       <div class="nav-movil" ref={mobileRef}>
@@ -278,7 +263,7 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         </button>
         {mobileOpen && (
           <div class="panel-menu panel-movil">
-            {grupos.map((g) => (
+            {GRUPOS.map((g) => (
               <div class="menu-seccion" key={g.id}>
                 <p class="menu-titulo">{t(g.label)}</p>
                 {g.items.map((i) => (
