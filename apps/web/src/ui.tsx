@@ -250,6 +250,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         {GRUPOS.map((g) => (
           <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
         ))}
+        <a class="link-nav" href="/precios">
+          {t('menu.precios')}
+        </a>
         <LangPill />
       </nav>
       <div class="nav-movil" ref={mobileRef}>
@@ -271,6 +274,11 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
                 ))}
               </div>
             ))}
+            <div class="menu-seccion">
+              <a class="menu-link" href="/precios" onClick={() => setMobileOpen(false)}>
+                {t('menu.precios')}
+              </a>
+            </div>
             <div class="menu-idioma">
               <LangPill />
             </div>
@@ -293,6 +301,9 @@ export function SiteFooter() {
       </a>
       <a class="custodia-link-pie" href="/panel">
         {t('menu.misRegalos')}
+      </a>
+      <a class="custodia-link-pie" href="/precios">
+        {t('menu.precios')}
       </a>
       <InstallButton />
     </footer>

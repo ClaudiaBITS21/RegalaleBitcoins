@@ -1,6 +1,6 @@
 # Handoff 19/10/2026: modelo de cobro, créditos y pagos
 
-Estado: PENDIENTE
+Estado: EN CURSO (página de precios publicada; cobro, créditos y admin, pendientes)
 
 Decidido por Rodolfo en chat, 19/10/2026. Copiado de la carpeta de Drive «RegalaleBitcoin -
 handoffs» (`2026-10-19 - cobro y créditos.md`).
@@ -101,3 +101,27 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
 - Términos y condiciones y política de privacidad: se redactan aparte a partir de lo que hace el código; revisión del abogado antes de cobrar.
 - Inscripción de la base de datos (mails) ante la AAIP: lo ve Rodolfo con el abogado.
 - Envío de mails: verificar el dominio en Resend y `MAIL_FROM=Regalale Bitcoin <hola@regalalebitcoin.com>`. Sin esto no llegan los links de acceso ni los avisos.
+
+## Decisiones de Rodolfo (19/10/2026)
+
+- **Precios se publica ya** y se integra al recorrido de regalar («Precios ya lo publicamos y lo
+  integramos al flow»).
+- La cuenta se crea sola al regalar, con el mail de quien regala (es obligatoria).
+- Cambiar el mail de la cuenta: con la passkey o con las 12 palabras (a confirmar por Rodolfo).
+  Necesita sumar una «llave de cuenta» a `docs/derivacion.md`.
+
+## Qué quedó (código)
+
+- Página `/precios` (`apps/web/src/precios.tsx`): los productos de la tabla, en dólares y con su
+  valor de hoy en sats (cotización de `/api/precio`). `lista_otras` no se muestra suelta: va como
+  «Lista para cualquier ocasión», con 10 regalos por el mismo precio. «Precios» como link directo
+  en el menú (compu y celular) y en el pie.
+- Mientras el cobro no esté activo (`COBRO_ACTIVO` en `precios.tsx`), la página avisa: «Mientras
+  lanzamos, regalar es gratis. Estos precios rigen cuando activemos el cobro, y te vamos a avisar
+  antes.»
+- Los precios están en el código hasta que exista el admin; después salen de la API.
+
+## Qué falta
+
+- Créditos (`movimientos`), consumo al primer depósito, pagos a la xpub, admin, Mi plan,
+  arrepentimiento: en testnet primero. Activar el cobro en mainnet necesita autorización explícita.

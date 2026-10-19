@@ -3080,3 +3080,78 @@ svg.tarjeta-imagen {
     padding: 40px;
   }
 }
+
+/* Precios (precios.tsx). */
+.precios-aviso {
+  margin: 0;
+  padding: 14px 18px;
+  border: 2px solid var(--tinta);
+  border-radius: 16px;
+  background: var(--amarillo);
+  font-weight: 600;
+}
+
+.precios-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.precio-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px;
+  border: 2px solid var(--tinta);
+  border-radius: 20px;
+  background: var(--blanco);
+  box-shadow: 4px 4px 0 var(--tinta);
+}
+
+.precio-tarjeta.precio-gratis {
+  background: var(--crema);
+}
+
+.precio-tarjeta h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.precio-monto {
+  margin: 4px 0 0;
+  font-family: var(--titulos);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.precio-sats {
+  margin: 0;
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.precio-items {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.precios-nota {
+  margin: 0;
+  font-size: 14px;
+}
+
+.precios-como ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 70ch;
+}

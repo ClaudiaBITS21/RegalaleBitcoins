@@ -14,6 +14,12 @@ export function formatUsd(amount: number, lang: UiLang): string {
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'USD', maximumFractionDigits: amount < 10 ? 2 : 0 }).format(amount);
 }
 
+/** Un precio en dólares: sin centavos si es entero ("US$ 21"), con dos si no ("US$ 10,50"). */
+export function formatUsdPrice(amount: number, lang: UiLang): string {
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount);
+}
+
 /** Dólares siempre con centavos ("US$ 1.234,50"): para montos que la persona eligió. */
 export function formatUsdExact(amount: number, lang: UiLang): string {
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);

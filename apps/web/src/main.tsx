@@ -8,6 +8,7 @@ import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ComparisonPage } from './comparativa.tsx';
+import { PricingPage } from './precios.tsx';
 import { ClaimPage } from './claim/ClaimPage.tsx';
 import { GivePage } from './give/GivePage.tsx';
 import { ALLOW_MAINNET } from './config.ts';
@@ -87,6 +88,8 @@ function App() {
         <OpenGiftPage />
       ) : /^\/por-que\/?$/.test(path) ? (
         <WhyPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/precios\/?$/.test(path) ? (
+        <PricingPage testnet={!ALLOW_MAINNET} />
       ) : /^\/comparativa\/?$/.test(path) ? (
         <ComparisonPage testnet={!ALLOW_MAINNET} />
       ) : /^\/sin-custodia\/?$/.test(path) ? (
