@@ -26,6 +26,8 @@ export interface MempoolPayment {
   readonly feeRate: number;
   /** Lo que esa transacción manda a la dirección. */
   readonly value: bigint;
+  /** Si señala RBF (BIP 125): puede reemplazarse antes de confirmar. Sin el dato, se asume que sí. */
+  readonly rbf?: boolean;
 }
 
 /** sat/vB. */
@@ -133,14 +135,17 @@ export function esploraClient(baseUrl: string, fetchImpl: typeof fetch = fetch, 
     async mempoolPayments(address) {
       const list = await json(`/address/${encodeURIComponent(address)}/txs/mempool`);
       if (!Array.isArray(list)) throw new ChainError('Lista de transacciones inválida.');
-      return list.map((t: { txid?: unknown; fee?: unknown; weight?: unknown; vout?: unknown }) => {
+      return list.map((t: { txid?: unknown; fee?: unknown; weight?: unknown; vout?: unknown; vin?: unknown }) => {
         if (typeof t.txid !== 'string' || !TXID.test(t.txid) || !Array.isArray(t.vout)) throw new ChainError('Transacción inválida.');
         const weight = Number(sats(t.weight));
         if (weight === 0) throw new ChainError('Transacción inválida.');
         const value = (t.vout as Array<{ scriptpubkey_address?: unknown; value?: unknown }>)
           .filter((o) => o.scriptpubkey_address === address)
           .reduce((a, o) => a + sats(o.value), 0n);
-        return { txid: t.txid, feeRate: Number(sats(t.fee)) / (weight / 4), value };
+        // BIP 125: alguna entrada con sequence menor a 0xfffffffe. Sin entradas legibles, se asume RBF.
+        const vin = Array.isArray(t.vin) ? (t.vin as Array<{ sequence?: unknown }>) : [];
+        const rbf = vin.length === 0 || vin.some((i) => typeof i.sequence !== 'number' || i.sequence < 0xfffffffe);
+        return { txid: t.txid, feeRate: Number(sats(t.fee)) / (weight / 4), value, rbf };
       });
     },
     async txHex(txid) {

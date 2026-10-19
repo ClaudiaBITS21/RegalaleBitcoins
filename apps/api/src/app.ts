@@ -12,7 +12,8 @@ import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
-import { consumeGiftCredits, refundCanceledGifts } from './credits.ts';
+import { chargingActive, consumeGiftCredits, refundCanceledGifts } from './credits.ts';
+import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
 import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
 
@@ -138,6 +139,48 @@ export function createApp(deps: AppDeps): Hono {
   registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
 
+  /** Precios públicos (para la página de precios y la pantalla de compra). */
+  app.get('/api/productos', async (c) => {
+    const rows = await sql<{ codigo: string; precio_cents: number; regalos: number; listas_cumple: number; listas_otras: number; plan: string | null }[]>`
+      select codigo, precio_cents, regalos, listas_cumple, listas_otras, plan from productos where activo order by precio_cents, codigo`;
+    const [charging, key, founders] = await Promise.all([chargingActive(sql), paymentKey(sql, network).catch(() => null), foundersLeft(sql)]);
+    return c.json({
+      cobroActivo: charging,
+      // Se puede comprar si la llave de cobro está cargada (aunque el cobro todavía no esté activo: la compra de prueba).
+      seVende: key !== null,
+      fundadoresQuedan: founders,
+      productos: rows.map((p) => ({
+        codigo: p.codigo,
+        precioUsd: p.precio_cents / 100,
+        regalos: p.regalos,
+        listasCumple: p.listas_cumple,
+        listasOtras: p.listas_otras,
+        plan: p.plan,
+        seVendeSuelto: (BUYABLE as readonly string[]).includes(p.codigo),
+      })),
+    });
+  });
+
+  /** Comprar un producto: cotiza en sats (30 minutos) y devuelve una dirección nueva para pagar. */
+  app.post('/api/cuenta/pagos', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const body = ((await c.req.json().catch(() => null)) ?? {}) as { producto?: unknown };
+    if (typeof body.producto !== 'string') throw new ApiError(400, 'pedido_invalido');
+    const payment = await createPayment({ sql, price, network }, account.id, body.producto);
+    return c.json(paymentView(payment), 201);
+  });
+
+  /** Estado de un pago propio (mira la cadena en el momento). */
+  app.get('/api/cuenta/pagos/:id', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const id = c.req.param('id');
+    const payment = /^[A-Za-z0-9_-]{22}$/.test(id) ? await findPayment(sql, id) : null;
+    if (payment === null || payment.accountId !== account.id) throw new ApiError(404, 'no_encontrado');
+    return c.json(paymentView(await refreshPayment({ sql, chain, price }, payment)));
+  });
+
   /** Difusiones programadas: lo dispara Cloud Scheduler cada pocos minutos. */
   app.post('/api/tareas/difusiones', async (c) => {
     const expected = deps.tasksToken;
@@ -149,7 +192,8 @@ export function createApp(deps: AppDeps): Hono {
     const recordatorios = await sendReminders(avisoDeps);
     const creditos = await consumeGiftCredits({ sql, chain });
     const devoluciones = await refundCanceledGifts(sql);
-    return c.json({ ...broadcasts, avisos, recordatorios, creditos, devoluciones });
+    const pagos = await watchPayments({ sql, chain, price });
+    return c.json({ ...broadcasts, avisos, recordatorios, creditos, devoluciones, pagos });
   });
 
   app.get('/api/precio', async (c) => {
