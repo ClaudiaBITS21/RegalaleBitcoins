@@ -42,7 +42,6 @@ export interface Draft {
   example: string | null;
   /** Lo que había escrito antes de "Otra idea", para deshacer. */
   undo: string | null;
-  image: number;
   /** Estilo de la tarjeta; con 'propia', la imagen ya procesada en el navegador. */
   style: CardStyle;
   ownImage: ProcessedImage | null;
@@ -92,7 +91,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         para: draft.to,
         de: draft.from,
         mensaje: draft.message,
-        imagen: draft.image,
+        imagen: 1, // una sola imagen por estilo; el campo queda por compatibilidad
         estilo: draft.style,
         ...(draft.style === 'propia' && draft.ownImage !== null ? { imagenPropia: draft.ownImage.base64 } : {}),
         moneda: draft.currency,
@@ -144,7 +143,6 @@ export function GivePage() {
     message: '',
     example: null,
     undo: null,
-    image: 1,
     style: 'ilustracion',
     ownImage: null,
     lang: lang as Lang,
@@ -218,7 +216,7 @@ export function GivePage() {
 
   const another = () => {
     setGift(null);
-    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, image: 1, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
+    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
     setSteps(['ocasion']);
   };
 

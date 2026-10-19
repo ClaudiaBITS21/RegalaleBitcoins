@@ -169,7 +169,7 @@ export function ListPage({ id }: { id: string }) {
     body = (
       <div class="paso">
         <article class="tarjeta">
-          <GiftCardArt occasion={list.ocasion} variant={2} class="tarjeta-imagen" />
+          <GiftCardArt occasion={list.ocasion} class="tarjeta-imagen" />
           <div class="tarjeta-texto">
             <p class="kicker tarjeta-ocasion">{occasionLabel(list.ocasion, lang, list.ocasionLibre)}</p>
             <StepTitle>{list.titulo}</StepTitle>

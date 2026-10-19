@@ -200,7 +200,11 @@ try {
   await page.getByLabel('Tu mensaje').fill('x'.repeat(281));
   await page.getByText('Te pasaste por 1 caracteres.').waitFor();
   await page.getByLabel('Tu mensaje').fill('Feliz Navidad, Ana. 🎄');
-  await page.getByRole('button', { name: 'Imagen 3' }).click();
+  // Una imagen por estilo, con el nombre puesto: tocarla pasa al estilo siguiente.
+  await page.getByRole('button', { name: 'Estilo: Ilustración. Tocá para ver otro estilo' }).click();
+  await page.getByRole('button', { name: 'Estilo: Dibujo a mano. Tocá para ver otro estilo' }).waitFor();
+  if ((await page.getByRole('radio', { name: 'Dibujo a mano' }).getAttribute('aria-checked')) !== 'true') fail('tocar la imagen no cambió el estilo');
+  if (!(await page.locator('.imagen-estilo text').innerHTML()).includes('Ana')) fail('la imagen no lleva el nombre de quien recibe');
   await page.getByLabel('Idioma de quien lo recibe').selectOption('pt');
   await shot('r2-para');
   await page.getByRole('button', { name: 'Seguir' }).click();
@@ -303,8 +307,8 @@ try {
   await page.pdf({ path: join(SHOTS, 'tarjeta-a4.pdf'), format: 'A4', printBackground: true });
   await sheet.screenshot({ path: join(SHOTS, 't1-tarjeta-a4.png') });
   await page.emulateMedia({ media: 'screen' });
-  const created = (await sql`select id, para, de, idioma, ocasion, imagen, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
-  if (created === undefined || created.para !== 'Ana' || created.idioma !== 'pt' || created.imagen !== 3 || created.sats_esperados !== '30500') {
+  const created = (await sql`select id, para, de, idioma, ocasion, imagen, estilo, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
+  if (created === undefined || created.para !== 'Ana' || created.idioma !== 'pt' || created.imagen !== 1 || created.estilo !== 'mano' || created.sats_esperados !== '30500') {
     fail(`el regalo quedó mal registrado: ${JSON.stringify(created)}`);
   }
   newGiftId = created.id as string;
@@ -341,7 +345,8 @@ try {
   await giver.getByLabel('Su nombre').fill('Lupe');
   // Estilo "Con tu IA": el pedido nombra la ocasión y la imagen se sube procesada en el navegador.
   await giver.getByRole('radio', { name: 'Con tu IA' }).click();
-  if (!(await giver.locator('.ia-pedido').inputValue()).includes('Cumpleaños')) fail('el pedido para la IA no nombra la ocasión');
+  const pedido = await giver.locator('.ia-pedido').inputValue();
+  if (!pedido.includes('Cumpleaños') || !pedido.includes('«Lupe»')) fail('el pedido para la IA no nombra la ocasión y a quien recibe');
   if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con "Con tu IA" y sin imagen no debería poder seguir');
   await giver.locator('.ia-subir input[type=file]').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: testPng(1600, 900) });
   await giver.locator('.ia-vista img').waitFor({ timeout: 10_000 });

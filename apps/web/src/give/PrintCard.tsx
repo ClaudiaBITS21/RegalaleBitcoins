@@ -92,7 +92,7 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
       <div class="hoja-a4" aria-hidden="true" lang={lang}>
         <div class="panel panel-girado panel-tapa">
           <span class="tapa-ocasion">{occasionLabel(view.ocasion, lang, view.ocasionLibre)}</span>
-          <GiftCardArt occasion={view.ocasion} variant={view.imagen} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} class="tapa-arte" />
+          <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} class="tapa-arte" />
           <div class="tapa-para">
             <span>{r('tarjeta.para')}</span>
             <strong>{view.para}</strong>

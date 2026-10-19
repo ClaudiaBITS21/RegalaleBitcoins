@@ -1,14 +1,17 @@
 import { useState } from 'preact/hooks';
-import { CARD_STYLES, CARD_VARIANTS, type CardStyle, GiftCardArt } from '../content/GiftCardArt.tsx';
+import { CARD_STYLES, type CardStyle, DRAWN_STYLES, GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
 import { Notice, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
 import { OwnImageError, processOwnImage } from './ownImage.ts';
 
-// Paso 2: estilo de la tarjeta. Los tres dibujos de la web (4 variantes cada uno) o "Con tu IA":
-// armamos el pedido para que la persona lo pegue en su propia IA y después suba la imagen.
-// Nunca mandamos nada a un servicio de IA: el pedido no lleva nombres y lo copia la persona.
+// Paso 2: estilo de la tarjeta. Los tres dibujos de la web (una imagen grande por estilo, con el
+// nombre de quien recibe; tocarla pasa al estilo siguiente) o "Con tu IA": armamos el pedido para
+// que la persona lo pegue en su propia IA y después suba la imagen. La web nunca manda nada a un
+// servicio de IA: el pedido lleva la ocasión y el nombre de quien recibe (lo pone la IA en una
+// cinta), pero lo copia y lo pega la persona. Los links «Abrir en …» con ?q= llevan el pedido en la
+// URL hacia esa IA porque la persona los toca; nosotros no lo registramos en ningún lado.
 
 const STYLE_KEYS: Readonly<Record<CardStyle, Key>> = {
   ilustracion: 'regalar.estilo.ilustracion',
@@ -29,7 +32,9 @@ export function StylePicker({ draft, onChange }: { draft: Draft; onChange: (p: P
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
-  const prompt = t('regalar.ia.prompt', { ocasion: occasionLabel(draft.occasion, lang, draft.occasionFree) });
+  const prompt = t('regalar.ia.prompt', { ocasion: occasionLabel(draft.occasion, lang, draft.occasionFree), nombre: draft.to });
+  // Al tocar la imagen: Ilustración → Dibujo a mano → Elegante → Ilustración.
+  const next = DRAWN_STYLES[(DRAWN_STYLES.indexOf(draft.style) + 1) % DRAWN_STYLES.length] ?? 'ilustracion';
 
   const copy = async () => {
     try {
@@ -66,19 +71,11 @@ export function StylePicker({ draft, onChange }: { draft: Draft; onChange: (p: P
       </div>
 
       {draft.style !== 'propia' ? (
-        <div class="grilla-imagenes">
-          {CARD_VARIANTS.map((n) => (
-            <button
-              type="button"
-              key={n}
-              class={`imagen-opcion${draft.image === n ? ' elegida' : ''}`}
-              aria-pressed={draft.image === n}
-              aria-label={t('regalar.para.imagenN', { n })}
-              onClick={() => onChange({ image: n })}
-            >
-              <GiftCardArt occasion={draft.occasion} variant={n} estilo={draft.style} />
-            </button>
-          ))}
+        <div class="imagen-estilo">
+          <button type="button" class="imagen-estilo-boton" aria-label={t('regalar.estilo.tocar', { estilo: t(STYLE_KEYS[draft.style]) })} onClick={() => onChange({ style: next })}>
+            <GiftCardArt occasion={draft.occasion} estilo={draft.style} name={draft.to} />
+          </button>
+          <small class="texto-suave">{t('regalar.estilo.tocarPie')}</small>
         </div>
       ) : (
         <div class="ia">
@@ -98,7 +95,7 @@ export function StylePicker({ draft, onChange }: { draft: Draft; onChange: (p: P
               </a>
             ))}
           </div>
-          {draft.ownImage !== null && <GiftCardArt occasion={draft.occasion} variant={1} estilo="propia" src={draft.ownImage.dataUrl} name={draft.to} class="ia-vista" />}
+          {draft.ownImage !== null && <GiftCardArt occasion={draft.occasion} estilo="propia" src={draft.ownImage.dataUrl} class="ia-vista" />}
           <label class="boton boton-contorno ia-subir">
             {busy ? t('regalar.ia.procesando') : t(draft.ownImage === null ? 'regalar.ia.subir' : 'regalar.ia.cambiar')}
             <input

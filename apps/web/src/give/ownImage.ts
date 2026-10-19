@@ -38,7 +38,8 @@ export async function processOwnImage(file: File): Promise<ProcessedImage> {
   } catch {
     throw new OwnImageError('tipo');
   }
-  // Recorte al centro con la proporción de la tarjeta.
+  // Recorte con la proporción de la tarjeta: si sobra ancho, al centro; si sobra alto, anclado abajo,
+  // para no cortar la cinta con el nombre que la IA pone abajo al centro.
   const ratio = WIDTH / HEIGHT;
   let sw = bitmap.width;
   let sh = Math.round(sw / ratio);
@@ -52,7 +53,7 @@ export async function processOwnImage(file: File): Promise<ProcessedImage> {
   const ctx = canvas.getContext('2d');
   if (ctx === null) throw new OwnImageError('canvas');
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(bitmap, Math.round((bitmap.width - sw) / 2), Math.round((bitmap.height - sh) / 2), sw, sh, 0, 0, WIDTH, HEIGHT);
+  ctx.drawImage(bitmap, Math.round((bitmap.width - sw) / 2), bitmap.height - sh, sw, sh, 0, 0, WIDTH, HEIGHT);
   bitmap.close();
   // WebP si el navegador lo sabe codificar; si no, JPEG. Baja la calidad hasta entrar en el tope.
   for (const quality of [0.85, 0.75, 0.6, 0.45]) {
