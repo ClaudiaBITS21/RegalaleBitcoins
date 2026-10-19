@@ -36,6 +36,8 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
   (AWS quedó fuera por decisión suya).
 
 - Antes de cada etapa, decir qué se va a hacer; al terminarla, qué quedó y qué falta.
+- **PRs (pedido de la responsable, 19/10/2026):** si las pruebas (CI) pasan, se mergean sin
+  preguntarle. El deploy de mainnet es aparte: workflow «Deploy web mainnet» (`docs/deploy.md`).
 - Si algo de la especificación es inconsistente o inseguro, frenar y preguntar.
 - En todo texto (web, mails, PDFs, materiales) la dirección del sitio es siempre
   `regalalebitcoin.com`, aunque hoy funcione en `regalalebitcoins.web.app`.
