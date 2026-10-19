@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { HDKey } from '@scure/bip32';
-import { accountKeyText, deriveBip84Key, deriveListAddress, getNetwork, isCoreError, masterRootFromMnemonic, parseAccountKey } from '../src/index.ts';
+import { accountKeyText, deriveBip84Key, deriveListAddress, descriptorChecksum, getNetwork, isCoreError, masterRootFromMnemonic, parseAccountKey, parsePaymentKey } from '../src/index.ts';
 
 const mainnet = getNetwork('mainnet', { allowMainnet: true });
 const signet = getNetwork('signet');
@@ -47,5 +47,40 @@ describe('llave pública de lista (zpub/vpub)', () => {
     const deep = root.derive("m/84'/0'/0'/0");
     const deepZpub = new HDKey({ versions: { public: 0x04b24746, private: 0x04b2430c }, depth: deep.depth, index: deep.index, parentFingerprint: deep.parentFingerprint, chainCode: deep.chainCode as Uint8Array, publicKey: deep.publicKey as Uint8Array }).publicExtendedKey;
     assert.equal(problem(() => parseAccountKey(deepZpub, mainnet)), 'profundidad');
+  });
+});
+
+describe('llave de cobro (descriptor wpkh o zpub/vpub)', () => {
+  it('checksum de descriptores: vector de BIP 380', () => {
+    assert.equal(descriptorChecksum('raw(deadbeef)'), '89f8spxm');
+  });
+
+  it('el descriptor de la cuenta da las mismas direcciones que la zpub y que la billetera', () => {
+    const root = masterRootFromMnemonic(ABANDON);
+    const node = root.derive("m/84'/0'/0'");
+    const xpub = new HDKey({ versions: { public: 0x0488b21e, private: 0x0488ade4 }, depth: node.depth, index: node.index, parentFingerprint: node.parentFingerprint, chainCode: node.chainCode as Uint8Array, publicKey: node.publicKey as Uint8Array }).publicExtendedKey;
+    const fp = root.fingerprint.toString(16).padStart(8, '0');
+    assert.equal(fp, '73c5da0a');
+    for (const desc of [`wpkh([${fp}/84'/0'/0']${xpub})`, `wpkh([${fp}/84h/0h/0h]${xpub}/0/*)`]) {
+      const key = parsePaymentKey(desc, mainnet);
+      assert.equal(deriveListAddress(key, 0).address, 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu');
+      assert.equal(deriveListAddress(key, 1).address, 'bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g');
+      // Normalizado con la rama de recepción y su checksum: se vuelve a leer igual.
+      assert.ok(key.text.endsWith('/0/*)#' + descriptorChecksum(key.text.split('#')[0] as string)));
+      assert.equal(parsePaymentKey(key.text, mainnet).text, key.text);
+    }
+    assert.equal(deriveListAddress(parsePaymentKey(ZPUB, mainnet), 0).address, 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu');
+  });
+
+  it('rechaza checksum incorrecto, otra red, claves privadas y otros descriptores', () => {
+    const root = masterRootFromMnemonic(ABANDON);
+    const node = root.derive("m/84'/0'/0'");
+    const xpub = new HDKey({ versions: { public: 0x0488b21e, private: 0x0488ade4 }, depth: node.depth, index: node.index, parentFingerprint: node.parentFingerprint, chainCode: node.chainCode as Uint8Array, publicKey: node.publicKey as Uint8Array }).publicExtendedKey;
+    const desc = `wpkh([73c5da0a/84'/0'/0']${xpub}/0/*)`;
+    assert.equal(problem(() => parsePaymentKey(`${desc}#aaaaaaaa`, mainnet)), 'formato');
+    assert.equal(problem(() => parsePaymentKey(desc, signet)), 'red');
+    assert.equal(problem(() => parsePaymentKey(desc.replace(xpub, node.privateExtendedKey), mainnet)), 'privada');
+    assert.equal(problem(() => parsePaymentKey(desc.replace('wpkh(', 'pkh('), mainnet)), 'formato');
+    assert.equal(problem(() => parsePaymentKey(`wpkh(${xpub}/0/*)`, mainnet)), 'formato');
   });
 });

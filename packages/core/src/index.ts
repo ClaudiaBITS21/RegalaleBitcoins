@@ -67,4 +67,4 @@ export {
 } from './sweep.ts';
 export { type InspectedTx, inspectTransaction } from './inspect.ts';
 export { openVault, PRF_SALT, sealVault, VAULT_VERSION } from './vault.ts';
-export { type AccountKey, type AccountKeyProblem, accountKeyText, deriveListAddress, type ListAddress, parseAccountKey } from './xpub.ts';
+export { type AccountKey, type AccountKeyProblem, accountKeyText, deriveListAddress, descriptorChecksum, type ListAddress, parseAccountKey, parsePaymentKey } from './xpub.ts';

@@ -18,7 +18,10 @@ export type ErrorCode =
   | 'passkey_desconocida'
   | 'sesion_requerida'
   | 'link_invalido'
-  | 'no_encontrado';
+  | 'no_encontrado'
+  | 'producto_invalido'
+  | 'cobro_no_configurado'
+  | 'fundadores_agotados';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;

@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto';
 import { after, before, beforeEach, describe, it } from 'node:test';
-import { deriveGift, getNetwork, masterRootFromMnemonic } from '@regalale/core';
+import { accountKeyText, deriveGift, deriveListAddress, getNetwork, masterRootFromMnemonic, parsePaymentKey } from '@regalale/core';
 import type { Mail } from '../src/mail.ts';
 import { createApp } from '../src/app.ts';
 import type { AddressStats, ChainClient, FeeRates, MempoolPayment, PriceClient, Utxo } from '../src/chain.ts';
 import { setChargingActive } from '../src/credits.ts';
+import { setPaymentKey } from '../src/payments.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
 
 const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
@@ -16,16 +17,23 @@ const VAULT = `v1.${'A'.repeat(16)}.${'B'.repeat(64)}`;
 
 const funded = new Set<string>();
 const spent = new Set<string>();
+/** Pagos a direcciones de cobro: lo confirmado y lo que está en la mempool. */
+const pays = new Map<string, { confirmed: bigint; mempool: MempoolPayment[] }>();
 const chain: ChainClient = {
   async addressStats(address: string): Promise<AddressStats> {
+    const p = pays.get(address);
+    if (p !== undefined) {
+      const m = p.mempool.reduce((a, x) => a + x.value, 0n);
+      return { confirmedFunded: p.confirmed, confirmedSpent: 0n, mempoolFunded: m, mempoolSpent: 0n, txCount: p.mempool.length + (p.confirmed > 0n ? 1 : 0) };
+    }
     const v = funded.has(address) ? 30_000n : 0n;
     return { confirmedFunded: v, confirmedSpent: spent.has(address) ? v : 0n, mempoolFunded: 0n, mempoolSpent: 0n, txCount: v > 0n ? 1 : 0 };
   },
   async addressUtxos(): Promise<Utxo[]> {
     return [];
   },
-  async mempoolPayments(): Promise<MempoolPayment[]> {
-    return [];
+  async mempoolPayments(address: string): Promise<MempoolPayment[]> {
+    return pays.get(address)?.mempool ?? [];
   },
   async txHex(): Promise<string> {
     throw new Error('no');
@@ -37,7 +45,8 @@ const chain: ChainClient = {
     return { fastest: 5, halfHour: 3, hour: 2, economy: 1, minimum: 1 };
   },
 };
-const price: PriceClient = { btcUsd: async () => 100_000 };
+let usdPerBtc = 100_000;
+const price: PriceClient = { btcUsd: async () => usdPerBtc };
 
 /** Una passkey de mentira, con la misma forma que la que arma un navegador. */
 class FakePasskey {
@@ -110,10 +119,13 @@ describe('Cuentas con passkey', () => {
   beforeEach(async () => {
     await sql`delete from regalos`;
     await sql`delete from listas`;
+    await sql`delete from pagos`;
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
     funded.clear();
     spent.clear();
+    pays.clear();
+    usdPerBtc = 100_000;
     mails = [];
     app = createApp({
       sql,
@@ -263,7 +275,7 @@ describe('Cuentas con passkey', () => {
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
     const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number; recordatorios: number };
-    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0, creditos: 0, devoluciones: 0 });
+    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0, creditos: 0, devoluciones: 0, pagos: 0 });
     const pasan = (dias: number) => sql`update regalos set aviso_listo = now() - make_interval(days => ${dias})`;
     await pasan(13);
     assert.equal((await run()).recordatorios, 0);
@@ -384,5 +396,93 @@ describe('Cuentas con passkey', () => {
   it('los movimientos solo se agregan: editarlos falla', async () => {
     await signUp('ana@example.com');
     await assert.rejects(sql`update movimientos set cantidad = 100`, /solo se agregan/);
+  });
+
+  it('pagos: sin llave de cobro no se vende; con llave, una dirección nueva por pago y cotización de 30 minutos', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const productos = async () => (await (await req('/api/productos')).json()) as { seVende: boolean; cobroActivo: boolean; fundadoresQuedan: number; productos: Array<{ codigo: string; precioUsd: number; seVendeSuelto: boolean }> };
+    const p0 = await productos();
+    assert.deepEqual([p0.seVende, p0.cobroActivo, p0.fundadoresQuedan], [false, false, 100]);
+    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioUsd: 10.5, regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, seVendeSuelto: true });
+    assert.equal(p0.productos.find((p) => p.codigo === 'lista_otras')?.seVendeSuelto, false);
+    assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' })).status, 401);
+    assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).status, 409);
+    const llave = accountKeyText(masterRootFromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'), signet);
+    await setPaymentKey(sql, signet, llave);
+    assert.equal((await productos()).seVende, true);
+    for (const producto of ['bienvenida', 'lista_otras', 'nada']) assert.equal((await req('/api/cuenta/pagos', { producto }, cookie)).status, 422);
+    const r1 = await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie);
+    assert.equal(r1.status, 201);
+    const p1 = (await r1.json()) as { id: string; sats: string; direccion: string; estado: string; precioUsd: number; venceCotizacion: string };
+    const key = parsePaymentKey(llave, signet);
+    assert.deepEqual([p1.sats, p1.precioUsd, p1.estado, p1.direccion], ['10500', 10.5, 'pendiente', deriveListAddress(key, 0).address]);
+    const mins = (Date.parse(p1.venceCotizacion) - Date.now()) / 60_000;
+    assert.ok(mins > 29 && mins <= 30, String(mins));
+    const p2 = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { direccion: string };
+    assert.equal(p2.direccion, deriveListAddress(key, 1).address);
+    assert.ok(!JSON.stringify(p1).includes('pub'), 'nunca muestra la llave');
+    // El pago de otra cuenta no se ve.
+    const otra = await signUp('beto@example.com');
+    assert.equal((await req(`/api/cuenta/pagos/${p1.id}`, undefined, otra.cookie)).status, 404);
+  });
+
+  it('pagos: RBF espera una confirmación, sin RBF alcanza la mempool; 2 % de tolerancia; incompleto se completa', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
+    const buy = async (producto: string) => (await (await req('/api/cuenta/pagos', { producto }, cookie)).json()) as { id: string; direccion: string; sats: string };
+    const state = async (id: string) => ((await (await req(`/api/cuenta/pagos/${id}`, undefined, cookie)).json()) as { estado: string }).estado;
+    const creditos = async () => ((await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { pagos: number }; listas: { otras: number }; plan: { tipo: string; hasta: string | null } | null });
+    const tx = (n: number) => 'ab'.repeat(31) + String(n).padStart(2, '0');
+    // RBF: 10.300 sats (más del 98 % de 10.500) en la mempool, señalando RBF → «visto», todavía sin acreditar.
+    const a = await buy('pack10');
+    pays.set(a.direccion, { confirmed: 0n, mempool: [{ txid: tx(1), feeRate: 2, value: 10_300n, rbf: true }] });
+    assert.equal(await state(a.id), 'visto');
+    assert.equal((await creditos()).regalos.pagos, 0);
+    pays.set(a.direccion, { confirmed: 10_300n, mempool: [] });
+    assert.equal(await state(a.id), 'confirmado');
+    assert.equal((await creditos()).regalos.pagos, 10);
+    assert.equal(await state(a.id), 'confirmado');
+    assert.equal((await creditos()).regalos.pagos, 10); // una sola vez
+    // Sin RBF: alcanza con la mempool. Pack con lista: 10 regalos más y una lista de cualquier ocasión.
+    const b = await buy('pack10_lista');
+    pays.set(b.direccion, { confirmed: 0n, mempool: [{ txid: tx(2), feeRate: 2, value: BigInt(b.sats), rbf: false }] });
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { pagos: number };
+    assert.equal((await run()).pagos, 1); // lo confirma la tarea programada
+    const c = await creditos();
+    assert.deepEqual([c.regalos.pagos, c.listas.otras], [20, 1]);
+    // Falta más del 2 %: «incompleto»; se completa en la misma dirección.
+    const d = await buy('lista_cumple');
+    pays.set(d.direccion, { confirmed: 5_000n, mempool: [] });
+    assert.equal(await state(d.id), 'incompleto');
+    pays.set(d.direccion, { confirmed: 10_500n, mempool: [] });
+    assert.equal(await state(d.id), 'confirmado');
+    // Planes: anual por 365 días; fundador para siempre.
+    const e = await buy('anual');
+    pays.set(e.direccion, { confirmed: BigInt(e.sats), mempool: [] });
+    assert.equal(await state(e.id), 'confirmado');
+    const plan = (await creditos()).plan;
+    assert.equal(plan?.tipo, 'anual');
+    assert.ok(Math.abs(Date.parse(plan?.hasta as string) - Date.now() - 365 * 86_400_000) < 60_000);
+    const f = await buy('fundador');
+    pays.set(f.direccion, { confirmed: BigInt(f.sats), mempool: [] });
+    assert.equal(await state(f.id), 'confirmado');
+    assert.deepEqual((await creditos()).plan, { tipo: 'fundador', hasta: null });
+    assert.equal(((await (await req('/api/productos')).json()) as { fundadoresQuedan: number }).fundadoresQuedan, 99);
+  });
+
+  it('pagos: con la cotización vencida se compara con el precio del momento', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
+    const p = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { id: string; direccion: string };
+    const state = async () => ((await (await req(`/api/cuenta/pagos/${p.id}`, undefined, cookie)).json()) as { estado: string }).estado;
+    await sql`update pagos set vence_cotizacion = now() - interval '1 minute' where id = ${p.id}`;
+    assert.equal(await state(), 'vencido');
+    usdPerBtc = 50_000; // el bitcoin bajó: ahora hacen falta 21.000 sats
+    pays.set(p.direccion, { confirmed: 10_500n, mempool: [] });
+    assert.equal(await state(), 'incompleto');
+    pays.set(p.direccion, { confirmed: 21_000n, mempool: [] });
+    assert.equal(await state(), 'confirmado');
   });
 });
