@@ -959,10 +959,18 @@ textarea {
   max-width: none;
 }
 
+/* Sin overflow: hidden: recortaría el menú desplegable del encabezado, que está adentro.
+   Lo que hay que recortar (el confeti) va en su propia capa de fondo. */
 .hero {
   position: relative;
-  overflow: hidden;
   background: var(--naranja);
+}
+
+.hero-fondo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .confeti {
@@ -1875,7 +1883,6 @@ svg.tarjeta-imagen {
 
 .porque-hero {
   position: relative;
-  overflow: hidden;
   background: var(--naranja);
 }
 

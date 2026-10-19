@@ -68,7 +68,9 @@ export function Home({ testnet }: { testnet: boolean }) {
         </p>
       )}
       <section class="hero">
-        <Confetti />
+        <div class="hero-fondo">
+          <Confetti />
+        </div>
         <div class="hero-contenido">
           <SiteHeader onOrange />
           <div class="hero-cuerpo">
