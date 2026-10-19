@@ -3,7 +3,7 @@ import { AgeArt, CuentoArt } from './content/PorqueArt.tsx';
 import { ReasonsFan } from './content/ReasonsFan.tsx';
 import { COIN_COLORS, reasonsFor } from './content/razones.ts';
 import type { Key } from './i18n/index.ts';
-import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
+import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
 // Página "¿Por qué Bitcoin?" (docs/contenido.md §2): las 21 razones en abanico → según quién
 // lo recibe (5 tarjetas que se dan vuelta) → nuestra historia → el cuento para bajar → "¿Regalamos?".
@@ -134,7 +134,9 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
             <h2 id="porque-historia">{t('porque.historia.titulo')}</h2>
             <p>{t('porque.historia.p1')}</p>
             <p>{t('porque.historia.p2')}</p>
-            <p>{t('porque.historia.p3')}</p>
+            <p>
+              <ConMarca text={t('porque.historia.p3')} />
+            </p>
           </article>
         </section>
 

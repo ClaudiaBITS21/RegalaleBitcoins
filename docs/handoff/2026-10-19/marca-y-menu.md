@@ -1,18 +1,18 @@
 # Handoff 19/10/2026: nombre de marca y menú
 
-Estado: PENDIENTE
+Estado: INTEGRADO EN PARTE (commit xxxx); falta lo que dice «Qué falta», al final.
 
 Decidido por Rodolfo en chat, 19/10/2026. Copiado de la carpeta de Drive «RegalaleBitcoin -
 handoffs» (`2026-10-19 - marca y menú.md`).
 
 ## 1. Nombre de marca
 
-- Se escribe **separado, en itálica y en naranja**: *Regalale Bitcoin*. Reemplaza a "RegalaleBitcoin" (junto), definido el 17/10.
+- Se escribe **separado y en naranja**: Regalale Bitcoin. **Sin itálica** (decisión de Rodolfo, 19/10: un solo énfasis, el color; ni itálica ni negrita además del naranja). Reemplaza a "RegalaleBitcoin" (junto), definido el 17/10.
 - El dominio no cambia: `regalalebitcoin.com`. Los IDs de infraestructura (`regalalebitcoins`) tampoco.
 - **Color:**
   - El naranja de marca #FF8A1F no llega al contraste mínimo sobre fondo claro (2,3:1), así que para texto se usan dos tonos de la misma familia:
   - `--marca-titulo: #D96400` en títulos grandes (3,5:1).
-  - `--marca-texto: #B85300` en texto corrido, en negrita (4,8:1).
+  - `--marca-texto: #B85300` en texto corrido (4,8:1, alcanza sin negrita).
   - Sobre fondo naranja, la marca va en tinta #1A1530.
 - **Donde no hay itálica ni color** (asunto de mail, `<title>`, notificaciones, WhatsApp, `rpName` de la passkey, metadatos): "Regalale Bitcoin" a secas.
 - **Alcance:** textos de la web (i18n), mails de Resend, tarjeta imprimible, 21 razones, página Sin custodia.
@@ -39,3 +39,20 @@ Logo · Cómo funciona ▾ · Por qué bitcoin ▾ · Listas · Precios ‖ idio
 
 - "Según quién lo recibe" y "Nuestra historia": si son secciones de `/por-que` (anclas) o páginas propias.
 - "Precios": la página depende del handoff de cobro (2026-10-19 - cobro y créditos).
+
+## Qué quedó (código) y qué falta
+
+Hecho:
+- Tokens `--marca-titulo` y `--marca-texto`; «Regalale Bitcoin» dentro de los textos de la web en
+  naranja (`ConMarca` en `apps/web/src/ui.tsx`), en tinta sobre fondo naranja.
+- Menú de compu: Cómo funciona ▾ (Seguridad) · Por qué bitcoin ▾ (21 razones) · Listas ‖ idioma ·
+  Abrir un regalo · [Regalar]. Con sesión iniciada, «Mi cuenta ▾» (Mis regalos).
+- Celular: logo + [Regalar] + ☰; el menú abre con «Abrir un regalo» y muestra los grupos como
+  secciones abiertas, con el idioma al final.
+- Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).
+
+Falta (se suma cuando exista cada cosa): Paso a paso, Preguntas frecuentes, Comparativa, Precios,
+Mi plan, Mis listas y Mi llave de recuperación en el menú de la cuenta; en el pie, Términos,
+Privacidad, Botón de arrepentimiento, Cómo operamos, Contacto y Prensa. `MAIL_FROM` es
+configuración de Cloud Run (la cambia Rodolfo). La marca en la tarjeta imprimible y en los mails
+va «a secas» (no tienen color).

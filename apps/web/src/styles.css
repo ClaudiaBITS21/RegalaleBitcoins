@@ -13,6 +13,10 @@
   --acento: #ff8a1f;
   --acento-oscuro: #b3470a;
   --naranja-texto: #e06a00;
+  /* El nombre de la marca en un texto (handoff 19/10): el naranja de marca no llega al contraste
+     mínimo sobre fondo claro, así que se usan dos tonos de la misma familia. */
+  --marca-titulo: #d96400;
+  --marca-texto: #b85300;
   --borde: #e6e1ee;
   --blanco: #ffffff;
   --crema: #fff1e3;
@@ -237,6 +241,28 @@ h3 {
   font-size: 18px;
 }
 
+.boton-nav-movil {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--tinta);
+  color: var(--blanco);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.menu-seccion {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-idioma {
+  display: flex;
+  padding: 8px 12px 4px;
+}
+
 .menu-titulo {
   margin: 8px 6px 2px;
   font-size: 12px;
@@ -321,10 +347,26 @@ h3 {
   font-size: 17px;
 }
 
-/* En el celular la marca comparte la fila con el idioma y el menú: se achica con la pantalla y,
+/* «Regalale Bitcoin» dentro de un texto: solo el color, sin itálica ni negrita (un solo énfasis). */
+.nombre-marca {
+  color: var(--marca-texto);
+}
+
+h1 .nombre-marca,
+h2 .nombre-marca,
+h3 .nombre-marca {
+  color: var(--marca-titulo);
+}
+
+.hero .nombre-marca,
+.porque-hero .nombre-marca {
+  color: var(--tinta);
+}
+
+/* En el celular la marca comparte la fila con [Regalar] y el menú: se achica con la pantalla y,
    en las muy angostas, queda solo la caja. */
 .cabecera .marca-texto {
-  font-size: clamp(12px, calc((100vw - 152px) / 11), 19px);
+  font-size: clamp(12px, calc((100vw - 236px) / 11), 19px);
 }
 
 @media (max-width: 299px) {
@@ -1546,10 +1588,23 @@ textarea {
     position: relative;
   }
 
-  .panel-recibir {
-    right: 0;
+  .panel-grupo {
+    left: 0;
     top: 52px;
-    width: 300px;
+    min-width: 240px;
+  }
+
+  .nav-separador {
+    width: 2px;
+    height: 28px;
+    background: currentColor;
+    opacity: 0.25;
+  }
+
+  .link-abrir {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .marca-texto,
