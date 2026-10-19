@@ -22,6 +22,7 @@ import {
 } from './accounts.ts';
 import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
+import { balance, canGive, chargingActive } from './credits.ts';
 import { ApiError } from './errors.ts';
 import { loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
@@ -194,6 +195,23 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
 
   /** ¿Hay una sesión iniciada? Para el menú: responde siempre 200, sin datos de la cuenta. */
   app.get('/api/cuenta/sesion', async (c) => c.json({ abierta: (await currentAccount(sql, c)) !== null }));
+
+  /** «Mi plan»: saldo por tipo, plan vigente y si puede crear un regalo más. */
+  app.get('/api/cuenta/creditos', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const [b, charging] = await Promise.all([balance(sql, account.id), chargingActive(sql)]);
+    const moves = await sql<{ tipo: string; unidad: string; cantidad: number; origen: string; creado: Date }[]>`
+      select tipo, unidad, cantidad, origen, creado from movimientos where usuario_id = ${account.id} order by id desc limit 100`;
+    return c.json({
+      cobroActivo: charging,
+      puedeRegalar: canGive(b, charging),
+      regalos: { bienvenida: b.welcome, pagos: b.paid },
+      listas: { cumple: b.birthdayLists, otras: b.otherLists },
+      plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null },
+      movimientos: moves.map((m) => ({ tipo: m.tipo, unidad: m.unidad, cantidad: m.cantidad, origen: m.origen, fecha: m.creado.toISOString() })),
+    });
+  });
 
   /** El panel: cuenta, passkeys y regalos con su estado (calculado desde la cadena). */
   app.get('/api/cuenta', async (c) => {

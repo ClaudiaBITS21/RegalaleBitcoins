@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Lang } from '@regalale/core';
 import type { Sql } from './db.ts';
+import { grantWelcome } from './credits.ts';
 
 // Cuentas de quien regala. Los tokens (sesión, link por mail) se guardan solo como hash:
 // una copia de la base no alcanza para entrar.
@@ -63,6 +64,7 @@ export async function createAccount(
     await tx`
       insert into credenciales (id, usuario_id, clave_publica, alg, contador, boveda)
       values (${c.id}, ${id}, ${c.publicKey}, ${c.alg}, ${c.signCount}, ${c.vault})`;
+    await grantWelcome(tx, id);
     return { id, email: a.email, lang: a.lang };
   });
 }

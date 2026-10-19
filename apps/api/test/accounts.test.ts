@@ -5,6 +5,7 @@ import { deriveGift, getNetwork, masterRootFromMnemonic } from '@regalale/core';
 import type { Mail } from '../src/mail.ts';
 import { createApp } from '../src/app.ts';
 import type { AddressStats, ChainClient, FeeRates, MempoolPayment, PriceClient, Utxo } from '../src/chain.ts';
+import { setChargingActive } from '../src/credits.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
 
 const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
@@ -110,6 +111,7 @@ describe('Cuentas con passkey', () => {
     await sql`delete from regalos`;
     await sql`delete from listas`;
     await sql`delete from usuarios`;
+    await sql`delete from ajustes`;
     funded.clear();
     spent.clear();
     mails = [];
@@ -261,7 +263,7 @@ describe('Cuentas con passkey', () => {
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
     const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number; recordatorios: number };
-    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0 });
+    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0, creditos: 0, devoluciones: 0 });
     const pasan = (dias: number) => sql`update regalos set aviso_listo = now() - make_interval(days => ${dias})`;
     await pasan(13);
     assert.equal((await run()).recordatorios, 0);
@@ -316,5 +318,71 @@ describe('Cuentas con passkey', () => {
     assert.deepEqual(fresh.ocasionesLibres, {});
     const text = JSON.stringify(body) + JSON.stringify(fresh);
     for (const leak of ['ana@example.com', 'Tomi', 'secreto', g.address]) assert.ok(!text.includes(leak), `no expone ${leak}`);
+  });
+
+  it('créditos: 5 de bienvenida; con el cobro apagado no se consume nada', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const creditos = async () => (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { cobroActivo: boolean; puedeRegalar: boolean; regalos: { bienvenida: number; pagos: number }; plan: unknown; movimientos: unknown[] };
+    assert.equal((await req('/api/cuenta/creditos')).status, 401);
+    const c0 = await creditos();
+    assert.deepEqual([c0.cobroActivo, c0.puedeRegalar, c0.regalos.bienvenida, c0.regalos.pagos, c0.plan], [false, true, 5, 0, null]);
+    const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
+    await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 }, cookie);
+    funded.add(g.address);
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { creditos: number };
+    assert.equal((await run()).creditos, 0);
+    assert.equal((await creditos()).regalos.bienvenida, 5); // gratis mientras lanzamos
+    // Aunque después se active el cobro, ese regalo ya quedó resuelto.
+    await setChargingActive(sql, true);
+    assert.equal((await run()).creditos, 0);
+    assert.equal((await creditos()).regalos.bienvenida, 5);
+  });
+
+  it('créditos: con el cobro activo, el primer depósito consume uno (una sola vez) y cancelar lo devuelve', async () => {
+    await setChargingActive(sql, true);
+    const { cookie } = await signUp('ana@example.com');
+    const creditos = async () => (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { puedeRegalar: boolean; regalos: { bienvenida: number; pagos: number } };
+    const root = masterRootFromMnemonic(MASTER);
+    const [a, b] = [0, 1].map((i) => deriveGift(root, i, 'es', signet));
+    for (const [i, g] of [a, b].entries()) await req('/api/gifts', { direccion: g?.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: i }, cookie);
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { creditos: number; devoluciones: number };
+    assert.equal((await run()).creditos, 0); // crear no consume
+    funded.add(a?.address as string);
+    assert.equal((await run()).creditos, 1);
+    assert.equal((await run()).creditos, 0); // varios depósitos, una sola vez
+    assert.equal((await creditos()).regalos.bienvenida, 4);
+    // Lo cancela (recupera) sin que lo abran: el crédito vuelve a la bienvenida.
+    await sql`update regalos set reclamo_tipo = 'recupero' where direccion = ${a?.address as string}`;
+    assert.equal((await run()).devoluciones, 1);
+    assert.equal((await run()).devoluciones, 0);
+    assert.equal((await creditos()).regalos.bienvenida, 5);
+    // Sin bienvenida, consume de los pagos; con plan vigente, no descuenta.
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'ana@example.com'`;
+    const id = (u as { id: string }).id;
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -5, 'bienvenida', 'prueba'), (${id}, 'compra', 'regalo', 10, 'pago', null)`;
+    funded.add(b?.address as string);
+    assert.equal((await run()).creditos, 1);
+    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9 });
+    await sql`insert into planes (usuario_id, tipo, hasta) values (${id}, 'anual', now() + interval '365 days')`;
+    const c = deriveGift(root, 2, 'es', signet);
+    await req('/api/gifts', { direccion: c.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 2 }, cookie);
+    funded.add(c.address);
+    assert.equal((await run()).creditos, 1);
+    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9 });
+    const [uso] = await sql<{ origen: string; cantidad: number }[]>`select origen, cantidad from movimientos where tipo = 'consumo' order by id desc limit 1`;
+    assert.deepEqual(uso, { origen: 'plan', cantidad: 0 });
+    // Sin saldo ni plan, no puede regalar.
+    await sql`delete from planes`;
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -9, 'admin', 'prueba')`;
+    assert.equal((await creditos()).puedeRegalar, false);
+  });
+
+  it('los movimientos solo se agregan: editarlos falla', async () => {
+    await signUp('ana@example.com');
+    await assert.rejects(sql`update movimientos set cantidad = 100`, /solo se agregan/);
   });
 });
