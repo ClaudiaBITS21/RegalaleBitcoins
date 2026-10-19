@@ -227,6 +227,7 @@ export const es = {
   'menu.recibir': 'Recibir',
   'menu.lista.d': 'Baby shower, casamiento, cumple: que te regalen bitcoin.',
   'menu.razones': '21 razones',
+  'menu.comparativa': 'Comparativa',
   'menu.comoFunciona': 'Cómo funciona',
   'menu.seguridad': 'Seguridad (sin custodia)',
   'menu.porQueBitcoin': 'Por qué bitcoin',

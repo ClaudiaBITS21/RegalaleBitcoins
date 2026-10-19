@@ -7,12 +7,9 @@ import { esTu } from '../src/content/razones-tu.ts';
 import { translate } from '../src/i18n/index.ts';
 import { detectTrato } from '../src/i18n/trato.ts';
 import { tu } from '../src/i18n/tu.ts';
+import { VOSEO } from './voseo.ts';
 
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
-
-/** Formas de voseo (y léxico rioplatense) que no pueden quedar en la versión con tú. */
-export const VOSEO =
-  /(?<!\p{L})(vos|sos|podés|tenés|querés|sabés|hacés|ponés|venís|decís|elegís|abrís|recibís|escribís|mandás|regalás|pagás|tocá|abrí|elegí|mirá|escribí|guardá|guardalo|guardala|entrá|pegá|pegalo|copiá|bajá|confirmá|probá|fijate|andá|poné|decile|mandale|regalale|abrilo|anotá|anotalas|usá|seguí|tené|agregá|agregalo|cambiá|completá|revisá|esperá|volvé|hacé|pedí|celu|acá|plata)(?!\p{L})/iu;
 
 describe('Vos o tú según dónde está la persona', () => {
   it('la zona horaria manda: Argentina, Uruguay y Paraguay con vos; el resto con tú', () => {

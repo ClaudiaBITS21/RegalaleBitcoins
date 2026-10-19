@@ -14,10 +14,11 @@ const MASTER = 'abandon abandon abandon abandon abandon abandon abandon abandon 
 const VAULT = `v1.${'A'.repeat(16)}.${'B'.repeat(64)}`;
 
 const funded = new Set<string>();
+const spent = new Set<string>();
 const chain: ChainClient = {
   async addressStats(address: string): Promise<AddressStats> {
     const v = funded.has(address) ? 30_000n : 0n;
-    return { confirmedFunded: v, confirmedSpent: 0n, mempoolFunded: 0n, mempoolSpent: 0n, txCount: v > 0n ? 1 : 0 };
+    return { confirmedFunded: v, confirmedSpent: spent.has(address) ? v : 0n, mempoolFunded: 0n, mempoolSpent: 0n, txCount: v > 0n ? 1 : 0 };
   },
   async addressUtxos(): Promise<Utxo[]> {
     return [];
@@ -110,6 +111,7 @@ describe('Cuentas con passkey', () => {
     await sql`delete from listas`;
     await sql`delete from usuarios`;
     funded.clear();
+    spent.clear();
     mails = [];
     app = createApp({
       sql,
@@ -246,6 +248,35 @@ describe('Cuentas con passkey', () => {
     assert.equal((await run()).avisos, 0); // una sola vez
     assert.equal(mails.at(-1)?.subject, 'Tu regalo para Tomi ya está listo');
     assert.ok(!mails.at(-1)?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
+  });
+
+  it('si el regalo pago sigue sin abrirse, recuerda a quien regala a los 14 y a los 60 días, y nada más', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const root = masterRootFromMnemonic(MASTER);
+    const [a, b] = [0, 1].map((i) => deriveGift(root, i, 'es', signet));
+    for (const [i, g] of [a, b].entries()) {
+      await req('/api/gifts', { direccion: g?.address, idioma: 'es', ocasion: 'cumple', para: i === 0 ? 'Tomi' : 'Lola', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: i }, cookie);
+      funded.add(g?.address as string);
+    }
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number; recordatorios: number };
+    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0 });
+    const pasan = (dias: number) => sql`update regalos set aviso_listo = now() - make_interval(days => ${dias})`;
+    await pasan(13);
+    assert.equal((await run()).recordatorios, 0);
+    await pasan(15);
+    spent.add(b?.address as string); // Lola ya lo abrió
+    assert.equal((await run()).recordatorios, 1);
+    assert.equal(mails.at(-1)?.subject, 'Tomi todavía no abrió tu regalo');
+    assert.equal(mails.at(-1)?.to, 'ana@example.com');
+    assert.ok(mails.at(-1)?.text.includes(`${ORIGIN}/panel#acceso=`));
+    assert.ok(!mails.at(-1)?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
+    assert.equal((await run()).recordatorios, 0);
+    await pasan(61);
+    assert.equal((await run()).recordatorios, 1);
+    await pasan(400);
+    assert.equal((await run()).recordatorios, 0); // dos, y nada más
   });
 
   it('panel de admin: solo para los mails autorizados, y solo números agregados', async () => {

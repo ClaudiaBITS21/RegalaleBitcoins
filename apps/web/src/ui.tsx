@@ -194,7 +194,14 @@ const GRUPOS: readonly GrupoMenu[] = [
     ],
   },
   { id: 'como', label: 'menu.comoFunciona', items: [{ href: '/sin-custodia', label: 'menu.seguridad' }] },
-  { id: 'porque', label: 'menu.porQueBitcoin', items: [{ href: '/por-que', label: 'menu.razones' }] },
+  {
+    id: 'porque',
+    label: 'menu.porQueBitcoin',
+    items: [
+      { href: '/por-que', label: 'menu.razones' },
+      { href: '/comparativa', label: 'menu.comparativa' },
+    ],
+  },
 ];
 const CUENTA: GrupoMenu = { id: 'cuenta', label: 'menu.cuenta', items: [{ href: '/panel', label: 'menu.misRegalos' }] };
 
