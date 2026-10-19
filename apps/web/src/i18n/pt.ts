@@ -4,6 +4,7 @@ import type { Dict } from './es.ts';
 export const pt: Dict = {
   'pie': 'Nunca vamos pedir as palavras da sua carteira.',
   'red.prueba': 'Rede de teste (signet): estes bitcoins não têm valor.',
+  'aviso.desarrollo': 'Esta página está em desenvolvimento, não use para operações reais',
   'idioma': 'Idioma',
   'inicio': 'Início',
   'atras': 'Voltar',

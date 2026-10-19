@@ -94,6 +94,19 @@ h3 {
   text-align: center;
 }
 
+/* Franja «en desarrollo», arriba de todo y en mayúsculas. */
+.aviso-desarrollo {
+  margin: 0;
+  padding: 10px 16px;
+  background: #000000;
+  color: var(--blanco);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 /* Encabezado y menú */
 
 .cabecera {

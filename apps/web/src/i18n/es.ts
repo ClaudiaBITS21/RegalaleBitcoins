@@ -2,6 +2,7 @@
 export const es = {
   'pie': 'Nunca te vamos a pedir las palabras de tu billetera.',
   'red.prueba': 'Red de prueba (signet): estos bitcoins no tienen valor.',
+  'aviso.desarrollo': 'Esta página se encuentra en desarrollo, no utilizar para operaciones reales',
   'idioma': 'Idioma',
   'inicio': 'Inicio',
   'atras': 'Atrás',

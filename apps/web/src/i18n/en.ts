@@ -3,6 +3,7 @@ import type { Dict } from './es.ts';
 export const en: Dict = {
   'pie': 'We will never ask for your wallet words.',
   'red.prueba': 'Test network (signet): these bitcoins have no value.',
+  'aviso.desarrollo': 'This site is under development, do not use it for real transactions',
   'idioma': 'Language',
   'inicio': 'Home',
   'atras': 'Back',
