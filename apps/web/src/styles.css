@@ -812,23 +812,6 @@ fieldset.campo legend {
   font-size: 15px;
 }
 
-.grilla-imagenes {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.imagen-opcion {
-  aspect-ratio: 1;
-  border-radius: 12px;
-  border: 3px solid transparent;
-  cursor: pointer;
-}
-
-.imagen-opcion.elegida {
-  border-color: var(--tinta);
-}
-
 .contador {
   font-size: 13px;
   color: var(--suave);
@@ -1897,29 +1880,34 @@ svg.tarjeta-imagen {
   color: var(--naranja-texto);
 }
 
-.imagen-opcion {
-  aspect-ratio: auto;
-  padding: 0;
-  overflow: hidden;
-  background: var(--gris);
-  line-height: 0;
-  border-radius: 14px;
+/* Una imagen grande por estilo, con el nombre puesto; tocarla pasa al estilo siguiente. */
+.imagen-estilo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
 }
 
-.imagen-opcion.elegida {
-  box-shadow: 0 0 0 3px var(--amarillo);
+.imagen-estilo-boton {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--tinta);
+  border-radius: 16px;
+  background: var(--gris);
+  line-height: 0;
+  cursor: pointer;
+}
+
+.imagen-estilo-boton:focus-visible {
+  outline: 3px solid var(--amarillo);
+  outline-offset: 2px;
 }
 
 .vista-tarjeta {
   width: 100%;
   max-width: 340px;
   align-self: center;
-}
-
-@media (max-width: 519px) {
-  .grilla-imagenes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ¿Por qué Bitcoin? (porque.tsx) */
@@ -2223,7 +2211,6 @@ svg.tarjeta-imagen {
 .arte-elegante .motivo-linea * { fill: none !important; stroke: #e2b84a !important; stroke-width: 2.2px !important; }
 .arte-propia { position: relative; display: block; aspect-ratio: 320 / 250; overflow: hidden; background: var(--gris); }
 .arte-propia img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.arte-propia-nombre { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); max-width: 86%; padding: 4px 14px; border: 2px solid var(--tinta); border-radius: 999px; background: #fff; font-family: var(--titulos); font-size: clamp(0.8rem, 4.5cqi, 1.2rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Paso 2: estilos de tarjeta y "Con tu IA" */
 .estilos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }

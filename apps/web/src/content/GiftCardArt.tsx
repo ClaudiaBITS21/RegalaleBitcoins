@@ -6,15 +6,15 @@ import { isOccasion, type OccasionKey } from './occasions.ts';
 // Imagen de la tarjeta del regalo, estilo "Ilustración" (docs/diseno/DISENO.md §6): plana y
 // colorida, con un motivo reconocible por ocasión y siempre una moneda dorada con ₿. Es SVG
 // en línea (sin imágenes externas ni "data:"), sin ids ni <style>, compatible con la CSP.
-// Las 4 variantes son las 4 imágenes que elige quien regala (`imagen` 1..4 en la API):
-// cambian colores, fondo y composición, pero no el motivo.
+// Hay una sola imagen por estilo (handoff 2026-10-19, «imágenes de la tarjeta»): los regalos
+// viejos con `imagen` 2..4 guardado se muestran igual que los nuevos.
 
 const TINTA = '#1A1530';
 const AMARILLO = '#FFD23F';
 const VERDE = '#2FBF71';
 const ROJO = '#E2483D';
 
-/** Colores de una variante: a = principal, b = secundario, c = terciario, d = claro, e = contraste. */
+/** Colores de la tarjeta: a = principal, b = secundario, c = terciario, d = claro, e = contraste. */
 interface Palette {
   readonly a: string;
   readonly b: string;
@@ -23,25 +23,10 @@ interface Palette {
   readonly e: string;
 }
 
-type Deco = 'confeti' | 'nubes' | 'rayos' | 'estrellas';
-
-interface Variant {
-  readonly bg: string;
-  readonly deco: Deco;
-  readonly coin: readonly [cx: number, cy: number, r: number];
-  readonly shift: string;
-  readonly shadow: string;
-  readonly p: Palette;
-}
-
-const VARIANTS: Readonly<Record<1 | 2 | 3 | 4, Variant>> = {
-  1: { bg: '#FF8A1F', deco: 'confeti', coin: [160, 48, 24], shift: '', shadow: TINTA, p: { a: '#FF5D8F', b: AMARILLO, c: '#4CC9F0', d: '#FFFFFF', e: TINTA } },
-  2: { bg: '#BDEBFA', deco: 'nubes', coin: [262, 60, 26], shift: 'translate(-12 2)', shadow: TINTA, p: { a: '#FF8A1F', b: AMARILLO, c: '#FF5D8F', d: '#FFFFFF', e: TINTA } },
-  3: { bg: '#FFC7D8', deco: 'rayos', coin: [60, 60, 26], shift: 'translate(12 2)', shadow: TINTA, p: { a: '#4CC9F0', b: AMARILLO, c: '#FF8A1F', d: '#FFFFFF', e: TINTA } },
-  4: { bg: '#2A2347', deco: 'estrellas', coin: [160, 48, 24], shift: '', shadow: '#FFFFFF', p: { a: '#FF5D8F', b: AMARILLO, c: '#4CC9F0', d: '#FFFFFF', e: '#FFFFFF' } },
-};
-
-export const CARD_VARIANTS = [1, 2, 3, 4] as const;
+const FONDO = '#FF8A1F';
+const PALETA: Palette = { a: '#FF5D8F', b: AMARILLO, c: '#4CC9F0', d: '#FFFFFF', e: TINTA };
+/** Moneda: centro y radio. */
+const MONEDA = [160, 48, 24] as const;
 
 /** Trazo de la marca: contorno tinta grueso y redondeado. */
 const S = { stroke: TINTA, 'stroke-width': 5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' } as const;
@@ -370,69 +355,25 @@ const MOTIFS: Readonly<Record<OccasionKey, Motif>> = {
   otra: regalo,
 };
 
-function Decoration({ deco, p }: { deco: Deco; p: Palette }) {
-  if (deco === 'confeti') {
-    return (
-      <>
-        <circle cx="40" cy="40" r="6" fill={AMARILLO} />
-        <circle cx="282" cy="60" r="5" fill={p.d} />
-        <rect x="258" y="160" width="8" height="16" rx="2" fill={p.c} transform="rotate(30 262 168)" />
-        <rect x="46" y="150" width="8" height="16" rx="2" fill={p.a} transform="rotate(-25 50 158)" />
-        <circle cx="86" cy="86" r="4" fill={p.d} />
-        <circle cx="244" cy="112" r="5" fill={p.a} />
-        <rect x="216" y="30" width="8" height="15" rx="2" fill={p.d} transform="rotate(-20 220 37)" />
-        <circle cx="30" cy="210" r="4" fill={p.c} />
-      </>
-    );
-  }
-  if (deco === 'nubes') {
-    return (
-      <>
-        {nube(18, 40, 0.6, '#FFFFFF')}
-        {nube(14, 150, 0.45, '#FFFFFF')}
-        <circle cx="150" cy="40" r="4" fill={p.c} />
-        <circle cx="40" cy="190" r="5" fill={p.a} />
-        <rect x="282" y="190" width="8" height="15" rx="2" fill={AMARILLO} transform="rotate(25 286 197)" />
-      </>
-    );
-  }
-  if (deco === 'rayos') {
-    const rays: string[] = [];
-    for (let i = 0; i < 16; i++) {
-      const a1 = (Math.PI / 8) * i;
-      const a2 = a1 + Math.PI / 16;
-      rays.push(
-        `M160 150 L${(160 + 300 * Math.cos(a1)).toFixed(0)} ${(150 + 300 * Math.sin(a1)).toFixed(0)} L${(160 + 300 * Math.cos(a2)).toFixed(0)} ${(150 + 300 * Math.sin(a2)).toFixed(0)} Z`,
-      );
-    }
-    return (
-      <>
-        <path d={rays.join(' ')} fill="#FFFFFF" opacity=".35" />
-        <circle cx="282" cy="40" r="5" fill={p.c} />
-        <circle cx="34" cy="200" r="5" fill={p.a} />
-      </>
-    );
-  }
+function Confeti({ p }: { p: Palette }) {
   return (
     <>
-      <path d={starPath(46, 40, 9, 3, 4)} fill={AMARILLO} />
-      <path d={starPath(276, 56, 11, 4, 4)} fill={AMARILLO} />
-      <path d={starPath(252, 188, 7, 2.5, 4)} fill={p.c} />
-      <path d={starPath(60, 170, 7, 2.5, 4)} fill={p.a} />
-      <circle cx="100" cy="70" r="2.5" fill="#FFFFFF" />
-      <circle cx="226" cy="100" r="2.5" fill="#FFFFFF" />
-      <circle cx="30" cy="110" r="2" fill="#FFFFFF" />
-      <circle cx="292" cy="130" r="2" fill="#FFFFFF" />
-      <circle cx="200" cy="30" r="2" fill="#FFFFFF" />
+      <circle cx="40" cy="40" r="6" fill={AMARILLO} />
+      <circle cx="282" cy="60" r="5" fill={p.d} />
+      <rect x="258" y="160" width="8" height="16" rx="2" fill={p.c} transform="rotate(30 262 168)" />
+      <rect x="46" y="150" width="8" height="16" rx="2" fill={p.a} transform="rotate(-25 50 158)" />
+      <circle cx="86" cy="86" r="4" fill={p.d} />
+      <circle cx="244" cy="112" r="5" fill={p.a} />
+      <rect x="216" y="30" width="8" height="15" rx="2" fill={p.d} transform="rotate(-20 220 37)" />
+      <circle cx="30" cy="210" r="4" fill={p.c} />
     </>
   );
 }
 
 /** Moneda (o medallita) dorada con el ₿, propia: no imita monedas reales. */
-function Coin({ cx, cy, r, glow }: { cx: number; cy: number; r: number; glow: boolean }) {
+function Coin({ cx, cy, r }: { cx: number; cy: number; r: number }) {
   return (
     <g>
-      {glow && <circle cx={cx} cy={cy} r={r + 9} fill="none" stroke={AMARILLO} stroke-width="3" opacity=".45" />}
       <circle cx={cx} cy={cy} r={r} fill={AMARILLO} {...S} />
       <circle cx={cx} cy={cy} r={r - 7} fill="none" stroke="#E0A800" stroke-width="2" />
       <BitcoinB cx={cx} cy={cy} h={r * 1.05} color={TINTA} />
@@ -440,18 +381,13 @@ function Coin({ cx, cy, r, glow }: { cx: number; cy: number; r: number; glow: bo
   );
 }
 
-/** Variante válida (1..4) a partir de lo que guardó la API. */
-export const cardVariant = (n: number): 1 | 2 | 3 | 4 => Math.min(Math.max(Math.round(n) || 1, 1), 4) as 1 | 2 | 3 | 4;
-
-/**
- * Imagen ilustrada de la tarjeta para la ocasión y la variante elegidas. Es decorativa
- * (aria-hidden): quien la usa pone el texto accesible. Con `name`, el nombre de quien
- * recibe va en una etiqueta abajo.
- */
 /** Estilos que ofrece la web. 'realista' (banco de fotos) se suma cuando haya fotos. */
 export type CardStyle = 'ilustracion' | 'mano' | 'elegante' | 'propia';
 export const CARD_STYLES: readonly CardStyle[] = ['ilustracion', 'mano', 'elegante', 'propia'];
 export const isCardStyle = (s: unknown): s is CardStyle => typeof s === 'string' && (CARD_STYLES as readonly string[]).includes(s);
+
+/** Estilos que se recorren tocando la imagen («Con tu IA» queda afuera: no hay qué mostrar). */
+export const DRAWN_STYLES: readonly CardStyle[] = ['ilustracion', 'mano', 'elegante'];
 
 /** Fondo papel y garabatos de fibra para el estilo "Dibujo a mano". */
 const PAPEL = '#FBF6EA';
@@ -469,16 +405,19 @@ function Garabatos({ p }: { p: Palette }) {
   );
 }
 
+/**
+ * Imagen de la tarjeta para la ocasión y el estilo elegidos. Es decorativa (aria-hidden): quien
+ * la usa pone el texto accesible. Con `name`, el nombre de quien recibe va en una etiqueta abajo
+ * (salvo en la imagen propia, donde el nombre lo pone la IA).
+ */
 export function GiftCardArt({
   occasion,
-  variant,
   name,
   class: className,
   estilo,
   src,
 }: {
   occasion: string;
-  variant: number;
   name?: string | undefined;
   class?: string;
   estilo?: string | undefined;
@@ -486,12 +425,11 @@ export function GiftCardArt({
   src?: string | null | undefined;
 }) {
   const id = useId().replace(/[^A-Za-z0-9_-]/g, '');
-  if (estilo === 'propia' && src) return <OwnCard src={src} name={name} className={className} />;
-  if (estilo === 'elegante') return <ElegantCard occasion={occasion} variant={variant} name={name} className={className} />;
-  if (estilo === 'mano') return <HandCard occasion={occasion} variant={variant} name={name} className={className} fid={`mano-${id}`} />;
-  const v = VARIANTS[cardVariant(variant)];
+  if (estilo === 'propia' && src) return <OwnCard src={src} className={className} />;
+  if (estilo === 'elegante') return <ElegantCard occasion={occasion} name={name} className={className} />;
+  if (estilo === 'mano') return <HandCard occasion={occasion} name={name} className={className} fid={`mano-${id}`} />;
   const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
-  const [cx, cy, r] = v.coin;
+  const [cx, cy, r] = MONEDA;
   const label = name?.trim() ?? '';
   // Ancho aproximado del texto (Bricolage 800 ≈ 0,58 em por carácter) para la etiqueta.
   const chars = [...label].length;
@@ -499,11 +437,11 @@ export function GiftCardArt({
   const pill = chars * size * 0.58 + 32;
   return (
     <svg class={`arte-tarjeta${className ? ` ${className}` : ''}`} viewBox="0 0 320 250" aria-hidden="true" focusable="false">
-      <rect width="320" height="250" fill={v.bg} />
-      <Decoration deco={v.deco} p={v.p} />
-      <ellipse cx={v.shift === '' ? 160 : v.shift.startsWith('translate(-') ? 148 : 172} cy="222" rx="100" ry="12" fill={v.shadow} opacity=".2" />
-      <g transform={v.shift || undefined}>{motif(v.p)}</g>
-      <Coin cx={cx} cy={cy} r={r} glow={v.deco === 'estrellas' || v.deco === 'rayos'} />
+      <rect width="320" height="250" fill={FONDO} />
+      <Confeti p={PALETA} />
+      <ellipse cx="160" cy="222" rx="100" ry="12" fill={TINTA} opacity=".2" />
+      {motif(PALETA)}
+      <Coin cx={cx} cy={cy} r={r} />
       {label !== '' && (
         <g>
           <rect x={160 - pill / 2} y="206" width={pill} height="34" rx="17" fill="#FFFFFF" {...S} stroke-width="3" />
@@ -520,10 +458,9 @@ export function GiftCardArt({
  * Estilo "Dibujo a mano": los mismos motivos sobre papel, con el trazo temblado y grano de
  * crayón (filtro SVG). El filtro usa un id único por tarjeta; no carga nada externo.
  */
-function HandCard({ occasion, variant, name, className, fid }: { occasion: string; variant: number; name?: string | undefined; className?: string | undefined; fid: string }) {
-  const v = VARIANTS[cardVariant(variant)];
+function HandCard({ occasion, name, className, fid }: { occasion: string; name?: string | undefined; className?: string | undefined; fid: string }) {
   const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
-  const p: Palette = { ...v.p, e: TINTA };
+  const p = PALETA;
   const label = name?.trim() ?? '';
   const chars = [...label].length;
   const size = Math.min(34, 250 / Math.max(1, chars * 0.42));
@@ -531,7 +468,7 @@ function HandCard({ occasion, variant, name, className, fid }: { occasion: strin
     <svg class={`arte-tarjeta${className ? ` ${className}` : ''}`} viewBox="0 0 320 250" aria-hidden="true" focusable="false">
       <defs>
         <filter id={fid} x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed={cardVariant(variant)} result="ondas" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="1" result="ondas" />
           <feDisplacementMap in="SourceGraphic" in2="ondas" scale="6" xChannelSelector="R" yChannelSelector="G" result="temblor" />
           <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" seed="7" result="grano" />
           <feColorMatrix in="grano" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 2.1" result="poros" />
@@ -541,8 +478,8 @@ function HandCard({ occasion, variant, name, className, fid }: { occasion: strin
       <rect width="320" height="250" fill={PAPEL} />
       <g filter={`url(#${fid})`}>
         <Garabatos p={p} />
-        <g transform={v.shift || undefined}>{motif(p)}</g>
-        <Coin cx={v.coin[0]} cy={v.coin[1]} r={v.coin[2]} glow={false} />
+        {motif(p)}
+        <Coin cx={MONEDA[0]} cy={MONEDA[1]} r={MONEDA[2]} />
       </g>
       {label !== '' && (
         <g transform="rotate(-3 160 222)">
@@ -556,26 +493,24 @@ function HandCard({ occasion, variant, name, className, fid }: { occasion: strin
   );
 }
 
-/** Imagen propia (hecha con IA o subida): misma proporción que los dibujos, nombre encima. */
-function OwnCard({ src, name, className }: { src: string; name?: string | undefined; className?: string | undefined }) {
-  const label = name?.trim() ?? '';
+/** Imagen propia (hecha con IA o subida): misma proporción que los dibujos. El nombre ya viene en
+ * la imagen (lo pone la IA, en una cinta abajo): no le superponemos nada. */
+function OwnCard({ src, className }: { src: string; className?: string | undefined }) {
   return (
     <span class={`arte-tarjeta arte-propia${className ? ` ${className}` : ''}`} aria-hidden="true">
       <img src={src} alt="" decoding="async" />
-      {label !== '' && <span class="arte-propia-nombre">{label}</span>}
     </span>
   );
 }
 
 const DORADO = '#E2B84A';
-const NOCHE = ['#14122B', '#10202B', '#22122B', '#121A14'] as const;
+const NOCHE = '#14122B';
 
 /**
  * Estilo "Elegante": fondo noche, marco y motivo en línea dorada (el CSS de .arte-elegante pasa
  * los rellenos a trazo dorado) y el nombre en letra serif.
  */
-function ElegantCard({ occasion, variant, name, className }: { occasion: string; variant: number; name?: string | undefined; className?: string | undefined }) {
-  const v = cardVariant(variant);
+function ElegantCard({ occasion, name, className }: { occasion: string; name?: string | undefined; className?: string | undefined }) {
   const motif = MOTIFS[isOccasion(occasion) ? occasion : 'otra'];
   const label = name?.trim() ?? '';
   const size = Math.min(24, 250 / Math.max(1, [...label].length * 0.5));
@@ -587,13 +522,13 @@ function ElegantCard({ occasion, variant, name, className }: { occasion: string;
   ];
   return (
     <svg class={`arte-tarjeta arte-elegante${className ? ` ${className}` : ''}`} viewBox="0 0 320 250" aria-hidden="true" focusable="false">
-      <rect width="320" height="250" fill={NOCHE[v - 1]} />
+      <rect width="320" height="250" fill={NOCHE} />
       <rect x="12" y="12" width="296" height="226" rx="6" fill="none" stroke={DORADO} stroke-width="1.5" opacity=".7" />
       {stars.map(([x, y, r]) => (
         <path key={`${x}-${y}`} d={starPath(x, y, r, r * 0.35, 4)} fill={DORADO} opacity=".9" />
       ))}
       <g class="motivo-linea" transform={label === '' ? 'translate(32 18) scale(0.8)' : 'translate(40 6) scale(0.75)'}>
-        {motif(VARIANTS[v].p)}
+        {motif(PALETA)}
       </g>
       <circle cx="160" cy="42" r="17" fill="none" stroke={DORADO} stroke-width="2" />
       <BitcoinB cx={160} cy={42} h={19} color={DORADO} weight={3.5} />
