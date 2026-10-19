@@ -201,6 +201,13 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.offline.comprobar': "Antes de usarla, calcula la huella del archivo en tu computadora y compárala con esta y con la de GitHub:",
   'custodia.offline.usar': "Después, desconecta internet y ábrela con el navegador. No necesita red y no manda nada a ningún lado.",
   'menu.lista.d': 'Baby shower, boda, cumpleaños: que te regalen bitcoin.',
+  'precios.titulo': 'Lo que regalas llega entero',
+  'precios.bajada': 'Empiezas con 5 regalos sin costo. Después, el servicio se paga aparte y en bitcoin: nunca sale del regalo ni de los aportes de una lista.',
+  'precios.listaOtras.i2': 'Por el mismo precio, suma 10 regalos con tarjeta completa',
+  'precios.anual.i2': 'Lo que creas durante el plan sigue funcionando cuando vence',
+  'precios.como.1': 'Pagas en bitcoin, on-chain, a una dirección propia de Regálale Bitcoin. Es un costo por servicio: va aparte y nunca sale de la dirección de un regalo ni de los aportes de una lista.',
+  'precios.como.2': 'Crear un regalo no gasta crédito: se usa cuando llega el primer depósito. Si lo cancelas antes de que lo abran, el crédito vuelve.',
+  'precios.como.4': 'Tienes 10 días para arrepentirte de una compra si no usaste ningún crédito (y, en una lista, si no recibió aportes). Te devolvemos los mismos sats que pagaste.',
   // El nombre de la marca con tú lleva acento (manual de marca, cap. 05).
   'porque.historia.p3': 'Ese mismo espíritu tiene Regálale Bitcoin: un regalo simple, con un mensaje, que se puede guardar por años.',
   'custodia.desaparece.titulo': '¿Y si Regálale Bitcoin desaparece?',

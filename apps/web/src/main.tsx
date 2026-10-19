@@ -8,6 +8,7 @@ import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ComparisonPage } from './comparativa.tsx';
+import { PricingPage } from './precios.tsx';
 import { ClaimPage } from './claim/ClaimPage.tsx';
 import { GivePage } from './give/GivePage.tsx';
 import { ALLOW_MAINNET } from './config.ts';
@@ -26,6 +27,9 @@ import { NoCustodyPage } from './sincustodia.tsx';
 import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
+
+/** Franja «en desarrollo» arriba de todo (pedido de Rodolfo, 19/10). Se saca cuando ella lo diga. */
+const EN_DESARROLLO = true;
 
 function savedLang(): string | null {
   try {
@@ -69,6 +73,11 @@ function App() {
   const list = /^\/l\/([A-Za-z0-9_-]{22})\/?$/.exec(path);
   return (
     <I18nContext.Provider value={i18n}>
+      {EN_DESARROLLO && (
+        <p class="aviso-desarrollo" role="note">
+          {i18n.t('aviso.desarrollo')}
+        </p>
+      )}
       {claim?.[1] !== undefined ? (
         <ClaimPage id={claim[1]} />
       ) : list?.[1] !== undefined ? (
@@ -87,6 +96,8 @@ function App() {
         <OpenGiftPage />
       ) : /^\/por-que\/?$/.test(path) ? (
         <WhyPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/precios\/?$/.test(path) ? (
+        <PricingPage testnet={!ALLOW_MAINNET} />
       ) : /^\/comparativa\/?$/.test(path) ? (
         <ComparisonPage testnet={!ALLOW_MAINNET} />
       ) : /^\/sin-custodia\/?$/.test(path) ? (
