@@ -85,7 +85,7 @@ describe('listas de regalos', () => {
       accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async () => {} }, cookieSecure: true },
     });
     const account = await createAccount(sql, { email: 'ana@example.com', lang: 'es', credential: { id: randomBytes(16).toString('base64url'), publicKey: randomBytes(65), alg: -7, signCount: 0, vault: null } });
-    cookie = `__session=${await createSession(sql, account.id)}`;
+    cookie = `__session=${await createSession(sql, account.id, 'passkey')}`;
   });
 
   it('crear: hace falta sesión, una vpub válida y confirmar la primera dirección', async () => {

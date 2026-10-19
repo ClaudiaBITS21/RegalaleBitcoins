@@ -57,8 +57,8 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
   const challengeLimiter = new RateLimiter(60, 60 * 60 * 1000);
   const mailLimiter = new RateLimiter(5, 60 * 60 * 1000);
 
-  const startSession = async (c: Context, account: Account) => {
-    const token = await createSession(sql, account.id);
+  const startSession = async (c: Context, account: Account, method: 'passkey' | 'link') => {
+    const token = await createSession(sql, account.id, method);
     setCookie(c, SESSION_COOKIE, token, {
       path: '/',
       httpOnly: true,
@@ -123,7 +123,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       if (e.code === '23505') throw new ApiError(409, 'cuenta_existente');
       throw e;
     });
-    await startSession(c, account);
+    await startSession(c, account, 'passkey');
     return c.json({ email: account.email }, 201);
   });
 
@@ -144,7 +144,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     await touchCredential(sql, credential.id, result.signCount);
     const [row] = await sql<{ email: string; idioma: string }[]>`select email, idioma from usuarios where id = ${credential.accountId}`;
     if (row === undefined) throw new ApiError(401, 'passkey_invalida');
-    await startSession(c, { id: credential.accountId, email: row.email, lang: isLang(row.idioma) ? row.idioma : 'es' });
+    await startSession(c, { id: credential.accountId, email: row.email, lang: isLang(row.idioma) ? row.idioma : 'es' }, 'passkey');
     return c.json({ email: row.email, credencial: credential.id, boveda: credential.vault });
   });
 
@@ -189,7 +189,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     const { token } = await body(c);
     const account = typeof token === 'string' ? await redeemMailLink(sql, token) : null;
     if (account === null) throw new ApiError(401, 'link_invalido');
-    await startSession(c, account);
+    await startSession(c, account, 'link');
     return c.json({ email: account.email });
   });
 

@@ -99,7 +99,27 @@ export interface AdminSummary {
   readonly reclamos: { reclamados: number; recuperados: number; programadosEsperando: number };
 }
 
+/** Admin del cobro: la llave se ve solo por su huella y sus primeras direcciones. */
+export interface AdminCobro {
+  readonly cobroActivo: boolean;
+  readonly llave: { readonly huella: string; readonly direcciones: readonly string[] } | null;
+  readonly llaveNueva: { readonly huella: string; readonly vigenteDesde: string } | null;
+  readonly fundadoresQuedan: number;
+  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioUsd: number; readonly activo: boolean }>;
+  readonly pagos: ReadonlyArray<{ readonly id: string; readonly producto: string; readonly estado: string; readonly precioUsd: number; readonly sats: string; readonly satsRecibidos: string; readonly creado: string; readonly confirmado: string | null }>;
+  readonly totales: { readonly confirmados: number; readonly usd: number; readonly sats: string };
+  readonly registro: ReadonlyArray<{ readonly email: string; readonly accion: string; readonly detalle: string; readonly fecha: string }>;
+}
+
+const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
 export const api = {
+  adminCobro: () => call<AdminCobro>('/api/admin/cobro'),
+  adminKeyPreview: (llave: string) => post<{ huella: string; direcciones: string[] }>('/api/admin/llave/vista', { llave }),
+  adminSetKey: (llave: string) => post<{ huella: string; pendiente: boolean }>('/api/admin/llave', { llave }),
+  adminSetCharging: (activo: boolean) => post<{ cobroActivo: boolean }>('/api/admin/cobro', { activo }),
+  adminSetPrice: (producto: string, precioUsd: number) => post<{ precioUsd: number }>('/api/admin/precio', { producto, precioUsd }),
+  adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true }>('/api/admin/ajuste', a),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,

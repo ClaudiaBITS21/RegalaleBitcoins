@@ -3182,3 +3182,32 @@ svg.tarjeta-imagen {
     display: none;
   }
 }
+
+/* Admin del cobro (AdminCobro.tsx). */
+.admin-cobro textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+}
+
+.admin-direcciones code,
+.admin-cobro code {
+  word-break: break-all;
+}
+
+.admin-ajuste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-ajuste input,
+.admin-ajuste select {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1.5px solid var(--borde);
+  border-radius: 10px;
+  font: inherit;
+}

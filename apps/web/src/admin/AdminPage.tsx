@@ -4,6 +4,7 @@ import { ALLOW_MAINNET } from '../config.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
+import { AdminCobroPanel } from './AdminCobro.tsx';
 
 // Panel interno de administración (/admin). Solo para los mails de ADMIN_EMAILS; muestra
 // números agregados, nunca datos de las personas ni de los regalos. Textos solo en castellano:
@@ -190,6 +191,7 @@ export function AdminPage() {
           <Tile label="Recibido en regalos" value={sats(data.sats.recibidos)} detail={`Todavía en regalos: ${sats(data.sats.enRegalos)}`} />
         </div>
         {data.regalos.parcial && <Notice>Estados y montos de los {n(data.regalos.muestra)} regalos más recientes.</Notice>}
+        <AdminCobroPanel />
         <Days data={data.porDia} />
         <Bars title="Embudo" data={{ 'Creados': data.regalos.muestra, 'Pagados': paid, 'Abiertos': opened }} />
         <Motives data={data} n={n} pct={pct} usd={(x) => formatUsd(x, lang)} />

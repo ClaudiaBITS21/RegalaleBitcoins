@@ -138,11 +138,29 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
   - los regalos que ya existían no consumen nunca;
   - `GET /api/cuenta/creditos`: saldo, plan, si puede regalar y los últimos movimientos.
 
+- Pagos (migración `013_pagos.sql`, `apps/api/src/payments.ts`, PR #35):
+  - la llave de cobro se lee como descriptor `wpkh([huella/84h/0h/0h]xpub…)` (checksum BIP 380
+    verificado) o como zpub;
+  - cotización de 30 minutos y una dirección por pago con índice atómico;
+  - 0 confirmaciones sin RBF, 1 con RBF; 2 % de tolerancia; «incompleto» se completa en la misma
+    dirección; con la cotización vencida se compara con el precio del momento;
+  - al confirmar acredita los créditos o el plan; fundadores, 100;
+  - se puede comprar en cuanto hay llave cargada, aunque el cobro no esté activo (para la compra
+    de prueba).
+- Admin del cobro (migración `014_admin_cobro.sql`, `apps/api/src/adminCobro.ts`, sección «Cobro»
+  en `/admin`):
+  - la llave se pega, se ven las 3 primeras direcciones para compararlas con la billetera y
+    recién ahí se confirma. La primera carga queda vigente enseguida; un cambio, a las 24 h;
+  - cargar o cambiar la llave, activar o apagar el cobro, cambiar precios y hacer ajustes exige
+    una sesión abierta con passkey (no alcanza el link por mail);
+  - cada acción avisa por mail a los admins y queda en `registro_admin`. La llave nunca vuelve al
+    navegador ni va al registro: solo su huella;
+  - también muestra los pagos y los totales.
+
 ## Qué falta
 
-- Pagos a la xpub (cotización, dirección por pago, vigilancia, tolerancia 2%, RBF).
-- Admin: xpub con las 3 primeras direcciones, passkey y 24 h para cambiarla, precios, ajustes,
-  códigos, campañas, métricas, activar el cobro.
+- Admin: códigos promocionales, campañas y las métricas del handoff (uso de la bienvenida,
+  conversión, ventas por producto, cuentas nuevas sospechosas).
 - Web: «Te quedan…» antes de regalar, packs si no hay saldo, compra con QR, «Mi plan».
 - Listas: pagar o consumir el crédito de lista antes de publicarla; fecha del evento y cierre.
 - Botón de arrepentimiento.
