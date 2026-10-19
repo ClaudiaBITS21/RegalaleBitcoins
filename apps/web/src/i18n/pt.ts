@@ -229,6 +229,7 @@ export const pt: Dict = {
   'menu.recibir': 'Receber',
   'menu.lista.d': 'Chá de bebê, casamento, aniversário: ganhe bitcoin de presente.',
   'menu.razones': '21 motivos',
+  'menu.comparativa': 'Comparativo',
   'menu.comoFunciona': 'Como funciona',
   'menu.seguridad': 'Segurança (sem custódia)',
   'menu.porQueBitcoin': 'Por que bitcoin',

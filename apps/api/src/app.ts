@@ -12,7 +12,7 @@ import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
-import { sendReadyNotices } from './notices.ts';
+import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
 
 export interface AppDeps {
@@ -143,8 +143,10 @@ export function createApp(deps: AppDeps): Hono {
     const given = c.req.header('x-tarea-token') ?? '';
     if (expected === undefined || expected === null || !sameToken(given, expected)) return c.json({ error: 'no_autorizado' }, 401);
     const broadcasts = await processPending({ sql, chain, network });
-    const avisos = await sendReadyNotices({ sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl });
-    return c.json({ ...broadcasts, avisos });
+    const avisoDeps = { sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl };
+    const avisos = await sendReadyNotices(avisoDeps);
+    const recordatorios = await sendReminders(avisoDeps);
+    return c.json({ ...broadcasts, avisos, recordatorios });
   });
 
   app.get('/api/precio', async (c) => {
