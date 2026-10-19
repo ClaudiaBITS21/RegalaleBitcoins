@@ -178,7 +178,8 @@ try {
   await page.waitForURL('**/regalar');
   await page.getByRole('heading', { name: '¿Qué ocasión es?' }).waitFor();
   await shot('r1-ocasion');
-  await page.getByRole('button', { name: 'Navidad', exact: true }).click();
+  // Navidad lleva la etiqueta «Se viene» cuando además es la ocasión de temporada: depende de la fecha.
+  await page.getByRole('button', { name: /^Navidad( Se viene)?$/ }).click();
   await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: '¿Para quién es?' }).waitFor();

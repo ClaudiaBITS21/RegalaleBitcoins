@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { base64urlnopad } from '@scure/base';
 import { describe, it } from 'node:test';
 import { generateMasterMnemonic, openVault, PRF_SALT, sealVault, VAULT_VERSION } from '../src/index.ts';
 import { toHex } from './helpers.ts';
@@ -18,7 +19,11 @@ describe('Bóveda (clave maestra cifrada con la passkey)', () => {
     const sealed = await sealVault(prf(7), mnemonic, credA);
     assert.match(sealed, /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$/);
     assert.equal(sealed.split('.')[0], VAULT_VERSION);
-    assert.ok(!sealed.includes(mnemonic.split(' ')[0] as string));
+    // La clave maestra no aparece en claro en los bytes cifrados. (Buscar una palabra suelta en
+    // el texto base64 fallaba de vez en cuando: una palabra corta puede salir por casualidad.)
+    const cifrado = Buffer.from(base64urlnopad.decode(sealed.split('.')[2] as string));
+    assert.ok(!cifrado.includes(Buffer.from(mnemonic)));
+    for (const w of mnemonic.split(' ').filter((w) => w.length >= 5)) assert.ok(!cifrado.includes(Buffer.from(w)), w);
     assert.equal(await openVault(prf(7), sealed, credA), mnemonic);
     // Dos cifrados de lo mismo dan resultados distintos (IV al azar).
     assert.notEqual(await sealVault(prf(7), mnemonic, credA), sealed);
