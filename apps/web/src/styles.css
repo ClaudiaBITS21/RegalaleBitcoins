@@ -13,9 +13,9 @@
   --acento: #ff8a1f;
   --acento-oscuro: #b3470a;
   --naranja-texto: #e06a00;
-  /* El nombre de la marca en un texto (handoff 19/10): el naranja de marca no llega al contraste
-     mínimo sobre fondo claro, así que se usan dos tonos de la misma familia. */
-  --marca-titulo: #d96400;
+  /* El nombre de la marca en un texto (manual de marca, cap. 05): el naranja de marca no llega al
+     contraste mínimo sobre fondo claro; en títulos y en texto corrido va #B85300. */
+  --marca-titulo: #b85300;
   --marca-texto: #b85300;
   --borde: #e6e1ee;
   --blanco: #ffffff;
@@ -360,7 +360,14 @@ h3 .nombre-marca {
 
 .hero .nombre-marca,
 .porque-hero .nombre-marca {
-  color: var(--tinta);
+  color: var(--blanco);
+}
+
+/* Sobre naranja, blanco y en negrita (manual, cap. 05; pedido de Rodolfo, 19/10). En los títulos ya
+   es negrita: se deja su peso. */
+.hero :not(h1, h2, h3) > .nombre-marca,
+.porque-hero :not(h1, h2, h3) > .nombre-marca {
+  font-weight: 700;
 }
 
 /* En el celular la marca comparte la fila con [Regalar] y el menú: se achica con la pantalla y,
@@ -3078,5 +3085,12 @@ svg.tarjeta-imagen {
 @media (min-width: 900px) {
   .comparativa-directo {
     padding: 40px;
+  }
+}
+
+/* Manual de marca, cap. 04: en pantallas de menos de 300 px queda solo la caja. */
+@media (max-width: 299px) {
+  .marca-palabras {
+    display: none;
   }
 }

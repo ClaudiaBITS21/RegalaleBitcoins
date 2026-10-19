@@ -135,15 +135,18 @@ function useDismiss(open: boolean, close: () => void) {
  * 19/10). Sin itálica ni negrita: un solo énfasis, el color.
  */
 export function ConMarca({ text }: { text: string }) {
-  const partes = text.split('Regalale Bitcoin');
+  // Con vos «Regalale Bitcoin», con tú «Regálale Bitcoin» (el acento sigue al trato).
   return (
     <>
-      {partes.map((p, i) => (
-        <Fragment key={i}>
-          {i > 0 && <span class="nombre-marca">Regalale Bitcoin</span>}
-          {p}
-        </Fragment>
-      ))}
+      {text.split(/(Reg[aá]lale Bitcoin)/).map((p, i) =>
+        i % 2 === 1 ? (
+          <span class="nombre-marca" key={i}>
+            {p}
+          </span>
+        ) : (
+          <Fragment key={i}>{p}</Fragment>
+        ),
+      )}
     </>
   );
 }

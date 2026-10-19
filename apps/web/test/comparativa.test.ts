@@ -66,14 +66,14 @@ describe('Comparativa', () => {
   });
 
   it('con tú no queda voseo, y todos los idiomas tienen los mismos textos', () => {
-    const quedan = textos(COMPARATIVA_TU).filter((t) => VOSEO.test(t.replaceAll('Regalale Bitcoin', '')));
+    const quedan = textos(COMPARATIVA_TU).filter((t) => VOSEO.test(t));
     assert.deepEqual(quedan, []);
     const n = textos(COMPARATIVA.es).length;
     for (const c of [COMPARATIVA_TU, COMPARATIVA.pt, COMPARATIVA.en, COMPARATIVA.it]) {
       assert.equal(textos(c).length, n);
       assert.ok(textos(c).every((t) => t.trim() !== ''));
       // La marca va marcada (*…* o _…_) en el título en todos los idiomas.
-      assert.match(c.titulo, /[*_]Regalale Bitcoin[*_]/);
+      assert.match(c.titulo, /[*_]Reg[aá]lale Bitcoin[*_]/);
     }
   });
 
