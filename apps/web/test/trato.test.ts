@@ -39,9 +39,9 @@ describe('Vos o tú según dónde está la persona', () => {
   });
 
   it('con tú no queda ningún texto en voseo', () => {
-    // "Regalale Bitcoin" es la marca: va igual con vos y con tú.
-    const sinMarca = (t: string) => t.replaceAll('Regalale Bitcoin', '');
-    const quedan = (Object.keys(es) as (keyof typeof es)[]).filter((k) => VOSEO.test(sinMarca(translate('es', k, undefined, 'tu'))));
+    // Incluye la marca: con tú es «Regálale Bitcoin» (manual de marca), así que «Regalale» sin
+    // acento también cuenta como voseo.
+    const quedan = (Object.keys(es) as (keyof typeof es)[]).filter((k) => VOSEO.test(translate('es', k, undefined, 'tu')));
     assert.deepEqual(quedan, []);
   });
 
