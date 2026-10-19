@@ -12,6 +12,7 @@ import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
+import { consumeGiftCredits, refundCanceledGifts } from './credits.ts';
 import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
 
@@ -146,7 +147,9 @@ export function createApp(deps: AppDeps): Hono {
     const avisoDeps = { sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl };
     const avisos = await sendReadyNotices(avisoDeps);
     const recordatorios = await sendReminders(avisoDeps);
-    return c.json({ ...broadcasts, avisos, recordatorios });
+    const creditos = await consumeGiftCredits({ sql, chain });
+    const devoluciones = await refundCanceledGifts(sql);
+    return c.json({ ...broadcasts, avisos, recordatorios, creditos, devoluciones });
   });
 
   app.get('/api/precio', async (c) => {

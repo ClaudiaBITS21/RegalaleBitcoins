@@ -107,6 +107,12 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
 - **Precios se publica ya** y se integra al recorrido de regalar («Precios ya lo publicamos y lo
   integramos al flow»).
 - La cuenta se crea sola al regalar, con el mail de quien regala (es obligatoria).
+- **Sin pasar por testnet** («voy directo al cobro»): el cobro se activa directo en mainnet. Code
+  lo prueba igual contra la cadena simulada (tests y e2e), y antes de anunciarlo Rodolfo hace una
+  compra chica real para verificar que el pago llega a su billetera y se acreditan los créditos.
+  Esto cuenta como la autorización explícita para activar el cobro en mainnet.
+- Mientras tanto, una franja negra arriba de todas las páginas: «Esta página se encuentra en
+  desarrollo, no utilizar para operaciones reales», hasta que Rodolfo diga sacarla.
 - Cambiar el mail de la cuenta: con la passkey o con las 12 palabras (a confirmar por Rodolfo).
   Necesita sumar una «llave de cuenta» a `docs/derivacion.md`.
 
@@ -121,7 +127,22 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
   antes.»
 - Los precios están en el código hasta que exista el admin; después salen de la API.
 
+- Créditos (migración `012_creditos.sql`, `apps/api/src/credits.ts`):
+  - tablas `ajustes`, `productos` (con los precios de la tabla), `movimientos` (un trigger
+    rechaza los UPDATE) y `planes`;
+  - 5 regalos de bienvenida al crear la cuenta; las cuentas que ya existían también los reciben;
+  - el consumo lo hace la tarea programada al ver el primer depósito, una sola vez (plan →
+    bienvenida → pagos); cancelar (recupero) devuelve el crédito a su origen;
+  - el cobro se activa con `ajustes.cobro_activo = 'si'` (lo hará el admin). Mientras esté
+    apagado, el regalo queda resuelto sin consumir: nadie pierde créditos en el período gratis;
+  - los regalos que ya existían no consumen nunca;
+  - `GET /api/cuenta/creditos`: saldo, plan, si puede regalar y los últimos movimientos.
+
 ## Qué falta
 
-- Créditos (`movimientos`), consumo al primer depósito, pagos a la xpub, admin, Mi plan,
-  arrepentimiento: en testnet primero. Activar el cobro en mainnet necesita autorización explícita.
+- Pagos a la xpub (cotización, dirección por pago, vigilancia, tolerancia 2%, RBF).
+- Admin: xpub con las 3 primeras direcciones, passkey y 24 h para cambiarla, precios, ajustes,
+  códigos, campañas, métricas, activar el cobro.
+- Web: «Te quedan…» antes de regalar, packs si no hay saldo, compra con QR, «Mi plan».
+- Listas: pagar o consumir el crédito de lista antes de publicarla; fecha del evento y cierre.
+- Botón de arrepentimiento.
