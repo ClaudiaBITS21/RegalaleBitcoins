@@ -73,19 +73,55 @@ const newId = (): string => Buffer.from(crypto.getRandomValues(new Uint8Array(16
 /** Centavos de dólar a sats con la cotización de 1 BTC. */
 export const centsToSats = (cents: number, usdPerBtc: number): bigint => BigInt(Math.round((cents * 1_000_000) / usdPerBtc));
 
+/** Un cambio de llave de cobro entra en vigor 24 horas después de cargarlo. */
+export const KEY_CHANGE_HOURS = 24;
+
 /** La llave de cobro vigente (descriptor normalizado), o null si todavía no se cargó. */
 export async function paymentKey(sql: Tx, network: Network): Promise<AccountKey | null> {
+  // Si hay una llave nueva cargada hace más de 24 horas, pasa a ser la vigente.
+  await sql`
+    with nueva as (
+      delete from ajustes where clave = 'llave_cobro_nueva' and actualizado <= now() - make_interval(hours => ${KEY_CHANGE_HOURS})
+      returning valor
+    )
+    insert into ajustes (clave, valor) select 'llave_cobro', valor from nueva
+    on conflict (clave) do update set valor = excluded.valor, actualizado = now()`;
   const [r] = await sql<{ valor: string }[]>`select valor from ajustes where clave = 'llave_cobro'`;
   return r === undefined ? null : parsePaymentKey(r.valor, network);
 }
 
-/** Carga la llave de cobro (el admin la confirma después de comparar las primeras direcciones). */
-export async function setPaymentKey(sql: Tx, network: Network, input: string): Promise<AccountKey> {
+/** La llave cargada que todavía no está vigente, con el momento en que entra en vigor. */
+export async function pendingPaymentKey(sql: Tx, network: Network): Promise<{ key: AccountKey; from: Date } | null> {
+  const [r] = await sql<{ valor: string; desde: Date }[]>`
+    select valor, actualizado + make_interval(hours => ${KEY_CHANGE_HOURS}) as desde from ajustes where clave = 'llave_cobro_nueva'`;
+  return r === undefined ? null : { key: parsePaymentKey(r.valor, network), from: r.desde };
+}
+
+/**
+ * Carga la llave de cobro. La primera vez queda vigente enseguida; un cambio, a las 24 horas (así
+ * hay tiempo de frenarlo si no lo hizo la responsable). Devuelve si quedó pendiente.
+ */
+export async function setPaymentKey(sql: Tx, network: Network, input: string): Promise<{ key: AccountKey; pending: boolean }> {
   const key = parsePaymentKey(input, network);
+  const current = await paymentKey(sql, network);
+  if (current !== null && current.text === key.text) {
+    await sql`delete from ajustes where clave = 'llave_cobro_nueva'`;
+    return { key, pending: false };
+  }
+  const clave = current === null ? 'llave_cobro' : 'llave_cobro_nueva';
   await sql`
-    insert into ajustes (clave, valor) values ('llave_cobro', ${key.text})
+    insert into ajustes (clave, valor) values (${clave}, ${key.text})
     on conflict (clave) do update set valor = excluded.valor, actualizado = now()`;
-  return key;
+  return { key, pending: current !== null };
+}
+
+/**
+ * Huella corta de la llave para mostrar y registrar (nunca la llave entera): la huella maestra del
+ * descriptor, la misma que muestra la billetera; con una zpub/vpub, la de la llave de la cuenta.
+ */
+export function keyFingerprint(key: AccountKey): string {
+  const m = /^wpkh\(\[([0-9a-fA-F]{8})\//.exec(key.text);
+  return m?.[1]?.toLowerCase() ?? Buffer.from(key.hd.identifier ?? new Uint8Array()).toString('hex').slice(0, 8);
 }
 
 export async function foundersLeft(sql: Tx): Promise<number> {

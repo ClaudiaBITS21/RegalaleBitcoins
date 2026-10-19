@@ -485,4 +485,65 @@ describe('Cuentas con passkey', () => {
     pays.set(p.direccion, { confirmed: 21_000n, mempool: [] });
     assert.equal(await state(), 'confirmado');
   });
+
+  it('admin del cobro: llave con vista previa, passkey obligatoria, cambio a las 24 h, cobro, precios y ajustes', async () => {
+    const ana = await signUp('ana@example.com');
+    assert.equal((await req('/api/admin/cobro', undefined, ana.cookie)).status, 404);
+    const admin = await signUp('admin@example.com');
+    const get = async () => (await (await req('/api/admin/cobro', undefined, admin.cookie)).json()) as {
+      cobroActivo: boolean; llave: { huella: string; direcciones: string[] } | null; llaveNueva: { huella: string; vigenteDesde: string } | null;
+      productos: Array<{ codigo: string; precioUsd: number }>; registro: Array<{ accion: string; detalle: string }>;
+    };
+    assert.equal((await get()).llave, null);
+    const root = masterRootFromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');
+    const llave = accountKeyText(root, signet);
+    const key = parsePaymentKey(llave, signet);
+    // Vista previa: las 3 primeras direcciones, sin guardar nada.
+    const vista = (await (await req('/api/admin/llave/vista', { llave }, admin.cookie)).json()) as { direcciones: string[] };
+    assert.deepEqual(vista.direcciones, [0, 1, 2].map((i) => deriveListAddress(key, i).address));
+    assert.equal((await get()).llave, null);
+    const mala = await req('/api/admin/llave/vista', { llave: 'zpub123' }, admin.cookie);
+    assert.equal(mala.status, 422);
+    // Con una sesión abierta por link de mail no alcanza: hace falta passkey.
+    await req('/api/cuenta/link', { email: 'admin@example.com' });
+    const token = /#acceso=([A-Za-z0-9_-]{43})/.exec(mails.at(-1)?.text ?? '')?.[1] as string;
+    const viaLink = cookieOf(await req('/api/cuenta/link/canje', { token }));
+    assert.equal((await req('/api/admin/cobro', undefined, viaLink)).status, 200);
+    const sinPasskey = await req('/api/admin/llave', { llave }, viaLink);
+    assert.equal(sinPasskey.status, 403);
+    // Primera carga: vigente enseguida, con aviso por mail y registro.
+    mails = [];
+    const r1 = (await (await req('/api/admin/llave', { llave }, admin.cookie)).json()) as { pendiente: boolean; huella: string };
+    assert.equal(r1.pendiente, false);
+    assert.equal(mails.length, 1);
+    assert.equal(mails[0]?.to, 'admin@example.com');
+    const g1 = await get();
+    assert.deepEqual(g1.llave?.direcciones, vista.direcciones);
+    assert.equal(g1.registro[0]?.accion, 'llave_cargada');
+    // Cambio: queda pendiente 24 h; mientras tanto se cobra a la anterior.
+    const otra = accountKeyText(masterRootFromMnemonic('zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'), signet);
+    const r2 = (await (await req('/api/admin/llave', { llave: otra }, admin.cookie)).json()) as { pendiente: boolean };
+    assert.equal(r2.pendiente, true);
+    const g2 = await get();
+    assert.deepEqual(g2.llave?.direcciones, vista.direcciones);
+    assert.ok(g2.llaveNueva !== null && Date.parse(g2.llaveNueva.vigenteDesde) - Date.now() > 23.9 * 3_600_000);
+    await sql`update ajustes set actualizado = now() - interval '25 hours' where clave = 'llave_cobro_nueva'`;
+    const g3 = await get();
+    assert.equal(g3.llaveNueva, null);
+    assert.equal(g3.llave?.direcciones[0], deriveListAddress(parsePaymentKey(otra, signet), 0).address);
+    // La llave entera nunca vuelve al navegador.
+    assert.ok(!JSON.stringify(g3).includes('pub'));
+    // Activar el cobro, precio y ajuste.
+    assert.equal((await req('/api/admin/cobro', { activo: true }, viaLink)).status, 403);
+    assert.deepEqual(await (await req('/api/admin/cobro', { activo: true }, admin.cookie)).json(), { cobroActivo: true });
+    assert.equal((await get()).cobroActivo, true);
+    assert.equal((await req('/api/admin/precio', { producto: 'pack10', precioUsd: 12 }, admin.cookie)).status, 200);
+    assert.equal((await get()).productos.find((p) => p.codigo === 'pack10')?.precioUsd, 12);
+    assert.equal((await req('/api/admin/precio', { producto: 'bienvenida', precioUsd: 1 }, admin.cookie)).status, 404);
+    assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'x' }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'Regalo por ayudar con las pruebas' }, admin.cookie)).status, 200);
+    const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number } };
+    assert.equal(c.regalos.pagos, 3);
+    assert.deepEqual((await get()).registro.map((r) => r.accion).slice(0, 4), ['ajuste', 'precio', 'cobro_activado', 'llave_cambio_pedido']);
+  });
 });

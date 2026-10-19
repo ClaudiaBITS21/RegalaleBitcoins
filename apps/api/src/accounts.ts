@@ -10,6 +10,8 @@ export interface Account {
   readonly id: string;
   readonly email: string;
   readonly lang: Lang;
+  /** Si la sesión se abrió con passkey (y no con un link por mail). */
+  readonly viaPasskey?: boolean;
 }
 
 export interface Credential {
@@ -86,19 +88,19 @@ export async function accountCredentials(sql: Sql, accountId: string): Promise<A
   return rows.map((r) => ({ id: r.id, prf: r.prf }));
 }
 
-export async function createSession(sql: Sql, accountId: string): Promise<string> {
+export async function createSession(sql: Sql, accountId: string, method: 'passkey' | 'link'): Promise<string> {
   const token = newToken();
   await sql`delete from sesiones where expira < now()`;
-  await sql`insert into sesiones (token_hash, usuario_id, expira) values (${hash(token)}, ${accountId}, now() + make_interval(days => ${SESSION_DAYS}))`;
+  await sql`insert into sesiones (token_hash, usuario_id, expira, metodo) values (${hash(token)}, ${accountId}, now() + make_interval(days => ${SESSION_DAYS}), ${method})`;
   return token;
 }
 
 export async function sessionAccount(sql: Sql, token: string | undefined): Promise<Account | null> {
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const [r] = await sql<{ id: string; email: string; idioma: Lang }[]>`
-    select u.id, u.email, u.idioma from sesiones s join usuarios u on u.id = s.usuario_id
+  const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' }[]>`
+    select u.id, u.email, u.idioma, s.metodo from sesiones s join usuarios u on u.id = s.usuario_id
     where s.token_hash = ${hash(token)} and s.expira > now()`;
-  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma };
+  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma, viaPasskey: r.metodo === 'passkey' };
 }
 
 export async function deleteSession(sql: Sql, token: string | undefined): Promise<void> {
