@@ -13,7 +13,7 @@ import { registerListRoutes } from './lists.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
-import { chargingActive, consumeGiftCredits, refundCanceledGifts } from './credits.ts';
+import { balance, canGive, chargingActive, consumeGiftCredits, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
 import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
@@ -217,6 +217,11 @@ export function createApp(deps: AppDeps): Hono {
     const g = parseNewGift(await c.req.json().catch(() => null), network);
     // Con sesión, el regalo queda en la cuenta (con su índice, para volver a derivarlo desde la bóveda).
     const account = await currentAccount(sql, c);
+    // Con el cobro activo, una cuenta sin créditos ni plan no puede crear otro regalo: la web le
+    // ofrece los packs antes de mostrar la dirección.
+    if (account !== null && (await chargingActive(sql)) && !canGive(await balance(sql, account.id), true)) {
+      throw new ApiError(409, 'sin_creditos');
+    }
     const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),
       chain.fees(),

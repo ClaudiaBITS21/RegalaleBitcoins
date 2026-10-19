@@ -1,12 +1,22 @@
 import type { Network } from '@regalale/core';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
+import type { Credits } from '../api.ts';
 import { formatSats } from '../format.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
 import { PayBox } from './PayBox.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
-export function PayStep({ gift, network, onPaid }: { gift: MadeGift; network: Network; onPaid: () => void }) {
+/** «Te quedan…»: qué crédito usa este regalo (solo con el cobro activo). */
+function creditNote(c: Credits | null): { key: 'regalar.creditos.plan' | 'regalar.creditos.bienvenida' | 'regalar.creditos.pagos'; n: number } | null {
+  if (c === null || !c.cobroActivo) return null;
+  if (c.plan !== null) return { key: 'regalar.creditos.plan', n: 0 };
+  if (c.regalos.bienvenida > 0) return { key: 'regalar.creditos.bienvenida', n: c.regalos.bienvenida };
+  if (c.regalos.pagos > 0) return { key: 'regalar.creditos.pagos', n: c.regalos.pagos };
+  return null;
+}
+
+export function PayStep({ gift, network, credits = null, onPaid }: { gift: MadeGift; network: Network; credits?: Credits | null; onPaid: () => void }) {
   const { t, lang } = useI18n();
   const { view, failed } = useGiftStatus(gift.id);
   const seen = useRef(false);
@@ -24,10 +34,12 @@ export function PayStep({ gift, network, onPaid }: { gift: MadeGift; network: Ne
   }, [received]);
 
   const amount = formatSats(gift.sats, lang);
+  const note = creditNote(credits);
   return (
     <div class="paso">
       <StepTitle>{t('regalar.pagar.titulo', { monto: amount })}</StepTitle>
       <p class="texto-suave">{t('regalar.pagar.texto')}</p>
+      {note !== null && <p class="texto-suave">{t(note.key, { n: note.n })}</p>}
       <PayBox address={gift.address} sats={gift.sats} network={network.name} />
       {received === 0n && !replaced && (
         <p class="esperando" role="status">

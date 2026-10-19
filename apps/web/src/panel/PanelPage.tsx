@@ -5,6 +5,7 @@ import { accessErrorKey, accountApi, type AccountView, signIn } from '../account
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
+import { MyPlan } from './MyPlan.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
@@ -208,6 +209,7 @@ export function PanelPage() {
             })}
           </ul>
         )}
+        <MyPlan />
         <MyLists network={network} />
         <div class="caja">
           <strong>{t('regalar.codigo.titulo')}</strong>
