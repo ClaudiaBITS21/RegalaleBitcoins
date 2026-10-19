@@ -175,6 +175,8 @@ interface GrupoMenu {
   readonly id: string;
   readonly label: Key;
   readonly items: readonly ItemMenu[];
+  /** En compu va como botón con marco (sin relleno), al lado de [Regalar] que va con fondo. */
+  readonly conMarco?: boolean;
 }
 
 // Grupos del menú (handoff 2026-10-19, «marca y menú», con los cambios de Rodolfo del 19/10:
@@ -185,6 +187,7 @@ const GRUPOS: readonly GrupoMenu[] = [
   {
     id: 'recibir',
     label: 'menu.recibir',
+    conMarco: true,
     items: [
       { href: '/abrir', label: 'menu.abrirRegalo', desc: 'menu.abrirRegalo.d', destacado: true },
       { href: '/listas/nueva', label: 'menu.lista', desc: 'menu.lista.d' },
@@ -214,7 +217,7 @@ function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: 
   const { t } = useI18n();
   return (
     <div class="desplegable">
-      <button type="button" class="link-nav" aria-expanded={abierto} aria-haspopup="true" onClick={onToggle}>
+      <button type="button" class={`link-nav${grupo.conMarco === true ? ' link-nav-marco' : ''}`} aria-expanded={abierto} aria-haspopup="true" onClick={onToggle}>
         {t(grupo.label)}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d={abierto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />

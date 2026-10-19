@@ -50,6 +50,8 @@ Hecho:
   «Listas» sueltos): [Regalar] · Recibir ▾ (Abrir un regalo, Armar mi lista) · Cómo funciona ▾
   (Seguridad) · Por qué bitcoin ▾ (21 razones) · idioma. Con sesión iniciada, «Mi cuenta ▾» (Mis
   regalos) antes del idioma.
+- «Recibir ▾» va como botón con marco, sin relleno (blanco sobre la cabecera naranja, tinta sobre
+  fondo claro), para diferenciarlo de [Regalar], que tiene fondo (decisión de Rodolfo, 19/10).
 - Celular: logo + [Regalar] + ☰; el menú abre con «Recibir» (Abrir un regalo primero) y muestra
   los grupos como secciones abiertas, con el idioma al final.
 - Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).

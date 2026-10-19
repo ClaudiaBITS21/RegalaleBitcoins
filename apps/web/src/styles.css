@@ -1588,6 +1588,19 @@ textarea {
     position: relative;
   }
 
+  /* «Recibir»: botón con marco y sin relleno (pedido de Rodolfo, 19/10). Blanco sobre la franja
+     naranja; en los encabezados claros, en tinta para que se vea. */
+  .link-nav-marco {
+    min-height: 48px;
+    padding: 0 14px 0 18px;
+    border: 2px solid var(--tinta);
+    border-radius: 14px;
+  }
+
+  .cabecera-naranja .link-nav-marco {
+    border-color: var(--blanco);
+  }
+
   .panel-grupo {
     left: 0;
     top: 52px;
