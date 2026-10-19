@@ -1594,13 +1594,6 @@ textarea {
     min-width: 240px;
   }
 
-  .nav-separador {
-    width: 2px;
-    height: 28px;
-    background: currentColor;
-    opacity: 0.25;
-  }
-
   .link-abrir {
     font-weight: 600;
     text-decoration: underline;

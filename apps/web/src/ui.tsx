@@ -222,22 +222,22 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
       <a class="marca" href="/">
         <Wordmark onOrange={onOrange} />
       </a>
+      {/* Orden en compu (Rodolfo, 19/10): [Regalar] y «Abrir un regalo» primero, después los menús y el idioma al final. */}
       <nav class="nav-compu" aria-label={t('menu.abrir')} ref={navRef}>
+        <a class="boton-nav" href="/regalar">
+          {t('menu.regalar')}
+        </a>
+        <a class="link-nav link-abrir" href="/abrir">
+          {t('menu.abrirRegalo')}
+        </a>
         {GRUPOS.map((g) => (
           <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
         ))}
         <a class="link-nav" href={LISTAS.href}>
           {t(LISTAS.label)}
         </a>
-        <span class="nav-separador" aria-hidden="true" />
-        <LangPill />
         {conSesion && <Desplegable grupo={CUENTA} abierto={grupoAbierto === CUENTA.id} onToggle={() => toggle(CUENTA.id)} />}
-        <a class="link-nav link-abrir" href="/abrir">
-          {t('menu.abrirRegalo')}
-        </a>
-        <a class="boton-nav" href="/regalar">
-          {t('menu.regalar')}
-        </a>
+        <LangPill />
       </nav>
       <div class="nav-movil" ref={mobileRef}>
         <a class="boton-nav boton-nav-movil" href="/regalar">

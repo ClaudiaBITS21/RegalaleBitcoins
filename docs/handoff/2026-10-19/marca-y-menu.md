@@ -45,8 +45,9 @@ Logo · Cómo funciona ▾ · Por qué bitcoin ▾ · Listas · Precios ‖ idio
 Hecho:
 - Tokens `--marca-titulo` y `--marca-texto`; «Regalale Bitcoin» dentro de los textos de la web en
   naranja (`ConMarca` en `apps/web/src/ui.tsx`), en tinta sobre fondo naranja.
-- Menú de compu: Cómo funciona ▾ (Seguridad) · Por qué bitcoin ▾ (21 razones) · Listas ‖ idioma ·
-  Abrir un regalo · [Regalar]. Con sesión iniciada, «Mi cuenta ▾» (Mis regalos).
+- Menú de compu, en el orden que pidió Rodolfo el 19/10 (botón primero, menús después, idioma al
+  final): [Regalar] · Abrir un regalo · Cómo funciona ▾ (Seguridad) · Por qué bitcoin ▾
+  (21 razones) · Listas · idioma. Con sesión iniciada, «Mi cuenta ▾» (Mis regalos) antes del idioma.
 - Celular: logo + [Regalar] + ☰; el menú abre con «Abrir un regalo» y muestra los grupos como
   secciones abiertas, con el idioma al final.
 - Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).
