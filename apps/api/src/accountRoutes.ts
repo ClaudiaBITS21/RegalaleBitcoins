@@ -192,6 +192,9 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     return c.json({ email: account.email });
   });
 
+  /** ¿Hay una sesión iniciada? Para el menú: responde siempre 200, sin datos de la cuenta. */
+  app.get('/api/cuenta/sesion', async (c) => c.json({ abierta: (await currentAccount(sql, c)) !== null }));
+
   /** El panel: cuenta, passkeys y regalos con su estado (calculado desde la cadena). */
   app.get('/api/cuenta', async (c) => {
     const account = await currentAccount(sql, c);

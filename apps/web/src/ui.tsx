@@ -1,4 +1,4 @@
-import { type ComponentChildren, createContext } from 'preact';
+import { type ComponentChildren, createContext, Fragment } from 'preact';
 import { useContext, useEffect, useRef, useState } from 'preact/hooks';
 import { type Key, LANG_NAMES, translate, type Trato, UI_LANGS, type UiLang } from './i18n/index.ts';
 import { installState, installWay, isStandalone, onInstallChange, promptInstall } from './pwa.ts';
@@ -130,70 +130,140 @@ function useDismiss(open: boolean, close: () => void) {
   return ref;
 }
 
-function ReceiveItems() {
-  const { t } = useI18n();
+/**
+ * El nombre de la marca dentro de un texto: «Regalale Bitcoin» separado y en naranja (handoff del
+ * 19/10). Sin itálica ni negrita: un solo énfasis, el color.
+ */
+export function ConMarca({ text }: { text: string }) {
+  const partes = text.split('Regalale Bitcoin');
   return (
     <>
-      <a class="menu-item destacado" href="/abrir">
-        <strong>{t('menu.abrirRegalo')}</strong>
-        <span>{t('menu.abrirRegalo.d')}</span>
-      </a>
-      <a class="menu-item" href="/listas/nueva">
-        <strong>{t('menu.lista')}</strong>
-        <span>{t('menu.lista.d')}</span>
-      </a>
-      <div class="menu-item">
-        <strong>
-          {t('menu.mis')} <span class="etiqueta-pronto">{t('menu.pronto')}</span>
-        </strong>
-        <span>{t('menu.mis.d')}</span>
-      </div>
+      {partes.map((p, i) => (
+        <Fragment key={i}>
+          {i > 0 && <span class="nombre-marca">Regalale Bitcoin</span>}
+          {p}
+        </Fragment>
+      ))}
     </>
   );
 }
 
-/** Encabezado del sitio: marca, menú (Regalar / Recibir / 21 razones / Sin custodia) e idioma. */
+/** ¿Hay una sesión iniciada? Se pregunta una vez por carga de página. */
+let sesion: Promise<boolean> | null = null;
+function useSesion(): boolean {
+  const [abierta, setAbierta] = useState(false);
+  useEffect(() => {
+    sesion ??= fetch('/api/cuenta/sesion', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? (r.json() as Promise<{ abierta?: unknown }>) : { abierta: false }))
+      .then(
+        (d) => d.abierta === true,
+        () => false,
+      );
+    void sesion.then(setAbierta);
+  }, []);
+  return abierta;
+}
+
+interface ItemMenu {
+  readonly href: string;
+  readonly label: Key;
+  /** Bajada debajo del título (en los ítems de «Recibir»). */
+  readonly desc?: Key;
+  readonly destacado?: boolean;
+}
+interface GrupoMenu {
+  readonly id: string;
+  readonly label: Key;
+  readonly items: readonly ItemMenu[];
+  /** En compu va como botón con marco (sin relleno), al lado de [Regalar] que va con fondo. */
+  readonly conMarco?: boolean;
+}
+
+// Grupos del menú (handoff 2026-10-19, «marca y menú», con los cambios de Rodolfo del 19/10:
+// «Recibir» agrupa Abrir un regalo y las listas). Solo lo que ya existe: Paso a paso, Preguntas
+// frecuentes, Comparativa, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo entra en un
+// grupo existente; arriba, como máximo, 4 links y 2 botones.
+const GRUPOS: readonly GrupoMenu[] = [
+  {
+    id: 'recibir',
+    label: 'menu.recibir',
+    conMarco: true,
+    items: [
+      { href: '/abrir', label: 'menu.abrirRegalo', desc: 'menu.abrirRegalo.d', destacado: true },
+      { href: '/listas/nueva', label: 'menu.lista', desc: 'menu.lista.d' },
+    ],
+  },
+  { id: 'como', label: 'menu.comoFunciona', items: [{ href: '/sin-custodia', label: 'menu.seguridad' }] },
+  { id: 'porque', label: 'menu.porQueBitcoin', items: [{ href: '/por-que', label: 'menu.razones' }] },
+];
+const CUENTA: GrupoMenu = { id: 'cuenta', label: 'menu.cuenta', items: [{ href: '/panel', label: 'menu.misRegalos' }] };
+
+/** Un ítem: link simple o, si tiene bajada, título y bajada (como en «Recibir»). */
+function ItemDeMenu({ item, onClick }: { item: ItemMenu; onClick?: () => void }) {
+  const { t } = useI18n();
+  return item.desc === undefined ? (
+    <a class="menu-link" href={item.href} onClick={onClick}>
+      {t(item.label)}
+    </a>
+  ) : (
+    <a class={`menu-item${item.destacado === true ? ' destacado' : ''}`} href={item.href} onClick={onClick}>
+      <strong>{t(item.label)}</strong>
+      <span>{t(item.desc)}</span>
+    </a>
+  );
+}
+
+function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: boolean; onToggle: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div class="desplegable">
+      <button type="button" class={`link-nav${grupo.conMarco === true ? ' link-nav-marco' : ''}`} aria-expanded={abierto} aria-haspopup="true" onClick={onToggle}>
+        {t(grupo.label)}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={abierto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
+        </svg>
+      </button>
+      {abierto && (
+        <div class="panel-menu panel-grupo">
+          {grupo.items.map((i) => (
+            <ItemDeMenu item={i} key={i.href} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Encabezado del sitio: marca, menú agrupado, idioma, «Abrir un regalo» y [Regalar]. */
 export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   const { t } = useI18n();
+  const conSesion = useSesion();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [receiveOpen, setReceiveOpen] = useState(false);
+  const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null);
   const mobileRef = useDismiss(mobileOpen, () => setMobileOpen(false));
-  const receiveRef = useDismiss(receiveOpen, () => setReceiveOpen(false));
+  const navRef = useDismiss(grupoAbierto !== null, () => setGrupoAbierto(null));
+  const grupos = conSesion ? [...GRUPOS, CUENTA] : GRUPOS;
+  const toggle = (id: string) => setGrupoAbierto((g) => (g === id ? null : id));
   return (
     <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
       <a class="marca" href="/">
         <Wordmark onOrange={onOrange} />
       </a>
-      <nav class="nav-compu" aria-label={t('menu.abrir')}>
+      {/* Orden en compu (Rodolfo, 19/10): [Regalar] primero, después los menús y el idioma al final. */}
+      <nav class="nav-compu" aria-label={t('menu.abrir')} ref={navRef}>
         <a class="boton-nav" href="/regalar">
           {t('menu.regalar')}
         </a>
-        <div class="desplegable" ref={receiveRef}>
-          <button type="button" class="link-nav" aria-expanded={receiveOpen} aria-haspopup="true" onClick={() => setReceiveOpen(!receiveOpen)}>
-            {t('menu.recibir')}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d={receiveOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
-            </svg>
-          </button>
-          {receiveOpen && (
-            <div class="panel-menu panel-recibir">
-              <ReceiveItems />
-            </div>
-          )}
-        </div>
-        <a class="link-nav" href="/panel">
-          {t('menu.hechos')}
-        </a>
-        <a class="link-nav" href="/por-que">
-          {t('menu.razones')}
-        </a>
-        <a class="link-nav custodia-link-nav" href="/sin-custodia">
-          {t('custodia.menu')}
-        </a>
+        {GRUPOS.map((g) => (
+          <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
+        ))}
+        {conSesion && <Desplegable grupo={CUENTA} abierto={grupoAbierto === CUENTA.id} onToggle={() => toggle(CUENTA.id)} />}
         <LangPill />
       </nav>
       <div class="nav-movil" ref={mobileRef}>
-        <LangPill />
+        <a class="boton-nav boton-nav-movil" href="/regalar">
+          {t('menu.regalar')}
+        </a>
         <button type="button" class="boton-hamburguesa" aria-expanded={mobileOpen} aria-label={t(mobileOpen ? 'menu.cerrar' : 'menu.abrir')} onClick={() => setMobileOpen(!mobileOpen)}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
             <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />
@@ -201,20 +271,17 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         </button>
         {mobileOpen && (
           <div class="panel-menu panel-movil">
-            <a class="boton boton-primario" href="/regalar">
-              {t('menu.regalar')}
-            </a>
-            <a class="menu-link" href="/panel">
-              {t('menu.hechos')}
-            </a>
-            <p class="menu-titulo">{t('menu.recibir')}</p>
-            <ReceiveItems />
-            <a class="menu-link" href="/por-que" onClick={() => setMobileOpen(false)}>
-              {t('razones.titulo')}
-            </a>
-            <a class="menu-link" href="/sin-custodia" onClick={() => setMobileOpen(false)}>
-              {t('custodia.pie')}
-            </a>
+            {grupos.map((g) => (
+              <div class="menu-seccion" key={g.id}>
+                <p class="menu-titulo">{t(g.label)}</p>
+                {g.items.map((i) => (
+                  <ItemDeMenu item={i} key={i.href} onClick={() => setMobileOpen(false)} />
+                ))}
+              </div>
+            ))}
+            <div class="menu-idioma">
+              <LangPill />
+            </div>
           </div>
         )}
       </div>
@@ -231,6 +298,9 @@ export function SiteFooter() {
       <span>{t('pie')}</span>
       <a class="custodia-link-pie" href="/sin-custodia">
         {t('custodia.pie')}
+      </a>
+      <a class="custodia-link-pie" href="/panel">
+        {t('menu.misRegalos')}
       </a>
       <InstallButton />
     </footer>

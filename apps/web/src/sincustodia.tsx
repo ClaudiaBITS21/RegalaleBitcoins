@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Key } from './i18n/index.ts';
-import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
+import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
 // Página "Sin custodia" (/sin-custodia): explica, sin jerga, por qué nosotros no podemos tocar
 // los bitcoins de un regalo. Todo lo que dice tiene que seguir siendo cierto según
@@ -202,8 +202,12 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
 
         <section class="seccion" aria-labelledby="custodia-desaparece">
           <article class="historia custodia-bloque">
-            <h2 id="custodia-desaparece">{t('custodia.desaparece.titulo')}</h2>
-            <p>{t('custodia.desaparece.p1')}</p>
+            <h2 id="custodia-desaparece">
+              <ConMarca text={t('custodia.desaparece.titulo')} />
+            </h2>
+            <p>
+              <ConMarca text={t('custodia.desaparece.p1')} />
+            </p>
             <p>{t('custodia.desaparece.p2')}</p>
             <p>{t('custodia.desaparece.p3')}</p>
             <p>

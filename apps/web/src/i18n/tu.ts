@@ -80,7 +80,6 @@ export const tu: Partial<Record<Key, string>> = {
   'razones.carta': 'Razón {n} de 21. Toca para voltearla.',
   'razones.aviso': 'El precio de bitcoin sube y baja, y lo que pasó antes no garantiza lo que vaya a pasar. Regala lo que tenga sentido para ti, como cualquier otro regalo.',
   'menu.abrirRegalo.d': 'Te mandaron un link: empieza aquí.',
-  'menu.lista.d': 'Baby shower, boda, cumpleaños: que te regalen bitcoin.',
   'abrir.titulo': 'Abre tu regalo',
   'abrir.texto': 'Toca el link que te mandaron por WhatsApp o mail: te lleva directo. Si no puedes tocarlo, pégalo aquí.',
   'abrir.invalido': 'Ese link no parece de un regalo. Cópialo completo, con todo lo que va después del #.',
@@ -199,4 +198,5 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.offline.bajar': "Descargar la herramienta",
   'custodia.offline.comprobar': "Antes de usarla, calcula la huella del archivo en tu computadora y compárala con esta y con la de GitHub:",
   'custodia.offline.usar': "Después, desconecta internet y ábrela con el navegador. No necesita red y no manda nada a ningún lado.",
+  'menu.lista.d': 'Baby shower, boda, cumpleaños: que te regalen bitcoin.',
 };

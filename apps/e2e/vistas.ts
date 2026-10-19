@@ -51,7 +51,7 @@ try {
       await page.screenshot({ path: join(OUT, `${name}-menu.png`) });
     } else {
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.getByRole('button', { name: 'Recibir' }).click();
+      await page.getByRole('button', { name: 'Por qué bitcoin' }).click();
       await page.screenshot({ path: join(OUT, `${name}-menu.png`) });
     }
     await page.goto(base + '/regalar?ocasion=otra&libre=Mudanza');
