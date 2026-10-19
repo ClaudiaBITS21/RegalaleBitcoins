@@ -637,6 +637,21 @@ export const es = {
   'regalar.sinCreditos.titulo': 'Te quedaste sin regalos',
   'regalar.sinCreditos.texto': 'Para seguir regalando, elegí un pack. El costo va aparte: nunca sale del regalo.',
   'regalar.sinCreditos.boton': 'Ver los packs',
+  // Botón de arrepentimiento (handoff de cobro).
+  'arrep.titulo': 'Botón de arrepentimiento',
+  'arrep.texto': 'Tenés {dias} días desde la compra para arrepentirte, si no usaste ningún crédito (y, en una lista, si no recibió aportes). Te devolvemos los mismos sats que pagaste, a la dirección que nos indiques.',
+  'arrep.sesion': 'Para arrepentirte de una compra, entrá con tu cuenta.',
+  'arrep.vacio': 'Todavía no hiciste ninguna compra.',
+  'arrep.direccion': 'Dirección bitcoin para la devolución',
+  'arrep.boton': 'Arrepentirme de esta compra',
+  'arrep.listo': 'Listo. Tu código de trámite es {codigo}. Te vamos a devolver los sats a la dirección que indicaste.',
+  'arrep.pedido': 'Pedido {codigo}: la devolución está en trámite.',
+  'arrep.devuelto': 'Devuelto (pedido {codigo}).',
+  'arrep.vencido': 'Ya pasaron los {dias} días.',
+  'arrep.usado': 'Ya usaste créditos de esta compra.',
+  'arrep.error': 'No se pudo registrar el pedido. Probá de nuevo en un rato.',
+  'arrep.direccionInvalida': 'Esa dirección no es válida.',
+  'pie.arrepentimiento': 'Botón de arrepentimiento',
 } as const;
 
 export type Key = keyof typeof es;

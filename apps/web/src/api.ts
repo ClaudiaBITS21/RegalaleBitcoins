@@ -145,6 +145,14 @@ const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST',
 export const api = {
   products: () => call<Products>('/api/productos'),
   credits: () => call<Credits>('/api/cuenta/creditos'),
+  purchases: () =>
+    call<{
+      dias: number;
+      compras: Array<{ id: string; producto: string; precioUsd: number; sats: string; fecha: string; arrepentimiento: { codigo: string; estado: 'pedido' | 'devuelto' } | null; noProcede: 'vencido' | 'usado' | null }>;
+    }>('/api/cuenta/compras'),
+  refund: (pago: string, direccion: string) => post<{ codigo: string }>('/api/cuenta/arrepentimiento', { pago, direccion }),
+  adminRefunds: () => call<{ pedidos: Array<{ codigo: string; pago: string; producto: string; sats: string; direccion: string; estado: string; fecha: string }> }>('/api/admin/arrepentimientos'),
+  adminRefunded: (codigo: string) => post<{ ok: true }>(`/api/admin/arrepentimiento/${encodeURIComponent(codigo)}/devuelto`, {}),
   /** Créditos de la cuenta si hay sesión; sin sesión, null (sin pedir algo que dé 401). */
   creditsIfSignedIn: async (): Promise<Credits | null> => ((await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta ? call<Credits>('/api/cuenta/creditos') : null),
   buy: (producto: string) => post<Purchase>('/api/cuenta/pagos', { producto }),

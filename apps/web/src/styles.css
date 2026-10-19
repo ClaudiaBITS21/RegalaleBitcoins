@@ -3221,3 +3221,18 @@ svg.tarjeta-imagen {
   margin: 6px 0;
   padding-left: 20px;
 }
+
+.arrep-compras {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arrep-compras form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

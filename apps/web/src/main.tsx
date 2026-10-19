@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ComparisonPage } from './comparativa.tsx';
 import { PricingPage } from './precios.tsx';
 import { BuyPage } from './comprar.tsx';
+import { RefundPage } from './arrepentimiento.tsx';
 import { ClaimPage } from './claim/ClaimPage.tsx';
 import { GivePage } from './give/GivePage.tsx';
 import { ALLOW_MAINNET } from './config.ts';
@@ -97,6 +98,8 @@ function App() {
         <OpenGiftPage />
       ) : /^\/por-que\/?$/.test(path) ? (
         <WhyPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/arrepentimiento\/?$/.test(path) ? (
+        <RefundPage testnet={!ALLOW_MAINNET} />
       ) : /^\/comprar\/?$/.test(path) ? (
         <BuyPage testnet={!ALLOW_MAINNET} />
       ) : /^\/precios\/?$/.test(path) ? (

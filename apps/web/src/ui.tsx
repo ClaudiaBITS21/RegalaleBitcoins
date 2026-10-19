@@ -308,6 +308,9 @@ export function SiteFooter() {
       <a class="custodia-link-pie" href="/precios">
         {t('menu.precios')}
       </a>
+      <a class="custodia-link-pie" href="/arrepentimiento">
+        {t('pie.arrepentimiento')}
+      </a>
       <InstallButton />
     </footer>
   );
