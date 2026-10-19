@@ -22,7 +22,8 @@ export type ErrorCode =
   | 'producto_invalido'
   | 'cobro_no_configurado'
   | 'fundadores_agotados'
-  | 'passkey_requerida';
+  | 'passkey_requerida'
+  | 'sin_creditos';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;

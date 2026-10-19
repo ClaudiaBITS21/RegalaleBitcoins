@@ -212,4 +212,11 @@ export const tu: Partial<Record<Key, string>> = {
   'porque.historia.p3': 'Ese mismo espíritu tiene Regálale Bitcoin: un regalo simple, con un mensaje, que se puede guardar por años.',
   'custodia.desaparece.titulo': '¿Y si Regálale Bitcoin desaparece?',
   'custodia.desaparece.p1': 'El regalo no está guardado en Regálale Bitcoin: está en la red bitcoin, que no depende de nosotros. Si un día cerramos, los bitcoins siguen ahí.',
+  'comprar.incompleto': 'Llegaron {llego} de {esperado}. Manda lo que falta a la misma dirección.',
+  'comprar.vencido': 'Pasó el tiempo de la cotización. Si pagas ahora, se compara con el precio del momento.',
+  'comprar.listo': '¡Listo! Ya tienes tus créditos.',
+  'comprar.sesion': 'Para comprar, entra con tu cuenta (la misma que usas para regalar).',
+  'comprar.error': 'No se pudo preparar el pago. Prueba de nuevo en un rato.',
+  'regalar.creditos.pagos': 'Usas 1 de tus {n} regalos comprados cuando llegue el pago.',
+  'regalar.sinCreditos.texto': 'Para seguir regalando, elige un pack. El costo va aparte: nunca sale del regalo.',
 };

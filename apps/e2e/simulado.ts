@@ -552,6 +552,23 @@ try {
   await cousin.goto(cousinMine);
   await cousin.getByText('¡Listo! Tu parte se convirtió en 35.000 sats.').waitFor({ timeout: 15_000 });
 
+  // Compra de créditos: con la llave de cobro cargada (aunque el cobro esté apagado) se puede
+  // comprar desde la página de precios; el pago va a una dirección de esa llave y acredita.
+  const cobroVpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
+  await sql`insert into ajustes (clave, valor) values ('llave_cobro', ${cobroVpub}) on conflict (clave) do update set valor = excluded.valor`;
+  await giver.goto(`${BASE}/precios`);
+  await giver.locator('.precio-tarjeta', { hasText: 'Pack de 10 regalos' }).getByRole('link', { name: 'Comprar' }).click();
+  await giver.getByRole('heading', { name: /^Pagá .+ sats$/ }).waitFor({ timeout: 15_000 });
+  const buyAddr = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
+  if (buyAddr !== deriveListAddress(parseAccountKey(cobroVpub, signet), 0).address) fail('la compra no usa la primera dirección de la llave de cobro');
+  await shot2(giver, 'c1-comprar');
+  const [compra] = await sql<{ sats: string }[]>`select sats from pagos where direccion = ${buyAddr}`;
+  chain.pay(buyAddr, BigInt(compra?.sats ?? '0'), true);
+  await giver.getByRole('heading', { name: '¡Listo! Ya tenés tus créditos.' }).waitFor({ timeout: 25_000 });
+  await giver.getByRole('button', { name: 'Ver mi plan' }).click();
+  await giver.getByText('Regalos comprados: 10.').waitFor({ timeout: 15_000 });
+  await giver.locator('.mi-plan').screenshot({ path: join(SHOTS, 'c2-mi-plan.png') });
+
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
@@ -560,6 +577,7 @@ try {
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
+  console.log('OK: compra de un pack desde precios: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();
@@ -569,6 +587,8 @@ try {
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();
 }

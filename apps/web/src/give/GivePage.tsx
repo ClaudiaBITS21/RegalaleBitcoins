@@ -1,6 +1,6 @@
 import { deriveGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
-import { ApiFailure, api } from '../api.ts';
+import { ApiFailure, api, type Credits } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
 import type { CardStyle } from '../content/GiftCardArt.tsx';
@@ -17,7 +17,7 @@ import { SendStep } from './SendStep.tsx';
 // Regalar en 5 pasos: ocasión, para quién, cuánto, pagá y mandalo. Todo lo secreto
 // (clave maestra, semilla del regalo, palabras) vive solo en la memoria de esta página.
 
-type Step = 'ocasion' | 'para' | 'cuanto' | 'guardar' | 'codigo' | 'verificar' | 'tengoCodigo' | 'pagar' | 'mandar';
+type Step = 'ocasion' | 'para' | 'cuanto' | 'guardar' | 'codigo' | 'verificar' | 'tengoCodigo' | 'sinCreditos' | 'pagar' | 'mandar';
 
 const PROGRESS: Readonly<Record<Step, number>> = {
   ocasion: 1,
@@ -27,6 +27,7 @@ const PROGRESS: Readonly<Record<Step, number>> = {
   codigo: 4,
   verificar: 4,
   tengoCodigo: 4,
+  sinCreditos: 4,
   pagar: 4,
   mandar: 5,
 };
@@ -153,6 +154,8 @@ export function GivePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [newMnemonic, setNewMnemonic] = useState<string | null>(null);
   const [gift, setGift] = useState<MadeGift | null>(null);
+  // Créditos de la cuenta al crear el regalo (para «Te quedan…»); null sin sesión o si falla.
+  const [credits, setCredits] = useState<Credits | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
   const step = steps[steps.length - 1] ?? 'ocasion';
@@ -197,11 +200,17 @@ export function GivePage() {
     // Deja pintar "Preparando…": derivar el regalo tarda unos cientos de milisegundos.
     await new Promise((r) => setTimeout(r, 30));
     try {
+      setCredits(await api.creditsIfSignedIn().catch(() => null));
       setGift(await register(s, d, network));
       setNewMnemonic(null);
       setSteps(['pagar']);
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : '';
+      if (code === 'sin_creditos') {
+        // Sin créditos ni plan: antes de mostrar la dirección del regalo, los packs.
+        setSteps((prev) => [...prev, 'sinCreditos']);
+        return;
+      }
       setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : 'regalar.error');
     } finally {
       setBusy(false);
@@ -286,8 +295,18 @@ export function GivePage() {
     body = <VerifyCode mnemonic={newMnemonic} onOk={() => startSession(newMnemonic)} error={error} />;
   } else if (step === 'tengoCodigo') {
     body = <EnterCode onOk={startSession} error={error} />;
+  } else if (step === 'sinCreditos') {
+    body = (
+      <div class="paso">
+        <StepTitle>{t('regalar.sinCreditos.titulo')}</StepTitle>
+        <p>{t('regalar.sinCreditos.texto')}</p>
+        <a class="boton boton-primario" href="/precios">
+          {t('regalar.sinCreditos.boton')}
+        </a>
+      </div>
+    );
   } else if (step === 'pagar' && gift !== null) {
-    body = <PayStep gift={gift} network={network} onPaid={() => go('mandar')} />;
+    body = <PayStep gift={gift} network={network} credits={credits} onPaid={() => go('mandar')} />;
   } else if (step === 'mandar' && gift !== null) {
     body = <SendStep gift={gift} ceilingUsd={ceilingUsd} onAnother={another} />;
   } else {

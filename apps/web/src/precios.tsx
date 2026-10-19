@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { api } from './api.ts';
+import { api, type Products } from './api.ts';
 import { formatSats, formatUsdPrice, usdCentsToSats } from './format.ts';
 import type { Key } from './i18n/index.ts';
 import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
@@ -11,27 +11,27 @@ import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 
 interface Producto {
   readonly id: 'bienvenida' | 'pack10' | 'listaCumple' | 'listaOtras' | 'anual' | 'fundador';
-  /** Centavos de dólar; 0 = gratis. */
+  /** Código del producto en la API (el que se compra). */
+  readonly codigo: string;
+  /** Centavos de dólar; 0 = gratis. Los vigentes llegan de /api/productos (los edita el admin). */
   readonly centavos: number;
   readonly items: number;
 }
 
-// Los mismos precios que la tabla del handoff; cuando exista el admin, salen de la API.
+// Precios de la tabla del handoff, mientras llegan los de la API.
 const PRODUCTOS: readonly Producto[] = [
-  { id: 'bienvenida', centavos: 0, items: 2 },
-  { id: 'pack10', centavos: 1050, items: 2 },
-  { id: 'listaCumple', centavos: 1050, items: 2 },
-  { id: 'listaOtras', centavos: 2100, items: 2 },
-  { id: 'anual', centavos: 4200, items: 2 },
-  { id: 'fundador', centavos: 21000, items: 3 },
+  { id: 'bienvenida', codigo: 'bienvenida', centavos: 0, items: 2 },
+  { id: 'pack10', codigo: 'pack10', centavos: 1050, items: 2 },
+  { id: 'listaCumple', codigo: 'lista_cumple', centavos: 1050, items: 2 },
+  { id: 'listaOtras', codigo: 'pack10_lista', centavos: 2100, items: 2 },
+  { id: 'anual', codigo: 'anual', centavos: 4200, items: 2 },
+  { id: 'fundador', codigo: 'fundador', centavos: 21000, items: 3 },
 ];
-
-/** Mientras sea false, la página avisa que hoy regalar es gratis. */
-const COBRO_ACTIVO = false;
 
 export function PricingPage({ testnet }: { testnet: boolean }) {
   const { t, lang, trato } = useI18n();
   const [usdPorBtc, setUsdPorBtc] = useState<number | null>(null);
+  const [vivos, setVivos] = useState<Products | null>(null);
 
   useEffect(() => {
     document.title = `${t('precios.kicker')} · Regalale Bitcoin`;
@@ -42,7 +42,17 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
       .price()
       .then((p) => setUsdPorBtc(p.usdPorBtc))
       .catch(() => setUsdPorBtc(null));
+    api
+      .products()
+      .then(setVivos)
+      .catch(() => setVivos(null));
   }, []);
+  // Mientras el cobro no esté activo (o no se sepa), la página avisa que hoy regalar es gratis.
+  const cobroActivo = vivos?.cobroActivo === true;
+  const centavos = (p: Producto) => {
+    const v = vivos?.productos.find((x) => x.codigo === p.codigo);
+    return v === undefined ? p.centavos : Math.round(v.precioUsd * 100);
+  };
 
   return (
     <div class="pagina pagina-home pagina-precios">
@@ -64,26 +74,35 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
 
       <main class="home-secciones">
         <section class="seccion" aria-label={t('precios.kicker')}>
-          {!COBRO_ACTIVO && (
+          {!cobroActivo && (
             <p class="precios-aviso" role="note">
               {t('precios.aviso')}
             </p>
           )}
           <ul class="precios-grilla">
-            {PRODUCTOS.map((p) => (
-              <li class={`precio-tarjeta${p.centavos === 0 ? ' precio-gratis' : ''}`} key={p.id}>
-                <h2>{t(`precios.${p.id}.n` as Key)}</h2>
-                <p class="precio-monto">{p.centavos === 0 ? t('precios.gratis') : formatUsdPrice(p.centavos / 100, lang)}</p>
-                {p.centavos > 0 && usdPorBtc !== null && (
-                  <p class="precio-sats">{t('precios.enSats', { sats: formatSats(usdCentsToSats(BigInt(p.centavos), usdPorBtc), lang) })}</p>
-                )}
-                <ul class="precio-items">
-                  {Array.from({ length: p.items }, (_, i) => (
-                    <li key={i}>{t(`precios.${p.id}.i${i + 1}` as Key)}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
+            {PRODUCTOS.map((p) => {
+              const cents = centavos(p);
+              const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
+              return (
+                <li class={`precio-tarjeta${cents === 0 ? ' precio-gratis' : ''}`} key={p.id}>
+                  <h2>{t(`precios.${p.id}.n` as Key)}</h2>
+                  <p class="precio-monto">{cents === 0 ? t('precios.gratis') : formatUsdPrice(cents / 100, lang)}</p>
+                  {cents > 0 && usdPorBtc !== null && <p class="precio-sats">{t('precios.enSats', { sats: formatSats(usdCentsToSats(BigInt(cents), usdPorBtc), lang) })}</p>}
+                  <ul class="precio-items">
+                    {Array.from({ length: p.items }, (_, i) => (
+                      <li key={i}>{t(`precios.${p.id}.i${i + 1}` as Key)}</li>
+                    ))}
+                  </ul>
+                  {p.id === 'fundador' && vivos !== null && <p class="precio-sats">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</p>}
+                  {/* Se puede comprar en cuanto hay llave de cobro, aunque el cobro no esté activo (compra de prueba). */}
+                  {cents > 0 && vivos?.seVende === true && !agotado && (
+                    <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
+                      {t('precios.comprar')}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <p class="texto-suave precios-nota">{t('precios.cotizacion')}</p>
         </section>

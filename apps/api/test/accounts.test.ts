@@ -391,6 +391,11 @@ describe('Cuentas con passkey', () => {
     await sql`delete from planes`;
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -9, 'admin', 'prueba')`;
     assert.equal((await creditos()).puedeRegalar, false);
+    // Y el servidor no deja crear otro regalo (la web ofrece los packs).
+    const d = deriveGift(root, 3, 'es', signet);
+    const sin = await req('/api/gifts', { direccion: d.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 3 }, cookie);
+    assert.equal(sin.status, 409);
+    assert.equal(((await sin.json()) as { error: string }).error, 'sin_creditos');
   });
 
   it('los movimientos solo se agregan: editarlos falla', async () => {

@@ -157,10 +157,21 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
     navegador ni va al registro: solo su huella;
   - también muestra los pagos y los totales.
 
+- Web (parte 4):
+  - `/precios` muestra los precios vigentes (de la API) y, si hay llave de cobro, «Comprar»;
+  - `/comprar?producto=…` cotiza, muestra QR y dirección, mira el pago solo y al confirmar lleva
+    a «Mi plan»;
+  - «Mi plan» en el panel: bienvenida que queda, regalos comprados, listas, plan;
+  - al regalar, «Te quedan…» en la pantalla de pago (con el cobro activo);
+  - sin créditos ni plan, el servidor rechaza el regalo (`sin_creditos`) y la web ofrece los packs
+    antes de mostrar la dirección.
+
 ## Qué falta
 
 - Admin: códigos promocionales, campañas y las métricas del handoff (uso de la bienvenida,
   conversión, ventas por producto, cuentas nuevas sospechosas).
-- Web: «Te quedan…» antes de regalar, packs si no hay saldo, compra con QR, «Mi plan».
+- **Antes de activar el cobro:** quien regala sin passkey (solo con el código de 12 palabras) hoy no
+  tiene cuenta, y esos regalos no consumen créditos. Hace falta la cuenta obligatoria con el mail
+  de quien regala (decisión del 19/10), también sin passkey.
 - Listas: pagar o consumir el crédito de lista antes de publicarla; fecha del evento y cierre.
 - Botón de arrepentimiento.

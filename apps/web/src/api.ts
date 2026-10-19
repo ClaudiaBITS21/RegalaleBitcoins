@@ -111,9 +111,44 @@ export interface AdminCobro {
   readonly registro: ReadonlyArray<{ readonly email: string; readonly accion: string; readonly detalle: string; readonly fecha: string }>;
 }
 
+/** Productos y precios públicos. */
+export interface Products {
+  readonly cobroActivo: boolean;
+  readonly seVende: boolean;
+  readonly fundadoresQuedan: number;
+  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioUsd: number; readonly seVendeSuelto: boolean }>;
+}
+
+/** Saldo de créditos de la cuenta («Mi plan»). */
+export interface Credits {
+  readonly cobroActivo: boolean;
+  readonly puedeRegalar: boolean;
+  readonly regalos: { readonly bienvenida: number; readonly pagos: number };
+  readonly listas: { readonly cumple: number; readonly otras: number };
+  readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null } | null;
+}
+
+/** Un pago del costo por servicio. */
+export interface Purchase {
+  readonly id: string;
+  readonly producto: string;
+  readonly precioUsd: number;
+  readonly sats: string;
+  readonly direccion: string;
+  readonly estado: 'pendiente' | 'visto' | 'confirmado' | 'incompleto' | 'vencido' | 'devuelto';
+  readonly satsRecibidos: string;
+  readonly venceCotizacion: string;
+}
+
 const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 export const api = {
+  products: () => call<Products>('/api/productos'),
+  credits: () => call<Credits>('/api/cuenta/creditos'),
+  /** Créditos de la cuenta si hay sesión; sin sesión, null (sin pedir algo que dé 401). */
+  creditsIfSignedIn: async (): Promise<Credits | null> => ((await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta ? call<Credits>('/api/cuenta/creditos') : null),
+  buy: (producto: string) => post<Purchase>('/api/cuenta/pagos', { producto }),
+  purchase: (id: string) => call<Purchase>(`/api/cuenta/pagos/${encodeURIComponent(id)}`),
   adminCobro: () => call<AdminCobro>('/api/admin/cobro'),
   adminKeyPreview: (llave: string) => post<{ huella: string; direcciones: string[] }>('/api/admin/llave/vista', { llave }),
   adminSetKey: (llave: string) => post<{ huella: string; pendiente: boolean }>('/api/admin/llave', { llave }),
