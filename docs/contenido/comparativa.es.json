@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "locale": "es-AR",
+  "relevado": "2026-10",
+  "kicker": "Comparativa",
+  "titulo": "¿En qué se diferencia *Regalale Bitcoin*?",
+  "bajada": "Hay muchas formas de regalar bitcoin, pero ninguna tan cómoda y humanizada como *Regalale Bitcoin*.",
+  "valores": {
+    "si": "Sí",
+    "no": "No",
+    "parcial": "Parcial o varía según el servicio"
+  },
+  "columnas": [
+    {
+      "id": "gift_cards",
+      "titulo": "Gift cards custodiadas",
+      "bajada": "Con cuenta en una plataforma"
+    },
+    {
+      "id": "vouchers_ln",
+      "titulo": "Vouchers LN",
+      "bajada": "Código o QR Lightning"
+    },
+    {
+      "id": "tarjetas_fisicas",
+      "titulo": "Tarjetas físicas",
+      "bajada": "NFC o USB"
+    },
+    {
+      "id": "hacerlo_vos",
+      "titulo": "Hacerlo vos",
+      "bajada": "Paper wallet o envío directo"
+    }
+  ],
+  "filas": [
+    {
+      "id": "sin_custodia",
+      "titulo": "Sin custodia",
+      "bajada": "El bitcoin es de quien lo recibe, sin riesgo del emisor hasta el canje.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "parcial",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "si"
+      }
+    },
+    {
+      "id": "on_chain",
+      "titulo": "On-chain",
+      "bajada": "Queda en la red de Bitcoin, no en una base de datos interna o paralela.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "si"
+      }
+    },
+    {
+      "id": "solo_bitcoin",
+      "titulo": "Solo bitcoin",
+      "bajada": "Sin altcoins, stablecoins ni shitcoins.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "parcial",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "si"
+      }
+    },
+    {
+      "id": "sin_kyc",
+      "titulo": "Sin KYC",
+      "bajada": "Solo tu mail para seguir tus regalos. Sin documentos, y quien recibe no necesita nada.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "si"
+      }
+    },
+    {
+      "id": "sin_comisiones",
+      "titulo": "Sin comisiones",
+      "bajada": "Llega el total (salvo el fee on-chain).",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "parcial",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "si"
+      }
+    },
+    {
+      "id": "mensaje",
+      "titulo": "Mensaje personal",
+      "bajada": "El regalo llega con un mensaje y una tarjeta ad hoc.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "si",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "diseno_ocasion",
+      "titulo": "Diseño según la ocasión",
+      "bajada": "Cumpleaños, bautismo, Navidad y más.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "tarjeta",
+      "titulo": "Tarjeta física o imprimible",
+      "bajada": "Para darlo en mano.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "si",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "listas",
+      "titulo": "Listas de regalo",
+      "bajada": "Varios invitados aportan a un mismo regalo.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "no"
+      }
+    },
+    {
+      "id": "sin_billetera",
+      "titulo": "Sirve aunque no tenga billetera",
+      "bajada": "No necesitás pedirle una dirección antes.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "si",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "si",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "guia",
+      "titulo": "Guía para el que no sabe",
+      "bajada": "Paso a paso para abrirlo por primera vez.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "si",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "no"
+      }
+    },
+    {
+      "id": "ves_si_abrio",
+      "titulo": "Ves si lo abrió",
+      "bajada": "Podés ver si reclamaron el regalo.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "parcial",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "no_se_pierde",
+      "titulo": "Si no lo abre, no se pierde",
+      "bajada": "Mientras una de las partes tenga los datos originales.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "parcial"
+      }
+    },
+    {
+      "id": "cancelar",
+      "titulo": "Lo podés cancelar",
+      "bajada": "Mientras no lo haya abierto.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "no",
+        "vouchers_ln": "si",
+        "tarjetas_fisicas": "no",
+        "hacerlo_vos": "no"
+      }
+    },
+    {
+      "id": "no_vence",
+      "titulo": "No vence",
+      "bajada": "Se puede reclamar sin ningún tipo de vencimiento.",
+      "nosotros": "si",
+      "valores": {
+        "gift_cards": "si",
+        "vouchers_ln": "no",
+        "tarjetas_fisicas": "parcial",
+        "hacerlo_vos": "si"
+      }
+    }
+  ],
+  "directo": {
+    "titulo": "¿Y si se lo mando yo directo?",
+    "parrafos": [
+      "Claro que sí, y es lo que todos hacíamos hasta hoy: le hacemos bajar una billetera, se lo damos en un papel o se lo mandamos cuando todavía no está listo para recibirlo.",
+      "Pero todos sabemos cómo termina: el que lo recibe se olvida, o no era el momento para prestar atención, y la verdad es que no se siente como un regalo sino como una transferencia y un peso.",
+      "**_Regalale Bitcoin_ propone algo distinto, más parecido a un regalo de verdad.**",
+      "Si todavía no tiene billetera o no está listo, no pasa nada: el regalo llega con una tarjeta y un mensaje tuyo, con una guía para acompañarlo cuando quiera abrirlo y con recordatorios, para vos y para quien lo recibe, de que sigue ahí, esperándolo.",
+      "Y cuando decida abrirlo, va a ser porque está listo, y le va a poner cabeza propia a entender cómo guardarlo. Si no, sigue ahí para siempre, o hasta que vos decidas lo contrario."
+    ],
+    "columnas": {
+      "izquierda": [
+        0,
+        1
+      ],
+      "derecha": [
+        2,
+        3,
+        4
+      ],
+      "nota": "El título va arriba de la izquierda; el párrafo en negrita abre la derecha, en un cuerpo más grande."
+    }
+  },
+  "cta": "Regalá bitcoin de verdad",
+  "pie": "Relevamiento propio con información pública, octubre de 2026. Los servicios cambian: si ves un dato desactualizado, escribinos a hola@regalalebitcoin.com y lo corregimos."
+}
