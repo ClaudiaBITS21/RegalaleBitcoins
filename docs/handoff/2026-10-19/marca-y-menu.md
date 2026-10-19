@@ -1,6 +1,6 @@
 # Handoff 19/10/2026: nombre de marca y menú
 
-Estado: INTEGRADO EN PARTE (commit xxxx); falta lo que dice «Qué falta», al final.
+Estado: INTEGRADO EN PARTE (commit 411ce9e); falta lo que dice «Qué falta», al final.
 
 Decidido por Rodolfo en chat, 19/10/2026. Copiado de la carpeta de Drive «RegalaleBitcoin -
 handoffs» (`2026-10-19 - marca y menú.md`).
