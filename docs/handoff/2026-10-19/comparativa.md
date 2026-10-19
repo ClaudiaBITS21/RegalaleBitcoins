@@ -1,6 +1,6 @@
 # Handoff 19/10/2026: página "Comparativa"
 
-Estado: PENDIENTE
+Estado: INTEGRADO (commit b617efb)
 
 Copiado de la carpeta de Drive «RegalaleBitcoin - handoffs» (`2026-10-19 - comparativa.md`).
 Los adjuntos quedaron en `docs/contenido/comparativa.es.json` y `docs/prototipos/comparativa.html`.
@@ -47,3 +47,26 @@ Sumar a la web la comparativa entre *Regalale Bitcoin* y las otras formas de reg
 
 - Revisión del abogado antes de publicar (comparativa pública).
 - Actualizar `relevado` en el JSON cuando se revisen los datos (cada 6 meses).
+
+## Decisiones de Rodolfo (19/10/2026)
+
+- Se publica ya, sin esperar la revisión del abogado («olvidate del abogado por ahora»). El punto
+  queda ABIERTO para más adelante.
+- Recordatorios: **solo para quien regala**. La plataforma no tiene datos de quien recibe, así que el
+  párrafo 4 dice «…y con recordatorios para vos si aún no lo abrió» («para ti» con tú).
+- La marca va en naranja y **sin itálica** (ver handoff «marca y menú»): `*…*` y `_…_` del JSON se
+  muestran como `nombre-marca`, no como `<em>`.
+
+## Qué quedó (código)
+
+- Página `/comparativa` (`apps/web/src/comparativa.tsx`), en el menú dentro de «Por qué bitcoin ▾»
+  después de 21 razones.
+- Textos en `apps/web/src/content/comparativa.ts`: es (copia del JSON; un test controla que sean
+  iguales), es con tú, pt, en e it. Otro test controla que con tú no quede voseo.
+- Tabla semántica con la primera columna fija; debajo de 720 px se desplaza dentro de su caja.
+- Recordatorio por mail a quien regala si el regalo pago sigue sin abrirse: a los 14 días del aviso
+  de «listo» y otra vez a los 60, nada más (`sendReminders` en `apps/api/src/notices.ts`, migración
+  `011_recordatorios.sql`). Lo dispara la misma tarea programada que el aviso de «listo». Los plazos
+  los fijó Code; se cambian en `REMINDER_DAYS`.
+- Para que el recordatorio funcione en mainnet hace falta desplegar la API (Cloud Run).
+- «Listas de regalo» y «Diseño según la ocasión» están en producción.
