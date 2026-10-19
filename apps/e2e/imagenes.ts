@@ -1,4 +1,4 @@
-// Genera los íconos (PNG) a partir de apps/web/public/marca.svg (la caja de la marca sobre negro) y la
+// Genera los íconos (PNG) a partir de apps/web/public/marca.svg (la caja blanca de la marca sobre naranja) y la
 // imagen para compartir links (Open Graph, 1200×630), con la moneda de favicon.svg y las tipografías del sitio. Corre en Chromium, sin red:
 //   node apps/e2e/imagenes.ts
 // Está en este paquete porque es el que tiene playwright-core.
@@ -11,7 +11,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PUBLIC = join(ROOT, 'apps/web/public');
 const coin = readFileSync(join(PUBLIC, 'favicon.svg'), 'utf8').trim();
 const marca = readFileSync(join(PUBLIC, 'marca.svg'), 'utf8').trim();
-// La caja sola (sin el cuadrado negro de fondo), para los íconos que llevan fondo propio.
+// La caja sola (sin el cuadrado naranja de fondo), para los íconos que llevan fondo propio.
 const caja = marca.slice(marca.indexOf('<svg x='), marca.lastIndexOf('</svg>'));
 const font = (pkg: string, file: string) =>
   `data:font/woff2;base64,${readFileSync(join(ROOT, 'apps/web/node_modules/@fontsource', pkg, 'files', file)).toString('base64')}`;
@@ -55,15 +55,15 @@ ${confetti}
 <div style="position:absolute;right:50px;top:90px">${GIFT}</div>
 </div>`;
 
-/** marca.svg entera (cuadrado negro redondeado), con fondo transparente alrededor. */
+/** marca.svg entera (cuadrado naranja redondeado), con fondo transparente alrededor. */
 const icon = (size: number) =>
   `<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
 <div style="width:${size}px;height:${size}px">${marca.replace('<svg ', '<svg width="100%" height="100%" ')}</div>`;
 
-/** La caja sobre negro a sangre, ocupando `frac` del lado (iOS y Android le ponen sus propias esquinas). */
+/** La caja sobre naranja a sangre, ocupando `frac` del lado (iOS y Android le ponen sus propias esquinas). */
 const iconFull = (size: number, frac: number) =>
   `<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
-<div style="width:${size}px;height:${size}px;background:#000000;display:flex;align-items:center;justify-content:center">
+<div style="width:${size}px;height:${size}px;background:#FF8A1F;display:flex;align-items:center;justify-content:center">
 <svg width="${size * frac}" height="${size * frac}" viewBox="0 0 160 160">${caja}</svg></div>`;
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium' });
@@ -78,7 +78,7 @@ const shoot = async (html: string, w: number, h: number, out: string, type: 'png
 
 await shoot(OG, 1200, 630, 'og.jpg', 'jpeg');
 await shoot(icon(32), 32, 32, 'favicon-32.png');
-// iOS no acepta transparencia y redondea solo: negro a sangre.
+// iOS no acepta transparencia y redondea solo: naranja a sangre.
 await shoot(iconFull(180, 0.86), 180, 180, 'apple-touch-icon.png');
 await shoot(icon(192), 192, 192, 'icon-192.png');
 await shoot(icon(512), 512, 512, 'icon-512.png');
