@@ -219,4 +219,7 @@ export const tu: Partial<Record<Key, string>> = {
   'comprar.error': 'No se pudo preparar el pago. Prueba de nuevo en un rato.',
   'regalar.creditos.pagos': 'Usas 1 de tus {n} regalos comprados cuando llegue el pago.',
   'regalar.sinCreditos.texto': 'Para seguir regalando, elige un pack. El costo va aparte: nunca sale del regalo.',
+  'arrep.texto': 'Tienes {dias} días desde la compra para arrepentirte, si no usaste ningún crédito (y, en una lista, si no recibió aportes). Te devolvemos los mismos sats que pagaste, a la dirección que nos indiques.',
+  'arrep.sesion': 'Para arrepentirte de una compra, entra con tu cuenta.',
+  'arrep.error': 'No se pudo registrar el pedido. Prueba de nuevo en un rato.',
 };

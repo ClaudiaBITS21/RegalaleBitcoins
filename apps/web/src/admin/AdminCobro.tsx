@@ -32,10 +32,12 @@ export function AdminCobroPanel() {
   const [vista, setVista] = useState<{ huella: string; direcciones: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [ajuste, setAjuste] = useState({ email: '', unidad: 'regalo', cantidad: '', motivo: '' });
+  const [refunds, setRefunds] = useState<Awaited<ReturnType<typeof api.adminRefunds>>['pedidos']>([]);
 
   const load = async () => {
     try {
       setData(await api.adminCobro());
+      setRefunds((await api.adminRefunds()).pedidos);
     } catch (e) {
       setError(errorText(e));
     }
@@ -207,6 +209,36 @@ export function AdminCobroPanel() {
           Registrar ajuste
         </Button>
       </form>
+
+      <h3>Arrepentimientos</h3>
+      {refunds.length === 0 ? (
+        <p class="texto-suave">No hay pedidos.</p>
+      ) : (
+        <ul class="admin-lista">
+          {refunds.map((r) => (
+            <li key={r.codigo}>
+              <strong>{r.codigo}</strong> · {r.producto} · pago <code>{r.pago}</code> · {new Date(r.fecha).toLocaleString(lang)}
+              <br />
+              Devolver {sats(r.sats)} a <code>{r.direccion}</code>
+              <br />
+              {r.estado === 'devuelto' ? (
+                'Devuelto.'
+              ) : (
+                <button
+                  type="button"
+                  class="boton-texto"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`¿Ya mandaste ${sats(r.sats)} a ${r.direccion}? Se quitan los créditos de esa compra.`)) void run(() => api.adminRefunded(r.codigo));
+                  }}
+                >
+                  Ya lo devolví
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <h3>Pagos</h3>
       <p>

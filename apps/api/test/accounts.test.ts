@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto';
 import { after, before, beforeEach, describe, it } from 'node:test';
-import { accountKeyText, deriveGift, deriveListAddress, getNetwork, masterRootFromMnemonic, parsePaymentKey } from '@regalale/core';
+import { accountKeyText, deriveBip84Key, deriveGift, deriveListAddress, getNetwork, masterRootFromMnemonic, parsePaymentKey } from '@regalale/core';
 import type { Mail } from '../src/mail.ts';
 import { createApp } from '../src/app.ts';
 import type { AddressStats, ChainClient, FeeRates, MempoolPayment, PriceClient, Utxo } from '../src/chain.ts';
@@ -119,6 +119,7 @@ describe('Cuentas con passkey', () => {
   beforeEach(async () => {
     await sql`delete from regalos`;
     await sql`delete from listas`;
+    await sql`delete from arrepentimientos`;
     await sql`delete from pagos`;
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
@@ -550,5 +551,52 @@ describe('Cuentas con passkey', () => {
     const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number } };
     assert.equal(c.regalos.pagos, 3);
     assert.deepEqual((await get()).registro.map((r) => r.accion).slice(0, 4), ['ajuste', 'precio', 'cobro_activado', 'llave_cambio_pedido']);
+  });
+
+  it('arrepentimiento: 10 días, sin créditos usados; código de trámite; el admin marca la devolución', async () => {
+    const ana = await signUp('ana@example.com');
+    const admin = await signUp('admin@example.com');
+    await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
+    const buy = async (producto: string) => {
+      const p = (await (await req('/api/cuenta/pagos', { producto }, ana.cookie)).json()) as { id: string; direccion: string; sats: string };
+      pays.set(p.direccion, { confirmed: BigInt(p.sats), mempool: [] });
+      await req(`/api/cuenta/pagos/${p.id}`, undefined, ana.cookie);
+      return p;
+    };
+    const compras = async () => ((await (await req('/api/cuenta/compras', undefined, ana.cookie)).json()) as { compras: Array<{ id: string; noProcede: string | null; arrepentimiento: { codigo: string; estado: string } | null }> }).compras;
+    const devolucion = deriveBip84Key(masterRootFromMnemonic('zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'), signet, 0, 0).address;
+    const a = await buy('pack10');
+    assert.equal((await compras())[0]?.noProcede, null);
+    assert.equal((await req('/api/cuenta/arrepentimiento', { pago: a.id, direccion: 'bc1qnoesvalida' }, ana.cookie)).status, 422);
+    const r = await req('/api/cuenta/arrepentimiento', { pago: a.id, direccion: devolucion }, ana.cookie);
+    assert.equal(r.status, 201);
+    const { codigo } = (await r.json()) as { codigo: string };
+    assert.match(codigo, /^ARR-[A-Z0-9]{6}$/);
+    assert.ok(mails.some((m) => m.to === 'ana@example.com' && m.text.includes(codigo)));
+    assert.ok(mails.some((m) => m.to === 'admin@example.com' && m.text.includes(devolucion)));
+    assert.deepEqual(await (await req('/api/cuenta/arrepentimiento', { pago: a.id, direccion: devolucion }, ana.cookie)).json(), { codigo });
+    const pedidos = ((await (await req('/api/admin/arrepentimientos', undefined, admin.cookie)).json()) as { pedidos: Array<{ codigo: string; direccion: string; sats: string }> }).pedidos;
+    assert.deepEqual([pedidos[0]?.codigo, pedidos[0]?.direccion, pedidos[0]?.sats], [codigo, devolucion, a.sats]);
+    assert.equal((await req('/api/admin/arrepentimientos', undefined, ana.cookie)).status, 404);
+    assert.equal((await req(`/api/admin/arrepentimiento/${codigo}/devuelto`, {}, admin.cookie)).status, 200);
+    assert.equal((await req(`/api/admin/arrepentimiento/${codigo}/devuelto`, {}, admin.cookie)).status, 404); // una sola vez
+    const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number } };
+    assert.equal(c.regalos.pagos, 0);
+    assert.equal((await compras())[0]?.arrepentimiento?.estado, 'devuelto');
+    // Si usó créditos de la compra, no procede; pasados 10 días, tampoco.
+    const b = await buy('pack10');
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'ana@example.com'`;
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen) values (${(u as { id: string }).id}, 'consumo', 'regalo', -1, 'pago')`;
+    const usado = await req('/api/cuenta/arrepentimiento', { pago: b.id, direccion: devolucion }, ana.cookie);
+    assert.deepEqual([usado.status, ((await usado.json()) as { error: string }).error], [409, 'creditos_usados']);
+    const d = await buy('lista_cumple');
+    await sql`update pagos set confirmado = now() - interval '11 days' where id = ${d.id}`;
+    const vencido = await req('/api/cuenta/arrepentimiento', { pago: d.id, direccion: devolucion }, ana.cookie);
+    assert.deepEqual([vencido.status, ((await vencido.json()) as { error: string }).error], [409, 'arrepentimiento_vencido']);
+    // Un plan anual sin usar se puede devolver: el plan termina.
+    const e = await buy('anual');
+    const codigoPlan = ((await (await req('/api/cuenta/arrepentimiento', { pago: e.id, direccion: devolucion }, ana.cookie)).json()) as { codigo: string }).codigo;
+    await req(`/api/admin/arrepentimiento/${codigoPlan}/devuelto`, {}, admin.cookie);
+    assert.equal(((await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { plan: unknown }).plan, null);
   });
 });

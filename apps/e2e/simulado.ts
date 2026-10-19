@@ -568,6 +568,15 @@ try {
   await giver.getByRole('button', { name: 'Ver mi plan' }).click();
   await giver.getByText('Regalos comprados: 10.').waitFor({ timeout: 15_000 });
   await giver.locator('.mi-plan').screenshot({ path: join(SHOTS, 'c2-mi-plan.png') });
+  // Botón de arrepentimiento (en el pie): dirección de devolución y código de trámite.
+  await giver.getByRole('link', { name: 'Botón de arrepentimiento' }).click();
+  await giver.getByLabel('Dirección bitcoin para la devolución').fill('tb1qnoesvalida');
+  await giver.getByRole('button', { name: 'Arrepentirme de esta compra' }).click();
+  await giver.getByText('Esa dirección no es válida.').waitFor();
+  await giver.getByLabel('Dirección bitcoin para la devolución').fill(destination);
+  await giver.getByRole('button', { name: 'Arrepentirme de esta compra' }).click();
+  await giver.getByText(/^Pedido ARR-[A-Z0-9]{6}: la devolución está en trámite\.$/).waitFor({ timeout: 15_000 });
+  await shot2(giver, 'c3-arrepentimiento');
 
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
@@ -578,6 +587,7 @@ try {
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log('OK: compra de un pack desde precios: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
+  console.log('OK: botón de arrepentimiento: valida la dirección y da el código de trámite.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();
@@ -587,6 +597,7 @@ try {
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;

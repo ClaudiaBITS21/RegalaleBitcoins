@@ -23,7 +23,10 @@ export type ErrorCode =
   | 'cobro_no_configurado'
   | 'fundadores_agotados'
   | 'passkey_requerida'
-  | 'sin_creditos';
+  | 'sin_creditos'
+  | 'direccion_invalida'
+  | 'arrepentimiento_vencido'
+  | 'creditos_usados';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;

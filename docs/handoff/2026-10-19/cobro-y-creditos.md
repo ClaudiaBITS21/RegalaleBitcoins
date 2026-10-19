@@ -166,6 +166,14 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
   - sin créditos ni plan, el servidor rechaza el regalo (`sin_creditos`) y la web ofrece los packs
     antes de mostrar la dirección.
 
+- Botón de arrepentimiento (parte 5, migración `015_arrepentimientos.sql`, `apps/api/src/refunds.ts`):
+  - link en el pie a `/arrepentimiento`, con sesión: lista las compras y, en las que proceden
+    (10 días, sin créditos usados), pide la dirección de devolución y da un código `ARR-XXXXXX`;
+  - mail a quien pide y a los admins;
+  - en `/admin`, «Arrepentimientos» muestra a qué dirección devolver cuántos sats. Al marcar
+    «Ya lo devolví» (con passkey), el pago queda «devuelto», se quitan los créditos con un ajuste
+    y el plan termina.
+
 ## Qué falta
 
 - Admin: códigos promocionales, campañas y las métricas del handoff (uso de la bienvenida,
