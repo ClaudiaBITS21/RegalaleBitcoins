@@ -68,6 +68,12 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
     document.title = `${t('porque.titulo')} · Regalale Bitcoin`;
   }, [lang]);
 
+  // «Nuestra historia» en el menú lleva a /por-que#historia: la página se arma con JS, así que el
+  // salto al ancla se hace acá, una vez dibujada.
+  useEffect(() => {
+    if (location.hash !== '') document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, []);
+
   return (
     <div class="pagina pagina-home pagina-porque">
       {testnet && (
@@ -128,7 +134,7 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
           </ul>
         </section>
 
-        <section class="seccion" aria-labelledby="porque-historia">
+        <section class="seccion" id="historia" aria-labelledby="porque-historia">
           <article class="historia">
             <p class="kicker kicker-naranja">{t('porque.historia.kicker')}</p>
             <h2 id="porque-historia">{t('porque.historia.titulo')}</h2>
