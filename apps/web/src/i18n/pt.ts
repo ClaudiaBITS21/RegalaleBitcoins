@@ -402,7 +402,7 @@ export const pt: Dict = {
   'porque.cuento.kicker': 'Para ler em família',
   'porque.cuento.titulo': 'O conto',
   'porque.cuento.texto': '“Una Natividad Moderna”, um continho de Natal de Florando Dragones, autor de Aventuras en Levitania. Está em espanhol, o idioma em que foi escrito. Para baixar, imprimir e ler em família.',
-  'porque.cuento.mas': 'Mais histórias de Florando Dragones no YouTube →',
+  'porque.cuento.mas': 'Mais histórias para crianças no YouTube →',
   'porque.cuento.bajar': 'Baixar o conto',
   'porque.cuento.pronto': 'Em breve',
   'porque.cuento.imagen': 'Os três Reis Magos chegam ao presépio sob a estrela; um deles traz uma moeda dourada de bitcoin.',

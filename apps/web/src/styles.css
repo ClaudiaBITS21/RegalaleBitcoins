@@ -2808,7 +2808,9 @@ svg.tarjeta-imagen {
 .admin-lista { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
 .admin-privacidad { font-size: 0.8rem; }
 .admin > * { min-width: 0; }
-.porque-cuento-mas { color: var(--naranja-texto); font-weight: 700; }
+/* «Más cuentos»: secundario, chico y debajo del botón de bajar el cuento. */
+.porque-cuento-texto p.porque-cuento-pie { font-size: 14px; }
+.porque-cuento-mas { color: var(--naranja-texto); font-weight: 600; }
 .custodia-link { color: var(--naranja-texto); font-weight: 700; }
 
 /* Listas de regalos */

@@ -153,11 +153,6 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
               <p class="kicker kicker-naranja">{t('porque.cuento.kicker')}</p>
               <h2 id="porque-cuento">{t('porque.cuento.titulo')}</h2>
               <p>{t('porque.cuento.texto')}</p>
-              <p>
-                <a class="porque-cuento-mas" href={MAS_CUENTOS_URL} target="_blank" rel="noopener noreferrer">
-                  {t('porque.cuento.mas')}
-                </a>
-              </p>
               {CUENTO_URL !== null ? (
                 <a class="boton boton-primario porque-cuento-boton" href={CUENTO_URL} download="Una-Natividad-Moderna-RegalaleBitcoin.pdf">
                   {t('porque.cuento.bajar')}
@@ -168,6 +163,11 @@ export function WhyPage({ testnet }: { testnet: boolean }) {
                   <span class="porque-pronto">{t('porque.cuento.pronto')}</span>
                 </button>
               )}
+              <p class="porque-cuento-pie">
+                <a class="porque-cuento-mas" href={MAS_CUENTOS_URL} target="_blank" rel="noopener noreferrer">
+                  {t('porque.cuento.mas')}
+                </a>
+              </p>
             </div>
           </div>
         </section>
