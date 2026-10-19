@@ -167,6 +167,9 @@ function useSesion(): boolean {
 interface ItemMenu {
   readonly href: string;
   readonly label: Key;
+  /** Bajada debajo del título (en los ítems de «Recibir»). */
+  readonly desc?: Key;
+  readonly destacado?: boolean;
 }
 interface GrupoMenu {
   readonly id: string;
@@ -174,15 +177,38 @@ interface GrupoMenu {
   readonly items: readonly ItemMenu[];
 }
 
-// Grupos del menú (handoff 2026-10-19, «marca y menú»). Solo lo que ya existe: Paso a paso,
-// Preguntas frecuentes, Comparativa, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo
-// entra en un grupo existente; arriba, como máximo, 4 links y 2 botones.
+// Grupos del menú (handoff 2026-10-19, «marca y menú», con los cambios de Rodolfo del 19/10:
+// «Recibir» agrupa Abrir un regalo y las listas). Solo lo que ya existe: Paso a paso, Preguntas
+// frecuentes, Comparativa, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo entra en un
+// grupo existente; arriba, como máximo, 4 links y 2 botones.
 const GRUPOS: readonly GrupoMenu[] = [
+  {
+    id: 'recibir',
+    label: 'menu.recibir',
+    items: [
+      { href: '/abrir', label: 'menu.abrirRegalo', desc: 'menu.abrirRegalo.d', destacado: true },
+      { href: '/listas/nueva', label: 'menu.lista', desc: 'menu.lista.d' },
+    ],
+  },
   { id: 'como', label: 'menu.comoFunciona', items: [{ href: '/sin-custodia', label: 'menu.seguridad' }] },
   { id: 'porque', label: 'menu.porQueBitcoin', items: [{ href: '/por-que', label: 'menu.razones' }] },
 ];
-const LISTAS: ItemMenu = { href: '/listas/nueva', label: 'menu.listas' };
 const CUENTA: GrupoMenu = { id: 'cuenta', label: 'menu.cuenta', items: [{ href: '/panel', label: 'menu.misRegalos' }] };
+
+/** Un ítem: link simple o, si tiene bajada, título y bajada (como en «Recibir»). */
+function ItemDeMenu({ item, onClick }: { item: ItemMenu; onClick?: () => void }) {
+  const { t } = useI18n();
+  return item.desc === undefined ? (
+    <a class="menu-link" href={item.href} onClick={onClick}>
+      {t(item.label)}
+    </a>
+  ) : (
+    <a class={`menu-item${item.destacado === true ? ' destacado' : ''}`} href={item.href} onClick={onClick}>
+      <strong>{t(item.label)}</strong>
+      <span>{t(item.desc)}</span>
+    </a>
+  );
+}
 
 function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: boolean; onToggle: () => void }) {
   const { t } = useI18n();
@@ -197,9 +223,7 @@ function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: 
       {abierto && (
         <div class="panel-menu panel-grupo">
           {grupo.items.map((i) => (
-            <a class="menu-link" href={i.href} key={i.href}>
-              {t(i.label)}
-            </a>
+            <ItemDeMenu item={i} key={i.href} />
           ))}
         </div>
       )}
@@ -222,20 +246,14 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
       <a class="marca" href="/">
         <Wordmark onOrange={onOrange} />
       </a>
-      {/* Orden en compu (Rodolfo, 19/10): [Regalar] y «Abrir un regalo» primero, después los menús y el idioma al final. */}
+      {/* Orden en compu (Rodolfo, 19/10): [Regalar] primero, después los menús y el idioma al final. */}
       <nav class="nav-compu" aria-label={t('menu.abrir')} ref={navRef}>
         <a class="boton-nav" href="/regalar">
           {t('menu.regalar')}
         </a>
-        <a class="link-nav link-abrir" href="/abrir">
-          {t('menu.abrirRegalo')}
-        </a>
         {GRUPOS.map((g) => (
           <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
         ))}
-        <a class="link-nav" href={LISTAS.href}>
-          {t(LISTAS.label)}
-        </a>
         {conSesion && <Desplegable grupo={CUENTA} abierto={grupoAbierto === CUENTA.id} onToggle={() => toggle(CUENTA.id)} />}
         <LangPill />
       </nav>
@@ -250,23 +268,14 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         </button>
         {mobileOpen && (
           <div class="panel-menu panel-movil">
-            <a class="menu-item destacado" href="/abrir">
-              <strong>{t('menu.abrirRegalo')}</strong>
-              <span>{t('menu.abrirRegalo.d')}</span>
-            </a>
             {grupos.map((g) => (
               <div class="menu-seccion" key={g.id}>
                 <p class="menu-titulo">{t(g.label)}</p>
                 {g.items.map((i) => (
-                  <a class="menu-link" href={i.href} key={i.href} onClick={() => setMobileOpen(false)}>
-                    {t(i.label)}
-                  </a>
+                  <ItemDeMenu item={i} key={i.href} onClick={() => setMobileOpen(false)} />
                 ))}
               </div>
             ))}
-            <a class="menu-link" href={LISTAS.href}>
-              {t(LISTAS.label)}
-            </a>
             <div class="menu-idioma">
               <LangPill />
             </div>

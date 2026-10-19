@@ -45,11 +45,13 @@ Logo · Cómo funciona ▾ · Por qué bitcoin ▾ · Listas · Precios ‖ idio
 Hecho:
 - Tokens `--marca-titulo` y `--marca-texto`; «Regalale Bitcoin» dentro de los textos de la web en
   naranja (`ConMarca` en `apps/web/src/ui.tsx`), en tinta sobre fondo naranja.
-- Menú de compu, en el orden que pidió Rodolfo el 19/10 (botón primero, menús después, idioma al
-  final): [Regalar] · Abrir un regalo · Cómo funciona ▾ (Seguridad) · Por qué bitcoin ▾
-  (21 razones) · Listas · idioma. Con sesión iniciada, «Mi cuenta ▾» (Mis regalos) antes del idioma.
-- Celular: logo + [Regalar] + ☰; el menú abre con «Abrir un regalo» y muestra los grupos como
-  secciones abiertas, con el idioma al final.
+- Menú de compu, con los cambios que pidió Rodolfo el 19/10 (botón primero, menús después, idioma
+  al final; «Recibir ▾» agrupa Abrir un regalo y las listas, en lugar de «Abrir un regalo» y
+  «Listas» sueltos): [Regalar] · Recibir ▾ (Abrir un regalo, Armar mi lista) · Cómo funciona ▾
+  (Seguridad) · Por qué bitcoin ▾ (21 razones) · idioma. Con sesión iniciada, «Mi cuenta ▾» (Mis
+  regalos) antes del idioma.
+- Celular: logo + [Regalar] + ☰; el menú abre con «Recibir» (Abrir un regalo primero) y muestra
+  los grupos como secciones abiertas, con el idioma al final.
 - Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).
 
 Falta (se suma cuando exista cada cosa): Paso a paso, Preguntas frecuentes, Comparativa, Precios,

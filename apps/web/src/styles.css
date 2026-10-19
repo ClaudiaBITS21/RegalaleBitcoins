@@ -1591,14 +1591,9 @@ textarea {
   .panel-grupo {
     left: 0;
     top: 52px;
-    min-width: 240px;
+    width: 300px;
   }
 
-  .link-abrir {
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
 
   .marca-texto,
   .cabecera .marca-texto {

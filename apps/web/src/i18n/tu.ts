@@ -198,4 +198,5 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.offline.bajar': "Descargar la herramienta",
   'custodia.offline.comprobar': "Antes de usarla, calcula la huella del archivo en tu computadora y compárala con esta y con la de GitHub:",
   'custodia.offline.usar': "Después, desconecta internet y ábrela con el navegador. No necesita red y no manda nada a ningún lado.",
+  'menu.lista.d': 'Baby shower, boda, cumpleaños: que te regalen bitcoin.',
 };
