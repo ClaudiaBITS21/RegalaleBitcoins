@@ -107,8 +107,8 @@ const es: TextosComparativa = {
 
 const esTu: TextosComparativa = {
   kicker: 'Comparativa',
-  titulo: '¿En qué se diferencia *Regalale Bitcoin*?',
-  bajada: 'Hay muchas formas de regalar bitcoin, pero ninguna tan cómoda y humanizada como *Regalale Bitcoin*.',
+  titulo: '¿En qué se diferencia *Regálale Bitcoin*?',
+  bajada: 'Hay muchas formas de regalar bitcoin, pero ninguna tan cómoda y humanizada como *Regálale Bitcoin*.',
   criterios: 'Lo ideal en un regalo',
   valores: { si: 'Sí', no: 'No', parcial: 'Parcial o varía según el servicio' },
   columnas: {
@@ -138,7 +138,7 @@ const esTu: TextosComparativa = {
   parrafos: [
     'Claro que sí, y es lo que todos hacíamos hasta hoy: le hacemos bajar una billetera, se lo damos en un papel o se lo mandamos cuando todavía no está listo para recibirlo.',
     'Pero todos sabemos cómo termina: el que lo recibe se olvida, o no era el momento para prestar atención, y la verdad es que no se siente como un regalo sino como una transferencia y un peso.',
-    '**_Regalale Bitcoin_ propone algo distinto, más parecido a un regalo de verdad.**',
+    '**_Regálale Bitcoin_ propone algo distinto, más parecido a un regalo de verdad.**',
     'Si todavía no tiene billetera o no está listo, no pasa nada: el regalo llega con una tarjeta y un mensaje tuyo, con una guía para acompañarlo cuando quiera abrirlo y con recordatorios para ti si aún no lo abrió.',
     'Y cuando decida abrirlo, va a ser porque está listo, y le va a poner cabeza propia a entender cómo guardarlo. Si no, sigue ahí para siempre, o hasta que tú decidas lo contrario.',
   ],

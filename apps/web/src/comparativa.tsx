@@ -110,7 +110,7 @@ export function ComparisonPage({ testnet }: { testnet: boolean }) {
                   <th scope="col">{c.criterios}</th>
                   <th scope="col" class="comparativa-nos">
                     <Icono valor="si" label={c.valores.si} size={30} nuestro />
-                    <span class="comparativa-nos-nombre">Regalale Bitcoin</span>
+                    <span class="comparativa-nos-nombre">{trato === 'tu' && lang === 'es' ? 'Regálale Bitcoin' : 'Regalale Bitcoin'}</span>
                   </th>
                   {COLUMNAS.map((col) => (
                     <th scope="col" key={col}>

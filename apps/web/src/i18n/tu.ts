@@ -201,4 +201,8 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.offline.comprobar': "Antes de usarla, calcula la huella del archivo en tu computadora y compárala con esta y con la de GitHub:",
   'custodia.offline.usar': "Después, desconecta internet y ábrela con el navegador. No necesita red y no manda nada a ningún lado.",
   'menu.lista.d': 'Baby shower, boda, cumpleaños: que te regalen bitcoin.',
+  // El nombre de la marca con tú lleva acento (manual de marca, cap. 05).
+  'porque.historia.p3': 'Ese mismo espíritu tiene Regálale Bitcoin: un regalo simple, con un mensaje, que se puede guardar por años.',
+  'custodia.desaparece.titulo': '¿Y si Regálale Bitcoin desaparece?',
+  'custodia.desaparece.p1': 'El regalo no está guardado en Regálale Bitcoin: está en la red bitcoin, que no depende de nosotros. Si un día cerramos, los bitcoins siguen ahí.',
 };
