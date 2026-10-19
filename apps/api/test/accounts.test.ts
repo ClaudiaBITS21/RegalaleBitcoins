@@ -213,6 +213,16 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/cuenta', undefined, cookie)).status, 401);
   });
 
+  it('el menú pregunta si hay sesión sin errores ni datos de la cuenta', async () => {
+    const sin = await req('/api/cuenta/sesion');
+    assert.equal(sin.status, 200);
+    assert.deepEqual(await sin.json(), { abierta: false });
+    const { cookie } = await signUp('ana@example.com');
+    assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, cookie)).json(), { abierta: true });
+    await req('/api/cuenta/salir', {}, cookie);
+    assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, cookie)).json(), { abierta: false });
+  });
+
   it('los regalos creados con sesión quedan en la cuenta con su índice, y llega el aviso de "listo"', async () => {
     const { cookie } = await signUp('ana@example.com');
     const root = masterRootFromMnemonic(MASTER);

@@ -153,10 +153,12 @@ let sesion: Promise<boolean> | null = null;
 function useSesion(): boolean {
   const [abierta, setAbierta] = useState(false);
   useEffect(() => {
-    sesion ??= fetch('/api/cuenta', { credentials: 'same-origin' }).then(
-      (r) => r.ok,
-      () => false,
-    );
+    sesion ??= fetch('/api/cuenta/sesion', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? (r.json() as Promise<{ abierta?: unknown }>) : { abierta: false }))
+      .then(
+        (d) => d.abierta === true,
+        () => false,
+      );
     void sesion.then(setAbierta);
   }, []);
   return abierta;
