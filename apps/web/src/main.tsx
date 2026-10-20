@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ComparisonPage } from './comparativa.tsx';
 import { MediakitPage } from './mediakit.tsx';
 import { PricingPage } from './precios.tsx';
+import { PrivacyPage } from './privacidad.tsx';
 import { BuyPage } from './comprar.tsx';
 import { RefundPage } from './arrepentimiento.tsx';
 import { ClaimPage } from './claim/ClaimPage.tsx';
@@ -107,6 +108,8 @@ function App() {
         <PricingPage testnet={!ALLOW_MAINNET} />
       ) : /^\/mediakit\/?$/.test(path) ? (
         <MediakitPage />
+      ) : /^\/privacidad\/?$/.test(path) ? (
+        <PrivacyPage />
       ) : /^\/comparativa\/?$/.test(path) ? (
         <ComparisonPage testnet={!ALLOW_MAINNET} />
       ) : /^\/sin-custodia\/?$/.test(path) ? (
