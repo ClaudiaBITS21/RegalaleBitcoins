@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
 import { examplesFor, fillName, pickExample, useExamples } from '../content/mensajes.ts';
+import { usePlanFeatures } from './planFeatures.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -45,7 +46,9 @@ export function isUntouched(d: Pick<Draft, 'message' | 'example' | 'to'>): boole
 export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; onChange: (p: Partial<Draft>) => void; onNext: () => void }) {
   const { t, trato } = useI18n();
   const examples = useExamples(draft.lang, trato);
-  const list = examples === null ? [] : examplesFor(examples, draft.occasion, 'mensajes');
+  // La salutación automática (el mensaje de ejemplo de cada ocasión) viene con los planes.
+  const conPlan = usePlanFeatures();
+  const list = examples === null || conPlan !== true ? [] : examplesFor(examples, draft.occasion, 'mensajes');
   // Si cambia el nombre o el idioma y el mensaje sigue siendo el ejemplo, se actualiza con ellos.
   const onChange = (p: Partial<Draft>) => {
     if (isUntouched(draft) && draft.example !== null && p.to !== undefined) p = { ...p, message: fillName(draft.example, p.to, NO_NAME) };
@@ -58,6 +61,10 @@ export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; on
     const ex = pickExample(list);
     if (ex !== null) change({ example: ex, message: fillName(ex, draft.to, NO_NAME), undo: null });
   }, [list.length, draft.example, draft.lang]);
+  // Lo gratis no trae imagen con IA: si quedó elegida, vuelve a la ilustración.
+  useEffect(() => {
+    if (conPlan === false && draft.style === 'propia') change({ style: 'ilustracion' });
+  }, [conPlan]);
   const another = () => {
     const ex = pickExample(list, draft.example);
     if (ex === null) return;
@@ -103,11 +110,16 @@ export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; on
           )}
         </span>
         {isUntouched(draft) && <small class="texto-suave">{t('regalar.mensaje.empujoncito')}</small>}
+        {conPlan === false && (
+          <small class="texto-suave">
+            {t('regalar.mensaje.soloPlanes')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+          </small>
+        )}
         <small class={left < 0 ? 'error-campo' : left <= LIMITS.message - LIMITS.messageWarn ? 'contador contador-aviso' : 'contador'} aria-live="polite">
           {left < 0 ? t('regalar.para.sobran', { n: -left }) : t('regalar.para.quedan', { n: left })}
         </small>
       </label>
-      <StylePicker draft={draft} onChange={onChange} />
+      <StylePicker draft={draft} onChange={onChange} conPlan={conPlan} />
       <label class="campo">
         <span>{t('regalar.para.idioma')}</span>
         <select value={draft.lang} onChange={(e) => onChange({ lang: (e.currentTarget as HTMLSelectElement).value as Lang })}>

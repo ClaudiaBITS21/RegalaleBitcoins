@@ -23,6 +23,7 @@ export type ErrorCode =
   | 'cobro_no_configurado'
   | 'fundadores_agotados'
   | 'agotado'
+  | 'plan_requerido'
   | 'cuenta_requerida'
   | 'passkey_requerida'
   | 'sin_creditos'

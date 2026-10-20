@@ -300,8 +300,8 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   );
 }
 
-/** Mail de prensa (Rodolfo, 20/10): llega como alias a la casilla de la responsable. */
-const PRENSA = 'comunicacion@regalalebitcoin.com';
+/** Mail de prensa (Rodolfo, 20/10): por ahora hola@ (comunicacion@ queda para más adelante). */
+const PRENSA = 'hola@regalalebitcoin.com';
 
 export function SiteFooter() {
   const { t } = useI18n();
@@ -317,6 +317,9 @@ export function SiteFooter() {
       </a>
       <a class="custodia-link-pie" href={`mailto:${PRENSA}`}>
         {t('pie.prensa', { mail: PRENSA })}
+      </a>
+      <a class="custodia-link-pie" href="/mediakit">
+        {t('pie.mediakit')}
       </a>
       <InstallButton />
     </footer>

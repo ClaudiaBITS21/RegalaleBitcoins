@@ -386,6 +386,12 @@ describe('Cuentas con passkey', () => {
     const anon = await req('/api/gifts', gift);
     assert.deepEqual([anon.status, ((await anon.json()) as { error: string }).error], [401, 'cuenta_requerida']);
     assert.equal((await req('/api/gifts', gift, cookie)).status, 201);
+    // Con solo la bienvenida (lo gratis), la imagen con IA no va: viene con los planes.
+    assert.equal(((await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { conPlan: boolean }).conPlan, false);
+    const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 '), Buffer.alloc(200, 7)]);
+    const g2 = deriveGift(masterRootFromMnemonic(MASTER), 1, 'es', signet);
+    const propia = await req('/api/gifts', { ...gift, direccion: g2.address, indice: 1, estilo: 'propia', imagenPropia: webp.toString('base64') }, cookie);
+    assert.deepEqual([propia.status, ((await propia.json()) as { error: string }).error], [403, 'plan_requerido']);
     // Pocas cuentas nuevas por IP.
     for (let i = 0; i < 3; i++) assert.equal((await req('/api/cuenta/registro-mail', { email: `x${i}@example.com` })).status, 202);
     assert.equal((await req('/api/cuenta/registro-mail', { email: 'x9@example.com' })).status, 429);

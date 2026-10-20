@@ -517,6 +517,13 @@ export const es = {
   'regalar.mensaje.otraIdea': "Otra idea",
   'regalar.mensaje.deshacer': "Deshacer",
   'regalar.mensaje.empujoncito': "Es un ejemplo: ¿le agregás algo tuyo?",
+  'regalar.mensaje.soloPlanes': 'La salutación automática viene con los planes: acá escribís tu mensaje.',
+  'tarjeta.vistaPrevia': 'Vista previa',
+  'tarjeta.ocultar': 'Ocultar la vista previa',
+  'tarjeta.verComo': 'Ver cómo quedaría',
+  'regalar.estilo.iaPlanes': 'La imagen con tu IA viene con los planes.',
+  'planes.ver': 'Ver planes',
+  'planes.incluido': 'Incluido en los planes.',
   'tarjeta.titulo': "Imprimir la tarjeta",
   'tarjeta.texto': "Para darlo en mano: una hoja A4 de un solo lado que, doblada en cuatro, queda como tarjeta. Las 4 palabras no se imprimen: las escribís a mano.",
   'tarjeta.remate': "Frase de la contratapa",
@@ -668,6 +675,7 @@ export const es = {
   'arrep.direccionInvalida': 'Esa dirección no es válida.',
   'pie.arrepentimiento': 'Botón de arrepentimiento',
   'pie.prensa': 'Prensa: {mail}',
+  'pie.mediakit': 'Mediakit y logos',
 } as const;
 
 export type Key = keyof typeof es;

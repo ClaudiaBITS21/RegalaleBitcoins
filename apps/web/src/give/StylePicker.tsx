@@ -27,7 +27,7 @@ const AIS: readonly { name: string; url: (prompt: string) => string }[] = [
   { name: 'Claude', url: (p) => `https://claude.ai/new?q=${encodeURIComponent(p)}` },
 ];
 
-export function StylePicker({ draft, onChange }: { draft: Draft; onChange: (p: Partial<Draft>) => void }) {
+export function StylePicker({ draft, onChange, conPlan }: { draft: Draft; onChange: (p: Partial<Draft>) => void; conPlan: boolean | null }) {
   const { t, lang } = useI18n();
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,12 +63,30 @@ export function StylePicker({ draft, onChange }: { draft: Draft; onChange: (p: P
     <fieldset class="campo">
       <legend>{t('regalar.estilo.titulo')}</legend>
       <div class="estilos" role="radiogroup" aria-label={t('regalar.estilo.titulo')}>
-        {CARD_STYLES.map((s) => (
-          <button type="button" role="radio" key={s} aria-checked={draft.style === s} class={`estilo-opcion${draft.style === s ? ' elegida' : ''}`} onClick={() => onChange({ style: s })}>
-            {t(STYLE_KEYS[s])}
-          </button>
-        ))}
+        {CARD_STYLES.map((s) => {
+          // La imagen con IA viene con los planes: en lo gratis va con candado (Rodolfo, 20/10).
+          const locked = s === 'propia' && conPlan === false;
+          return (
+            <button
+              type="button"
+              role="radio"
+              key={s}
+              aria-checked={draft.style === s}
+              aria-disabled={locked}
+              class={`estilo-opcion${draft.style === s ? ' elegida' : ''}${locked ? ' bloqueada' : ''}`}
+              onClick={() => !locked && onChange({ style: s })}
+            >
+              {t(STYLE_KEYS[s])}
+              {locked && <span aria-label={t('planes.incluido')}> 🔒</span>}
+            </button>
+          );
+        })}
       </div>
+      {conPlan === false && (
+        <small class="texto-suave">
+          {t('regalar.estilo.iaPlanes')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+        </small>
+      )}
 
       {draft.style !== 'propia' ? (
         <div class="imagen-estilo">

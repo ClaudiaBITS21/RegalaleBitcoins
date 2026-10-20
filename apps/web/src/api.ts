@@ -146,6 +146,8 @@ export interface Products {
 export interface Credits {
   readonly cobroActivo: boolean;
   readonly puedeRegalar: boolean;
+  /** Si tiene lo que traen los planes (lo gratis no). */
+  readonly conPlan: boolean;
   readonly regalos: { readonly bienvenida: number; readonly pagos: number };
   readonly listas: { readonly cumple: number; readonly otras: number };
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;

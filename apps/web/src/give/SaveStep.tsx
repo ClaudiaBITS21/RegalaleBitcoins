@@ -68,7 +68,13 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
       if (await accountApi.signedIn().catch(() => false)) return onNeedCode(hasCode);
       if (!emailOk) return setMode('mail');
       // Cuenta nueva o existente, llega un link: al abrirlo se confirma el mail y se entra.
-      await accountApi.registerMail(email.trim(), lang);
+      try {
+        await accountApi.registerMail(email.trim(), lang);
+      } catch (e) {
+        // API anterior (sin cuentas con solo el mail): se sigue con el código, como antes.
+        if (e instanceof ApiFailure && e.status === 404) return onNeedCode(hasCode);
+        throw e;
+      }
       setLinkTo(email.trim());
       setMode('mail');
     } catch (e) {

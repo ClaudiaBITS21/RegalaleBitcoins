@@ -168,6 +168,7 @@ export const tu: Partial<Record<Key, string>> = {
   'lista.pesos.codigoAviso': 'Pon {codigo} en el concepto o el mensaje de la transferencia: así quien armó la lista sabe que es tuya. Es solo tuyo, no lo compartas.',
   'lista.transf.alias': 'A tu alias {alias}. Busca cada código en el concepto de lo que te llegó.',
   'regalar.mensaje.empujoncito': 'Es un ejemplo: ¿le agregas algo tuyo?',
+  'regalar.mensaje.soloPlanes': 'La salutación automática viene con los planes: aquí escribes tu mensaje.',
   'tarjeta.texto': 'Para darlo en mano: una hoja A4 de un solo lado que, doblada en cuatro, queda como tarjeta. Las 4 palabras no se imprimen: las escribes a mano.',
   'tarjeta.doblar': 'Imprime en A4 al 100 %. Dobla primero por la mitad horizontal, con lo impreso hacia afuera, y después por la mitad vertical.',
   'tarjeta.abrir': 'Abre tu regalo',
