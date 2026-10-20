@@ -300,6 +300,9 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   );
 }
 
+/** Mail de prensa (Rodolfo, 20/10): llega como alias a la casilla de la responsable. */
+const PRENSA = 'comunicacion@regalalebitcoin.com';
+
 export function SiteFooter() {
   const { t } = useI18n();
   return (
@@ -307,10 +310,13 @@ export function SiteFooter() {
       <Wordmark />
       <span>{t('pie.custodia')}</span>
       <span>{t('pie')}</span>
-      {/* El pie queda para las políticas (Rodolfo, 20/10): Términos, Privacidad, Cómo operamos,
-          Contacto y Prensa se suman cuando estén escritas. El botón de arrepentimiento va siempre. */}
+      {/* El pie queda para las políticas (Rodolfo, 20/10): Términos, Privacidad, Cómo operamos y
+          Contacto se suman cuando estén escritas. El botón de arrepentimiento va siempre. */}
       <a class="custodia-link-pie" href="/arrepentimiento">
         {t('pie.arrepentimiento')}
+      </a>
+      <a class="custodia-link-pie" href={`mailto:${PRENSA}`}>
+        {t('pie.prensa', { mail: PRENSA })}
       </a>
       <InstallButton />
     </footer>

@@ -105,7 +105,10 @@ const cookieOf = (res: Response) => (res.headers.get('set-cookie') ?? '').split(
 
 async function signUp(email: string, pk = new FakePasskey()) {
   const res = await req('/api/cuenta/registro', { email, idioma: 'es', boveda: VAULT, credencial: pk.register(await challenge('registro')) });
-  return { res, pk, cookie: cookieOf(res) };
+  // El mail de confirmación del alta queda aparte, para que cada prueba cuente solo los suyos.
+  const sent = mails;
+  mails = [];
+  return { res, pk, cookie: cookieOf(res), sent };
 }
 
 describe('Cuentas con passkey', () => {
@@ -139,8 +142,11 @@ describe('Cuentas con passkey', () => {
   });
 
   it('registro: crea la cuenta, guarda la bóveda cifrada y abre una sesión segura', async () => {
-    const { res, cookie } = await signUp('Ana@Example.com ');
+    const { res, cookie, sent } = await signUp('Ana@Example.com ');
     assert.equal(res.status, 201);
+    // Con passkey se regala enseguida; el mail se confirma después, con un link que llega al alta.
+    assert.deepEqual(sent.map((m) => m.to), ['ana@example.com']);
+    assert.match(sent[0]?.text ?? '', /\/panel#acceso=[A-Za-z0-9_-]{43}/);
     const set = res.headers.get('set-cookie') ?? '';
     assert.match(set, /^__session=[A-Za-z0-9_-]{43};/);
     for (const flag of ['HttpOnly', 'Secure', 'SameSite=Strict']) assert.ok(set.includes(flag), flag);
@@ -353,28 +359,35 @@ describe('Cuentas con passkey', () => {
     assert.equal((await creditos()).regalos.bienvenida, 5);
   });
 
-  it('cuenta con solo el mail (sin passkey): sesión, 5 de bienvenida; con el cobro activo, sin cuenta no se regala', async () => {
-    const bad = await req('/api/cuenta/registro-mail', { email: 'no-es-un-mail' });
-    assert.equal(bad.status, 400);
+  it('cuenta con solo el mail (sin passkey): se confirma antes de regalar; con el cobro activo, sin cuenta no se regala', async () => {
+    assert.equal((await req('/api/cuenta/registro-mail', { email: 'no-es-un-mail' })).status, 400);
     const res = await req('/api/cuenta/registro-mail', { email: 'Leo@Example.com', idioma: 'pt' });
-    assert.equal(res.status, 201);
-    const cookie = cookieOf(res);
+    assert.equal(res.status, 202);
+    // No abre sesión: hay que confirmar el mail con el link.
+    assert.equal(res.headers.get('set-cookie'), null);
+    assert.equal(mails.length, 1);
+    assert.equal(mails[0]?.subject, 'Confirme seu e-mail no Regalale Bitcoin');
+    const token = /#acceso=([A-Za-z0-9_-]{43})/.exec(mails[0]?.text ?? '')?.[1] as string;
+    const ok = await req('/api/cuenta/link/canje', { token });
+    assert.equal(ok.status, 200);
+    const cookie = cookieOf(ok);
     const c = (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { bienvenida: number } };
     assert.equal(c.regalos.bienvenida, 5);
-    const [s] = await sql<{ metodo: string; verificado: Date | null }[]>`select s.metodo, u.verificado from sesiones s join usuarios u on u.id = s.usuario_id where u.email = 'leo@example.com'`;
-    assert.deepEqual([s?.metodo, s?.verificado], ['mail', null]);
-    // El mismo mail otra vez: hay que entrar (passkey o link), no se crea otra cuenta.
-    const again = await req('/api/cuenta/registro-mail', { email: 'leo@example.com' });
-    assert.deepEqual([again.status, ((await again.json()) as { error: string }).error], [409, 'cuenta_existente']);
-    // Con el cobro activo, sin sesión no se puede registrar un regalo; con la cuenta del mail, sí.
+    const [u] = await sql<{ verificado: Date | null }[]>`select verificado from usuarios where email = 'leo@example.com'`;
+    assert.ok(u?.verificado instanceof Date);
+    // El mismo mail otra vez responde igual: no crea otra cuenta, manda el link para entrar.
+    assert.equal((await req('/api/cuenta/registro-mail', { email: 'leo@example.com' })).status, 202);
+    assert.equal(mails.length, 2);
+    assert.equal((await sql`select id from usuarios where email = 'leo@example.com'`).length, 1);
+    // Con el cobro activo, sin sesión no se puede registrar un regalo; con la cuenta confirmada, sí.
     await setChargingActive(sql, true);
     const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
     const gift = { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 };
     const anon = await req('/api/gifts', gift);
     assert.deepEqual([anon.status, ((await anon.json()) as { error: string }).error], [401, 'cuenta_requerida']);
     assert.equal((await req('/api/gifts', gift, cookie)).status, 201);
-    // Pocas cuentas por IP.
-    for (let i = 0; i < 4; i++) assert.equal((await req('/api/cuenta/registro-mail', { email: `x${i}@example.com` })).status, 201);
+    // Pocas cuentas nuevas por IP.
+    for (let i = 0; i < 3; i++) assert.equal((await req('/api/cuenta/registro-mail', { email: `x${i}@example.com` })).status, 202);
     assert.equal((await req('/api/cuenta/registro-mail', { email: 'x9@example.com' })).status, 429);
   });
 

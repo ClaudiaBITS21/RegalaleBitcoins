@@ -85,13 +85,23 @@ const gift = await insertGift(sql, {
 });
 
 let api: ChildProcess | null = null;
+// Los mails de la API (sin Resend) salen por la consola: de ahí se toman los links de acceso.
+let mailLog = '';
+const lastLink = (email: string): string | null => {
+  const parts = mailLog.split('[mail a ').filter((m) => m.toLowerCase().startsWith(`${email.toLowerCase()}]`));
+  return /(\S+#acceso=[A-Za-z0-9_-]{43})/.exec(parts.at(-1) ?? '')?.[1] ?? null;
+};
 let newGiftId: string | null = null;
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const problems: string[] = [];
 try {
   api = spawn(process.execPath, [join(ROOT, 'apps', 'api', 'src', 'main.ts')], {
     env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, PUBLIC_URL: BASE, COOKIE_SECURE: 'no', DATABASE_URL, WEB_DIST },
-    stdio: ['ignore', 'inherit', 'inherit'],
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  api.stdout?.on('data', (d: Buffer) => {
+    mailLog += d.toString();
+    process.stdout.write(d);
   });
   await waitFor(`${BASE}/api/salud`);
 
@@ -237,8 +247,20 @@ try {
   // Con el código, el mail es obligatorio: la cuenta se crea con solo el mail.
   await page.getByRole('heading', { name: 'Dejanos tu mail' }).waitFor();
   await shot('r4-mail');
-  await page.getByLabel('Tu mail').fill(`codigo.${Date.now()}@example.com`);
+  const codeMail = `codigo.${Date.now()}@example.com`;
+  await page.getByLabel('Tu mail').fill(codeMail);
   await page.getByRole('button', { name: 'Seguir' }).click();
+  // Sin passkey, el mail se confirma antes de seguir: llega un link y se abre en el mismo navegador.
+  await page.getByText(/Te mandamos un link a codigo\.\d+@example\.com para confirmar tu mail/).waitFor();
+  await page.getByRole('button', { name: 'Ya confirmé, seguir' }).click();
+  await page.getByText(/Todavía no se confirmó tu mail/).waitFor();
+  const confirmLink = lastLink(codeMail);
+  if (confirmLink === null) fail('no llegó el mail de confirmación');
+  // Abrir el link en otra pestaña del mismo navegador equivale a canjear su token con la misma cookie.
+  const token = /#acceso=([A-Za-z0-9_-]{43})$/.exec(confirmLink as string)?.[1] as string;
+  const redeemed = await page.evaluate(async (t) => (await fetch('/api/cuenta/link/canje', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: t }) })).status, token);
+  if (redeemed !== 200) fail(`el link de confirmación no abrió la sesión (${redeemed})`);
+  await page.getByRole('button', { name: 'Ya confirmé, seguir' }).click();
   await page.getByRole('heading', { name: 'Tu código de recuperación de regalos' }).waitFor();
   const code = (await page.locator('.codigo li').allInnerTexts()).map((t) => t.replace(/^\d+\s*/, '').trim());
   if (code.length !== 12) fail(`el código tiene ${code.length} palabras`);
@@ -423,11 +445,11 @@ try {
   await other.getByRole('button', { name: 'Crear una cuenta nueva' }).click();
   await other.getByText(/una cuenta nueva no puede recuperar los regalos/).waitFor();
   await shot2(other, 'r4-passkey-salida');
-  // Con las 12 palabras y un mail que ya tiene cuenta: se entra con el link del mail.
+  // Con las 12 palabras y un mail que ya tiene cuenta: también se entra con el link del mail.
   await other.getByRole('button', { name: 'Entrar con mis 12 palabras' }).click();
-  await other.getByText(/Ese mail ya tiene cuenta\. Te mandamos un link a lupe\.e2e@example\.com/i).waitFor();
-  await other.getByRole('button', { name: 'Ya entré, seguir' }).click();
-  await other.getByText(/Todavía no entraste/).waitFor();
+  await other.getByText(/Te mandamos un link a lupe\.e2e@example\.com para confirmar tu mail/i).waitFor();
+  await other.getByRole('button', { name: 'Ya confirmé, seguir' }).click();
+  await other.getByText(/Todavía no se confirmó tu mail/).waitFor();
   await shot2(other, 'r4-mail-link');
   await other.close();
 
