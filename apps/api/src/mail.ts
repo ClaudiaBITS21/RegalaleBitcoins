@@ -46,6 +46,15 @@ const LOGIN: Readonly<Record<Lang, Texts>> = {
   it: { subject: 'Il tuo accesso a Regalale Bitcoin', body: 'Ciao. Entra nel tuo pannello con questo link (vale 20 minuti, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
 };
 
+// Confirmación del mail (Rodolfo, 20/10): con passkey llega después del alta y se puede regalar
+// igual; sin passkey hay que abrirla antes de seguir. Sin formas de vos ni de tú.
+const CONFIRM: Readonly<Record<Lang, Texts>> = {
+  es: { subject: 'Confirmación de tu mail en Regalale Bitcoin', body: 'Hola. Con este link se confirma tu mail y se abre tu cuenta (vale 24 horas y sirve una sola vez):\n\n{link}\n\nSi no fue un pedido tuyo, no hace falta hacer nada.' },
+  pt: { subject: 'Confirme seu e-mail no Regalale Bitcoin', body: 'Olá. Com este link seu e-mail é confirmado e sua conta é aberta (vale 24 horas e funciona uma vez só):\n\n{link}\n\nSe você não pediu, ignore este e-mail.' },
+  en: { subject: 'Confirm your email at Regalale Bitcoin', body: 'Hi. This link confirms your email and opens your account (valid for 24 hours, single use):\n\n{link}\n\nIf you didn’t ask for it, ignore this email.' },
+  it: { subject: 'Conferma la tua email su Regalale Bitcoin', body: 'Ciao. Con questo link la tua email viene confermata e il tuo account si apre (vale 24 ore, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
+};
+
 const READY: Readonly<Record<Lang, Texts>> = {
   es: { subject: 'Tu regalo para {para} ya está listo', body: 'Recibimos el pago del regalo para {para}: ya se puede abrir.\n\nEn tu panel ves cómo va, y con tu cara o tu huella se pueden volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
   pt: { subject: 'Seu presente para {para} está pronto', body: 'Recebemos o pagamento do presente para {para}: ele já pode ser aberto.\n\nNo seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
@@ -66,6 +75,11 @@ const REMINDER: Record<Lang, Texts> = {
 
 export function loginMail(to: string, lang: Lang, link: string): Mail {
   const t = LOGIN[lang];
+  return { to, subject: t.subject, text: fill(t.body, { link }) };
+}
+
+export function confirmMail(to: string, lang: Lang, link: string): Mail {
+  const t = CONFIRM[lang];
   return { to, subject: t.subject, text: fill(t.body, { link }) };
 }
 

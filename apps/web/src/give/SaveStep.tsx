@@ -8,8 +8,9 @@ import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 // Paso 4: "Guardá tu regalo". Con el mail y una passkey (cara, huella o PIN) se crea la
 // cuenta y la clave maestra queda cifrada en una bóveda que solo abre esa passkey. Si el
 // dispositivo no puede, se usa el código de recuperación de 12 palabras, y entonces el mail es
-// obligatorio (Rodolfo, 20/10, opción B): la cuenta se crea con solo el mail, para que los regalos
-// queden en una cuenta y descuenten sus créditos. Si el mail ya tiene cuenta, se entra con el link.
+// obligatorio y se confirma antes de seguir (Rodolfo, 20/10): la cuenta se crea con solo el mail y
+// se entra con el link que llega, para que los regalos queden en una cuenta y descuenten sus
+// créditos. Con passkey, el mail se confirma después.
 
 type Mode = 'crear' | 'entrar' | 'mail';
 
@@ -66,18 +67,12 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
     try {
       if (await accountApi.signedIn().catch(() => false)) return onNeedCode(hasCode);
       if (!emailOk) return setMode('mail');
-      try {
-        await accountApi.registerMail(email.trim(), lang);
-        onNeedCode(hasCode);
-      } catch (e) {
-        if (!(e instanceof ApiFailure && e.code === 'cuenta_existente')) throw e;
-        // El mail ya tiene cuenta: se entra con el link del mail (o con la passkey, si la tiene).
-        await accountApi.sendLink(email.trim());
-        setLinkTo(email.trim());
-        setMode('mail');
-      }
-    } catch {
-      setError('guardar.errorServidor');
+      // Cuenta nueva o existente, llega un link: al abrirlo se confirma el mail y se entra.
+      await accountApi.registerMail(email.trim(), lang);
+      setLinkTo(email.trim());
+      setMode('mail');
+    } catch (e) {
+      setError(e instanceof ApiFailure && e.code === 'demasiados_pedidos' ? 'guardar.demasiados' : 'guardar.errorServidor');
     } finally {
       setBusy(false);
     }

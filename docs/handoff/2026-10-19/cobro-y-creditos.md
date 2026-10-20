@@ -151,6 +151,18 @@ mensaje es claro: acá se paga en bitcoin.
 - Las listas de los planes todavía no se descuentan: falta que publicar una lista consuma su
   crédito (pendiente, ver abajo).
 
+## Cambios de Rodolfo del 20/10 (tarde)
+
+- Nombres cortos: Satoshi, Node, Timechain, Genesis.
+- La tabla suma la columna gratis (bienvenida, 5 regalos): sin imagen con IA, sin tarjeta
+  imprimible (solo la vista previa) y sin salutación automática (el mensaje de ejemplo de cada
+  ocasión). En los planes van incluidas. **Falta:** que el flujo de regalar aplique esos límites
+  con la bienvenida (hoy solo lo dice la tabla).
+- Mail: con passkey se puede regalar enseguida y el mail se confirma después (link que llega al
+  alta). Sin passkey se confirma antes: `registro-mail` no abre sesión, manda el link (24 horas) y
+  se sigue al abrirlo en el mismo navegador. Responde igual exista o no la cuenta.
+- Prensa: `comunicacion@regalalebitcoin.com` en el pie (alias a la casilla de la responsable).
+
 ## Qué quedó (código)
 
 - Página `/precios` (`apps/web/src/precios.tsx`): los productos de la tabla, en sats («10,5K

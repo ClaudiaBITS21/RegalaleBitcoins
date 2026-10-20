@@ -27,17 +27,20 @@ interface Contenido {
 
 interface Producto {
   /** Clave del nombre en i18n («precios.<id>.n»). */
-  readonly id: 'pack10' | 'listaOtras' | 'anual' | 'fundador';
+  readonly id: 'bienvenida' | 'pack10' | 'listaOtras' | 'anual' | 'fundador';
   /** Código del producto en la API (el que se compra). */
   readonly codigo: string;
   /** Lo que incluye mientras no llega de /api/productos (los planes de Rodolfo del 20/10). */
   readonly base: Contenido;
 }
 
-const FILAS: readonly Key[] = ['precios.fila.regalos', 'precios.fila.tarjeta', 'precios.fila.listas', 'precios.fila.vigencia'];
+const FILAS: readonly Key[] = ['precios.fila.regalos', 'precios.fila.listas', 'precios.fila.ia', 'precios.fila.tarjeta', 'precios.fila.saludo', 'precios.fila.vigencia'];
 
-// Una sola tabla comparativa con los cuatro planes: Satoshi, Node Runner, Timechain y Genesis Block.
+// Una sola tabla comparativa: la bienvenida gratis y los cuatro planes (Satoshi, Node, Timechain y
+// Genesis). Lo gratis no trae imagen con IA, tarjeta imprimible (solo la vista previa) ni la
+// salutación automática; los planes sí (Rodolfo, 20/10).
 const PRODUCTOS: readonly Producto[] = [
+  { id: 'bienvenida', codigo: 'bienvenida', base: { sats: 0n, regalos: 5, listas: 0, plan: false, dias: null, cupo: null } },
   { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null } },
   { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null } },
   { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: true, dias: 365, cupo: null } },
@@ -67,7 +70,15 @@ function celdas(c: Contenido): readonly Celda[] {
           ? ['precios.v.unAnio']
           : ['precios.v.anios', { n: c.dias / 365 }]
         : ['precios.v.dias', { n: c.dias }];
-  return [c.regalos === null ? ['precios.v.libres'] : c.regalos, 'si', c.listas === 0 ? 'no' : c.listas, vigencia];
+  const gratis = c.sats === 0n;
+  return [
+    c.regalos === null ? ['precios.v.libres'] : c.regalos,
+    c.listas === 0 ? 'no' : c.listas,
+    gratis ? 'no' : 'si',
+    gratis ? ['precios.v.vistaPrevia'] : 'si',
+    gratis ? 'no' : 'si',
+    vigencia,
+  ];
 }
 
 export function PricingPage({ testnet }: { testnet: boolean }) {

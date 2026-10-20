@@ -24,7 +24,7 @@ import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { balance, canGive, chargingActive } from './credits.ts';
 import { ApiError } from './errors.ts';
-import { loginMail, type Mailer } from './mail.ts';
+import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { giftState } from './state.ts';
 import { verifyAssertion, verifyRegistration, WebAuthnError } from './webauthn.ts';
@@ -45,6 +45,7 @@ export interface AccountConfig {
 export const SESSION_COOKIE = '__session';
 const VAULT = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{20,400}$/;
 const LINK_MINUTES = 20;
+const CONFIRM_MINUTES = 24 * 60;
 /** Nombres de error de WebAuthn que se aceptan en el diagnóstico (nada libre llega al log). */
 const WEBAUTHN_ERRORS = new Set(['NotAllowedError', 'AbortError', 'InvalidStateError', 'NotSupportedError', 'SecurityError', 'ConstraintError', 'UnknownError', 'TypeError', 'Error']);
 
@@ -59,7 +60,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
   // Cuentas con solo el mail: pocas por IP, para que no se junten regalos de bienvenida de a cientos.
   const mailAccountLimiter = new RateLimiter(5, 60 * 60 * 1000);
 
-  const startSession = async (c: Context, account: Account, method: 'passkey' | 'link' | 'mail') => {
+  const startSession = async (c: Context, account: Account, method: 'passkey' | 'link') => {
     const token = await createSession(sql, account.id, method);
     setCookie(c, SESSION_COOKIE, token, {
       path: '/',
@@ -126,13 +127,22 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       throw e;
     });
     await startSession(c, account, 'passkey');
+    // Con passkey se puede regalar enseguida; el mail se confirma después, con este link.
+    await sendConfirm(account).catch((e: Error) => console.error(`Mail de confirmación sin mandar: ${e.message}`));
     return c.json({ email: account.email }, 201);
   });
 
+  /** Manda el link para confirmar el mail (y entrar); vale 24 horas. */
+  const sendConfirm = async (account: Account) => {
+    const token = await createMailLink(sql, account.id, CONFIRM_MINUTES);
+    await config.mailer.send(confirmMail(account.email, account.lang, `${config.publicUrl}/panel#acceso=${token}`));
+  };
+
   /**
-   * Cuenta con solo el mail, para quien regala con el código de 12 palabras (sin passkey). El mail
-   * no se verifica (igual que al crear la cuenta con passkey): queda verificado con el primer link.
-   * Si el mail ya tiene cuenta, 409 cuenta_existente: hay que entrar (passkey o link por mail).
+   * Cuenta con solo el mail, para quien regala con el código de 12 palabras (sin passkey). Sin
+   * passkey el mail se confirma antes de regalar (Rodolfo, 20/10): no abre sesión, manda el link y
+   * la sesión se abre al canjearlo. Responde igual exista o no la cuenta (si existe, el link sirve
+   * para entrar).
    */
   app.post('/api/cuenta/registro-mail', async (c) => {
     const b = await body(c);
@@ -140,15 +150,20 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     if (email === null) throw new ApiError(400, 'pedido_invalido');
     const lang = typeof b.idioma === 'string' && isLang(b.idioma) ? b.idioma : 'es';
     const ip = deps.clientIp(c);
-    if (!mailAccountLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
-    if ((await findAccountByEmail(sql, email)) !== null) throw new ApiError(409, 'cuenta_existente');
-    const account = await createAccount(sql, { email, lang, credential: null }).catch((e: { code?: string }) => {
-      if (e.code === '23505') throw new ApiError(409, 'cuenta_existente');
-      throw e;
-    });
-    mailAccountLimiter.record(ip);
-    await startSession(c, account, 'mail');
-    return c.json({ email: account.email }, 201);
+    if (!mailLimiter.allowed(ip) || !mailLimiter.allowed(email)) throw new ApiError(429, 'demasiados_pedidos');
+    mailLimiter.record(ip);
+    mailLimiter.record(email);
+    let account = await findAccountByEmail(sql, email);
+    if (account === null) {
+      if (!mailAccountLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
+      mailAccountLimiter.record(ip);
+      account = await createAccount(sql, { email, lang, credential: null }).catch(async (e: { code?: string }) => {
+        if (e.code === '23505') return (await findAccountByEmail(sql, email)) as Account;
+        throw e;
+      });
+    }
+    await sendConfirm(account);
+    return c.json({ ok: true }, 202);
   });
 
   app.post('/api/cuenta/ingreso', async (c) => {
