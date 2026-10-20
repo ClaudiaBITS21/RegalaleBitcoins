@@ -129,6 +129,28 @@ mensaje es claro: acá se paga en bitcoin.
   dirección 14 días). El valor en dólares del momento queda guardado como referencia.
 - Un lugar de fundador queda reservado 1 día mientras su pago está pendiente.
 
+## Planes de Rodolfo del 20/10
+
+| Plan | Código | Precio | Incluye |
+|---|---|---|---|
+| Satoshi | `pack10` | 10,5K sats | 10 regalos (no vencen) |
+| Node Runner | `pack10_lista` | 21K sats | 10 regalos + 1 lista (no vencen) |
+| Timechain | `anual` | 42K sats | 30 regalos + 3 listas, por 1 año |
+| Genesis Block | `fundador` | 210K sats | Regalos libres + 10 listas, para siempre. Solo 21 |
+
+- «Los valores y limitaciones pueden cambiar» (Rodolfo): precio, regalos, listas, días de vigencia
+  y cupo de cada producto se editan en `/admin` (`POST /api/admin/producto`, migración
+  `017_planes_con_cupo.sql`). Un plan ya comprado conserva lo que incluía al pagarse
+  (`planes.regalos`, `planes.listas`).
+- Un plan con cupo de regalos cubre hasta agotarlo; después se usan la bienvenida y los créditos
+  pagos. Los regalos recuperados (cancelados) le devuelven el lugar al plan.
+- La lista de cumpleaños suelta (`lista_cumple`) deja de venderse; la tabla de precios muestra los
+  cuatro planes (la bienvenida de 5 regalos queda en la bajada).
+- El cupo se cuenta con los pagos confirmados más los que están en curso (reservan 1 día); un pago
+  devuelto libera su lugar. Reemplaza el tope de 100 fundadores.
+- Las listas de los planes todavía no se descuentan: falta que publicar una lista consuma su
+  crédito (pendiente, ver abajo).
+
 ## Qué quedó (código)
 
 - Página `/precios` (`apps/web/src/precios.tsx`): los productos de la tabla, en sats («10,5K

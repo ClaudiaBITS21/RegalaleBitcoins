@@ -9,30 +9,66 @@ import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // el cobro no esté activo, un aviso lo dice. «lista_otras» no se muestra sola: va el pack con 10
 // regalos por el mismo precio.
 
-/** Una celda de la tabla: incluye (✓), no incluye (—) o un texto (cantidad o condición). */
-type Celda = 'si' | 'no' | Key;
+/** Una celda de la tabla: incluye (✓), no incluye (—), una cantidad o un texto. */
+type Celda = 'si' | 'no' | number | readonly [Key, Record<string, number>?];
+
+/** Qué incluye un producto. Los valores y límites pueden cambiar (Rodolfo, 20/10): salen de la API. */
+interface Contenido {
+  readonly sats: bigint;
+  /** null = regalos libres. */
+  readonly regalos: number | null;
+  readonly listas: number;
+  readonly plan: boolean;
+  /** Vigencia del plan; null = para siempre. */
+  readonly dias: number | null;
+  /** Cuántos se venden; null = sin límite. */
+  readonly cupo: number | null;
+}
 
 interface Producto {
-  readonly id: 'bienvenida' | 'pack10' | 'listaCumple' | 'listaOtras' | 'anual' | 'fundador';
+  /** Clave del nombre en i18n («precios.<id>.n»). */
+  readonly id: 'pack10' | 'listaOtras' | 'anual' | 'fundador';
   /** Código del producto en la API (el que se compra). */
   readonly codigo: string;
-  /** Sats; 0 = gratis. Los vigentes llegan de /api/productos (los edita el admin). */
-  readonly sats: bigint;
-  /** Regalos · tarjeta completa · listas · vigencia. */
-  readonly celdas: readonly [Celda, Celda, Celda, Celda];
+  /** Lo que incluye mientras no llega de /api/productos (los planes de Rodolfo del 20/10). */
+  readonly base: Contenido;
 }
 
 const FILAS: readonly Key[] = ['precios.fila.regalos', 'precios.fila.tarjeta', 'precios.fila.listas', 'precios.fila.vigencia'];
 
-// Una sola tabla comparativa (Rodolfo, 20/10). Precios de la tabla del handoff, mientras llegan los de la API.
+// Una sola tabla comparativa con los cuatro planes: Satoshi, Node Runner, Timechain y Genesis Block.
 const PRODUCTOS: readonly Producto[] = [
-  { id: 'bienvenida', codigo: 'bienvenida', sats: 0n, celdas: ['precios.v.cinco', 'precios.v.basica', 'no', 'precios.v.noVencen'] },
-  { id: 'pack10', codigo: 'pack10', sats: 10_500n, celdas: ['10' as Key, 'si', 'no', 'precios.v.noVencen'] },
-  { id: 'listaCumple', codigo: 'lista_cumple', sats: 10_500n, celdas: ['no', 'no', 'precios.v.unaCumple', 'precios.v.noVencen'] },
-  { id: 'listaOtras', codigo: 'pack10_lista', sats: 21_000n, celdas: ['10' as Key, 'si', 'precios.v.unaOtra', 'precios.v.noVencen'] },
-  { id: 'anual', codigo: 'anual', sats: 42_000n, celdas: ['precios.v.libres', 'si', 'precios.v.libres', 'precios.v.anio'] },
-  { id: 'fundador', codigo: 'fundador', sats: 210_000n, celdas: ['precios.v.libres', 'si', 'precios.v.diezAnio', 'precios.v.siempre'] },
+  { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null } },
+  { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null } },
+  { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: true, dias: 365, cupo: null } },
+  { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21 } },
 ];
+
+function contenido(p: Producto, vivos: Products | null): Contenido {
+  const v = vivos?.productos.find((x) => x.codigo === p.codigo);
+  if (v === undefined) return p.base;
+  return {
+    sats: BigInt(v.precioSats),
+    regalos: v.regalosLibres ? null : v.regalos,
+    listas: v.listasCumple + v.listasOtras,
+    plan: v.plan !== null,
+    dias: v.dias,
+    cupo: v.cupo,
+  };
+}
+
+function celdas(c: Contenido): readonly Celda[] {
+  const vigencia: Celda = !c.plan
+    ? ['precios.v.noVencen']
+    : c.dias === null
+      ? ['precios.v.siempre']
+      : c.dias % 365 === 0
+        ? c.dias === 365
+          ? ['precios.v.unAnio']
+          : ['precios.v.anios', { n: c.dias / 365 }]
+        : ['precios.v.dias', { n: c.dias }];
+  return [c.regalos === null ? ['precios.v.libres'] : c.regalos, 'si', c.listas === 0 ? 'no' : c.listas, vigencia];
+}
 
 export function PricingPage({ testnet }: { testnet: boolean }) {
   const { t, lang, trato } = useI18n();
@@ -55,10 +91,7 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
   }, []);
   // Mientras el cobro no esté activo (o no se sepa), la página avisa que hoy regalar es gratis.
   const cobroActivo = vivos?.cobroActivo === true;
-  const precio = (p: Producto) => {
-    const v = vivos?.productos.find((x) => x.codigo === p.codigo);
-    return v === undefined ? p.sats : BigInt(v.precioSats);
-  };
+  const numero = (n: number) => new Intl.NumberFormat(lang).format(n);
 
   return (
     <div class="pagina pagina-home pagina-precios">
@@ -91,10 +124,11 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                 <tr>
                   <td />
                   {PRODUCTOS.map((p) => {
-                    const sats = precio(p);
+                    const { sats, cupo } = contenido(p, vivos);
                     return (
                       <th scope="col" key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
                         <span class="precio-nombre">{t(`precios.${p.id}.n` as Key)}</span>
+                        {cupo !== null && <span class="precio-cupo">{t('precios.soloN', { n: numero(cupo) })}</span>}
                         <span class="precio-monto">{sats === 0n ? t('precios.gratis') : formatSatsShort(sats, lang)}</span>
                         {sats > 0n && usdPorBtc !== null && <span class="precio-sats">{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(sats, usdPorBtc), lang) })}</span>}
                       </th>
@@ -107,7 +141,7 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                   <tr key={fila}>
                     <th scope="row">{t(fila)}</th>
                     {PRODUCTOS.map((p) => {
-                      const c = p.celdas[i] as Celda;
+                      const c = celdas(contenido(p, vivos))[i] as Celda;
                       return (
                         <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
                           {c === 'si' ? (
@@ -118,10 +152,10 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                             <span class="precio-no" role="img" aria-label={t('precios.no')}>
                               —
                             </span>
-                          ) : /^\d+$/.test(c) ? (
-                            <strong>{c}</strong>
+                          ) : typeof c === 'number' ? (
+                            <strong>{numero(c)}</strong>
                           ) : (
-                            t(c)
+                            t(c[0], c[1])
                           )}
                         </td>
                       );
@@ -133,12 +167,12 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                 <tr>
                   <td />
                   {PRODUCTOS.map((p) => {
-                    const sats = precio(p);
+                    const { sats, cupo } = contenido(p, vivos);
                     const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
                     return (
                       <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
-                        {p.id === 'fundador' && (
-                          <span class="precio-sats">{agotado ? t('comprar.agotado') : vivos === null ? t('precios.soloCien') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
+                        {p.id === 'fundador' && cupo !== null && vivos !== null && (
+                          <span class="precio-sats">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
                         )}
                         {/* Se puede comprar en cuanto hay llave de cobro, aunque el cobro no esté activo (compra de prueba). */}
                         {sats > 0n && vivos?.seVende === true && !agotado && (

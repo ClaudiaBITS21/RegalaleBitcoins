@@ -2809,6 +2809,7 @@ svg.tarjeta-imagen {
 }
 .admin-tabla-scroll { overflow-x: auto; }
 .admin-tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.admin-numero { width: 7em; text-align: right; font: inherit; }
 .admin-tabla th, .admin-tabla td { padding: 6px 8px; border-bottom: 1px solid var(--borde); text-align: right; white-space: nowrap; }
 .admin-tabla th:first-child, .admin-tabla td:first-child { text-align: left; white-space: normal; }
 .admin-tabla th { font-weight: 700; color: var(--suave); }
@@ -3169,6 +3170,19 @@ svg.tarjeta-imagen {
   font-weight: 700;
   font-size: 15px;
   line-height: 1.2;
+}
+
+.precio-cupo {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--tinta, #1a1530);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .precio-monto {

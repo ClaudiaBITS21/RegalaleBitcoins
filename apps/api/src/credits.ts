@@ -34,14 +34,32 @@ export async function grantWelcome(tx: Tx, accountId: string): Promise<void> {
 export interface Plan {
   readonly type: 'anual' | 'fundador';
   readonly until: Date | null;
+  /** Regalos que le quedan al plan; null = libres. */
+  readonly giftsLeft: number | null;
+  /** Listas que incluye el plan. */
+  readonly lists: number;
 }
 
+/**
+ * El plan vigente que todavía cubre regalos (si hay varios, primero el de regalos libres). Los
+ * regalos usados son los consumos con origen «plan» desde que empezó, salvo los recuperados.
+ */
 export async function activePlan(sql: Tx, accountId: string): Promise<Plan | null> {
-  const [p] = await sql<{ tipo: 'anual' | 'fundador'; hasta: Date | null }[]>`
-    select tipo, hasta from planes
-    where usuario_id = ${accountId} and desde <= now() and (hasta is null or hasta > now())
-    order by hasta desc nulls first limit 1`;
-  return p === undefined ? null : { type: p.tipo, until: p.hasta };
+  const plans = await sql<{ tipo: 'anual' | 'fundador'; hasta: Date | null; regalos: number | null; listas: number; usados: string }[]>`
+    select p.tipo, p.hasta, p.regalos, p.listas,
+      (select count(*) from movimientos m join regalos r on r.id = m.referencia
+       where m.usuario_id = p.usuario_id and m.tipo = 'consumo' and m.origen = 'plan' and m.creado >= p.desde
+         and r.reclamo_tipo is distinct from 'recupero') as usados
+    from planes p
+    where p.usuario_id = ${accountId} and p.desde <= now() and (p.hasta is null or p.hasta > now())
+    order by p.regalos is null desc, p.hasta desc nulls first`;
+  const all = plans.map((p) => ({ type: p.tipo, until: p.hasta, giftsLeft: p.regalos === null ? null : Math.max(0, p.regalos - Number(p.usados)), lists: p.listas }));
+  return all.find((p) => p.giftsLeft === null || p.giftsLeft > 0) ?? all[0] ?? null;
+}
+
+/** ¿El plan cubre un regalo más? */
+export function planCovers(plan: Plan | null): boolean {
+  return plan !== null && (plan.giftsLeft === null || plan.giftsLeft > 0);
 }
 
 export interface Balance {
@@ -72,7 +90,7 @@ export async function balance(sql: Tx, accountId: string): Promise<Balance> {
 
 /** ¿Puede crear un regalo más? Con el cobro apagado, siempre. */
 export function canGive(b: Balance, charging: boolean): boolean {
-  return !charging || b.plan !== null || b.welcome > 0 || b.paid > 0;
+  return !charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0;
 }
 
 /**
@@ -102,7 +120,7 @@ export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient })
       const b = await balance(tx, g.usuario_id);
       // Sin saldo ni plan (no debería pasar: la web ofrece los packs antes de mostrar la
       // dirección), el consumo va a los pagos y el saldo queda en negativo hasta que compre.
-      const [cantidad, origen] = b.plan !== null ? [0, 'plan'] : b.welcome > 0 ? [-1, 'bienvenida'] : [-1, 'pago'];
+      const [cantidad, origen] = planCovers(b.plan) ? [0, 'plan'] : b.welcome > 0 ? [-1, 'bienvenida'] : [-1, 'pago'];
       await tx`
         insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
         values (${g.usuario_id}, 'consumo', 'regalo', ${cantidad}, ${origen}, ${g.id})
