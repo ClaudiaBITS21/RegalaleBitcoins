@@ -675,6 +675,7 @@ export const es = {
   'arrep.direccionInvalida': 'Esa dirección no es válida.',
   'pie.arrepentimiento': 'Botón de arrepentimiento',
   'pie.prensa': 'Prensa: {mail}',
+  'pie.mediakit': 'Mediakit y logos',
 } as const;
 
 export type Key = keyof typeof es;

@@ -318,6 +318,9 @@ export function SiteFooter() {
       <a class="custodia-link-pie" href={`mailto:${PRENSA}`}>
         {t('pie.prensa', { mail: PRENSA })}
       </a>
+      <a class="custodia-link-pie" href="/mediakit">
+        {t('pie.mediakit')}
+      </a>
       <InstallButton />
     </footer>
   );

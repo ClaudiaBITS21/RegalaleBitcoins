@@ -675,4 +675,5 @@ export const it: Dict = {
   'arrep.direccionInvalida': 'Questo indirizzo non è valido.',
   'pie.arrepentimiento': 'Pulsante di recesso',
   'pie.prensa': 'Stampa: {mail}',
+  'pie.mediakit': 'Media kit e loghi',
 };

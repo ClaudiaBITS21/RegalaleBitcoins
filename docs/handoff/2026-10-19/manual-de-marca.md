@@ -1,6 +1,6 @@
 # 19/10/2026: manual de marca
 
-Estado: INTEGRADO EN PARTE (ver «Qué falta»)
+Estado: INTEGRADO (mediakit el 20/10)
 
 Manual de identidad v1 (19/10/2026), en un artifact de Claude (privado de la responsable):
 https://claude.ai/artifact/Pnhpyp9nLcPnq8B9nfgct4. Lo que pide para la web:
@@ -33,5 +33,7 @@ https://claude.ai/artifact/Pnhpyp9nLcPnq8B9nfgct4. Lo que pide para la web:
 
 ## Qué falta
 
-- `regalalebitcoin.com/mediakit`: todo el manual y las descargas en esa página (pedido de Rodolfo,
-  19/10). Va en un PR aparte.
+- ~~`regalalebitcoin.com/mediakit`~~ Hecho (20/10): `apps/web/src/mediakit.tsx`, link «Mediakit y
+  logos» en el pie. Todo el manual v1 y las 12 descargas (SVG y PNG). Como la política de seguridad
+  del sitio no deja scripts ni estilos en línea, cada muestra es una imagen SVG armada con la misma
+  geometría que se descarga (`content/marca-trazos.ts`). Por ahora solo en castellano.

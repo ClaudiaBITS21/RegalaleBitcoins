@@ -676,4 +676,5 @@ export const pt: Dict = {
   'arrep.direccionInvalida': 'Esse endereço não é válido.',
   'pie.arrepentimiento': 'Botão de arrependimento',
   'pie.prensa': 'Imprensa: {mail}',
+  'pie.mediakit': 'Mediakit e logos',
 };
