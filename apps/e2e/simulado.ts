@@ -557,7 +557,7 @@ try {
   const cobroVpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
   await sql`insert into ajustes (clave, valor) values ('llave_cobro', ${cobroVpub}) on conflict (clave) do update set valor = excluded.valor`;
   await giver.goto(`${BASE}/precios`);
-  await giver.locator('.precio-tarjeta', { hasText: 'Pack de 10 regalos' }).getByRole('link', { name: 'Comprar' }).click();
+  await giver.locator('a[href="/comprar?producto=pack10"]').click();
   await giver.getByRole('heading', { name: /^Pagá .+ sats$/ }).waitFor({ timeout: 15_000 });
   const buyAddr = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   if (buyAddr !== deriveListAddress(parseAccountKey(cobroVpub, signet), 0).address) fail('la compra no usa la primera dirección de la llave de cobro');

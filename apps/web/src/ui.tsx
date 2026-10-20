@@ -250,9 +250,17 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
         <a class="boton-nav" href="/regalar">
           {t('menu.regalar')}
         </a>
-        {GRUPOS.map((g) => (
-          <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
-        ))}
+        {/* Un grupo con una sola opción no es desplegable: va directo (Rodolfo, 20/10). */}
+        {GRUPOS.map((g) => {
+          const solo = g.items.length === 1 ? g.items[0] : undefined;
+          return solo !== undefined ? (
+            <a class="link-nav" href={solo.href} key={g.id}>
+              {t(solo.label)}
+            </a>
+          ) : (
+            <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
+          );
+        })}
         <a class="link-nav" href="/precios">
           {t('menu.precios')}
         </a>
@@ -271,7 +279,7 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
           <div class="panel-menu panel-movil">
             {GRUPOS.map((g) => (
               <div class="menu-seccion" key={g.id}>
-                <p class="menu-titulo">{t(g.label)}</p>
+                {g.items.length > 1 && <p class="menu-titulo">{t(g.label)}</p>}
                 {g.items.map((i) => (
                   <ItemDeMenu item={i} key={i.href} onClick={() => setMobileOpen(false)} />
                 ))}
@@ -299,15 +307,8 @@ export function SiteFooter() {
       <Wordmark />
       <span>{t('pie.custodia')}</span>
       <span>{t('pie')}</span>
-      <a class="custodia-link-pie" href="/sin-custodia">
-        {t('custodia.pie')}
-      </a>
-      <a class="custodia-link-pie" href="/panel">
-        {t('menu.misRegalos')}
-      </a>
-      <a class="custodia-link-pie" href="/precios">
-        {t('menu.precios')}
-      </a>
+      {/* El pie queda para las políticas (Rodolfo, 20/10): Términos, Privacidad, Cómo operamos,
+          Contacto y Prensa se suman cuando estén escritas. El botón de arrepentimiento va siempre. */}
       <a class="custodia-link-pie" href="/arrepentimiento">
         {t('pie.arrepentimiento')}
       </a>
