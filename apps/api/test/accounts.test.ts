@@ -353,6 +353,31 @@ describe('Cuentas con passkey', () => {
     assert.equal((await creditos()).regalos.bienvenida, 5);
   });
 
+  it('cuenta con solo el mail (sin passkey): sesión, 5 de bienvenida; con el cobro activo, sin cuenta no se regala', async () => {
+    const bad = await req('/api/cuenta/registro-mail', { email: 'no-es-un-mail' });
+    assert.equal(bad.status, 400);
+    const res = await req('/api/cuenta/registro-mail', { email: 'Leo@Example.com', idioma: 'pt' });
+    assert.equal(res.status, 201);
+    const cookie = cookieOf(res);
+    const c = (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { bienvenida: number } };
+    assert.equal(c.regalos.bienvenida, 5);
+    const [s] = await sql<{ metodo: string; verificado: Date | null }[]>`select s.metodo, u.verificado from sesiones s join usuarios u on u.id = s.usuario_id where u.email = 'leo@example.com'`;
+    assert.deepEqual([s?.metodo, s?.verificado], ['mail', null]);
+    // El mismo mail otra vez: hay que entrar (passkey o link), no se crea otra cuenta.
+    const again = await req('/api/cuenta/registro-mail', { email: 'leo@example.com' });
+    assert.deepEqual([again.status, ((await again.json()) as { error: string }).error], [409, 'cuenta_existente']);
+    // Con el cobro activo, sin sesión no se puede registrar un regalo; con la cuenta del mail, sí.
+    await setChargingActive(sql, true);
+    const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
+    const gift = { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 };
+    const anon = await req('/api/gifts', gift);
+    assert.deepEqual([anon.status, ((await anon.json()) as { error: string }).error], [401, 'cuenta_requerida']);
+    assert.equal((await req('/api/gifts', gift, cookie)).status, 201);
+    // Pocas cuentas por IP.
+    for (let i = 0; i < 4; i++) assert.equal((await req('/api/cuenta/registro-mail', { email: `x${i}@example.com` })).status, 201);
+    assert.equal((await req('/api/cuenta/registro-mail', { email: 'x9@example.com' })).status, 429);
+  });
+
   it('créditos: con el cobro activo, el primer depósito consume uno (una sola vez) y cancelar lo devuelve', async () => {
     await setChargingActive(sql, true);
     const { cookie } = await signUp('ana@example.com');

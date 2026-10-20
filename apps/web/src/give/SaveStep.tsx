@@ -7,9 +7,11 @@ import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 
 // Paso 4: "Guardá tu regalo". Con el mail y una passkey (cara, huella o PIN) se crea la
 // cuenta y la clave maestra queda cifrada en una bóveda que solo abre esa passkey. Si el
-// dispositivo no puede, se usa el código de recuperación de 12 palabras.
+// dispositivo no puede, se usa el código de recuperación de 12 palabras, y entonces el mail es
+// obligatorio (Rodolfo, 20/10, opción B): la cuenta se crea con solo el mail, para que los regalos
+// queden en una cuenta y descuenten sus créditos. Si el mail ya tiene cuenta, se entra con el link.
 
-type Mode = 'crear' | 'entrar';
+type Mode = 'crear' | 'entrar' | 'mail';
 
 export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, next: number) => void; onNeedCode: (hasCodeAlready: boolean) => void }) {
   const { t, lang } = useI18n();
@@ -19,6 +21,9 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
   const [error, setError] = useState<Key | null>(null);
   // Pasar de "entrar" a "cuenta nueva" pide confirmar: la cuenta nueva no recupera los regalos de la anterior.
   const [confirmNew, setConfirmNew] = useState(false);
+  // Con el código: si ya entró, nuevo (false) o el que ya tiene (true); y a qué mail mandamos el link.
+  const [codeHas, setCodeHas] = useState(false);
+  const [linkTo, setLinkTo] = useState<string | null>(null);
   const supported = passkeysAvailable();
 
   const finish = async (master: string | null) => {
@@ -53,6 +58,87 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  /** Seguir con el código de 12 palabras: hace falta una cuenta (con sesión abierta o con el mail). */
+  const withCode = async (hasCode: boolean) => {
+    setCodeHas(hasCode);
+    setError(null);
+    setBusy(true);
+    try {
+      if (await accountApi.signedIn().catch(() => false)) return onNeedCode(hasCode);
+      if (!emailOk) return setMode('mail');
+      try {
+        await accountApi.registerMail(email.trim(), lang);
+        onNeedCode(hasCode);
+      } catch (e) {
+        if (!(e instanceof ApiFailure && e.code === 'cuenta_existente')) throw e;
+        // El mail ya tiene cuenta: se entra con el link del mail (o con la passkey, si la tiene).
+        await accountApi.sendLink(email.trim());
+        setLinkTo(email.trim());
+        setMode('mail');
+      }
+    } catch {
+      setError('guardar.errorServidor');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const linkOpened = async () => {
+    setError(null);
+    if (await accountApi.signedIn().catch(() => false)) onNeedCode(codeHas);
+    else setError('guardar.todaviaNo');
+  };
+
+  if (mode === 'mail') {
+    return (
+      <div class="paso">
+        <StepTitle>{t('guardar.tituloMail')}</StepTitle>
+        {linkTo === null ? (
+          <>
+            <p class="texto-suave">{t('guardar.textoMail')}</p>
+            <form
+              class="formulario"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (emailOk && !busy) void withCode(codeHas);
+              }}
+            >
+              <label class="campo">
+                <span>{t('guardar.mail')}</span>
+                <input type="email" autocomplete="email" inputMode="email" value={email} onInput={(e) => setEmail((e.currentTarget as HTMLInputElement).value)} />
+              </label>
+              <Button type="submit" disabled={!emailOk || busy}>
+                {t('guardar.seguir')}
+              </Button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p>{t('guardar.linkEnviado', { email: linkTo })}</p>
+            <Button onClick={() => void linkOpened()}>{t('guardar.yaEntre')}</Button>
+            {supported && (
+              <Button kind="contorno" disabled={busy} onClick={() => void run(() => signIn())}>
+                {t('guardar.entrar')}
+              </Button>
+            )}
+          </>
+        )}
+        {error !== null && <Notice kind={error === 'guardar.todaviaNo' ? 'info' : 'error'}>{t(error)}</Notice>}
+        <button
+          type="button"
+          class="boton-texto enlace-centrado"
+          onClick={() => {
+            setLinkTo(null);
+            setError(null);
+            setMode('crear');
+          }}
+        >
+          {t('guardar.volver')}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div class="paso">
       <StepTitle>{t(mode === 'crear' ? 'guardar.titulo' : 'guardar.tituloEntrar')}</StepTitle>
@@ -86,7 +172,7 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
       {error !== null && <Notice kind={error === 'guardar.sinPrf' || error === 'guardar.yaExiste' ? 'info' : 'error'}>{t(error)}</Notice>}
       {mode === 'entrar' ? (
         <>
-          <Button kind="contorno" onClick={() => onNeedCode(true)}>
+          <Button kind="contorno" disabled={busy} onClick={() => void withCode(true)}>
             {t('guardar.entrarPalabras')}
           </Button>
           {confirmNew ? (
@@ -117,7 +203,7 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
           <button type="button" class="boton-texto enlace-centrado" onClick={() => setMode('entrar')}>
             {t('guardar.yaTengo')}
           </button>
-          <button type="button" class="boton-texto enlace-centrado" onClick={() => onNeedCode(false)}>
+          <button type="button" class="boton-texto enlace-centrado" disabled={busy} onClick={() => void withCode(false)}>
             {t('guardar.prefieroCodigo')}
           </button>
         </>

@@ -234,6 +234,11 @@ try {
   await page.getByRole('heading', { name: 'Guardá tu regalo' }).waitFor();
   await shot('r4-guardar');
   await page.getByRole('button', { name: 'Prefiero anotar un código' }).click();
+  // Con el código, el mail es obligatorio: la cuenta se crea con solo el mail.
+  await page.getByRole('heading', { name: 'Dejanos tu mail' }).waitFor();
+  await shot('r4-mail');
+  await page.getByLabel('Tu mail').fill(`codigo.${Date.now()}@example.com`);
+  await page.getByRole('button', { name: 'Seguir' }).click();
   await page.getByRole('heading', { name: 'Tu código de recuperación de regalos' }).waitFor();
   const code = (await page.locator('.codigo li').allInnerTexts()).map((t) => t.replace(/^\d+\s*/, '').trim());
   if (code.length !== 12) fail(`el código tiene ${code.length} palabras`);
@@ -418,8 +423,12 @@ try {
   await other.getByRole('button', { name: 'Crear una cuenta nueva' }).click();
   await other.getByText(/una cuenta nueva no puede recuperar los regalos/).waitFor();
   await shot2(other, 'r4-passkey-salida');
+  // Con las 12 palabras y un mail que ya tiene cuenta: se entra con el link del mail.
   await other.getByRole('button', { name: 'Entrar con mis 12 palabras' }).click();
-  await other.getByRole('heading', { name: /código/i }).first().waitFor();
+  await other.getByText(/Ese mail ya tiene cuenta\. Te mandamos un link a lupe\.e2e@example\.com/i).waitFor();
+  await other.getByRole('button', { name: 'Ya entré, seguir' }).click();
+  await other.getByText(/Todavía no entraste/).waitFor();
+  await shot2(other, 'r4-mail-link');
   await other.close();
 
   // Lista de regalos: Lupe la arma con la vpub de su billetera; un invitado regala desde otro navegador.

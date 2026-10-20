@@ -213,8 +213,10 @@ mensaje es claro: acá se paga en bitcoin.
 
 - Admin: códigos promocionales, campañas y las métricas del handoff (uso de la bienvenida,
   conversión, ventas por producto, cuentas nuevas sospechosas).
-- **Antes de activar el cobro:** quien regala sin passkey (solo con el código de 12 palabras) hoy no
-  tiene cuenta, y esos regalos no consumen créditos. Hace falta la cuenta obligatoria con el mail
-  de quien regala (decisión del 19/10), también sin passkey.
+- ~~Antes de activar el cobro: cuenta obligatoria con mail para quien regala sin passkey.~~ Hecho
+  (opción B, 20/10): «Guardá tu regalo» pide el mail para seguir con el código; la cuenta se crea
+  con solo el mail (`POST /api/cuenta/registro-mail`, sesión «mail», migración 018). Si el mail ya
+  tiene cuenta, se manda el link y se sigue al volver. Con el cobro activo, el servidor no registra
+  regalos sin cuenta (`401 cuenta_requerida`). Con passkey, el mail sigue siendo parte del alta.
 - Listas: pagar o consumir el crédito de lista antes de publicarla; fecha del evento y cierre.
 - Botón de arrepentimiento.
