@@ -14,7 +14,7 @@ import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
 import { registerRefundRoutes } from './refunds.ts';
-import { balance, canGive, chargingActive, consumeGiftCredits, refundCanceledGifts } from './credits.ts';
+import { balance, canGive, chargingActive, consumeGiftCredits, hasPlanFeatures, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
 import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
@@ -228,7 +228,10 @@ export function createApp(deps: AppDeps): Hono {
     // la web pide el mail antes (cuenta con solo el mail si no hay passkey).
     if (await chargingActive(sql)) {
       if (account === null) throw new ApiError(401, 'cuenta_requerida');
-      if (!canGive(await balance(sql, account.id), true)) throw new ApiError(409, 'sin_creditos');
+      const b = await balance(sql, account.id);
+      if (!canGive(b, true)) throw new ApiError(409, 'sin_creditos');
+      // La imagen con IA (imagen propia) viene con los planes; lo gratis no la trae.
+      if (g.style === 'propia' && !hasPlanFeatures(b, true)) throw new ApiError(403, 'plan_requerido');
     }
     const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),

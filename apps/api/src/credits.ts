@@ -88,6 +88,15 @@ export async function balance(sql: Tx, accountId: string): Promise<Balance> {
   };
 }
 
+/**
+ * ¿Tiene lo que traen los planes (imagen con IA, tarjeta imprimible, salutación automática)? Con
+ * el cobro apagado, todos; con el cobro activo, quien tiene un plan vigente o créditos comprados.
+ * Lo gratis (solo la bienvenida) no lo trae (Rodolfo, 20/10).
+ */
+export function hasPlanFeatures(b: Balance, charging: boolean): boolean {
+  return !charging || planCovers(b.plan) || b.paid > 0;
+}
+
 /** ¿Puede crear un regalo más? Con el cobro apagado, siempre. */
 export function canGive(b: Balance, charging: boolean): boolean {
   return !charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0;

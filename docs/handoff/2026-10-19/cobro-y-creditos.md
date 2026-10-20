@@ -156,12 +156,14 @@ mensaje es claro: acá se paga en bitcoin.
 - Nombres cortos: Satoshi, Node, Timechain, Genesis.
 - La tabla suma la columna gratis (bienvenida, 5 regalos): sin imagen con IA, sin tarjeta
   imprimible (solo la vista previa) y sin salutación automática (el mensaje de ejemplo de cada
-  ocasión). En los planes van incluidas. **Falta:** que el flujo de regalar aplique esos límites
-  con la bienvenida (hoy solo lo dice la tabla).
+  ocasión). En los planes van incluidas. El flujo los aplica con el cobro activo y una cuenta
+  con solo la bienvenida (sin plan ni créditos comprados): «Con tu IA» con candado (y el servidor
+  rechaza la imagen propia, `403 plan_requerido`), el mensaje no se completa solo y la tarjeta se
+  ve con la marca «Vista previa», sin imprimir. Con el cobro apagado, todo libre.
 - Mail: con passkey se puede regalar enseguida y el mail se confirma después (link que llega al
   alta). Sin passkey se confirma antes: `registro-mail` no abre sesión, manda el link (24 horas) y
   se sigue al abrirlo en el mismo navegador. Responde igual exista o no la cuenta.
-- Prensa: `comunicacion@regalalebitcoin.com` en el pie (alias a la casilla de la responsable).
+- Prensa: por ahora `hola@regalalebitcoin.com` en el pie (Rodolfo, 20/10).
 
 ## Qué quedó (código)
 

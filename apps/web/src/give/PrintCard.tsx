@@ -27,7 +27,9 @@ function Coin({ size }: { size: number }) {
   );
 }
 
-export function PrintCard({ link, view }: { link: string; view: GiftView }) {
+// Lo gratis no trae la tarjeta imprimible: solo se puede ver cómo quedaría, con la marca «Vista
+// previa» y sin imprimir (Rodolfo, 20/10).
+export function PrintCard({ link, view, conPlan }: { link: string; view: GiftView; conPlan: boolean | null }) {
   const { t, trato } = useI18n();
   const lang = view.idioma as Lang;
   // En el idioma de quien recibe; en castellano, con el trato de quien regala (suelen ser del mismo lugar).
@@ -37,6 +39,7 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
   const [example, setExample] = useState<string | null>(null);
   const [remate, setRemate] = useState('');
   const [undo, setUndo] = useState<string | null>(null);
+  const [ver, setVer] = useState(false);
 
   // Viene un remate de ejemplo al azar según la ocasión; "Otra idea" lo cambia.
   useEffect(() => {
@@ -57,6 +60,59 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
   const tooLong = chars(remate) > REMATE_MAX;
   const isLink = looksLikeLink(remate);
   const ok = !tooLong && !isLink;
+
+  const hoja = (
+    <div class="hoja-a4" aria-hidden="true" lang={lang}>
+      <div class="panel panel-girado panel-tapa">
+        <span class="tapa-ocasion">{occasionLabel(view.ocasion, lang, view.ocasionLibre)}</span>
+        <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} class="tapa-arte" />
+        <div class="tapa-para">
+          <span>{r('tarjeta.para')}</span>
+          <strong>{view.para}</strong>
+          <span class="tapa-adentro">{r('tarjeta.adentro')}</span>
+        </div>
+      </div>
+      <div class="panel panel-girado panel-contratapa">
+        <Coin size={96} />
+        <p class="contratapa-remate">{ok ? remate : ''}</p>
+        <p class="contratapa-marca">
+          <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoin.com</strong>
+        </p>
+      </div>
+      <div class="panel panel-mensaje">
+        {view.mensaje !== '' && (
+          <>
+            <span class="mensaje-comillas">“</span>
+            <p>{view.mensaje}</p>
+          </>
+        )}
+        {view.de !== null && view.de !== '' && <strong class="mensaje-firma">{view.de}</strong>}
+      </div>
+      <div class="panel panel-abrir">
+        <div class="abrir-cabeza">
+          <Qr text={link} label={r('regalar.pagar.qr')} />
+          <div>
+            <strong>{r('tarjeta.abrir')}</strong>
+            <span>{r('tarjeta.todo')}</span>
+          </div>
+        </div>
+        <ol class="abrir-pasos">
+          <li>{r('tarjeta.paso1')}</li>
+          <li>{r('tarjeta.paso2')}</li>
+          <li>{r('tarjeta.paso3')}</li>
+        </ol>
+        <div class="abrir-palabras">
+          <strong>{r('tarjeta.palabras')}</strong>
+          <div class="renglones">
+            {[1, 2, 3, 4].map((n) => (
+              <span key={n}>{n}</span>
+            ))}
+          </div>
+          <small>{r('tarjeta.palabrasAviso')}</small>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section class="caja envio imprimir">
@@ -83,62 +139,32 @@ export function PrintCard({ link, view }: { link: string; view: GiftView }) {
           <small class={tooLong ? 'error-campo' : 'contador'}>{tooLong ? t('regalar.para.sobran', { n: String(chars(remate) - REMATE_MAX) }) : t('regalar.para.quedan', { n: String(REMATE_MAX - chars(remate)) })}</small>
         )}
       </label>
-      <Button kind="contorno" disabled={!ok} onClick={() => window.print()}>
-        {t('tarjeta.imprimir')}
-      </Button>
-      <small class="texto-suave">{t('tarjeta.doblar')}</small>
-
-      {/* La hoja que se imprime: oculta en pantalla. */}
-      <div class="hoja-a4" aria-hidden="true" lang={lang}>
-        <div class="panel panel-girado panel-tapa">
-          <span class="tapa-ocasion">{occasionLabel(view.ocasion, lang, view.ocasionLibre)}</span>
-          <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} class="tapa-arte" />
-          <div class="tapa-para">
-            <span>{r('tarjeta.para')}</span>
-            <strong>{view.para}</strong>
-            <span class="tapa-adentro">{r('tarjeta.adentro')}</span>
-          </div>
-        </div>
-        <div class="panel panel-girado panel-contratapa">
-          <Coin size={96} />
-          <p class="contratapa-remate">{ok ? remate : ''}</p>
-          <p class="contratapa-marca">
-            <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoin.com</strong>
-          </p>
-        </div>
-        <div class="panel panel-mensaje">
-          {view.mensaje !== '' && (
-            <>
-              <span class="mensaje-comillas">“</span>
-              <p>{view.mensaje}</p>
-            </>
+      {conPlan === false ? (
+        <>
+          <Button kind="contorno" onClick={() => setVer((v) => !v)}>
+            {t(ver ? 'tarjeta.ocultar' : 'tarjeta.verComo')}
+          </Button>
+          <small class="texto-suave">
+            {t('planes.incluido')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+          </small>
+          {ver && (
+            <div class="vista-previa" data-marca={t('tarjeta.vistaPrevia')}>
+              {hoja}
+            </div>
           )}
-          {view.de !== null && view.de !== '' && <strong class="mensaje-firma">{view.de}</strong>}
-        </div>
-        <div class="panel panel-abrir">
-          <div class="abrir-cabeza">
-            <Qr text={link} label={r('regalar.pagar.qr')} />
-            <div>
-              <strong>{r('tarjeta.abrir')}</strong>
-              <span>{r('tarjeta.todo')}</span>
-            </div>
-          </div>
-          <ol class="abrir-pasos">
-            <li>{r('tarjeta.paso1')}</li>
-            <li>{r('tarjeta.paso2')}</li>
-            <li>{r('tarjeta.paso3')}</li>
-          </ol>
-          <div class="abrir-palabras">
-            <strong>{r('tarjeta.palabras')}</strong>
-            <div class="renglones">
-              {[1, 2, 3, 4].map((n) => (
-                <span key={n}>{n}</span>
-              ))}
-            </div>
-            <small>{r('tarjeta.palabrasAviso')}</small>
-          </div>
-        </div>
-      </div>
+        </>
+      ) : (
+        <>
+          {conPlan === true && (
+            <Button kind="contorno" disabled={!ok} onClick={() => window.print()}>
+              {t('tarjeta.imprimir')}
+            </Button>
+          )}
+          <small class="texto-suave">{t('tarjeta.doblar')}</small>
+          {/* La hoja que se imprime: oculta en pantalla. */}
+          {hoja}
+        </>
+      )}
     </section>
   );
 }
