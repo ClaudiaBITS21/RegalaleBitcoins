@@ -675,6 +675,9 @@ export const pt: Dict = {
   'arrep.error': 'Não foi possível registrar o pedido. Tente de novo daqui a pouco.',
   'arrep.direccionInvalida': 'Esse endereço não é válido.',
   'pie.arrepentimiento': 'Botão de arrependimento',
-  'pie.prensa': 'Imprensa: {mail}',
-  'pie.mediakit': 'Mediakit e logos',
+  'precios.arrepentimiento': 'Se você comprou um plano e não usou nenhum crédito, tem 10 dias para se arrepender: devolvemos os mesmos sats.',
+  'pie.consumidor': 'Defesa do Consumidor (Argentina). Para reclamações, acesse aqui',
+  'pie.politicas': 'Políticas',
+  'pie.privacidad': 'Política de privacidade',
+  'pie.mediakit': 'Media Kit e Imprensa',
 };

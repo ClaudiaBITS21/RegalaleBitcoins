@@ -674,8 +674,11 @@ export const es = {
   'arrep.error': 'No se pudo registrar el pedido. Probá de nuevo en un rato.',
   'arrep.direccionInvalida': 'Esa dirección no es válida.',
   'pie.arrepentimiento': 'Botón de arrepentimiento',
-  'pie.prensa': 'Prensa: {mail}',
-  'pie.mediakit': 'Mediakit y logos',
+  'precios.arrepentimiento': 'Si compraste un plan y no usaste ningún crédito, tenés 10 días para arrepentirte: te devolvemos los mismos sats.',
+  'pie.consumidor': 'Defensa de las y los Consumidores. Para reclamos ingrese aquí',
+  'pie.politicas': 'Políticas',
+  'pie.privacidad': 'Política de privacidad',
+  'pie.mediakit': 'Media Kit y Prensa',
 } as const;
 
 export type Key = keyof typeof es;

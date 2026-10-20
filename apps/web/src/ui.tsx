@@ -300,9 +300,6 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   );
 }
 
-/** Mail de prensa (Rodolfo, 20/10): por ahora hola@ (comunicacion@ queda para más adelante). */
-const PRENSA = 'hola@regalalebitcoin.com';
-
 export function SiteFooter() {
   const { t } = useI18n();
   return (
@@ -310,18 +307,23 @@ export function SiteFooter() {
       <Wordmark />
       <span>{t('pie.custodia')}</span>
       <span>{t('pie')}</span>
-      {/* El pie queda para las políticas (Rodolfo, 20/10): Términos, Privacidad, Cómo operamos y
-          Contacto se suman cuando estén escritas. El botón de arrepentimiento va siempre. */}
-      <a class="custodia-link-pie" href="/arrepentimiento">
-        {t('pie.arrepentimiento')}
-      </a>
-      <a class="custodia-link-pie" href={`mailto:${PRENSA}`}>
-        {t('pie.prensa', { mail: PRENSA })}
-      </a>
-      <a class="custodia-link-pie" href="/mediakit">
-        {t('pie.mediakit')}
-      </a>
+      {/* El pie queda para las políticas (Rodolfo, 20/10). Términos, Cómo operamos y Contacto se
+          suman cuando estén escritas. */}
+      <nav class="pie-links" aria-label={t('pie.politicas')}>
+        <a href="/mediakit">{t('pie.mediakit')}</a>
+        <a href="/privacidad">{t('pie.privacidad')}</a>
+      </nav>
       <InstallButton />
+      {/* Pie legal. El botón de arrepentimiento tiene que poder abrirse desde la página de inicio
+          (Res. 424/2020), además de estar al final de Precios; la leyenda de Defensa del
+          Consumidor es la de la Res. 38/2017. */}
+      <small class="pie-legal">
+        <span>© {new Date().getFullYear()} Regalale Bitcoin</span>
+        <a href="/arrepentimiento">{t('pie.arrepentimiento')}</a>
+        <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">
+          {t('pie.consumidor')}
+        </a>
+      </small>
     </footer>
   );
 }

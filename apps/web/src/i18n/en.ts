@@ -674,6 +674,9 @@ export const en: Dict = {
   'arrep.error': 'We couldn’t register the request. Please try again in a while.',
   'arrep.direccionInvalida': 'That address isn’t valid.',
   'pie.arrepentimiento': 'Cancellation button',
-  'pie.prensa': 'Press: {mail}',
-  'pie.mediakit': 'Media kit and logos',
+  'precios.arrepentimiento': 'If you bought a plan and haven’t used any credit, you have 10 days to change your mind: we send back the same sats.',
+  'pie.consumidor': 'Consumer protection (Argentina). File a complaint here',
+  'pie.politicas': 'Policies',
+  'pie.privacidad': 'Privacy policy',
+  'pie.mediakit': 'Media Kit and Press',
 };

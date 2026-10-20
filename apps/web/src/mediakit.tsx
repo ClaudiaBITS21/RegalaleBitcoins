@@ -7,6 +7,9 @@ import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // del sitio no deja scripts ni estilos en línea ni innerHTML: cada muestra es una imagen SVG
 // armada acá (data:) con la misma geometría que se descarga. El manual está en castellano.
 
+/** Contacto de prensa (Rodolfo, 20/10): por ahora hola@. */
+const PRENSA = 'hola@regalalebitcoin.com';
+
 type Caja = 'claro' | 'naranja' | 'negro' | 'rosa';
 
 const CAJA: Readonly<Record<Caja, { caja: string; borde: string; sombra: string; b: string }>> = {
@@ -249,7 +252,7 @@ export function MediakitPage() {
           <div class="porque-hero-texto">
             <p class="kicker kicker-tinta">Mediakit · Manual de identidad v1 · octubre 2026</p>
             <Img svg={svgLogo('naranja')} alt="Regalale Bitcoin" class="mk-portada-logo" />
-            <p class="bajada">Cómo se dibuja, se escribe y se usa la marca de regalalebitcoin.com, con los logos para descargar. Para prensa: hola@regalalebitcoin.com.</p>
+            <p class="bajada">Cómo se dibuja, se escribe y se usa la marca de regalalebitcoin.com, con los logos para descargar.</p>
             <a class="boton boton-primario mk-ir" href="#descargas">
               Descargar logos (SVG y PNG) ↓
             </a>
@@ -258,6 +261,13 @@ export function MediakitPage() {
       </section>
 
       <main class="home-secciones mk">
+        <section class="mk-prensa" aria-labelledby="mk-prensa">
+          <h2 id="mk-prensa">Prensa</h2>
+          <p>
+            Para notas, entrevistas, datos o imágenes en otro formato, escribinos a <a href={`mailto:${PRENSA}`}>{PRENSA}</a>.
+          </p>
+        </section>
+
         <Capitulo n="01" id="marca" titulo="La marca">
           <p>
             Un regalo que, al abrirlo, es tuyo de verdad. La marca combina una <strong>caja de regalo con moño</strong> (lo que se da) con la <strong>₿</strong> (lo que hay adentro), en la línea visual Confeti:

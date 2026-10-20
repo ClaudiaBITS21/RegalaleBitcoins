@@ -3429,3 +3429,24 @@ svg.tarjeta-imagen {
   .mk-capitulo { grid-template-columns: 180px 1fr; gap: 24px 40px; }
   .mk-cabeza { align-content: start; position: sticky; top: 24px; }
 }
+
+/* Pie: links a las políticas y pie legal en letra chica. */
+.pie-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 20px; }
+.pie-links a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--tinta); }
+.pie-legal { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 14px; font-size: 13px; color: var(--suave); text-align: center; }
+.pie-legal a { color: var(--suave); display: inline-flex; align-items: center; min-height: 32px; }
+.precios-arrepentimiento { display: grid; gap: 12px; justify-items: start; }
+.precios-arrepentimiento p { margin: 0; max-width: 60ch; }
+
+/* Mediakit: contacto de prensa arriba de todo. */
+.mk-prensa { margin-top: 32px; padding: 20px 22px; border: 2px solid var(--tinta); border-radius: 20px; background: #fff; display: grid; gap: 6px; }
+.mk-prensa h2 { margin: 0; font-size: 22px; }
+.mk-prensa p { margin: 0; }
+.mk-prensa a { color: var(--marca-texto); font-weight: 700; }
+/* Páginas legales (privacidad). */
+.legal { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
+.legal .seccion { display: grid; gap: 10px; }
+.legal h2 { margin: 0; font-size: 22px; }
+.legal p, .legal ul { margin: 0; line-height: 1.6; }
+.legal ul { padding-left: 20px; display: grid; gap: 8px; }
+.legal-aaip { font-size: 14px; color: var(--suave); }

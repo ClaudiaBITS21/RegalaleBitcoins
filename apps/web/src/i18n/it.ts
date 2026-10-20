@@ -674,6 +674,9 @@ export const it: Dict = {
   'arrep.error': 'Non è stato possibile registrare la richiesta. Riprova tra poco.',
   'arrep.direccionInvalida': 'Questo indirizzo non è valido.',
   'pie.arrepentimiento': 'Pulsante di recesso',
-  'pie.prensa': 'Stampa: {mail}',
-  'pie.mediakit': 'Media kit e loghi',
+  'precios.arrepentimiento': 'Se hai comprato un piano e non hai usato nessun credito, hai 10 giorni per ripensarci: ti restituiamo gli stessi sats.',
+  'pie.consumidor': 'Tutela dei consumatori (Argentina). Per i reclami clicca qui',
+  'pie.politicas': 'Informative',
+  'pie.privacidad': 'Informativa sulla privacy',
+  'pie.mediakit': 'Media Kit e Stampa',
 };

@@ -599,8 +599,10 @@ try {
   await giver.getByRole('button', { name: 'Ver mi plan' }).click();
   await giver.getByText('Regalos comprados: 10.').waitFor({ timeout: 15_000 });
   await giver.locator('.mi-plan').screenshot({ path: join(SHOTS, 'c2-mi-plan.png') });
-  // Botón de arrepentimiento (en el pie): dirección de devolución y código de trámite.
-  await giver.getByRole('link', { name: 'Botón de arrepentimiento' }).click();
+  // Botón de arrepentimiento (al final de Precios y en el pie legal): dirección de devolución y código de trámite.
+  if ((await giver.locator('.pie-legal a[href="/arrepentimiento"]').count()) !== 1) fail('el pie legal no tiene el botón de arrepentimiento');
+  await giver.goto(`${BASE}/precios`);
+  await giver.locator('.precios-arrepentimiento a[href="/arrepentimiento"]').click();
   await giver.getByLabel('Dirección bitcoin para la devolución').fill('tb1qnoesvalida');
   await giver.getByRole('button', { name: 'Arrepentirme de esta compra' }).click();
   await giver.getByText('Esa dirección no es válida.').waitFor();

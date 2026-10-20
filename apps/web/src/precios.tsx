@@ -213,6 +213,15 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
           </ul>
         </section>
 
+        {/* Botón de arrepentimiento al final de Precios (Rodolfo, 20/10); también va en el pie legal. */}
+        <section class="seccion precios-arrepentimiento" aria-labelledby="precios-arrepentimiento">
+          <h2 id="precios-arrepentimiento">{t('pie.arrepentimiento')}</h2>
+          <p>{t('precios.arrepentimiento')}</p>
+          <a class="boton boton-contorno" href="/arrepentimiento">
+            {t('pie.arrepentimiento')}
+          </a>
+        </section>
+
         <div class="comparativa-cierre">
           <a class="boton boton-primario boton-grande" href="/regalar">
             {t('precios.cta')} →
