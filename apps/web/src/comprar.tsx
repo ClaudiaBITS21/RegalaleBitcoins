@@ -1,7 +1,7 @@
 import type { NetworkName } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Purchase } from './api.ts';
-import { formatSats, formatUsdPrice } from './format.ts';
+import { formatSats, formatUsdExact } from './format.ts';
 import { PayBox } from './give/PayBox.tsx';
 import type { Key } from './i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from './ui.tsx';
@@ -98,12 +98,12 @@ export function BuyPage({ testnet }: { testnet: boolean }) {
   } else {
     const sats = BigInt(purchase.sats);
     const received = BigInt(purchase.satsRecibidos);
-    const hora = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(purchase.venceCotizacion));
     body = (
       <div class="paso">
         <StepTitle>{t('regalar.pagar.titulo', { monto: formatSats(sats, lang) })}</StepTitle>
         <p>
-          {t('comprar.producto', { producto: t(PRODUCT_NAME[purchase.producto] ?? 'precios.pack10.n') })} {formatUsdPrice(purchase.precioUsd, lang)}
+          {t('comprar.producto', { producto: t(PRODUCT_NAME[purchase.producto] ?? 'precios.pack10.n') })}
+          {purchase.precioUsd > 0 && ` (${t('precios.usdHoy', { usd: formatUsdExact(purchase.precioUsd, lang) })})`}
         </p>
         <PayBox address={purchase.direccion} sats={sats} network={network} />
         {purchase.estado === 'pendiente' && (
@@ -113,7 +113,7 @@ export function BuyPage({ testnet }: { testnet: boolean }) {
         )}
         {purchase.estado === 'visto' && <Notice>{t('comprar.visto')}</Notice>}
         {purchase.estado === 'incompleto' && <Notice>{t('comprar.incompleto', { llego: formatSats(received, lang), esperado: formatSats(sats, lang) })}</Notice>}
-        {purchase.estado === 'vencido' ? <Notice>{t('comprar.vencido')}</Notice> : <p class="texto-suave">{t('comprar.vence', { hora })}</p>}
+        <p class="texto-suave">{t('comprar.fijo')}</p>
       </div>
     );
   }

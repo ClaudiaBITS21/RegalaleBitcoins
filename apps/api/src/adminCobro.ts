@@ -56,7 +56,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     // Primero la llave vigente: si un cambio ya cumplió las 24 h, lo pasa a vigente antes de leer el pendiente.
     const key = await paymentKey(sql, network);
     const [charging, pending, founders] = await Promise.all([chargingActive(sql), pendingPaymentKey(sql, network), foundersLeft(sql)]);
-    const productos = await sql<{ codigo: string; precio_cents: number; activo: boolean }[]>`select codigo, precio_cents, activo from productos order by precio_cents, codigo`;
+    const productos = await sql<{ codigo: string; precio_sats: string; activo: boolean }[]>`select codigo, precio_sats, activo from productos order by precio_sats, codigo`;
     const pagos = await sql<{ id: string; producto: string; estado: string; sats: string; sats_recibidos: string; precio_cents: number; creado: Date; confirmado: Date | null }[]>`
       select id, producto, estado, sats, sats_recibidos, precio_cents, creado, confirmado from pagos order by creado desc limit 50`;
     const [totales] = await sql<{ confirmados: string; usd: string | null; sats: string | null }[]>`
@@ -68,7 +68,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       llave: key === null ? null : { huella: keyFingerprint(key), direcciones: [0, 1, 2].map((i) => deriveListAddress(key, i).address) },
       llaveNueva: pending === null ? null : { huella: keyFingerprint(pending.key), vigenteDesde: pending.from.toISOString() },
       fundadoresQuedan: founders,
-      productos: productos.map((p) => ({ codigo: p.codigo, precioUsd: p.precio_cents / 100, activo: p.activo })),
+      productos: productos.map((p) => ({ codigo: p.codigo, precioSats: p.precio_sats, activo: p.activo })),
       pagos: pagos.map((p) => ({
         id: p.id,
         producto: p.producto,
@@ -129,19 +129,18 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     return c.json({ cobroActivo: activo });
   });
 
-  /** Precio de un producto, en dólares. */
+  /** Precio de un producto, en sats (los precios están en sats desde el 20/10). */
   app.post('/api/admin/precio', async (c) => {
     const account = await admin(c, true);
-    const { producto, precioUsd } = await body(c);
-    if (typeof producto !== 'string' || typeof precioUsd !== 'number' || !Number.isFinite(precioUsd) || precioUsd < 0 || precioUsd > 10_000) {
+    const { producto, precioSats } = await body(c);
+    if (typeof producto !== 'string' || typeof precioSats !== 'number' || !Number.isInteger(precioSats) || precioSats <= 0 || precioSats > 100_000_000) {
       throw new ApiError(400, 'pedido_invalido');
     }
-    const cents = Math.round(precioUsd * 100);
-    const [antes] = await sql<{ precio_cents: number }[]>`select precio_cents from productos where codigo = ${producto} and codigo <> 'bienvenida'`;
+    const [antes] = await sql<{ precio_sats: string }[]>`select precio_sats from productos where codigo = ${producto} and codigo <> 'bienvenida'`;
     if (antes === undefined) throw new ApiError(404, 'no_encontrado');
-    await sql`update productos set precio_cents = ${cents} where codigo = ${producto}`;
-    await log(account, 'precio', `${producto}: ${antes.precio_cents / 100} → ${cents / 100} USD`);
-    return c.json({ producto, precioUsd: cents / 100 });
+    await sql`update productos set precio_sats = ${precioSats} where codigo = ${producto}`;
+    await log(account, 'precio', `${producto}: ${antes.precio_sats} → ${precioSats} sats`);
+    return c.json({ producto, precioSats: String(precioSats) });
   });
 
   /** Otorgar o quitar créditos a una cuenta, con motivo. */

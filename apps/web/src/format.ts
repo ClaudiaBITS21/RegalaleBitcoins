@@ -14,6 +14,16 @@ export function formatUsd(amount: number, lang: UiLang): string {
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'USD', maximumFractionDigits: amount < 10 ? 2 : 0 }).format(amount);
 }
 
+/**
+ * Sats en corto, para los precios ("10,5K sats", "210K sats"): con el separador decimal del idioma.
+ * La K es la misma en todos los idiomas, a propósito: los precios se leen igual en cualquier lado.
+ */
+export function formatSatsShort(sats: bigint, lang: UiLang): string {
+  const n = Number(sats);
+  const [v, suf] = n >= 1e6 ? [n / 1e6, 'M'] : n >= 1e3 ? [n / 1e3, 'K'] : [n, ''];
+  return `${new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, maximumFractionDigits: 1 }).format(v)}${suf} sats`;
+}
+
 /** Un precio en dólares: sin centavos si es entero ("US$ 21"), con dos si no ("US$ 10,50"). */
 export function formatUsdPrice(amount: number, lang: UiLang): string {
   const digits = Number.isInteger(amount) ? 0 : 2;

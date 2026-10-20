@@ -161,17 +161,17 @@ export function AdminCobroPanel() {
             .map((p) => (
               <tr key={p.codigo}>
                 <td>{p.codigo}</td>
-                <td>{formatUsdPrice(p.precioUsd, lang)}</td>
+                <td>{sats(p.precioSats)}</td>
                 <td>
                   <button
                     type="button"
                     class="boton-texto"
                     disabled={busy}
                     onClick={() => {
-                      const nuevo = window.prompt(`Precio nuevo de ${p.codigo} en dólares (usá punto para los centavos):`, String(p.precioUsd));
+                      const nuevo = window.prompt(`Precio nuevo de ${p.codigo} en sats (solo números, sin puntos):`, p.precioSats);
                       if (nuevo === null) return;
-                      const v = Number(nuevo);
-                      if (!Number.isFinite(v) || v < 0) return setError('Precio inválido.');
+                      if (!/^\d{1,9}$/.test(nuevo.trim()) || Number(nuevo) <= 0) return setError('Precio inválido: en sats enteros, sin puntos.');
+                      const v = Number(nuevo.trim());
                       void run(() => api.adminSetPrice(p.codigo, v));
                     }}
                   >
