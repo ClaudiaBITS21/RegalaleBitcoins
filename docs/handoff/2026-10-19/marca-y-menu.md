@@ -58,6 +58,15 @@ Hecho:
   los grupos como secciones abiertas, con el idioma al final.
 - Pie: suma «Mis regalos» (para entrar al panel sin sesión iniciada).
 
+Cambios de Rodolfo del 20/10:
+- Un grupo del menú con una sola opción no es desplegable: va directo. Hoy «Cómo funciona» tiene
+  solo Seguridad, así que arriba queda el link «Seguridad».
+- El pie queda para las políticas (Términos, Privacidad, Botón de arrepentimiento, Cómo operamos,
+  Contacto, Prensa). Salen «¿Por qué no podemos tocar tu regalo?» (Seguridad ya está arriba),
+  «Mis regalos» (está en Recibir) y «Precios» (está arriba). Queda el botón de arrepentimiento;
+  el resto se suma cuando las políticas estén escritas.
+- Precios: una sola tabla comparativa con tildes y cantidades (no tarjetas sueltas).
+
 Falta (se suma cuando exista cada cosa): Paso a paso, Preguntas frecuentes, Precios, Según quién
 lo recibe, y Mi plan, Mis listas y Mi llave de recuperación (dónde van, ahora que Mis regalos está
 en Recibir, a definir); en el pie, Términos,

@@ -9,23 +9,29 @@ import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // el cobro no esté activo, un aviso lo dice. «lista_otras» no se muestra sola: va el pack con 10
 // regalos por el mismo precio.
 
+/** Una celda de la tabla: incluye (✓), no incluye (—) o un texto (cantidad o condición). */
+type Celda = 'si' | 'no' | Key;
+
 interface Producto {
   readonly id: 'bienvenida' | 'pack10' | 'listaCumple' | 'listaOtras' | 'anual' | 'fundador';
   /** Código del producto en la API (el que se compra). */
   readonly codigo: string;
   /** Centavos de dólar; 0 = gratis. Los vigentes llegan de /api/productos (los edita el admin). */
   readonly centavos: number;
-  readonly items: number;
+  /** Regalos · tarjeta completa · listas · vigencia. */
+  readonly celdas: readonly [Celda, Celda, Celda, Celda];
 }
 
-// Precios de la tabla del handoff, mientras llegan los de la API.
+const FILAS: readonly Key[] = ['precios.fila.regalos', 'precios.fila.tarjeta', 'precios.fila.listas', 'precios.fila.vigencia'];
+
+// Una sola tabla comparativa (Rodolfo, 20/10). Precios de la tabla del handoff, mientras llegan los de la API.
 const PRODUCTOS: readonly Producto[] = [
-  { id: 'bienvenida', codigo: 'bienvenida', centavos: 0, items: 2 },
-  { id: 'pack10', codigo: 'pack10', centavos: 1050, items: 2 },
-  { id: 'listaCumple', codigo: 'lista_cumple', centavos: 1050, items: 2 },
-  { id: 'listaOtras', codigo: 'pack10_lista', centavos: 2100, items: 2 },
-  { id: 'anual', codigo: 'anual', centavos: 4200, items: 2 },
-  { id: 'fundador', codigo: 'fundador', centavos: 21000, items: 3 },
+  { id: 'bienvenida', codigo: 'bienvenida', centavos: 0, celdas: ['precios.v.cinco', 'precios.v.basica', 'no', 'precios.v.noVencen'] },
+  { id: 'pack10', codigo: 'pack10', centavos: 1050, celdas: ['10' as Key, 'si', 'no', 'precios.v.noVencen'] },
+  { id: 'listaCumple', codigo: 'lista_cumple', centavos: 1050, celdas: ['no', 'no', 'precios.v.unaCumple', 'precios.v.noVencen'] },
+  { id: 'listaOtras', codigo: 'pack10_lista', centavos: 2100, celdas: ['10' as Key, 'si', 'precios.v.unaOtra', 'precios.v.noVencen'] },
+  { id: 'anual', codigo: 'anual', centavos: 4200, celdas: ['precios.v.libres', 'si', 'precios.v.libres', 'precios.v.anio'] },
+  { id: 'fundador', codigo: 'fundador', centavos: 21000, celdas: ['precios.v.libres', 'si', 'precios.v.diezAnio', 'precios.v.siempre'] },
 ];
 
 export function PricingPage({ testnet }: { testnet: boolean }) {
@@ -79,31 +85,74 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
               {t('precios.aviso')}
             </p>
           )}
-          <ul class="precios-grilla">
-            {PRODUCTOS.map((p) => {
-              const cents = centavos(p);
-              const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
-              return (
-                <li class={`precio-tarjeta${cents === 0 ? ' precio-gratis' : ''}`} key={p.id}>
-                  <h2>{t(`precios.${p.id}.n` as Key)}</h2>
-                  <p class="precio-monto">{cents === 0 ? t('precios.gratis') : formatUsdPrice(cents / 100, lang)}</p>
-                  {cents > 0 && usdPorBtc !== null && <p class="precio-sats">{t('precios.enSats', { sats: formatSats(usdCentsToSats(BigInt(cents), usdPorBtc), lang) })}</p>}
-                  <ul class="precio-items">
-                    {Array.from({ length: p.items }, (_, i) => (
-                      <li key={i}>{t(`precios.${p.id}.i${i + 1}` as Key)}</li>
-                    ))}
-                  </ul>
-                  {p.id === 'fundador' && vivos !== null && <p class="precio-sats">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</p>}
-                  {/* Se puede comprar en cuanto hay llave de cobro, aunque el cobro no esté activo (compra de prueba). */}
-                  {cents > 0 && vivos?.seVende === true && !agotado && (
-                    <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
-                      {t('precios.comprar')}
-                    </a>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <div class="precios-caja" role="region" aria-label={t('precios.kicker')} tabindex={0}>
+            <table class="precios-tabla">
+              <thead>
+                <tr>
+                  <td />
+                  {PRODUCTOS.map((p) => {
+                    const cents = centavos(p);
+                    return (
+                      <th scope="col" key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
+                        <span class="precio-nombre">{t(`precios.${p.id}.n` as Key)}</span>
+                        <span class="precio-monto">{cents === 0 ? t('precios.gratis') : formatUsdPrice(cents / 100, lang)}</span>
+                        {cents > 0 && usdPorBtc !== null && <span class="precio-sats">{t('precios.enSats', { sats: formatSats(usdCentsToSats(BigInt(cents), usdPorBtc), lang) })}</span>}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {FILAS.map((fila, i) => (
+                  <tr key={fila}>
+                    <th scope="row">{t(fila)}</th>
+                    {PRODUCTOS.map((p) => {
+                      const c = p.celdas[i] as Celda;
+                      return (
+                        <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
+                          {c === 'si' ? (
+                            <span class="precio-si" role="img" aria-label={t('precios.si')}>
+                              ✓
+                            </span>
+                          ) : c === 'no' ? (
+                            <span class="precio-no" role="img" aria-label={t('precios.no')}>
+                              —
+                            </span>
+                          ) : /^\d+$/.test(c) ? (
+                            <strong>{c}</strong>
+                          ) : (
+                            t(c)
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td />
+                  {PRODUCTOS.map((p) => {
+                    const cents = centavos(p);
+                    const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
+                    return (
+                      <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
+                        {p.id === 'fundador' && (
+                          <span class="precio-sats">{agotado ? t('comprar.agotado') : vivos === null ? t('precios.soloCien') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
+                        )}
+                        {/* Se puede comprar en cuanto hay llave de cobro, aunque el cobro no esté activo (compra de prueba). */}
+                        {cents > 0 && vivos?.seVende === true && !agotado && (
+                          <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
+                            {t('precios.comprar')}
+                          </a>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
           <p class="texto-suave precios-nota">{t('precios.cotizacion')}</p>
         </section>
 

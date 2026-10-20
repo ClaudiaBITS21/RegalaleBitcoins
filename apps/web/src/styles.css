@@ -3101,7 +3101,7 @@ svg.tarjeta-imagen {
   }
 }
 
-/* Precios (precios.tsx). */
+/* Precios (precios.tsx): una sola tabla comparativa. Se desplaza dentro de su caja; la página no. */
 .precios-aviso {
   margin: 0;
   padding: 14px 18px;
@@ -3111,55 +3111,97 @@ svg.tarjeta-imagen {
   font-weight: 600;
 }
 
-.precios-grilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.precio-tarjeta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 22px;
-  border: 2px solid var(--tinta);
-  border-radius: 20px;
+.precios-caja {
+  overflow-x: auto;
   background: var(--blanco);
-  box-shadow: 4px 4px 0 var(--tinta);
+  border: 2px solid var(--tinta);
+  border-radius: 24px;
+  box-shadow: 6px 6px 0 var(--tinta);
 }
 
-.precio-tarjeta.precio-gratis {
-  background: var(--crema);
+.precios-tabla {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 860px;
 }
 
-.precio-tarjeta h2 {
-  margin: 0;
-  font-size: 20px;
+.precios-tabla th,
+.precios-tabla td {
+  padding: 14px 10px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #ece8f2;
+}
+
+.precios-tabla thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--tinta);
+}
+
+.precios-tabla tfoot td {
+  border-bottom: 0;
+  vertical-align: top;
+}
+
+.precios-tabla tbody th,
+.precios-tabla thead td:first-child,
+.precios-tabla tfoot td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 170px;
+  padding-left: 18px;
+  text-align: left;
+  font-weight: 600;
+  background: var(--blanco);
+}
+
+.precios-tabla .precios-destacado {
+  background: rgba(255, 138, 31, 0.15);
+}
+
+.precios-tabla thead th.precios-destacado {
+  background: var(--naranja);
+}
+
+.precio-nombre {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .precio-monto {
-  margin: 4px 0 0;
+  display: block;
+  margin-top: 6px;
   font-family: var(--titulos);
   font-weight: 800;
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
 }
 
 .precio-sats {
-  margin: 0;
-  font-size: 14px;
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--suave);
 }
 
-.precio-items {
-  margin: 8px 0 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.precio-si {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.precio-no {
+  color: #8a8599;
+}
+
+.precio-comprar {
+  margin-top: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
 }
 
 .precios-nota {
@@ -3212,11 +3254,6 @@ svg.tarjeta-imagen {
   font: inherit;
 }
 
-.precio-comprar {
-  margin-top: auto;
-  align-self: flex-start;
-}
-
 .mi-plan ul {
   margin: 6px 0;
   padding-left: 20px;
@@ -3235,4 +3272,19 @@ svg.tarjeta-imagen {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media (max-width: 599px) {
+  .precios-tabla {
+    min-width: 760px;
+  }
+
+  .precios-tabla tbody th,
+  .precios-tabla thead td:first-child,
+  .precios-tabla tfoot td:first-child {
+    min-width: 0;
+    width: 104px;
+    padding-left: 12px;
+    font-size: 13px;
+  }
 }
