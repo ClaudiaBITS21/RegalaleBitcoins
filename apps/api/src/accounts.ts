@@ -57,15 +57,18 @@ export async function findAccountByEmail(sql: Sql, email: string): Promise<Accou
 
 export async function createAccount(
   sql: Sql,
-  a: { email: string; lang: Lang; credential: Omit<Credential, 'accountId'> },
+  a: { email: string; lang: Lang; credential: Omit<Credential, 'accountId'> | null },
 ): Promise<Account> {
   return sql.begin(async (tx) => {
     const [u] = await tx<{ id: string }[]>`insert into usuarios (email, idioma) values (${a.email}, ${a.lang}) returning id`;
     const id = (u as { id: string }).id;
     const c = a.credential;
-    await tx`
-      insert into credenciales (id, usuario_id, clave_publica, alg, contador, boveda)
-      values (${c.id}, ${id}, ${c.publicKey}, ${c.alg}, ${c.signCount}, ${c.vault})`;
+    // Sin credencial: cuenta con solo el mail (quien regala con el código de 12 palabras).
+    if (c !== null) {
+      await tx`
+        insert into credenciales (id, usuario_id, clave_publica, alg, contador, boveda)
+        values (${c.id}, ${id}, ${c.publicKey}, ${c.alg}, ${c.signCount}, ${c.vault})`;
+    }
     await grantWelcome(tx, id);
     return { id, email: a.email, lang: a.lang };
   });
@@ -88,7 +91,7 @@ export async function accountCredentials(sql: Sql, accountId: string): Promise<A
   return rows.map((r) => ({ id: r.id, prf: r.prf }));
 }
 
-export async function createSession(sql: Sql, accountId: string, method: 'passkey' | 'link'): Promise<string> {
+export async function createSession(sql: Sql, accountId: string, method: 'passkey' | 'link' | 'mail'): Promise<string> {
   const token = newToken();
   await sql`delete from sesiones where expira < now()`;
   await sql`insert into sesiones (token_hash, usuario_id, expira, metodo) values (${hash(token)}, ${accountId}, now() + make_interval(days => ${SESSION_DAYS}), ${method})`;
@@ -97,7 +100,7 @@ export async function createSession(sql: Sql, accountId: string, method: 'passke
 
 export async function sessionAccount(sql: Sql, token: string | undefined): Promise<Account | null> {
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' }[]>`
+  const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' | 'mail' }[]>`
     select u.id, u.email, u.idioma, s.metodo from sesiones s join usuarios u on u.id = s.usuario_id
     where s.token_hash = ${hash(token)} and s.expira > now()`;
   return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma, viaPasskey: r.metodo === 'passkey' };

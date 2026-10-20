@@ -224,8 +224,11 @@ export function createApp(deps: AppDeps): Hono {
     const account = await currentAccount(sql, c);
     // Con el cobro activo, una cuenta sin créditos ni plan no puede crear otro regalo: la web le
     // ofrece los packs antes de mostrar la dirección.
-    if (account !== null && (await chargingActive(sql)) && !canGive(await balance(sql, account.id), true)) {
-      throw new ApiError(409, 'sin_creditos');
+    // Sin cuenta no se puede regalar con el cobro activo (no habría de dónde descontar el crédito):
+    // la web pide el mail antes (cuenta con solo el mail si no hay passkey).
+    if (await chargingActive(sql)) {
+      if (account === null) throw new ApiError(401, 'cuenta_requerida');
+      if (!canGive(await balance(sql, account.id), true)) throw new ApiError(409, 'sin_creditos');
     }
     const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),

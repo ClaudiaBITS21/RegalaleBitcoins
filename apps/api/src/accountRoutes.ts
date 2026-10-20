@@ -56,8 +56,10 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
   const { sql, chain, config } = deps;
   const challengeLimiter = new RateLimiter(60, 60 * 60 * 1000);
   const mailLimiter = new RateLimiter(5, 60 * 60 * 1000);
+  // Cuentas con solo el mail: pocas por IP, para que no se junten regalos de bienvenida de a cientos.
+  const mailAccountLimiter = new RateLimiter(5, 60 * 60 * 1000);
 
-  const startSession = async (c: Context, account: Account, method: 'passkey' | 'link') => {
+  const startSession = async (c: Context, account: Account, method: 'passkey' | 'link' | 'mail') => {
     const token = await createSession(sql, account.id, method);
     setCookie(c, SESSION_COOKIE, token, {
       path: '/',
@@ -124,6 +126,28 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       throw e;
     });
     await startSession(c, account, 'passkey');
+    return c.json({ email: account.email }, 201);
+  });
+
+  /**
+   * Cuenta con solo el mail, para quien regala con el código de 12 palabras (sin passkey). El mail
+   * no se verifica (igual que al crear la cuenta con passkey): queda verificado con el primer link.
+   * Si el mail ya tiene cuenta, 409 cuenta_existente: hay que entrar (passkey o link por mail).
+   */
+  app.post('/api/cuenta/registro-mail', async (c) => {
+    const b = await body(c);
+    const email = normalizeEmail(b.email);
+    if (email === null) throw new ApiError(400, 'pedido_invalido');
+    const lang = typeof b.idioma === 'string' && isLang(b.idioma) ? b.idioma : 'es';
+    const ip = deps.clientIp(c);
+    if (!mailAccountLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
+    if ((await findAccountByEmail(sql, email)) !== null) throw new ApiError(409, 'cuenta_existente');
+    const account = await createAccount(sql, { email, lang, credential: null }).catch((e: { code?: string }) => {
+      if (e.code === '23505') throw new ApiError(409, 'cuenta_existente');
+      throw e;
+    });
+    mailAccountLimiter.record(ip);
+    await startSession(c, account, 'mail');
     return c.json({ email: account.email }, 201);
   });
 

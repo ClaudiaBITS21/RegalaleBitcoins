@@ -48,6 +48,10 @@ export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
   logout: () => call<{ ok: boolean }>('/api/cuenta/salir', {}),
   sendLink: (email: string) => call<{ ok: boolean }>('/api/cuenta/link', { email }),
+  /** Cuenta con solo el mail (quien regala con el código, sin passkey): abre la sesión. */
+  registerMail: (email: string, idioma: string) => call<{ email: string }>('/api/cuenta/registro-mail', { email, idioma }),
+  /** ¿Hay una sesión iniciada? (por ejemplo, abrió el link del mail en otra pestaña). */
+  signedIn: async () => (await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta,
   redeemLink: (token: string) => call<{ email: string }>('/api/cuenta/link/canje', { token }),
 };
 
