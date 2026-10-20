@@ -406,10 +406,10 @@ describe('Cuentas con passkey', () => {
 
   it('pagos: sin llave de cobro no se vende; con llave, una dirección nueva por pago y cotización de 30 minutos', async () => {
     const { cookie } = await signUp('ana@example.com');
-    const productos = async () => (await (await req('/api/productos')).json()) as { seVende: boolean; cobroActivo: boolean; fundadoresQuedan: number; productos: Array<{ codigo: string; precioUsd: number; seVendeSuelto: boolean }> };
+    const productos = async () => (await (await req('/api/productos')).json()) as { seVende: boolean; cobroActivo: boolean; fundadoresQuedan: number; productos: Array<{ codigo: string; precioSats: string; seVendeSuelto: boolean }> };
     const p0 = await productos();
     assert.deepEqual([p0.seVende, p0.cobroActivo, p0.fundadoresQuedan], [false, false, 100]);
-    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioUsd: 10.5, regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, seVendeSuelto: true });
+    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, seVendeSuelto: true });
     assert.equal(p0.productos.find((p) => p.codigo === 'lista_otras')?.seVendeSuelto, false);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' })).status, 401);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).status, 409);
@@ -419,11 +419,9 @@ describe('Cuentas con passkey', () => {
     for (const producto of ['bienvenida', 'lista_otras', 'nada']) assert.equal((await req('/api/cuenta/pagos', { producto }, cookie)).status, 422);
     const r1 = await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie);
     assert.equal(r1.status, 201);
-    const p1 = (await r1.json()) as { id: string; sats: string; direccion: string; estado: string; precioUsd: number; venceCotizacion: string };
+    const p1 = (await r1.json()) as { id: string; sats: string; direccion: string; estado: string; precioUsd: number };
     const key = parsePaymentKey(llave, signet);
     assert.deepEqual([p1.sats, p1.precioUsd, p1.estado, p1.direccion], ['10500', 10.5, 'pendiente', deriveListAddress(key, 0).address]);
-    const mins = (Date.parse(p1.venceCotizacion) - Date.now()) / 60_000;
-    assert.ok(mins > 29 && mins <= 30, String(mins));
     const p2 = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { direccion: string };
     assert.equal(p2.direccion, deriveListAddress(key, 1).address);
     assert.ok(!JSON.stringify(p1).includes('pub'), 'nunca muestra la llave');
@@ -478,17 +476,15 @@ describe('Cuentas con passkey', () => {
     assert.equal(((await (await req('/api/productos')).json()) as { fundadoresQuedan: number }).fundadoresQuedan, 99);
   });
 
-  it('pagos: con la cotización vencida se compara con el precio del momento', async () => {
+  it('pagos: el precio está en sats; la cotización del dólar no cambia lo que se pide', async () => {
     const { cookie } = await signUp('ana@example.com');
     await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
-    const p = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { id: string; direccion: string };
+    usdPerBtc = 50_000; // aunque el bitcoin baje, se piden los mismos 10.500 sats
+    const p = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { id: string; direccion: string; sats: string; precioUsd: number };
+    assert.deepEqual([p.sats, p.precioUsd], ['10500', 5.25]);
     const state = async () => ((await (await req(`/api/cuenta/pagos/${p.id}`, undefined, cookie)).json()) as { estado: string }).estado;
-    await sql`update pagos set vence_cotizacion = now() - interval '1 minute' where id = ${p.id}`;
-    assert.equal(await state(), 'vencido');
-    usdPerBtc = 50_000; // el bitcoin bajó: ahora hacen falta 21.000 sats
+    usdPerBtc = 200_000;
     pays.set(p.direccion, { confirmed: 10_500n, mempool: [] });
-    assert.equal(await state(), 'incompleto');
-    pays.set(p.direccion, { confirmed: 21_000n, mempool: [] });
     assert.equal(await state(), 'confirmado');
   });
 
@@ -498,7 +494,7 @@ describe('Cuentas con passkey', () => {
     const admin = await signUp('admin@example.com');
     const get = async () => (await (await req('/api/admin/cobro', undefined, admin.cookie)).json()) as {
       cobroActivo: boolean; llave: { huella: string; direcciones: string[] } | null; llaveNueva: { huella: string; vigenteDesde: string } | null;
-      productos: Array<{ codigo: string; precioUsd: number }>; registro: Array<{ accion: string; detalle: string }>;
+      productos: Array<{ codigo: string; precioSats: string }>; registro: Array<{ accion: string; detalle: string }>;
     };
     assert.equal((await get()).llave, null);
     const root = masterRootFromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');
@@ -543,9 +539,10 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/admin/cobro', { activo: true }, viaLink)).status, 403);
     assert.deepEqual(await (await req('/api/admin/cobro', { activo: true }, admin.cookie)).json(), { cobroActivo: true });
     assert.equal((await get()).cobroActivo, true);
-    assert.equal((await req('/api/admin/precio', { producto: 'pack10', precioUsd: 12 }, admin.cookie)).status, 200);
-    assert.equal((await get()).productos.find((p) => p.codigo === 'pack10')?.precioUsd, 12);
-    assert.equal((await req('/api/admin/precio', { producto: 'bienvenida', precioUsd: 1 }, admin.cookie)).status, 404);
+    assert.equal((await req('/api/admin/precio', { producto: 'pack10', precioSats: 12_000 }, admin.cookie)).status, 200);
+    assert.equal((await get()).productos.find((p) => p.codigo === 'pack10')?.precioSats, '12000');
+    assert.equal((await req('/api/admin/precio', { producto: 'pack10', precioSats: 10.5 }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/precio', { producto: 'bienvenida', precioSats: 1000 }, admin.cookie)).status, 404);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'x' }, admin.cookie)).status, 400);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'Regalo por ayudar con las pruebas' }, admin.cookie)).status, 200);
     const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number } };

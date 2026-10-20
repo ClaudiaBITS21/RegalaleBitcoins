@@ -105,7 +105,7 @@ export interface AdminCobro {
   readonly llave: { readonly huella: string; readonly direcciones: readonly string[] } | null;
   readonly llaveNueva: { readonly huella: string; readonly vigenteDesde: string } | null;
   readonly fundadoresQuedan: number;
-  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioUsd: number; readonly activo: boolean }>;
+  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioSats: string; readonly activo: boolean }>;
   readonly pagos: ReadonlyArray<{ readonly id: string; readonly producto: string; readonly estado: string; readonly precioUsd: number; readonly sats: string; readonly satsRecibidos: string; readonly creado: string; readonly confirmado: string | null }>;
   readonly totales: { readonly confirmados: number; readonly usd: number; readonly sats: string };
   readonly registro: ReadonlyArray<{ readonly email: string; readonly accion: string; readonly detalle: string; readonly fecha: string }>;
@@ -116,7 +116,7 @@ export interface Products {
   readonly cobroActivo: boolean;
   readonly seVende: boolean;
   readonly fundadoresQuedan: number;
-  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioUsd: number; readonly seVendeSuelto: boolean }>;
+  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioSats: string; readonly seVendeSuelto: boolean }>;
 }
 
 /** Saldo de créditos de la cuenta («Mi plan»). */
@@ -132,12 +132,12 @@ export interface Credits {
 export interface Purchase {
   readonly id: string;
   readonly producto: string;
+  /** Valor de referencia en dólares al crear el pago (0 si no había cotización). Se cobra en sats. */
   readonly precioUsd: number;
   readonly sats: string;
   readonly direccion: string;
   readonly estado: 'pendiente' | 'visto' | 'confirmado' | 'incompleto' | 'vencido' | 'devuelto';
   readonly satsRecibidos: string;
-  readonly venceCotizacion: string;
 }
 
 const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -161,7 +161,7 @@ export const api = {
   adminKeyPreview: (llave: string) => post<{ huella: string; direcciones: string[] }>('/api/admin/llave/vista', { llave }),
   adminSetKey: (llave: string) => post<{ huella: string; pendiente: boolean }>('/api/admin/llave', { llave }),
   adminSetCharging: (activo: boolean) => post<{ cobroActivo: boolean }>('/api/admin/cobro', { activo }),
-  adminSetPrice: (producto: string, precioUsd: number) => post<{ precioUsd: number }>('/api/admin/precio', { producto, precioUsd }),
+  adminSetPrice: (producto: string, precioSats: number) => post<{ precioSats: string }>('/api/admin/precio', { producto, precioSats }),
   adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true }>('/api/admin/ajuste', a),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),

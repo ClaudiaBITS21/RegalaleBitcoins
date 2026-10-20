@@ -116,10 +116,23 @@ La identidad es la **cuenta que ya existe** (mail + passkey). Los créditos se a
 - Cambiar el mail de la cuenta: con la passkey o con las 12 palabras (a confirmar por Rodolfo).
   Necesita sumar una «llave de cuenta» a `docs/derivacion.md`.
 
+## Cambio de Rodolfo del 20/10: precios en sats
+
+Reemplaza «precios en USD» y la cotización de 30 minutos (puntos de arriba). Los precios se fijan
+en sats: pack 10.500 (10,5K), lista de cumple 10.500, pack con lista 21.000 (21K), anual 42.000
+(42K), fundador 210.000 (210K). Debajo de cada precio, su valor de hoy en dólares, solo como
+referencia. Así lo que llega es exactamente lo que se pidió, sin desvío por la cotización, y el
+mensaje es claro: acá se paga en bitcoin.
+
+- Migración `016_precios_en_sats.sql`: `productos.precio_sats`; el admin edita los precios en sats.
+- Un pago pide `precio_sats` y ya no vence: se puede pagar cuando sea (se sigue mirando la
+  dirección 14 días). El valor en dólares del momento queda guardado como referencia.
+- Un lugar de fundador queda reservado 1 día mientras su pago está pendiente.
+
 ## Qué quedó (código)
 
-- Página `/precios` (`apps/web/src/precios.tsx`): los productos de la tabla, en dólares y con su
-  valor de hoy en sats (cotización de `/api/precio`). `lista_otras` no se muestra suelta: va como
+- Página `/precios` (`apps/web/src/precios.tsx`): los productos de la tabla, en sats («10,5K
+  sats») y con su valor de hoy en dólares debajo (cotización de `/api/precio`). `lista_otras` no se muestra suelta: va como
   «Lista para cualquier ocasión», con 10 regalos por el mismo precio. «Precios» como link directo
   en el menú (compu y celular) y en el pie.
 - Mientras el cobro no esté activo (`COBRO_ACTIVO` en `precios.tsx`), la página avisa: «Mientras
