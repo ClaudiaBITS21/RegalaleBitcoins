@@ -13,7 +13,7 @@ export function usePlanFeatures(): boolean | null {
     let alive = true;
     api
       .creditsIfSignedIn()
-      .then(async (c) => (c !== null ? c.conPlan : !(await api.products()).cobroActivo))
+      .then(async (c) => (c !== null ? (c.conPlan ?? true) : !(await api.products()).cobroActivo))
       .then((v) => alive && setWith(v))
       .catch(() => alive && setWith(true));
     return () => {

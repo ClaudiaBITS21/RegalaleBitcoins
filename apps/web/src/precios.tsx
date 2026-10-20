@@ -49,7 +49,8 @@ const PRODUCTOS: readonly Producto[] = [
 
 function contenido(p: Producto, vivos: Products | null): Contenido {
   const v = vivos?.productos.find((x) => x.codigo === p.codigo);
-  if (v === undefined) return p.base;
+  // Sin precio en sats (API anterior), los de la tabla.
+  if (v === undefined || typeof v.precioSats !== 'string') return p.base;
   return {
     sats: BigInt(v.precioSats),
     regalos: v.regalosLibres ? null : v.regalos,
