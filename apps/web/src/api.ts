@@ -99,13 +99,25 @@ export interface AdminSummary {
   readonly reclamos: { reclamados: number; recuperados: number; programadosEsperando: number };
 }
 
+/** Qué incluye un producto, en el admin: regalos null = libres; dias null = para siempre; cupo null = sin límite. */
+export interface AdminProduct {
+  readonly codigo: string;
+  readonly precioSats: string;
+  readonly activo: boolean;
+  readonly plan: string | null;
+  readonly regalos: number | null;
+  readonly listas: number;
+  readonly dias: number | null;
+  readonly cupo: number | null;
+}
+
 /** Admin del cobro: la llave se ve solo por su huella y sus primeras direcciones. */
 export interface AdminCobro {
   readonly cobroActivo: boolean;
   readonly llave: { readonly huella: string; readonly direcciones: readonly string[] } | null;
   readonly llaveNueva: { readonly huella: string; readonly vigenteDesde: string } | null;
   readonly fundadoresQuedan: number;
-  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioSats: string; readonly activo: boolean }>;
+  readonly productos: ReadonlyArray<AdminProduct>;
   readonly pagos: ReadonlyArray<{ readonly id: string; readonly producto: string; readonly estado: string; readonly precioUsd: number; readonly sats: string; readonly satsRecibidos: string; readonly creado: string; readonly confirmado: string | null }>;
   readonly totales: { readonly confirmados: number; readonly usd: number; readonly sats: string };
   readonly registro: ReadonlyArray<{ readonly email: string; readonly accion: string; readonly detalle: string; readonly fecha: string }>;
@@ -116,7 +128,18 @@ export interface Products {
   readonly cobroActivo: boolean;
   readonly seVende: boolean;
   readonly fundadoresQuedan: number;
-  readonly productos: ReadonlyArray<{ readonly codigo: string; readonly precioSats: string; readonly seVendeSuelto: boolean }>;
+  readonly productos: ReadonlyArray<{
+    readonly codigo: string;
+    readonly precioSats: string;
+    readonly regalos: number;
+    readonly listasCumple: number;
+    readonly listasOtras: number;
+    readonly plan: 'anual' | 'fundador' | null;
+    readonly regalosLibres: boolean;
+    readonly dias: number | null;
+    readonly cupo: number | null;
+    readonly seVendeSuelto: boolean;
+  }>;
 }
 
 /** Saldo de créditos de la cuenta («Mi plan»). */
@@ -125,7 +148,7 @@ export interface Credits {
   readonly puedeRegalar: boolean;
   readonly regalos: { readonly bienvenida: number; readonly pagos: number };
   readonly listas: { readonly cumple: number; readonly otras: number };
-  readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null } | null;
+  readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
 }
 
 /** Un pago del costo por servicio. */
@@ -161,6 +184,7 @@ export const api = {
   adminKeyPreview: (llave: string) => post<{ huella: string; direcciones: string[] }>('/api/admin/llave/vista', { llave }),
   adminSetKey: (llave: string) => post<{ huella: string; pendiente: boolean }>('/api/admin/llave', { llave }),
   adminSetCharging: (activo: boolean) => post<{ cobroActivo: boolean }>('/api/admin/cobro', { activo }),
+  adminSetProduct: (p: Omit<AdminProduct, 'codigo' | 'precioSats' | 'activo' | 'plan'> & { producto: string }) => post<{ ok: true }>('/api/admin/producto', p),
   adminSetPrice: (producto: string, precioSats: number) => post<{ precioSats: string }>('/api/admin/precio', { producto, precioSats }),
   adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true }>('/api/admin/ajuste', a),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),

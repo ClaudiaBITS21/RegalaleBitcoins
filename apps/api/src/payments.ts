@@ -18,7 +18,6 @@ type Tx = Sql | postgres.TransactionSql;
 const TOLERANCE = 0.98;
 /** Lo que se vende suelto; «lista_otras» va como pack con 10 regalos (existe para upgrades y códigos). */
 export const BUYABLE = ['pack10', 'pack10_lista', 'lista_cumple', 'anual', 'fundador'] as const;
-export const FOUNDERS_MAX = 100;
 /** Pagos que se siguen mirando: dos semanas desde que se crearon. */
 const WATCH_DAYS = 14;
 
@@ -120,11 +119,21 @@ export function keyFingerprint(key: AccountKey): string {
   return m?.[1]?.toLowerCase() ?? Buffer.from(key.hd.identifier ?? new Uint8Array()).toString('hex').slice(0, 8);
 }
 
+/**
+ * Cuántos quedan de un producto con cupo (Genesis Block: 21): el cupo menos los pagos confirmados y
+ * los que están en curso (reservan su lugar 1 día). null = sin límite.
+ */
+export async function unitsLeft(sql: Tx, product: string): Promise<number | null> {
+  const [r] = await sql<{ cupo: number | null; n: string }[]>`
+    select (select cupo from productos where codigo = ${product}) as cupo,
+           (select count(*) from pagos where producto = ${product}
+              and (estado = 'confirmado' or (estado in ('pendiente', 'visto', 'incompleto') and creado > now() - interval '1 day'))) as n`;
+  return r?.cupo == null ? null : Math.max(0, r.cupo - Number(r.n));
+}
+
+/** Lugares de fundador (Genesis Block) que quedan. */
 export async function foundersLeft(sql: Tx): Promise<number> {
-  const [r] = await sql<{ n: string }[]>`
-    select (select count(*) from planes where tipo = 'fundador') +
-           (select count(*) from pagos where producto = 'fundador' and estado in ('pendiente', 'visto', 'incompleto') and creado > now() - interval '1 day') as n`;
-  return Math.max(0, FOUNDERS_MAX - Number(r?.n ?? 0));
+  return (await unitsLeft(sql, 'fundador')) ?? 1_000_000;
 }
 
 export async function createPayment(deps: { sql: Sql; price: PriceClient; network: Network }, accountId: string, product: string): Promise<Payment> {
@@ -141,7 +150,8 @@ export async function createPayment(deps: { sql: Sql; price: PriceClient; networ
     await tx`select pg_advisory_xact_lock(hashtext('pagos'))`;
     const key = await paymentKey(tx, network);
     if (key === null) throw new ApiError(409, 'cobro_no_configurado');
-    if (product === 'fundador' && (await foundersLeft(tx)) <= 0) throw new ApiError(409, 'fundadores_agotados');
+    const left = await unitsLeft(tx, product);
+    if (left !== null && left <= 0) throw new ApiError(409, product === 'fundador' ? 'fundadores_agotados' : 'agotado');
     const [n] = await tx<{ next: number }[]>`select coalesce(max(indice) + 1, 0)::int as next from pagos where llave = ${key.text}`;
     const index = n?.next ?? 0;
     const address = deriveListAddress(key, index).address;
@@ -159,19 +169,28 @@ export async function findPayment(sql: Tx, id: string): Promise<Payment | null> 
   return r === undefined ? null : fromRow(r);
 }
 
-/** Lo que otorga el producto: créditos en movimientos o un plan. */
+/** Lo que otorga el producto: créditos en movimientos o un plan (con el cupo que tiene hoy el producto). */
 async function grant(tx: Tx, payment: Payment): Promise<void> {
-  const [p] = await tx<{ regalos: number; listas_cumple: number; listas_otras: number; plan: 'anual' | 'fundador' | null }[]>`
-    select regalos, listas_cumple, listas_otras, plan from productos where codigo = ${payment.product}`;
+  const [p] = await tx<{ regalos: number; listas_cumple: number; listas_otras: number; plan: 'anual' | 'fundador' | null; regalos_libres: boolean; dias: number | null }[]>`
+    select regalos, listas_cumple, listas_otras, plan, regalos_libres, dias from productos where codigo = ${payment.product}`;
   if (p === undefined) throw new Error(`Producto desconocido: ${payment.product}`);
+  if (p.plan !== null) {
+    await tx`
+      insert into planes (usuario_id, tipo, hasta, regalos, listas, referencia)
+      values (${payment.accountId}, ${p.plan}, ${p.dias === null ? null : daysFromNow(p.dias)}, ${p.regalos_libres ? null : p.regalos},
+              ${p.listas_cumple + p.listas_otras}, ${payment.id})`;
+    return;
+  }
   for (const [unidad, cantidad] of [['regalo', p.regalos], ['lista_cumple', p.listas_cumple], ['lista_otras', p.listas_otras]] as const) {
     if (cantidad <= 0) continue;
     await tx`
       insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
       values (${payment.accountId}, 'compra', ${unidad}, ${cantidad}, 'pago', ${payment.id})`;
   }
-  if (p.plan === 'anual') await tx`insert into planes (usuario_id, tipo, hasta, referencia) values (${payment.accountId}, 'anual', now() + interval '365 days', ${payment.id})`;
-  if (p.plan === 'fundador') await tx`insert into planes (usuario_id, tipo, hasta, referencia) values (${payment.accountId}, 'fundador', null, ${payment.id})`;
+}
+
+function daysFromNow(days: number): Date {
+  return new Date(Date.now() + days * 86_400_000);
 }
 
 /**

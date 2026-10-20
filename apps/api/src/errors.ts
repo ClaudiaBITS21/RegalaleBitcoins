@@ -22,6 +22,7 @@ export type ErrorCode =
   | 'producto_invalido'
   | 'cobro_no_configurado'
   | 'fundadores_agotados'
+  | 'agotado'
   | 'passkey_requerida'
   | 'sin_creditos'
   | 'direccion_invalida'

@@ -56,7 +56,8 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     // Primero la llave vigente: si un cambio ya cumplió las 24 h, lo pasa a vigente antes de leer el pendiente.
     const key = await paymentKey(sql, network);
     const [charging, pending, founders] = await Promise.all([chargingActive(sql), pendingPaymentKey(sql, network), foundersLeft(sql)]);
-    const productos = await sql<{ codigo: string; precio_sats: string; activo: boolean }[]>`select codigo, precio_sats, activo from productos order by precio_sats, codigo`;
+    const productos = await sql<{ codigo: string; precio_sats: string; activo: boolean; regalos: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null }[]>`
+      select codigo, precio_sats, activo, regalos, listas_otras, plan, regalos_libres, dias, cupo from productos order by precio_sats, codigo`;
     const pagos = await sql<{ id: string; producto: string; estado: string; sats: string; sats_recibidos: string; precio_cents: number; creado: Date; confirmado: Date | null }[]>`
       select id, producto, estado, sats, sats_recibidos, precio_cents, creado, confirmado from pagos order by creado desc limit 50`;
     const [totales] = await sql<{ confirmados: string; usd: string | null; sats: string | null }[]>`
@@ -68,7 +69,16 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       llave: key === null ? null : { huella: keyFingerprint(key), direcciones: [0, 1, 2].map((i) => deriveListAddress(key, i).address) },
       llaveNueva: pending === null ? null : { huella: keyFingerprint(pending.key), vigenteDesde: pending.from.toISOString() },
       fundadoresQuedan: founders,
-      productos: productos.map((p) => ({ codigo: p.codigo, precioSats: p.precio_sats, activo: p.activo })),
+      productos: productos.map((p) => ({
+        codigo: p.codigo,
+        precioSats: p.precio_sats,
+        activo: p.activo,
+        plan: p.plan,
+        regalos: p.regalos_libres ? null : p.regalos,
+        listas: p.listas_otras,
+        dias: p.dias,
+        cupo: p.cupo,
+      })),
       pagos: pagos.map((p) => ({
         id: p.id,
         producto: p.producto,
@@ -141,6 +151,34 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     await sql`update productos set precio_sats = ${precioSats} where codigo = ${producto}`;
     await log(account, 'precio', `${producto}: ${antes.precio_sats} → ${precioSats} sats`);
     return c.json({ producto, precioSats: String(precioSats) });
+  });
+
+  /**
+   * Qué incluye un producto (los valores y límites pueden cambiar, Rodolfo 20/10): regalos (null =
+   * libres, solo en planes), listas, días de vigencia (null = para siempre, solo en planes) y cupo
+   * (null = sin límite). Un plan ya comprado conserva lo que incluía.
+   */
+  app.post('/api/admin/producto', async (c) => {
+    const account = await admin(c, true);
+    const { producto, regalos, listas, dias, cupo } = await body(c);
+    const count = (v: unknown, max: number, nullable: boolean) => (v === null && nullable) || (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max);
+    if (typeof producto !== 'string' || !count(regalos, 10_000, true) || !count(listas, 1000, false) || !count(dias, 36_500, true) || dias === 0 || !count(cupo, 1_000_000, true)) {
+      throw new ApiError(400, 'pedido_invalido');
+    }
+    const [antes] = await sql<{ plan: string | null; regalos: number; regalos_libres: boolean; listas_otras: number; dias: number | null; cupo: number | null }[]>`
+      select plan, regalos, regalos_libres, listas_otras, dias, cupo from productos where codigo = ${producto} and codigo <> 'bienvenida'`;
+    if (antes === undefined) throw new ApiError(404, 'no_encontrado');
+    // Regalos libres y vigencia solo tienen sentido en un plan: los créditos sueltos no vencen.
+    if (antes.plan === null && (regalos === null || dias !== null)) throw new ApiError(400, 'pedido_invalido');
+    const libres = regalos === null;
+    await sql`
+      update productos set regalos = ${libres ? 0 : (regalos as number)}, regalos_libres = ${libres}, listas_otras = ${listas as number},
+        dias = ${dias as number | null}, cupo = ${cupo as number | null}
+      where codigo = ${producto}`;
+    const fmt = (r: number | null, l: number, d: number | null, k: number | null) =>
+      `regalos ${r ?? 'libres'}, listas ${l}, días ${d ?? 'siempre'}, cupo ${k ?? 'sin límite'}`;
+    await log(account, 'producto', `${producto}: ${fmt(antes.regalos_libres ? null : antes.regalos, antes.listas_otras, antes.dias, antes.cupo)} → ${fmt(regalos as number | null, listas as number, dias as number | null, cupo as number | null)}`);
+    return c.json({ ok: true });
   });
 
   /** Otorgar o quitar créditos a una cuenta, con motivo. */

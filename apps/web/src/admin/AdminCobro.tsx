@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type AdminCobro, ApiFailure, api } from '../api.ts';
+import { type AdminCobro, type AdminProduct, ApiFailure, api } from '../api.ts';
 import { formatSats, formatUsdPrice } from '../format.ts';
 import { Button, Notice, useI18n } from '../ui.tsx';
 
@@ -153,32 +153,25 @@ export function AdminCobroPanel() {
         </div>
       )}
 
-      <h3>Precios</h3>
+      <h3>Precios y qué incluye cada producto</h3>
+      <p class="texto-suave">Precio en sats enteros. Regalos vacío = libres (solo planes); días vacío = para siempre (solo planes); cupo vacío = sin límite. Un plan ya comprado conserva lo que incluía.</p>
       <table class="admin-tabla">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Regalos</th>
+            <th>Listas</th>
+            <th>Días</th>
+            <th>Cupo</th>
+            <th />
+          </tr>
+        </thead>
         <tbody>
           {data.productos
-            .filter((p) => p.codigo !== 'bienvenida')
+            .filter((p) => p.codigo !== 'bienvenida' && p.activo)
             .map((p) => (
-              <tr key={p.codigo}>
-                <td>{p.codigo}</td>
-                <td>{sats(p.precioSats)}</td>
-                <td>
-                  <button
-                    type="button"
-                    class="boton-texto"
-                    disabled={busy}
-                    onClick={() => {
-                      const nuevo = window.prompt(`Precio nuevo de ${p.codigo} en sats (solo números, sin puntos):`, p.precioSats);
-                      if (nuevo === null) return;
-                      if (!/^\d{1,9}$/.test(nuevo.trim()) || Number(nuevo) <= 0) return setError('Precio inválido: en sats enteros, sin puntos.');
-                      const v = Number(nuevo.trim());
-                      void run(() => api.adminSetPrice(p.codigo, v));
-                    }}
-                  >
-                    Cambiar
-                  </button>
-                </td>
-              </tr>
+              <ProductRow key={`${p.codigo}-${p.precioSats}-${p.regalos}-${p.listas}-${p.dias}-${p.cupo}`} product={p} busy={busy} onError={setError} run={run} />
             ))}
         </tbody>
       </table>
@@ -289,5 +282,50 @@ export function AdminCobroPanel() {
         ))}
       </ul>
     </section>
+  );
+}
+
+/** Una fila editable de producto: precio y contenido (los valores y límites pueden cambiar). */
+function ProductRow({ product: p, busy, onError, run }: { product: AdminProduct; busy: boolean; onError: (e: string) => void; run: (fn: () => Promise<unknown>) => Promise<void> }) {
+  const opt = (n: number | null) => (n === null ? '' : String(n));
+  const [precio, setPrecio] = useState(p.precioSats);
+  const [regalos, setRegalos] = useState(opt(p.regalos));
+  const [listas, setListas] = useState(String(p.listas));
+  const [dias, setDias] = useState(opt(p.dias));
+  const [cupo, setCupo] = useState(opt(p.cupo));
+  // Solo enteros sin separadores: nada de parseFloat sobre lo que se tipea.
+  const entero = (v: string) => (/^\d{1,9}$/.test(v.trim()) ? Number(v.trim()) : undefined);
+  const nullable = (v: string) => (v.trim() === '' ? null : entero(v));
+  const guardar = () => {
+    const [pr, r, l, d, k] = [entero(precio), nullable(regalos), entero(listas), nullable(dias), nullable(cupo)];
+    if (pr === undefined || pr <= 0 || r === undefined || l === undefined || d === undefined || d === 0 || k === undefined) return onError('Valores inválidos: números enteros, sin puntos.');
+    if (p.plan === null && (r === null || d !== null)) return onError('Regalos libres y días de vigencia son solo para planes.');
+    void run(async () => {
+      if (String(pr) !== p.precioSats) await api.adminSetPrice(p.codigo, pr);
+      await api.adminSetProduct({ producto: p.codigo, regalos: r, listas: l, dias: d, cupo: k });
+    });
+  };
+  const campo = (value: string, set: (v: string) => void, label: string) => (
+    <td>
+      <input class="admin-numero" inputMode="numeric" aria-label={`${label} de ${p.codigo}`} value={value} onInput={(e) => set((e.target as HTMLInputElement).value)} size={7} />
+    </td>
+  );
+  return (
+    <tr>
+      <td>
+        {p.codigo}
+        {p.plan !== null && ' (plan)'}
+      </td>
+      {campo(precio, setPrecio, 'Precio en sats')}
+      {campo(regalos, setRegalos, 'Regalos')}
+      {campo(listas, setListas, 'Listas')}
+      {campo(dias, setDias, 'Días')}
+      {campo(cupo, setCupo, 'Cupo')}
+      <td>
+        <button type="button" class="boton-texto" disabled={busy} onClick={guardar}>
+          Guardar
+        </button>
+      </td>
+    </tr>
   );
 }
