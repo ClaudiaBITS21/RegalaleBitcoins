@@ -220,23 +220,35 @@ try {
   await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
-  // Otro monto en castellano: el punto es de miles y la coma, de decimales.
+  // Desde Argentina arranca en pesos, con sugeridos redondos y los sats en chico abajo.
+  if ((await page.getByRole('button', { name: 'En pesos' }).getAttribute('aria-pressed')) !== 'true') fail('en es-AR el monto no arranca en pesos');
+  const ars100k = page.locator('.opcion-monto', { hasText: /^\$\s100\.000/ });
+  if ((await ars100k.locator('.opcion-monto-sats').innerText()) !== '62.500 sats') fail('el sugerido en pesos no muestra sus sats');
+  await ars100k.click();
+  await page.getByText('Vas a regalar 62.500 sats.').waitFor();
+  await page.getByText('Hoy equivale a $ 100.000.').waitFor();
+  await shot('r3-cuanto-sugeridos');
+  // En sats, sugeridos redondos (25.000, 50.000, 100.000) con su equivalente en dólares en chico.
+  await page.getByRole('button', { name: 'En sats' }).click();
+  const sats25 = page.locator('.opcion-monto', { hasText: /^25\.000 sats/ });
+  if ((await sats25.locator('.opcion-monto-sats').innerText()).replace(/\s/g, ' ') !== 'US$ 25,00') fail('el sugerido en sats no muestra su equivalente en dólares');
+  await page.getByRole('button', { name: 'En pesos' }).click();
+  // Otro monto en pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
   await page.getByRole('button', { name: 'Otro monto' }).click();
+  await page.getByLabel('Monto', { exact: true }).fill('40.000');
+  await page.getByText('Vas a regalar 25.000 sats.').waitFor();
+  await page.getByText('Hoy equivale a $ 40.000.').waitFor();
+  await page.getByText('Cotización: 1 BTC = $ 160.000.000 (mediana del precio de compra en exchanges argentinos, según CriptoYa). Cálculo: $ 40.000 ÷ $ 160.000.000 × 100.000.000 = 25.000 sats.').waitFor();
+  await shot('r3-cuanto-pesos');
+  // En dólares, el punto es de miles y la coma, de decimales.
+  await page.getByRole('button', { name: 'En dólares' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('1.5');
   await page.getByText('No entendimos el número. Escribilo así: US$ 1.234,50.').waitFor();
   await page.getByLabel('Monto', { exact: true }).fill('150');
   await page.getByText('Por ahora, el máximo por regalo es US$ 100.').waitFor();
-  // En pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
-  await page.getByRole('button', { name: 'En pesos' }).click();
-  await page.getByLabel('Monto', { exact: true }).fill('40.000');
-  await page.getByText('Vas a regalar $ 40.000,00.').waitFor();
-  await page.getByText('Hoy equivale a 25.000 sats · US$ 25,00.').waitFor();
-  await page.getByText('Cotización: 1 BTC = $ 160.000.000,00 (mediana del precio de compra en exchanges argentinos, según CriptoYa). Cálculo: $ 40.000,00 ÷ $ 160.000.000,00 × 100.000.000 = 25.000 sats.').waitFor();
-  await shot('r3-cuanto-pesos');
-  await page.getByRole('button', { name: 'En dólares' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('30,5');
-  await page.getByText('Vas a regalar US$ 30,50.').waitFor();
-  await page.getByText('Hoy equivale a 30.500 sats.').waitFor();
+  await page.getByText('Vas a regalar 30.500 sats.').waitFor();
+  await page.getByText('Hoy equivale a US$ 30,50.').waitFor();
   await shot('r3-cuanto');
   await page.getByRole('button', { name: 'Seguir' }).click();
 
@@ -388,6 +400,7 @@ try {
   await giver.locator('.ia-vista img').waitFor({ timeout: 10_000 });
   await shot2(giver, 'r2-ia');
   await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('button', { name: 'En dólares' }).click();
   await giver.getByRole('button', { name: 'US$ 25' }).click();
   await giver.getByRole('button', { name: 'Seguir' }).click();
   await giver.getByRole('heading', { name: 'Guardá tu regalo' }).waitFor();
@@ -451,6 +464,7 @@ try {
   await other.goto(`${BASE}/regalar?ocasion=cumple`);
   await other.getByLabel('Su nombre').fill('Nico');
   await other.getByRole('button', { name: 'Seguir' }).click();
+  await other.getByRole('button', { name: 'En dólares' }).click();
   await other.getByRole('button', { name: 'US$ 5' }).click();
   await other.getByRole('button', { name: 'Seguir' }).click();
   await other.getByLabel('Tu mail').fill('LUPE.e2e@example.com');
@@ -506,6 +520,7 @@ try {
   await shot2(guest, 'l2-invitado');
   await guest.getByRole('button', { name: 'Regalar bitcoin' }).click();
   // Lista con billetera propia: sin tope, con sugeridos de 50, 100 y 150 dólares.
+  await guest.getByRole('button', { name: 'En dólares' }).click();
   for (const usd of ['US$ 50', 'US$ 100']) await guest.getByRole('button', { name: usd }).waitFor();
   await guest.getByRole('button', { name: 'US$ 150' }).click();
   await guest.getByRole('button', { name: 'Seguir' }).click();
