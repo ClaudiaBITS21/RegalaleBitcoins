@@ -73,3 +73,6 @@ en Recibir, a definir); en el pie, Términos,
 Privacidad, Botón de arrepentimiento, Cómo operamos, Contacto y Prensa. `MAIL_FROM` es
 configuración de Cloud Run (la cambia Rodolfo). La marca en la tarjeta imprimible y en los mails
 va «a secas» (no tienen color).
+
+Cambio de Rodolfo del 21/10: «Seguridad» sale del menú de arriba y va al pie, en negrita, junto
+a «Media Kit y Prensa» y «Política de privacidad».
