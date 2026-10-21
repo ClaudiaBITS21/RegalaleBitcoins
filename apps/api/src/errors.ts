@@ -4,6 +4,8 @@ export type ErrorCode =
   | 'regalo_no_encontrado'
   | 'regalo_no_disponible'
   | 'pedido_invalido'
+  | 'ya_es_admin'
+  | 'admin_fijo'
   | 'transaccion_invalida'
   | 'fondos_cambiaron'
   | 'ya_reclamado'

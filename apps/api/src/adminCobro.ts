@@ -1,6 +1,7 @@
 import { deriveListAddress, isCoreError, type Network, parsePaymentKey } from '@regalale/core';
 import type { Context, Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
+import { adminEmails as allAdmins, isAdmin } from './admins.ts';
 import type { Account } from './accounts.ts';
 import { chargingActive, setChargingActive } from './credits.ts';
 import type { Sql } from './db.ts';
@@ -28,7 +29,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
   const admin = async (c: Context, passkey = false): Promise<Account> => {
     const account = await currentAccount(sql, c);
     if (account === null) throw new ApiError(401, 'sesion_requerida');
-    if (!adminEmails.includes(account.email.toLowerCase())) throw new ApiError(404, 'no_encontrado');
+    if (!(await isAdmin(sql, adminEmails, account.email))) throw new ApiError(404, 'no_encontrado');
     if (passkey && account.viaPasskey !== true) throw new ApiError(403, 'passkey_requerida');
     c.header('cache-control', 'no-store');
     return account;
@@ -36,7 +37,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
   const log = (account: Account, accion: string, detalle: string) =>
     sql`insert into registro_admin (email, accion, detalle) values (${account.email}, ${accion}, ${detalle.slice(0, 500)})`;
   const notify = async (subject: string, text: string) => {
-    for (const to of adminEmails) {
+    for (const to of await allAdmins(sql, adminEmails)) {
       const mail: Mail = { to, subject, text };
       await mailer.send(mail).catch((e: Error) => console.error(`Aviso al admin sin mandar: ${e.message}`));
     }
