@@ -445,6 +445,13 @@ try {
   await giver.locator('.regalo-secretos').waitFor({ timeout: 15_000 });
   if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('el panel no reconstruyó el mismo link');
   if ((await giver.locator('.regalo-secretos .palabras-regalo li strong').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
+  // Desde la ficha se vuelven a copiar las 4 palabras (y el link, por separado).
+  await giver.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await giver.getByRole('button', { name: 'Copiar las 4 palabras' }).click();
+  await giver.getByRole('button', { name: 'Palabras copiadas' }).waitFor();
+  if ((await giver.evaluate(() => navigator.clipboard.readText())) !== lupeWords.map((w, i) => `${i + 1}. ${w}`).join('   ')) fail('«Copiar las 4 palabras» no copió las palabras numeradas');
+  await giver.getByRole('button', { name: 'Copiar el link' }).click();
+  if ((await giver.evaluate(() => navigator.clipboard.readText())) !== lupeLink) fail('«Copiar el link» no copió el link');
   await giver.getByRole('button', { name: 'Recordatorio para mandar' }).click();
   const reminder = await giver.locator('.recordatorio-texto').innerText();
   await giver.getByText('Envío original: link por WhatsApp + palabras en persona').waitFor();

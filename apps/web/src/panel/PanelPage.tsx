@@ -1,6 +1,6 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
-import { WordsList } from '../give/WordsList.tsx';
+import { numberedWords, WordsList } from '../give/WordsList.tsx';
 import { accessErrorCode, accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
@@ -67,6 +67,16 @@ export function PanelPage() {
   const [showCode, setShowCode] = useState(false);
   const [reminder, setReminder] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Link y palabras se copian por separado: nunca van en el mismo mensaje.
+  const [copiedSecret, setCopiedSecret] = useState<'link' | 'palabras' | null>(null);
+  const copySecret = async (text: string, which: 'link' | 'palabras') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSecret(which);
+    } catch {
+      // Quedan a la vista para copiarlos a mano.
+    }
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
@@ -278,6 +288,7 @@ export function PanelPage() {
                       disabled={busy}
                       onClick={async () => {
                         if (open === g.id) return setOpen(null);
+                        setCopiedSecret(null);
                         if ((await unlock()) !== null) setOpen(g.id);
                       }}
                     >
@@ -308,6 +319,14 @@ export function PanelPage() {
                         {link}
                       </p>
                       <WordsList words={derived.passphraseWords} />
+                      <div class="regalo-copiar">
+                        <Button kind="contorno" onClick={() => void copySecret(link, 'link')}>
+                          {t(copiedSecret === 'link' ? 'panel.linkCopiado' : 'panel.copiarLink')}
+                        </Button>
+                        <Button kind="contorno" onClick={() => void copySecret(numberedWords(derived.passphraseWords), 'palabras')}>
+                          {t(copiedSecret === 'palabras' ? 'panel.palabrasCopiadas' : 'panel.copiarPalabras')}
+                        </Button>
+                      </div>
                       <small class="texto-suave">
                         <strong>{t('regalar.mandar.orden')}</strong>
                       </small>
