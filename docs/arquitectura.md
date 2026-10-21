@@ -165,15 +165,38 @@ cada visita sin código arma una clave maestra nueva.
   cualquier billetera al importarlas). Las palabras no se guardan en ningún lado (ni bóveda ni
   servidor) y se borran de la página apenas sale la llave pública: la billetera es solo de ella.
 - Publicar listas es gratis en la beta.
-- **Pesos (excepción aprobada el 17/10/2026, solo en listas):** quien arma la lista puede poner
-  un alias (solo alias, sin CBU) y el titular, con el compromiso de convertir a bitcoin. El
-  invitado elige "Transferir pesos", escribe el monto (sin tope) y recibe alias, titular y un
-  código `RB-XXXX` único para el concepto, más su link privado. La plataforma no recibe ni ve
-  los pesos: quien armó la lista marca anunciada → recibida → convertida (con los sats que
-  compró) y el invitado ve ese estado. El alias solo se muestra después de anunciar
-  (tabla `transferencias`, migración 007).
+- **Transferencias por país** (excepción aprobada el 17/10/2026, solo en listas; por país desde
+  el 21/10, `docs/handoff/2026-10-21/listas-por-pais.md`, regla 5 de `docs/operacion.md`): quien
+  arma la lista elige el país de su cuenta y carga el dato y el titular, con el compromiso de
+  convertir a bitcoin. Argentina: alias o CBU/CVU (con dígitos verificadores), en pesos. Brasil:
+  llave PIX (correo, celular o aleatoria; nunca CPF/CNPJ), en reales. Colombia: llave Bre-B
+  (celular, correo o alfanumérica; nunca cédula), en pesos colombianos. Zona euro: IBAN (mod 97),
+  en euros. Otro: texto libre de hasta 120 caracteres, en la moneda que elija (ISO 4217). Todo se
+  valida en su navegador (`apps/web/src/lists/medios.ts`). El invitado elige "Transferir a su
+  cuenta", escribe el monto (sin tope) y recibe el dato y un código `RB-XXXX` único para el
+  concepto, más su link privado. La plataforma no recibe ni ve la plata ni el dato: quien armó la
+  lista marca anunciada → recibida → convertida y el invitado ve ese estado. Montos en la unidad
+  menor de la moneda de la lista (`transferencias.monto`, migración 025). No se suben comprobantes.
+- **Dato de cobro cifrado** (`apps/web/src/lists/cobro.ts`): el navegador del dueño genera una
+  clave de 32 bytes (`crypto.getRandomValues`) y cifra `{ medio, dato, titular }` (JSON) con
+  AES-256-GCM, IV de 12 bytes al azar y el **id de la lista como dato asociado** (AAD), así un
+  cifrado copiado a otra lista no se abre. Texto guardado: `v1.<iv base64url>.<cifrado+tag
+  base64url>`. El servidor guarda solo eso (`listas.cobro`) y, en claro, país y moneda. La clave
+  viaja en el fragmento del link: `regalalebitcoin.com/l/<id>#<clave base64url>`; el link privado
+  del aporte la suma (`/aporte#<token>.<clave>`). El servidor entrega el cifrado solo al anunciar
+  una transferencia y al consultar el propio aporte; los mails nunca llevan el dato. Si la cuenta
+  tiene bóveda, la clave se guarda además envuelta (`listas.clave_cifrada`) con AES-256-GCM y una
+  llave HKDF-SHA-256 de la clave privada raíz BIP32 de la clave maestra (sal `regalale`, info
+  `regalale-listas-clave-v1`, AAD `clave:<id>`): «Mis listas» la abre con la passkey en cualquier
+  dispositivo. Sin bóveda, queda en el navegador donde se creó, o se pega el link completo. Volver
+  a cargar el dato genera clave y link nuevos (el link viejo sigue sirviendo para bitcoin) y borra
+  el alias en claro de las listas viejas (migración 007). Soporte y admin no ven el dato.
+  Vector de prueba (`apps/web/test/cobro.test.ts`): clave = bytes 0..31
+  (`AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8`), IV = bytes 0..11, lista
+  `AbCdEfGhIjKlMnOpQrStUv`, contenido `{"medio":"iban","dato":"DE89370400440532013000","titular":"Erika Mustermann"}` →
+  `v1.AAECAwQFBgcICQoL.PCC7fqGMrTm3Y_7p0IdaQaGy5kCfWWVefCLdvC5eMIYxIJrIn_QhqkSVTN24twoUzC0J-S-6wqgdrQhcaoqej9BxswmntFQMfTrETJKRVrmKjn2lXbl2bTuuSrd5`.
 - **Compra en tanda** (17/10/2026): cuando quiere, quien armó la lista elige varias transferencias
-  recibidas, carga los sats que compró con ellas y se reparten en proporción a los pesos de cada una
+  recibidas, carga los sats que compró con ellas y se reparten en proporción al monto de cada una (en la unidad menor de la moneda de la lista; una tanda nunca mezcla monedas)
   (bigint; lo que sobra del redondeo va a las de mayor resto, la suma da exacto). Cada invitado ve su
   parte y el total de la compra (`POST /api/cuenta/listas/:id/tanda`, migración 010).
 

@@ -1,9 +1,13 @@
-import { deriveListAddress, type Network, parseAccountKey } from '@regalale/core';
+import { deriveListAddress, masterRootFromMnemonic, type Network, parseAccountKey } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatArsExact, formatSats, parseAmount } from '../format.ts';
+import { formatMinor, formatSats, parseAmount } from '../format.ts';
+import type { Key } from '../i18n/index.ts';
 import { Button, Notice, useI18n } from '../ui.tsx';
+import { type Cobro, LIST_KEY, localListKey, newListKey, openCobro, sealCobro, wrapKeyFor } from './cobro.ts';
+import { checkCobro, CobroFields, type CobroDraft, emptyCobro } from './CobroFields.tsx';
 import { listApi, listUrl, type OwnedList, type Transfer } from './listApi.ts';
+import { mostrarDato, type Pais } from './medios.ts';
 
 // "Mis listas" en el panel: cada lista con su link, lo que llegó y quién regaló qué. El
 // navegador vuelve a derivar cada dirección desde la llave pública: si el servidor mostrara
@@ -17,7 +21,7 @@ function addressIsMine(list: OwnedList, network: Network, index: number, address
   }
 }
 
-/** Reparto de una compra en proporción a los pesos (mismo cálculo que la API, para mostrarlo antes). */
+/** Reparto de una compra en proporción a los montos (mismo cálculo que la API, para mostrarlo antes). */
 function split(sats: bigint, cents: readonly bigint[]): bigint[] {
   const total = cents.reduce((x, y) => x + y, 0n);
   if (total === 0n) return cents.map(() => 0n);
@@ -32,13 +36,12 @@ function split(sats: bigint, cents: readonly bigint[]): bigint[] {
   return shares;
 }
 
-const centsOf = (ars: number) => BigInt(Math.round(ars * 100));
 
 /**
  * Una transferencia en pesos. Anunciada → "Ya me llegó"; recibida → se puede elegir para una
  * compra; convertida → muestra su parte de la compra.
  */
-function TransferRow({ listId, tr, picked, onPick, onDone }: { listId: string; tr: Transfer; picked: boolean; onPick: (on: boolean) => void; onDone: () => void }) {
+function TransferRow({ listId, currency, tr, picked, onPick, onDone }: { listId: string; currency: string; tr: Transfer; picked: boolean; onPick: (on: boolean) => void; onDone: () => void }) {
   const { t, lang } = useI18n();
   const [failed, setFailed] = useState(false);
   return (
@@ -50,7 +53,7 @@ function TransferRow({ listId, tr, picked, onPick, onDone }: { listId: string; t
         <span class="mono">{tr.codigo}</span> · {tr.nombre ?? t('lista.panel.anonimo')}
       </span>
       <span class="lista-aporte-monto">
-        {formatArsExact(tr.montoArs, lang)}
+        {formatMinor(BigInt(tr.monto), currency, lang)}
         {tr.estado === 'convertida' && tr.satsConvertidos !== null && <small class="texto-suave"> → {formatSats(BigInt(tr.satsConvertidos), lang)}</small>}
       </span>
       <span class={`etiqueta-estado estado-${tr.estado}`}>{t(`lista.transf.${tr.estado}`)}</span>
@@ -78,7 +81,7 @@ function TransferRow({ listId, tr, picked, onPick, onDone }: { listId: string; t
 }
 
 /** Las transferencias de una lista y la compra en tanda: elegir recibidas, cargar los sats comprados, repartir. */
-function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
+function Transfers({ list, cobro, onDone }: { list: OwnedList; cobro: Cobro | null; onDone: () => void }) {
   const { t, lang } = useI18n();
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [sats, setSats] = useState('');
@@ -87,8 +90,9 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
   const chosen = list.transferencias.filter((tr) => tr.estado === 'recibida' && picked.has(tr.codigo));
   const parsed = parseAmount(sats, lang, 0);
   const total = parsed.ok && parsed.value >= BigInt(Math.max(1, chosen.length)) ? parsed.value : null;
-  const shares = total === null ? [] : split(total, chosen.map((tr) => centsOf(tr.montoArs)));
-  const pesos = chosen.reduce((x, tr) => x + tr.montoArs, 0);
+  const currency = list.moneda ?? 'ARS';
+  const shares = total === null ? [] : split(total, chosen.map((tr) => BigInt(tr.monto)));
+  const pesos = chosen.reduce((x, tr) => x + BigInt(tr.monto), 0n);
   const received = list.transferencias.some((tr) => tr.estado === 'recibida');
 
   const buy = () => {
@@ -109,7 +113,7 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
   return (
     <div class="lista-transferencias">
       <h3>{t('lista.transf.titulo')}</h3>
-      <p class="texto-suave">{t('lista.transf.alias', { alias: list.alias ?? '' })}</p>
+      {cobro !== null && <p class="texto-suave">{t('lista.transf.alias', { dato: mostrarDato(cobro.medio, cobro.dato) })}</p>}
       {list.transferencias.length === 0 ? (
         <p class="texto-suave">{t('lista.transf.vacio')}</p>
       ) : (
@@ -118,6 +122,7 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
             <TransferRow
               key={tr.codigo}
               listId={list.id}
+              currency={currency}
               tr={tr}
               picked={picked.has(tr.codigo)}
               onPick={(on) =>
@@ -142,7 +147,7 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
           }}
         >
           <strong>{t('lista.tanda.titulo')}</strong>
-          <p class="texto-suave">{chosen.length === 0 ? t('lista.tanda.texto') : t(chosen.length === 1 ? 'lista.tanda.elegida1' : 'lista.tanda.elegidas', { n: String(chosen.length), pesos: formatArsExact(pesos, lang) })}</p>
+          <p class="texto-suave">{chosen.length === 0 ? t('lista.tanda.texto') : t(chosen.length === 1 ? 'lista.tanda.elegida1' : 'lista.tanda.elegidas', { n: String(chosen.length), pesos: formatMinor(pesos, currency, lang) })}</p>
           {chosen.length > 0 && (
             <>
               <label class="campo">
@@ -153,7 +158,7 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
                 <ul class="tanda-reparto">
                   {chosen.map((tr, i) => (
                     <li key={tr.codigo}>
-                      <span class="mono">{tr.codigo}</span> <span>{formatArsExact(tr.montoArs, lang)}</span> → <strong>{formatSats(shares[i] as bigint, lang)}</strong>
+                      <span class="mono">{tr.codigo}</span> <span>{formatMinor(BigInt(tr.monto), currency, lang)}</span> → <strong>{formatSats(shares[i] as bigint, lang)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -171,7 +176,165 @@ function Transfers({ list, onDone }: { list: OwnedList; onDone: () => void }) {
   );
 }
 
-export function MyLists({ network }: { network: Network | null }) {
+/**
+ * Datos de cobro de una lista en el panel (handoff 21/10, «listas por país»): la clave se busca en
+ * este navegador, o en la cuenta (envuelta con la clave maestra: se abre con la passkey), o se
+ * pide el link completo. Con la clave se ve el link para compartir y el dato. «Volver a cargar»
+ * genera una clave nueva: el link ya compartido sigue sirviendo para bitcoin, no para el dato.
+ */
+function ListCobro({ list, master, onUnlock, onCobro, onDone }: { list: OwnedList; master: string | null; onUnlock: () => Promise<string | null>; onCobro: (c: Cobro | null) => void; onDone: () => void }) {
+  const { t } = useI18n();
+  const [key, setKey] = useState<string | null>(() => localListKey.get(list.id));
+  const [cobro, setCobro] = useState<Cobro | null>(null);
+  const [pasted, setPasted] = useState('');
+  const [pasteFailed, setPasteFailed] = useState(false);
+  const [editing, setEditing] = useState(list.alias !== null && list.cobro === null);
+  const [draft, setDraft] = useState<CobroDraft>(() => emptyCobro((list.pais as Pais | null) ?? 'AR'));
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const unwrapWith = async (m: string) => {
+    if (list.claveCifrada === null) return null;
+    return (await wrapKeyFor(masterRootFromMnemonic(m).privateKey as Uint8Array)).unwrap(list.claveCifrada, list.id);
+  };
+  // Con la clave maestra en memoria, la clave guardada en la cuenta se abre sola.
+  useEffect(() => {
+    if (key !== null || master === null) return;
+    void unwrapWith(master).then((k) => {
+      if (k === null) return;
+      localListKey.set(list.id, k);
+      setKey(k);
+    });
+  }, [master]);
+  useEffect(() => {
+    if (key === null || list.cobro === null) return setCobro(list.alias === null ? null : { medio: 'alias', dato: list.alias, titular: list.aliasTitular ?? '' });
+    void openCobro(key, list.id, list.cobro).then(setCobro);
+  }, [key, list.cobro]);
+  useEffect(() => onCobro(cobro), [cobro]);
+
+  const save = async () => {
+    const checked = checkCobro(draft);
+    if (!checked.ok) return;
+    setBusy(true);
+    setFailed(false);
+    try {
+      const k = newListKey();
+      const m = master ?? (await onUnlock().catch(() => null));
+      const clave = m === null ? null : await (await wrapKeyFor(masterRootFromMnemonic(m).privateKey as Uint8Array)).wrap(k, list.id);
+      await listApi.setCobro(list.id, { pais: draft.pais, moneda: checked.moneda, cobro: await sealCobro(k, list.id, checked.cobro), clave });
+      localListKey.set(list.id, k);
+      setKey(k);
+      setEditing(false);
+      onDone();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <form
+        class="caja formulario lista-cobro"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        {list.alias !== null && list.cobro === null && <Notice>{t('lista.panel.recargarViejo')}</Notice>}
+        <CobroFields value={draft} onChange={setDraft} />
+        {(list.cobro !== null || list.alias !== null) && <small class="texto-suave">{t('lista.panel.recargarAviso')}</small>}
+        {failed && <Notice kind="error">{t('regalar.error')}</Notice>}
+        <Button type="submit" disabled={busy || !checkCobro(draft).ok}>
+          {t('lista.panel.guardarDatos')}
+        </Button>
+        {list.cobro !== null && (
+          <button type="button" class="boton-texto" onClick={() => setEditing(false)}>
+            {t('lista.panel.cancelar')}
+          </button>
+        )}
+      </form>
+    );
+  }
+  if (list.cobro === null) return null;
+  if (key === null) {
+    return (
+      <div class="caja lista-cobro">
+        {list.claveCifrada !== null && (
+          <Button kind="contorno" disabled={busy} onClick={() => void onUnlock().then(async (m) => {
+            const k = m === null ? null : await unwrapWith(m);
+            if (k === null) return;
+            localListKey.set(list.id, k);
+            setKey(k);
+          })}>
+            {t('lista.panel.verLinkCompleto')}
+          </Button>
+        )}
+        <form
+          class="formulario"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const k = pasted.trim().split('#')[1] ?? '';
+            setPasteFailed(false);
+            if (!LIST_KEY.test(k)) return setPasteFailed(true);
+            void openCobro(k, list.id, list.cobro as string).then((c) => {
+              if (c === null) return setPasteFailed(true);
+              localListKey.set(list.id, k);
+              setKey(k);
+            });
+          }}
+        >
+          <label class="campo">
+            <span>{t('lista.panel.sinClave')}</span>
+            <input type="url" placeholder={t('lista.panel.pegarLink')} value={pasted} onInput={(e) => setPasted((e.currentTarget as HTMLInputElement).value)} />
+          </label>
+          {pasteFailed && <small class="error-campo">{t('lista.panel.linkNoAbre')}</small>}
+          <Button kind="contorno" type="submit" disabled={pasted.trim() === ''}>
+            {t('lista.panel.usarLink')}
+          </Button>
+        </form>
+        <button type="button" class="boton-texto" onClick={() => setEditing(true)}>
+          {t('lista.panel.recargar')}
+        </button>
+      </div>
+    );
+  }
+  const full = listUrl(list.id, key);
+  return (
+    <div class="caja lista-cobro">
+      <p>{t('lista.panel.linkCompleto')}</p>
+      <p class="mono enlace-regalo" translate={false}>
+        {full}
+      </p>
+      <Button kind="contorno" onClick={() => void navigator.clipboard.writeText(full).then(() => setCopied(true), () => undefined)}>
+        {copied ? t('regalar.pagar.copiado') : t('lista.copiar')}
+      </Button>
+      {cobro !== null && (
+        <p class="texto-suave">
+          {t(`lista.medio.${cobro.medio}` as Key)}: {mostrarDato(cobro.medio, cobro.dato)} · {cobro.titular} · {list.moneda}
+        </p>
+      )}
+      <button type="button" class="boton-texto" onClick={() => setEditing(true)}>
+        {t('lista.panel.recargar')}
+      </button>
+    </div>
+  );
+}
+
+/** Transferencias de una lista: sus datos de cobro (con la clave) y la tanda. */
+function ListMoney({ list, master, onUnlock, onDone }: { list: OwnedList; master: string | null; onUnlock: () => Promise<string | null>; onDone: () => void }) {
+  const [cobro, setCobro] = useState<Cobro | null>(null);
+  return (
+    <>
+      <ListCobro list={list} master={master} onUnlock={onUnlock} onCobro={setCobro} onDone={onDone} />
+      <Transfers list={list} cobro={cobro} onDone={onDone} />
+    </>
+  );
+}
+
+export function MyLists({ network, master = null, onUnlock = async () => null }: { network: Network | null; master?: string | null; onUnlock?: () => Promise<string | null> }) {
   const { t, lang } = useI18n();
   const [lists, setLists] = useState<readonly OwnedList[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -223,7 +386,7 @@ export function MyLists({ network }: { network: Network | null }) {
                   ))}
                 </ul>
               )}
-              {l.alias !== null && <Transfers list={l} onDone={() => void load()} />}
+              {l.moneda !== null && <ListMoney list={l} master={master} onUnlock={onUnlock} onDone={() => void load()} />}
               {l.abierta ? (
                 <Button kind="contorno" onClick={() => void listApi.close(l.id).then(load)}>
                   {t('lista.panel.cerrar')}

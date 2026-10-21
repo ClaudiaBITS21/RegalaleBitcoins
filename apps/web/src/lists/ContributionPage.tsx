@@ -1,35 +1,45 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ALLOW_MAINNET } from '../config.ts';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatArsExact, formatSats } from '../format.ts';
+import { formatMinor, formatSats } from '../format.ts';
 import { Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
+import { type Cobro, LIST_KEY, openCobro } from './cobro.ts';
 import { listApi, type MyGift } from './listApi.ts';
+import { mostrarDato } from './medios.ts';
 
 // "Mi aporte" (/aporte#<token>): el invitado ve solo su propio regalo a una lista. El token
-// va después del # (nunca llega al servidor en la URL) y se borra de la barra al leerlo.
+// va después del # (nunca llega al servidor en la URL) y se borra de la barra al leerlo. En una
+// transferencia, el link trae además la clave de la lista (/aporte#<token>.<clave>) para volver a
+// mostrar el dato de cobro, que llega cifrado.
 
 export function ContributionPage() {
   const { t, lang } = useI18n();
   const [data, setData] = useState<MyGift | null>(null);
   const [missing, setMissing] = useState(false);
+  const [cobro, setCobro] = useState<Cobro | null>(null);
 
   useEffect(() => {
-    const token = window.location.hash.slice(1);
-    if (token !== '') history.replaceState(null, '', window.location.pathname);
+    const [token = '', key = ''] = window.location.hash.slice(1).split('.');
+    if (window.location.hash !== '') history.replaceState(null, '', window.location.pathname);
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
       setMissing(true);
       return;
     }
     listApi
       .mine(token)
-      .then(setData)
+      .then(async (d) => {
+        setData(d);
+        if (d.tipo !== 'transferencia') return;
+        if (d.cobro !== null) setCobro(LIST_KEY.test(key) ? await openCobro(key, d.lista.id, d.cobro) : null);
+        else if (d.alias !== null) setCobro({ medio: 'alias', dato: d.alias, titular: d.titular ?? '' });
+      })
       .catch(() => setMissing(true));
   }, []);
 
   let body;
   if (missing) body = <Notice kind="error">{t('lista.mio.noExiste')}</Notice>;
   else if (data === null) body = <p class="texto-suave cargando">{t('reclamo.cargando')}</p>;
-  else if (data.tipo === 'pesos') {
+  else if (data.tipo === 'transferencia') {
     const stateKey = data.estado === 'convertida' ? 'lista.mio.convertida' : data.estado === 'recibida' ? 'lista.mio.recibida' : 'lista.mio.anunciada';
     body = (
       <div class="paso">
@@ -39,8 +49,14 @@ export function ContributionPage() {
           <p>
             <strong>{data.lista.titulo}</strong>
           </p>
-          <p>{t('lista.mio.montoPesos', { monto: formatArsExact(data.montoArs, lang) })}</p>
-          <p class="texto-suave">{t('lista.mio.datosPesos', { alias: data.alias, titular: data.titular, codigo: data.codigo })}</p>
+          <p>{t('lista.mio.montoPesos', { monto: formatMinor(BigInt(data.monto), data.moneda, lang) })}</p>
+          {cobro !== null ? (
+            <p class="texto-suave">{t('lista.mio.datosPesos', { dato: mostrarDato(cobro.medio, cobro.dato), titular: cobro.titular, codigo: data.codigo })}</p>
+          ) : (
+            <p class="texto-suave">
+              {t('lista.pesos.codigo')}: <span class="mono">{data.codigo}</span>
+            </p>
+          )}
           {data.nombre !== null && <p class="texto-suave">{t('lista.mio.firmado', { nombre: data.nombre })}</p>}
           {data.mensaje !== '' && <p class="texto-suave">“{data.mensaje}”</p>}
         </div>

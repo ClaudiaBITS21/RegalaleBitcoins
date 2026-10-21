@@ -117,6 +117,30 @@ export function fiatCentsToSats(cents: bigint, pricePerBtc: number): bigint {
 export const usdCentsToSats = fiatCentsToSats;
 
 /** Pesos con centavos ("$ 40.000,00"). */
+/**
+ * Un monto en la unidad menor de su moneda (centavos de peso, de real, de euro…), exacto: con
+ * los decimales de la moneda. Para las transferencias de las listas, que son de cualquier país.
+ */
+export function formatMinor(minor: bigint, currency: string, lang: UiLang): string {
+  const nf = new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency });
+  const digits = nf.resolvedOptions().maximumFractionDigits ?? 2;
+  const scale = 10n ** BigInt(digits);
+  const whole = minor / scale;
+  const frac = minor % scale;
+  // Sin pasar por float: el entero (ya agrupado) y los decimales por separado, en el lugar que
+  // les da el formato de la moneda.
+  const integer = new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, maximumFractionDigits: 0 }).format(whole);
+  let out = '';
+  let integerDone = false;
+  for (const p of nf.formatToParts(Number(whole) + (digits > 0 ? 0.1 : 0))) {
+    if (p.type === 'integer' || p.type === 'group') {
+      if (!integerDone) out += integer;
+      integerDone = true;
+    } else out += p.type === 'fraction' ? frac.toString().padStart(digits, '0') : p.value;
+  }
+  return out;
+}
+
 export function formatArsExact(amount: number, lang: UiLang): string {
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'ARS', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }

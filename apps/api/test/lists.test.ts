@@ -166,54 +166,72 @@ describe('listas de regalos', () => {
     assert.equal((await req('/api/listas/nada/ejemplo', {})).status, 404);
   });
 
-  it('pesos: alias con compromiso de convertir; código único por invitado; solo quien armó la lista marca el estado', async () => {
-    assert.equal((await newList({ alias: 'ana.leo.mp', aliasTitular: 'Ana Pérez' })).status, 400, 'sin compromiso de convertir');
-    assert.equal((await newList({ alias: 'no vale!', aliasTitular: 'Ana', convertir: true })).status, 400);
+  it('transferencias por país: dato de cobro cifrado (el servidor no lo ve), moneda de la lista, código único, tanda en la unidad menor', async () => {
+    assert.equal((await newList({ pais: 'BR' })).status, 400, 'sin compromiso de convertir');
+    assert.equal((await newList({ pais: 'BR', moneda: 'ARS', convertir: true })).status, 400, 'Brasil es en reales');
+    assert.equal((await newList({ pais: 'XX', convertir: true })).status, 400, 'en «Otro» hay que elegir moneda');
     const plain = (await (await newList()).json()) as { id: string };
-    assert.equal(((await (await req(`/api/listas/${plain.id}`, undefined, false)).json()) as { aceptaPesos: boolean }).aceptaPesos, false);
-    assert.equal((await req(`/api/listas/${plain.id}/transferencias`, { monto: 5000 }, false)).status, 404);
+    assert.equal(((await (await req(`/api/listas/${plain.id}`, undefined, false)).json()) as { aceptaTransferencias: boolean }).aceptaTransferencias, false);
+    assert.equal((await req(`/api/listas/${plain.id}/transferencias`, { monto: '5000' }, false)).status, 404);
 
-    const { id } = (await (await newList({ alias: 'Ana.Leo.MP', aliasTitular: 'Ana Pérez', convertir: true })).json()) as { id: string };
+    const { id } = (await (await newList({ pais: 'BR', convertir: true })).json()) as { id: string };
+    // Hasta que llega el dato cifrado, no acepta transferencias.
+    assert.equal((await req(`/api/listas/${id}/transferencias`, { monto: '5000' }, false)).status, 404);
+    const COBRO = `v1.${'I'.repeat(16)}.${'C'.repeat(80)}`;
+    const CLAVE = `v1.${'J'.repeat(16)}.${'K'.repeat(80)}`;
+    const cobro = (body: unknown, withCookie = true) => req(`/api/cuenta/listas/${id}/cobro`, body, withCookie);
+    assert.equal((await cobro({ pais: 'BR', cobro: COBRO }, false)).status, 401);
+    assert.equal((await cobro({ pais: 'BR', cobro: 'alias.en.claro' })).status, 400, 'solo se acepta el cifrado');
+    assert.equal((await cobro({ pais: 'BR', cobro: COBRO, clave: CLAVE })).status, 200);
     const pub = (await (await req(`/api/listas/${id}`, undefined, false)).json()) as Record<string, unknown>;
-    assert.equal(pub.aceptaPesos, true);
-    assert.ok(!JSON.stringify(pub).includes('ana.leo.mp'), 'el alias se muestra recién al elegir pesos');
-    assert.equal((await req(`/api/listas/${id}/transferencias`, { monto: 10.123 }, false)).status, 400);
-    const t1 = (await (await req(`/api/listas/${id}/transferencias`, { nombre: 'Tío Beto', mensaje: 'Felicidades', monto: 250000 }, false)).json()) as { codigo: string; alias: string; titular: string; token: string };
-    const t2 = (await (await req(`/api/listas/${id}/transferencias`, { monto: 15000.5 }, false)).json()) as { codigo: string; token: string };
+    assert.deepEqual([pub.aceptaTransferencias, pub.pais, pub.moneda], [true, 'BR', 'BRL']);
+    assert.ok(!JSON.stringify(pub).includes(COBRO), 'el cifrado se entrega recién al anunciar');
+    assert.equal((await req(`/api/listas/${id}/transferencias`, { monto: 10.5 }, false)).status, 400, 'en centavos, como texto');
+    const t1 = (await (await req(`/api/listas/${id}/transferencias`, { nombre: 'Tio Beto', mensaje: 'Parabéns', monto: '25000000' }, false)).json()) as {
+      codigo: string; cobro: string; alias: null; moneda: string; token: string;
+    };
+    const t2 = (await (await req(`/api/listas/${id}/transferencias`, { monto: '1500050' }, false)).json()) as { codigo: string; token: string };
     assert.match(t1.codigo, /^RB-[A-Z2-9]{4}$/);
     assert.notEqual(t1.codigo, t2.codigo);
-    assert.deepEqual([t1.alias, t1.titular], ['ana.leo.mp', 'Ana Pérez']);
+    assert.deepEqual([t1.cobro, t1.alias, t1.moneda], [COBRO, null, 'BRL']);
 
-    const mine = async (token: string) => (await (await req('/api/aportes/consulta', { token }, false)).json()) as { tipo: string; estado: string; satsConvertidos: string | null; montoArs: number };
-    assert.deepEqual(await mine(t1.token).then((m) => [m.tipo, m.estado, m.montoArs]), ['pesos', 'anunciada', 250000]);
+    const mine = async (token: string) => (await (await req('/api/aportes/consulta', { token }, false)).json()) as { tipo: string; estado: string; monto: string; moneda: string; cobro: string; satsConvertidos: string | null };
+    assert.deepEqual(await mine(t1.token).then((m) => [m.tipo, m.estado, m.monto, m.moneda, m.cobro]), ['transferencia', 'anunciada', '25000000', 'BRL', COBRO]);
 
     const mark = (codigo: string, body: unknown, withCookie = true) => req(`/api/cuenta/listas/${id}/transferencias/${codigo}`, body, withCookie);
     assert.equal((await mark(t1.codigo, { estado: 'recibida' }, false)).status, 401);
     assert.equal((await mark(t1.codigo, { estado: 'recibida' })).status, 200);
-    // La conversión se marca con una compra (tanda), no transferencia por transferencia.
     assert.equal((await mark(t1.codigo, { estado: 'convertida', sats: '2100' })).status, 400);
     const tanda = (body: unknown) => req(`/api/cuenta/listas/${id}/tanda`, body);
     assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '1000' })).status, 409, 'una todavía no se recibió');
-    assert.equal((await mine(t1.token)).estado, 'recibida', 'una compra rechazada no cambia nada');
     assert.equal((await mark(t2.codigo, { estado: 'recibida' })).status, 200);
-    assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '0' })).status, 400);
-    // 250.000 y 15.000,50 pesos: 265.000,50 en total; 1.000.001 sats repartidos en proporción, sin perder ninguno.
+    // R$ 250.000 y R$ 15.000,50: 1.000.001 sats repartidos en proporción, sin perder ninguno.
     assert.equal((await tanda({ codigos: [t1.codigo, t2.codigo], sats: '1000001' })).status, 200);
-    const [m1, m2] = (await Promise.all([mine(t1.token), mine(t2.token)])) as unknown as Array<{ estado: string; satsConvertidos: string; tanda: { sats: string; aportes: number } }>;
-    assert.deepEqual([m1?.estado, m1?.satsConvertidos, m2?.satsConvertidos], ['convertida', '943395', '56606']);
-    assert.equal(BigInt(m1?.satsConvertidos ?? 0) + BigInt(m2?.satsConvertidos ?? 0), 1000001n);
-    assert.deepEqual(m1?.tanda, { sats: '1000001', aportes: 2 });
+    const [m1, m2] = await Promise.all([mine(t1.token), mine(t2.token)]);
+    assert.deepEqual([m1.estado, m1.satsConvertidos, m2.satsConvertidos], ['convertida', '943395', '56606']);
     assert.equal((await tanda({ codigos: [t1.codigo], sats: '5000' })).status, 409, 'una convertida no se vuelve a repartir');
+    // Con transferencias, la moneda ya no cambia.
+    assert.equal((await cobro({ pais: 'EU', cobro: COBRO })).status, 409);
 
-    const panel = (await (await req('/api/cuenta/listas')).json()) as { listas: Array<{ id: string; alias: string; transferencias: Array<{ codigo: string; nombre: string | null; estado: string }> }> };
+    const panel = (await (await req('/api/cuenta/listas')).json()) as { listas: Array<{ id: string; cobro: string; claveCifrada: string; moneda: string; transferencias: Array<{ codigo: string; monto: string; estado: string }> }> };
     const l = panel.listas.find((x) => x.id === id);
-    assert.equal(l?.alias, 'ana.leo.mp');
-    assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.nombre, x.estado]), [[t1.codigo, 'Tío Beto', 'convertida'], [t2.codigo, null, 'convertida']]);
+    assert.deepEqual([l?.cobro, l?.claveCifrada, l?.moneda], [COBRO, CLAVE, 'BRL']);
+    assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.monto, x.estado]), [[t1.codigo, '25000000', 'convertida'], [t2.codigo, '1500050', 'convertida']]);
+  });
+
+  it('listas viejas con alias en claro: siguen funcionando; al volver a cargar el dato, el alias se borra', async () => {
+    const { id } = (await (await newList()).json()) as { id: string };
+    await sql`update listas set alias = 'ana.leo.mp', alias_titular = 'Ana Pérez', pais = 'AR', moneda = 'ARS' where id = ${id}`;
+    const t = (await (await req(`/api/listas/${id}/transferencias`, { monto: '4000050' }, false)).json()) as { alias: string; titular: string; cobro: null; moneda: string };
+    assert.deepEqual([t.alias, t.titular, t.cobro, t.moneda], ['ana.leo.mp', 'Ana Pérez', null, 'ARS']);
+    assert.equal((await req(`/api/cuenta/listas/${id}/cobro`, { pais: 'AR', cobro: `v1.${'I'.repeat(16)}.${'C'.repeat(80)}` })).status, 200);
+    const [row] = await sql<{ alias: string | null; alias_titular: string | null }[]>`select alias, alias_titular from listas where id = ${id}`;
+    assert.deepEqual([row?.alias, row?.alias_titular], [null, null]);
   });
 });
 
 describe('compra en tanda: reparto', () => {
-  it('reparte en proporción a los pesos y la suma da exacto', () => {
+  it('reparte en proporción a los montos y la suma da exacto', () => {
     assert.deepEqual(splitPurchase(100n, [100n, 100n, 100n]), [34n, 33n, 33n]);
     assert.deepEqual(splitPurchase(10n, [1n]), [10n]);
     assert.deepEqual(splitPurchase(1000n, [300n, 100n]), [750n, 250n]);

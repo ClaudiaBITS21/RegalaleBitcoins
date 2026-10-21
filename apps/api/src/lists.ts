@@ -38,6 +38,10 @@ interface ListRow {
   id: string;
   alias: string | null;
   alias_titular: string | null;
+  pais: Pais | null;
+  moneda: string | null;
+  cobro: string | null;
+  clave_cifrada: string | null;
   red: string;
   usuario_id: string;
   xpub: string;
@@ -74,7 +78,8 @@ interface TransferRow {
   codigo: string;
   nombre: string | null;
   mensaje: string;
-  monto_ars: string;
+  /** En la unidad menor de la moneda de la lista. */
+  monto: string;
   estado: 'anunciada' | 'recibida' | 'convertida';
   sats_convertidos: string | null;
   tanda_sats: string | null;
@@ -83,8 +88,15 @@ interface TransferRow {
 }
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest();
-/** Alias de Mercado Pago o de un banco argentino: 6 a 20 letras, números, puntos o guiones. */
-export const ALIAS = /^[a-z0-9.-]{6,20}$/;
+/**
+ * Países de las listas que aceptan transferencias y su moneda (handoff 21/10/2026, «listas por
+ * país»). En «Otro» (XX) la moneda la elige el dueño (ISO 4217). El medio y el dato van cifrados.
+ */
+export type Pais = 'AR' | 'BR' | 'CO' | 'EU' | 'XX';
+const COUNTRY_CURRENCY: Readonly<Record<Pais, string | null>> = { AR: 'ARS', BR: 'BRL', CO: 'COP', EU: 'EUR', XX: null };
+/** Dato de cobro cifrado (v1, AES-256-GCM en el navegador del dueño) y clave de la lista envuelta. */
+const SEALED_COBRO = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{40,2000}$/;
+const SEALED_KEY = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{40,200}$/;
 /** Código de referencia para el concepto de la transferencia: sin 0/O ni 1/I para no confundirse. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newCode = () => `RB-${Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('')}`;
@@ -140,16 +152,23 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   idioma: l.idioma,
   abierta: l.cerrada === null,
   topeUsd: listCeiling(l, ceilingUsd),
-  aceptaPesos: l.alias !== null,
+  // Acepta transferencias de persona a persona en la moneda de la lista (el dato va cifrado).
+  aceptaTransferencias: l.cobro !== null || l.alias !== null,
+  pais: l.pais,
+  moneda: l.moneda,
   para: l.para,
   varios: l.varios,
 });
+
+/** Dato para transferir: el cifrado (lo abre el navegador del invitado) o, en listas viejas, el alias en claro. */
+const collectData = (l: Pick<ListRow, 'cobro' | 'alias' | 'alias_titular'>) =>
+  l.cobro !== null ? { cobro: l.cobro, alias: null, titular: null } : { cobro: null, alias: l.alias, titular: l.alias_titular };
 
 const transferView = (r: TransferRow) => ({
   codigo: r.codigo,
   nombre: r.nombre,
   mensaje: r.mensaje,
-  montoArs: Number(r.monto_ars),
+  monto: r.monto.toString(),
   estado: r.estado,
   satsConvertidos: r.sats_convertidos === null ? null : r.sats_convertidos.toString(),
   tanda: r.tanda_sats === null ? null : { sats: r.tanda_sats.toString(), aportes: r.tanda_aportes as number },
@@ -157,8 +176,8 @@ const transferView = (r: TransferRow) => ({
 });
 
 /**
- * Reparte los sats de una compra entre transferencias, en proporción a sus pesos (en centavos,
- * con bigint). Lo que sobra del redondeo va a las de mayor resto, así la suma da exacto.
+ * Reparte los sats de una compra entre transferencias, en proporción a sus montos (en la unidad
+ * menor de la moneda de la lista, con bigint). Lo que sobra del redondeo va a las de mayor resto, así la suma da exacto.
  */
 export function splitPurchase(sats: bigint, centsList: readonly bigint[]): bigint[] {
   const total = centsList.reduce((a, b) => a + b, 0n);
@@ -172,6 +191,18 @@ export function splitPurchase(sats: bigint, centsList: readonly bigint[]): bigin
     left -= 1n;
   }
   return shares;
+}
+
+/** País de la lista y su moneda (fija, o ISO 4217 en «Otro»). */
+function countryAndCurrency(pais: unknown, moneda: unknown): { pais: Pais; moneda: string } {
+  if (typeof pais !== 'string' || !(pais in COUNTRY_CURRENCY)) throw new ApiError(400, 'pedido_invalido', 'pais');
+  const fixed = COUNTRY_CURRENCY[pais as Pais];
+  if (fixed !== null) {
+    if (moneda !== undefined && moneda !== fixed) throw new ApiError(400, 'pedido_invalido', 'moneda');
+    return { pais: pais as Pais, moneda: fixed };
+  }
+  if (typeof moneda !== 'string' || !/^[A-Z]{3}$/.test(moneda)) throw new ApiError(400, 'pedido_invalido', 'moneda');
+  return { pais: pais as Pais, moneda };
 }
 
 export function registerListRoutes(app: Hono, deps: ListDeps): void {
@@ -206,22 +237,44 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     if (typeof b.idioma !== 'string' || !isLang(b.idioma)) throw new ApiError(400, 'pedido_invalido');
     if (typeof b.ocasion !== 'string' || !deps.occasions.includes(b.ocasion)) throw new ApiError(400, 'pedido_invalido');
     const fecha = typeof b.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.fecha) ? b.fecha : null;
-    // Pesos (opcional): alias y titular, y el compromiso explícito de convertirlos a bitcoin.
-    let alias: string | null = null;
-    let holder: string | null = null;
-    if (b.alias !== undefined && b.alias !== null && b.alias !== '') {
-      alias = String(b.alias).trim().toLowerCase();
-      holder = text(b.aliasTitular, 60, true);
-      if (!ALIAS.test(alias) || b.convertir !== true) throw new ApiError(400, 'pedido_invalido', 'alias');
-    }
+    // Transferencias (opcional): país y moneda, y el compromiso explícito de convertirlas a
+    // bitcoin. El dato de cobro llega después, cifrado con el id de la lista (/cobro).
+    const transfers = b.pais === undefined || b.pais === null ? null : countryAndCurrency(b.pais, b.moneda);
+    if (transfers !== null && b.convertir !== true) throw new ApiError(400, 'pedido_invalido', 'convertir');
     const id = newGiftId();
     await sql`
-      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, alias, alias_titular, para, varios, semilla)
+      insert into listas (id, red, usuario_id, xpub, titulo, ocasion, ocasion_libre, mensaje, fecha, idioma, pais, moneda, para, varios, semilla)
       values (${id}, ${network.name}, ${account.id}, ${xpub}, ${text(b.titulo, LIST_LIMITS.title, true)}, ${b.ocasion},
               ${b.ocasion === 'otra' ? text(b.ocasionLibre, LIST_LIMITS.freeOccasion, false) : null},
-              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${alias}, ${holder},
+              ${text(b.mensaje, LIST_LIMITS.message, false) ?? ''}, ${fecha}, ${b.idioma}, ${transfers?.pais ?? null}, ${transfers?.moneda ?? null},
               ${text(b.para, 60, false)}, ${b.varios === true}, ${b.semilla === true})`;
     return c.json({ id }, 201);
+  });
+
+  /**
+   * El dato de cobro cifrado (y, si la cuenta tiene bóveda, la clave de la lista envuelta con la
+   * clave maestra). Sirve para cargarlo la primera vez y para volver a cargarlo con otra clave:
+   * entonces el alias en claro de una lista vieja se borra. La moneda no cambia si ya hay
+   * transferencias (una lista tiene una sola moneda).
+   */
+  app.post('/api/cuenta/listas/:id/cobro', async (c) => {
+    const account = await owner(c);
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    if (typeof b.cobro !== 'string' || !SEALED_COBRO.test(b.cobro)) throw new ApiError(400, 'pedido_invalido', 'cobro');
+    if (b.clave !== undefined && b.clave !== null && (typeof b.clave !== 'string' || !SEALED_KEY.test(b.clave))) throw new ApiError(400, 'pedido_invalido', 'clave');
+    const { pais, moneda } = countryAndCurrency(b.pais, b.moneda);
+    await sql.begin(async (tx) => {
+      const [l] = await tx<{ moneda: string | null; transferencias: string }[]>`
+        select l.moneda, (select count(*) from transferencias t where t.lista_id = l.id) as transferencias
+        from listas l where l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} for update`;
+      if (l === undefined) throw new ApiError(404, 'no_encontrado');
+      if (Number(l.transferencias) > 0 && l.moneda !== moneda) throw new ApiError(409, 'pedido_invalido', 'moneda');
+      await tx`
+        update listas set pais = ${pais}, moneda = ${moneda}, cobro = ${b.cobro as string}, clave_cifrada = ${(b.clave as string | undefined) ?? null},
+          alias = null, alias_titular = null
+        where id = ${c.req.param('id')}`;
+    });
+    return c.json({ ok: true });
   });
 
   /** La lista para los invitados: nunca muestra aportes ni totales. */
@@ -313,19 +366,20 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
   });
 
   /**
-   * Un invitado anuncia una transferencia en pesos: recibe el alias, el titular y un código de
-   * referencia único para el concepto. No pasa por la plataforma ni tiene tope.
+   * Un invitado anuncia una transferencia: recibe el dato de cobro cifrado (lo abre su navegador
+   * con la clave del link) y un código de referencia único para el concepto. Va de persona a
+   * persona: no pasa por la plataforma ni tiene tope. Las listas viejas con alias en claro lo
+   * siguen devolviendo hasta que su dueño lo vuelva a cargar.
    */
   app.post('/api/listas/:id/transferencias', async (c) => {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!limiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const list = await findList(sql, c.req.param('id'));
-    if (list === null || list.red !== network.name || list.alias === null) throw new ApiError(404, 'no_encontrado');
+    if (list === null || list.red !== network.name || (list.cobro === null && list.alias === null) || list.moneda === null) throw new ApiError(404, 'no_encontrado');
     if (list.cerrada !== null) throw new ApiError(409, 'regalo_no_disponible', 'lista_cerrada');
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
-    if (typeof b.monto !== 'number' || !Number.isFinite(b.monto) || b.monto <= 0 || b.monto >= 1e12 || Math.abs(Math.round(b.monto * 100) - b.monto * 100) > 1e-6) {
-      throw new ApiError(400, 'monto_invalido');
-    }
+    // En la unidad menor de la moneda de la lista (centavos), como texto.
+    if (typeof b.monto !== 'string' || !/^[1-9]\d{0,14}$/.test(b.monto)) throw new ApiError(400, 'monto_invalido');
     const name = text(b.nombre, LIST_LIMITS.name, false);
     const message = text(b.mensaje, LIST_LIMITS.message, false) ?? '';
     const token = newToken();
@@ -333,14 +387,14 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       const code = newCode();
       try {
         await sql`
-          insert into transferencias (lista_id, codigo, nombre, mensaje, monto_ars, token_hash)
+          insert into transferencias (lista_id, codigo, nombre, mensaje, monto, token_hash)
           values (${list.id}, ${code}, ${name}, ${message}, ${b.monto}, ${hashToken(token)})`;
       } catch (error) {
         if ((error as { code?: string }).code === '23505') continue;
         throw error;
       }
       limiter.record(ip);
-      return c.json({ codigo: code, alias: list.alias, titular: list.alias_titular, monto: b.monto, token }, 201);
+      return c.json({ codigo: code, monto: b.monto, moneda: list.moneda, token, ...collectData(list) }, 201);
     }
     throw new ApiError(409, 'regalo_existente');
   });
@@ -353,15 +407,15 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       select a.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma from aportes a join listas l on l.id = a.lista_id
       where a.token_hash = ${hashToken(b.token)} and l.red = ${network.name} and not a.externa`;
     if (r === undefined) {
-      const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string; alias: string; alias_titular: string })[]>`
-        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular from transferencias t join listas l on l.id = t.lista_id
+      const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string } & Pick<ListRow, 'alias' | 'alias_titular' | 'cobro' | 'moneda'>)[]>`
+        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular, l.cobro, l.moneda from transferencias t join listas l on l.id = t.lista_id
         where t.token_hash = ${hashToken(b.token)} and l.red = ${network.name}`;
       if (tr === undefined) throw new ApiError(404, 'no_encontrado');
       return c.json({
-        tipo: 'pesos',
+        tipo: 'transferencia',
         lista: { id: tr.lista_id, titulo: tr.titulo, ocasion: tr.ocasion, ocasionLibre: tr.ocasion_libre, idioma: tr.idioma },
-        alias: tr.alias,
-        titular: tr.alias_titular,
+        moneda: tr.moneda,
+        ...collectData(tr),
         ...transferView(tr),
       });
     }
@@ -407,6 +461,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
         return {
           ...publicList(l, deps.ceilingUsd),
           xpub: l.xpub,
+          cobro: l.cobro,
+          claveCifrada: l.clave_cifrada,
           alias: l.alias,
           aliasTitular: l.alias_titular,
           totalRecibido: total.toString(),
@@ -449,14 +505,14 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     if (codes.length === 0 || codes.length > 200) throw new ApiError(400, 'pedido_invalido');
     const sats = BigInt(b.sats);
     await sql.begin(async (tx) => {
-      const rows = await tx<{ id: string; monto_ars: string }[]>`
-        select t.id, t.monto_ars from transferencias t join listas l on l.id = t.lista_id
+      const rows = await tx<{ id: string; monto: string }[]>`
+        select t.id, t.monto from transferencias t join listas l on l.id = t.lista_id
         where l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} and t.estado = 'recibida' and t.codigo in ${tx(codes)}
         order by t.id for update of t`;
       // Todas tienen que ser de esta lista y estar recibidas (ni anunciadas ni ya convertidas).
       if (rows.length !== codes.length) throw new ApiError(409, 'pedido_invalido', 'transferencias');
-      // numeric(14, 2) llega como texto con dos decimales: "40000.50" → 4000050 centavos.
-      const cents = rows.map((r) => BigInt(r.monto_ars.replace('.', '')));
+      // Montos en la unidad menor de la moneda de la lista: una tanda nunca mezcla monedas.
+      const cents = rows.map((r) => BigInt(r.monto));
       if (sats < BigInt(rows.length)) throw new ApiError(400, 'monto_invalido');
       const shares = splitPurchase(sats, cents);
       for (const [i, r] of rows.entries()) {

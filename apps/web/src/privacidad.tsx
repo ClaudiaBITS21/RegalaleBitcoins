@@ -58,8 +58,9 @@ export function PrivacyPage() {
               una (se achica y se le sacan los datos ocultos, como la ubicación, en el propio teléfono antes de enviarla). También su estado y las transacciones, que son públicas en la red de bitcoin.
             </li>
             <li>
-              <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta pesos, el alias y el nombre de su titular. De cada
-              aporte, el nombre y el mensaje que deja quien aporta.
+              <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta transferencias, el país y la moneda; el dato
+              para transferir y su titular se guardan cifrados en el navegador de quien arma la lista y no los podemos ver (la clave va en el link de la lista). De cada aporte, el nombre, el
+              mensaje y el monto que deja quien aporta.
             </li>
             <li>
               <strong>Compras del servicio:</strong> el producto, el monto en sats, la dirección de pago y sus transacciones; si se usa el botón de arrepentimiento, la dirección para la devolución.

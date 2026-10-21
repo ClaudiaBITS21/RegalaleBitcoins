@@ -4,21 +4,29 @@ import { ALLOW_MAINNET } from '../config.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { deckPick, fillName, loadExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatArsExact, formatSats, groupAddress, parseAmount, paymentUri, satsToBtcString } from '../format.ts';
+import { formatMinor, formatSats, parseAmount } from '../format.ts';
 import { AmountStep } from '../give/DraftSteps.tsx';
 import type { Draft } from '../give/GivePage.tsx';
 import { PayBox } from '../give/PayBox.tsx';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
-import { contributionUrl, listApi, type PublicList } from './listApi.ts';
+import { type Cobro, LIST_KEY, openCobro } from './cobro.ts';
+import { type Announced, contributionUrl, listApi, type PublicList } from './listApi.ts';
+import { decimales, mostrarDato } from './medios.ts';
 import { useNetwork } from './useNetwork.ts';
 
 // La lista vista por un invitado (/l/<id>): la tarjeta de la lista, cuánto regalar, nombre y
 // mensaje opcionales, y la dirección propia para pagar. Nunca ve los aportes de los demás.
+// Si acepta transferencias, el dato de cobro llega cifrado al anunciarla y se abre acá con la
+// clave que viene en el link (/l/<id>#<clave>): el servidor nunca la ve.
 
 type Amount = Pick<Draft, 'currency' | 'amount' | 'sats'>;
 type Step = 'lista' | 'cuanto' | 'firma' | 'pagar' | 'pesos' | 'transferir';
-type Announced = { codigo: string; alias: string; titular: string; monto: number; token: string };
+/** La clave del dato de cobro, del fragmento del link. */
+const linkKey = () => {
+  const k = window.location.hash.slice(1);
+  return LIST_KEY.test(k) ? k : null;
+};
 const POLL_MS = 5_000;
 /** Sugeridos en listas con billetera propia (sin tope); "Otro" deja poner cualquier monto. */
 const LIST_PRESETS_USD = [50, 100, 150] as const;
@@ -39,6 +47,8 @@ export function ListPage({ id }: { id: string }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [ars, setArs] = useState('');
   const [announced, setAnnounced] = useState<Announced | null>(null);
+  const [cobro, setCobro] = useState<Cobro | null>(null);
+  const key = linkKey();
 
   useEffect(() => {
     listApi
@@ -109,8 +119,12 @@ export function ListPage({ id }: { id: string }) {
     }
   };
 
-  const arsParsed = parseAmount(ars, lang, 2);
-  const arsAmount = arsParsed.ok && arsParsed.value > 0n ? Number(arsParsed.value) / 100 : null;
+  // El monto en la unidad menor de la moneda de la lista (centavos), leído con el separador del idioma.
+  const currency = list?.moneda ?? 'ARS';
+  const minorDigits = decimales(currency);
+  const typed = minorDigits === 0 ? 0 : 2;
+  const arsParsed = parseAmount(ars, lang, typed);
+  const arsAmount = arsParsed.ok && arsParsed.value > 0n ? arsParsed.value * 10n ** BigInt(Math.max(0, minorDigits - typed)) : null;
 
   const announce = async () => {
     if (arsAmount === null) return;
@@ -120,9 +134,11 @@ export function ListPage({ id }: { id: string }) {
       const r = await listApi.announce(id, {
         ...(name.trim() !== '' ? { nombre: name.trim() } : {}),
         ...(message.trim() !== '' ? { mensaje: message.trim() } : {}),
-        monto: arsAmount,
+        monto: arsAmount.toString(),
       });
       setAnnounced(r);
+      // Listas nuevas: el dato llega cifrado y se abre con la clave del link. Viejas: alias en claro.
+      setCobro(r.cobro !== null ? (key === null ? null : await openCobro(key, id, r.cobro)) : r.alias !== null ? { medio: 'alias', dato: r.alias, titular: r.titular ?? '' } : null);
       setStep('transferir');
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : '';
@@ -133,7 +149,7 @@ export function ListPage({ id }: { id: string }) {
   };
 
   const privateLink = (token: string) => {
-    const mine = contributionUrl(token);
+    const mine = contributionUrl(token, key);
     return (
       <div class="caja">
         <p>{t('lista.mio.guardar')}</p>
@@ -180,7 +196,7 @@ export function ListPage({ id }: { id: string }) {
         <p class="texto-suave">{t('lista.invitado.texto')}</p>
         {!list.abierta ? (
           <Notice>{t('lista.cerrada')}</Notice>
-        ) : list.aceptaPesos ? (
+        ) : list.aceptaTransferencias ? (
           <div class="lista-metodos">
             <Button onClick={() => setStep('cuanto')}>{t('lista.metodo.bitcoin')}</Button>
             <Button kind="contorno" onClick={() => setStep('pesos')}>
@@ -236,32 +252,48 @@ export function ListPage({ id }: { id: string }) {
         <StepTitle>{t('lista.pesos.titulo')}</StepTitle>
         <p class="texto-suave">{t('lista.pesos.invitadoTexto')}</p>
         <label class="campo">
-          <span>{t('lista.pesos.monto')}</span>
+          <span>{t('lista.pesos.monto', { moneda: currency })}</span>
           <input type="text" inputMode="decimal" autocomplete="off" value={ars} onInput={(e) => setArs((e.currentTarget as HTMLInputElement).value)} />
           {ars.trim() !== '' && arsAmount === null && <small class="error-campo">{t('regalar.errorMonto')}</small>}
         </label>
         {signFields}
         {error !== null && <Notice kind="error">{t(error)}</Notice>}
         <Button type="submit" disabled={busy || arsAmount === null}>
-          {busy ? t('regalar.creando') : arsAmount === null ? t('lista.pesos.cta0') : t('lista.pesos.cta', { monto: formatArsExact(arsAmount, lang) })}
+          {busy ? t('regalar.creando') : arsAmount === null ? t('lista.pesos.cta0') : t('lista.pesos.cta', { monto: formatMinor(arsAmount, currency, lang) })}
         </Button>
       </form>
     );
   } else if (step === 'transferir' && announced !== null) {
+    const minor = BigInt(announced.monto);
+    const places = decimales(announced.moneda);
+    const scale = 10n ** BigInt(places);
+    // Para copiar: el monto con punto decimal, sin separador de miles (lo que aceptan las apps).
+    const plain = places === 0 ? minor.toString() : `${minor / scale}.${(minor % scale).toString().padStart(places, '0')}`;
     const rows: readonly { k: string; label: Key; value: string; shown?: string }[] = [
-      { k: 'alias', label: 'lista.pesos.alias', value: announced.alias },
-      { k: 'titular', label: 'lista.pesos.titular', value: announced.titular },
-      { k: 'monto', label: 'lista.pesos.monto', value: announced.monto.toFixed(2), shown: formatArsExact(announced.monto, lang) },
+      ...(cobro === null
+        ? []
+        : [
+            { k: 'dato', label: `lista.medio.${cobro.medio}` as Key, value: cobro.dato, shown: mostrarDato(cobro.medio, cobro.dato) },
+            { k: 'titular', label: 'lista.pesos.titular' as Key, value: cobro.titular },
+          ]),
+      { k: 'monto', label: 'lista.pesos.monto', value: plain, shown: formatMinor(minor, announced.moneda, lang) },
       { k: 'codigo', label: 'lista.pesos.codigo', value: announced.codigo },
     ];
     body = (
       <div class="paso">
         <StepTitle>{t('lista.pesos.transferiTitulo')}</StepTitle>
-        <p class="texto-suave">{t('lista.pesos.transferiTexto')}</p>
+        {cobro === null ? (
+          <Notice kind="error">{t('lista.cobro.sinClave')}</Notice>
+        ) : (
+          <>
+            <p class="texto-suave">{t('lista.pesos.transferiTexto')}</p>
+            <p class="texto-suave">{t('lista.cobro.invitadoAviso', { nombre: list.para ?? list.titulo, codigo: announced.codigo })}</p>
+          </>
+        )}
         <dl class="caja datos-transferencia">
           {rows.map((r) => (
             <div key={r.k} class="dato-transferencia">
-              <dt>{t(r.label)}</dt>
+              <dt>{t(r.label, { moneda: announced.moneda })}</dt>
               <dd class={r.k === 'titular' ? '' : 'mono'} translate={false}>
                 {r.shown ?? r.value}
               </dd>

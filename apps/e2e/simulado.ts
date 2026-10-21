@@ -614,8 +614,13 @@ try {
   await giver.getByLabel('¿Para quién es la lista?').fill('Lupe y Tomi');
   await giver.getByRole('radio', { name: 'Dos o más' }).click();
   await giver.locator('.selector-ocasiones button, .ocasiones button').filter({ hasText: 'Casamiento' }).first().click();
-  await giver.getByText('También acepto transferencias en pesos').click();
-  await giver.getByLabel('Alias').fill('Lupe.E2E.mp');
+  await giver.getByText('También acepto transferencias a mi cuenta').click();
+  // Argentina por defecto: alias o CBU/CVU (con dígitos verificadores).
+  await giver.getByRole('radio', { name: 'CBU o CVU' }).click();
+  await giver.getByLabel('CBU o CVU').fill('2850590940090418135202');
+  await giver.getByText('Los dígitos verificadores no coinciden').waitFor();
+  await giver.getByRole('radio', { name: 'Alias' }).click();
+  await giver.getByLabel('Alias', { exact: true }).fill('Lupe.E2E.mp');
   await giver.getByLabel('Titular de la cuenta').fill('Lupe Pérez');
   if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con pesos se puede seguir sin el compromiso de convertir');
   await giver.getByText('Me comprometo a convertir a bitcoin').click();
@@ -631,6 +636,12 @@ try {
   await giver.getByRole('button', { name: 'Publicar mi lista' }).click();
   await giver.getByRole('heading', { name: '¡Tu lista está lista!' }).waitFor();
   const listLink = await giver.locator('.enlace-regalo').innerText();
+  // El dato de cobro viaja cifrado; la clave, solo en el link (después del #).
+  if (!/\/l\/[A-Za-z0-9_-]{22}#[A-Za-z0-9_-]{43}$/.test(listLink)) fail(`el link de la lista no trae la clave: ${listLink}`);
+  const savedList = (await sql<{ cobro: string | null; clave_cifrada: string | null; alias: string | null; moneda: string }[]>`select cobro, clave_cifrada, alias, moneda from listas where titulo = 'Casamiento de Lupe'`)[0];
+  if (savedList?.cobro === null || savedList?.alias !== null || savedList?.moneda !== 'ARS') fail('la lista no quedó con el dato cifrado y en pesos');
+  if (JSON.stringify(savedList).toLowerCase().includes('lupe.e2e') || JSON.stringify(savedList).includes('Pérez')) fail('el servidor guardó el dato de cobro en claro');
+  if (savedList?.clave_cifrada === null) fail('con bóveda, la clave de la lista no quedó guardada (envuelta) en la cuenta');
 
   const guest = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
   guest.on('pageerror', (e) => problems.push(`invitado: ${e.message}`));
@@ -706,20 +717,30 @@ try {
   const seedList = (await sql`select xpub from listas where titulo = 'Cumple de Lupe'`)[0];
   if (seedList?.xpub !== accountKeyText(masterRootFromMnemonic(seedWords.join(' ')), signet)) fail('la lista no quedó con la llave pública de la semilla nueva');
 
-  // Transferencia en pesos: otro invitado anuncia, recibe alias y código; Lupe la marca.
+  // Transferencia en pesos: otro invitado anuncia, abre el dato con la clave del link y recibe un código; Lupe la marca.
   const cousin = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
   cousin.on('pageerror', (e) => problems.push(`invitado pesos: ${e.message}`));
+  // Sin la clave (link cortado antes del #) no hay datos de transferencia.
+  await cousin.goto(listLink.split('#')[0] as string);
+  await cousin.getByRole('button', { name: 'Transferir a su cuenta' }).click();
+  await cousin.getByLabel('Monto (ARS)').fill('1');
+  await cousin.getByRole('button', { name: /^Voy a transferir/ }).click();
+  await cousin.getByText(/hace falta el link completo de la lista/).waitFor({ timeout: 15_000 });
+  await sql`delete from transferencias where monto = 100`;
+  await cousin.goto('about:blank');
   await cousin.goto(listLink);
-  await cousin.getByRole('button', { name: 'Transferir pesos' }).click();
-  await cousin.getByLabel('Monto en pesos').fill('40.000,5');
+  await cousin.getByRole('button', { name: 'Transferir a su cuenta' }).click();
+  await cousin.getByLabel('Monto (ARS)').fill('40.000,5');
   await cousin.getByLabel('Tu nombre (opcional)').fill('Primo Juan');
   await cousin.getByRole('button', { name: /^Voy a transferir .*40\.000,50/ }).click();
   await cousin.getByRole('heading', { name: 'Transferí con estos datos' }).waitFor({ timeout: 15_000 });
   const refCode = (await cousin.locator('.dato-transferencia dd').nth(3).innerText()).trim();
   if (!/^RB-[A-Z2-9]{4}$/.test(refCode)) fail(`código de referencia inválido: ${refCode}`);
-  if ((await cousin.locator('.dato-transferencia dd').first().innerText()).trim() !== 'lupe.e2e.mp') fail('el alias no se muestra en minúsculas');
+  if ((await cousin.locator('.dato-transferencia dd').first().innerText()).trim() !== 'lupe.e2e.mp') fail('el alias (descifrado en el navegador) no se muestra en minúsculas');
+  await cousin.getByText(/^Esta transferencia va directo de tu banco a la cuenta de Lupe y Tomi/).waitFor();
   await shot2(cousin, 'l5-pesos');
   const cousinMine = await cousin.locator('.caja .enlace-regalo').innerText();
+  if (!/\/aporte#[A-Za-z0-9_-]{43}\.[A-Za-z0-9_-]{43}$/.test(cousinMine)) fail(`el link privado del aporte no trae la clave de la lista: ${cousinMine}`);
   await giver.goto(`${BASE}/panel`);
   const row = giver.locator('.lista-transferencias li').filter({ hasText: refCode });
   await row.getByText('Anunciada').waitFor({ timeout: 15_000 });
@@ -733,8 +754,11 @@ try {
   await giver.getByRole('button', { name: 'Repartir 35.000 sats entre 1' }).click();
   await row.getByText('Convertida').waitFor();
   await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l6-panel-pesos.png') });
+  // En el panel, con la clave en este navegador: el link completo y el dato descifrado.
+  await giver.locator('.lista-cobro').getByText('lupe.e2e.mp', { exact: false }).waitFor();
   await cousin.goto(cousinMine);
   await cousin.getByText('¡Listo! Tu parte se convirtió en 35.000 sats.').waitFor({ timeout: 15_000 });
+  await cousin.getByText(/^lupe\.e2e\.mp \(Lupe Pérez\) · código RB-/).waitFor();
 
   // Compra de créditos: con la llave de cobro cargada (aunque el cobro esté apagado) se puede
   // comprar desde la página de precios; el pago va a una dirección de esa llave y acredita.
@@ -792,7 +816,7 @@ try {
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey; passkey que no abre la bóveda (QR) se repara vinculando el celu o con las 12 palabras.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
-  console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
+  console.log('OK: transferencia en pesos: dato de cobro cifrado en el navegador (clave en el link), código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log('OK: compra de un pack desde precios con cupón del 20 %: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
   console.log('OK: botón de arrepentimiento: valida la dirección y da el código de trámite.');
