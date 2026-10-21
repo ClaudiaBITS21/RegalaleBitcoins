@@ -132,3 +132,11 @@ Versiones EN / PT / IT del texto.
 Mención en la página "Sin custodia".
 
 
+Decisiones de Rodolfo, 21/10/2026
+- Privacidad: sin Taproot. Cada regalo queda en P2WSH 1-de-2 (wsh(sortedmulti(...))), como
+  está arriba; se acepta que en el gasto se vea el 1-de-2.
+- Clave pública: preguntó si BIP84 sirve. Propuesta de Code, a confirmar: aceptar BIP48
+  (recomendada) y BIP84 como alternativa con aviso («tu billetera puede mostrar advertencias
+  al recuperar; probalo primero con un regalo chico»). Con BIP84 se usa una rama propia de la
+  llave, no la de recibir. Falta saber qué billeteras probar (Trezor, Ledger, Coldcard, Sparrow).
+- Siguen ABIERTO: cuándo entra; versiones EN / PT / IT del texto; mención en «Sin custodia».
