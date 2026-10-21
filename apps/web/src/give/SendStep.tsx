@@ -154,9 +154,21 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
       {view !== null && <PrintCard link={gift.link} view={view} conPlan={conPlan} />}
 
       <Notice>{t('regalar.mandar.guarda')}</Notice>
-      <Button kind="acento" onClick={onAnother}>
-        {t('regalar.mandar.otro')}
-      </Button>
+      {/* Al final (Rodolfo, 21/10): «¡Realizado!», volver al inicio o ver los regalos. */}
+      <section class="caja realizado" aria-labelledby="realizado">
+        <h3 id="realizado">{t('regalar.mandar.realizado')}</h3>
+        <div class="realizado-botones">
+          <a class="boton boton-primario" href="/">
+            {t('regalar.mandar.inicio')}
+          </a>
+          <a class="boton boton-contorno" href="/panel">
+            {t('regalar.mandar.verRegalos')}
+          </a>
+        </div>
+        <button type="button" class="boton-texto enlace-centrado" onClick={onAnother}>
+          {t('regalar.mandar.otro')}
+        </button>
+      </section>
     </div>
   );
 }

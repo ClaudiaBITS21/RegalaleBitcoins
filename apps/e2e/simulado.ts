@@ -8,7 +8,7 @@ import zlib from 'node:zlib';
 // Requiere Postgres local (DATABASE_URL) y la web compilada (pnpm --filter @regalale/web build).
 
 import { type ChildProcess, spawn } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -319,21 +319,24 @@ try {
   chain.confirmAll();
   await page.getByText('El pago está confirmado: el regalo ya se puede abrir.').waitFor({ timeout: 15_000 });
   await shot('r6-mandar');
-  // Tarjeta imprimible: A4 con cuatro paneles, el QR del link y sin las palabras.
+  // Tarjeta imprimible: se baja como PDF A4 (una página), con su vista preliminar debajo de la frase.
   const remate = page.getByLabel('Frase de la contratapa');
   await page.waitForFunction(() => [...document.querySelectorAll('input')].some((i) => i.closest('.imprimir') && i.value !== ''));
   await remate.fill('visitá regalo.xyz');
   await page.getByText('Sin links ni direcciones web en la contratapa.').waitFor();
-  if (!(await page.getByRole('button', { name: 'Imprimir tarjeta' }).isDisabled())) fail('se puede imprimir un remate con un dominio');
+  if (!(await page.getByRole('button', { name: 'Bajar la tarjeta en PDF' }).isDisabled())) fail('se puede bajar la tarjeta con un dominio en el remate');
   await remate.fill('La llave ahora la tenés vos.');
-  await page.emulateMedia({ media: 'print' });
-  const sheet = page.locator('.hoja-a4');
-  const sheetText = await sheet.innerText();
-  if (giftWords.some((w) => sheetText.includes(w))) fail('la tarjeta impresa muestra las palabras');
-  if ((await sheet.locator('.panel').count()) !== 4 || (await sheet.locator('.qr').count()) !== 1) fail('la hoja A4 no tiene los cuatro paneles con el QR');
-  await page.pdf({ path: join(SHOTS, 'tarjeta-a4.pdf'), format: 'A4', printBackground: true });
-  await sheet.screenshot({ path: join(SHOTS, 't1-tarjeta-a4.png') });
-  await page.emulateMedia({ media: 'screen' });
+  await page.locator('.tarjeta-vista img').waitFor({ timeout: 15_000 });
+  await page.locator('.tarjeta-vista').screenshot({ path: join(SHOTS, 't1-tarjeta-vista.png') });
+  const [descarga] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Bajar la tarjeta en PDF' }).click()]);
+  const pdfPath = join(SHOTS, 'tarjeta-a4.pdf');
+  await descarga.saveAs(pdfPath);
+  const pdf = readFileSync(pdfPath, 'latin1');
+  if (!pdf.startsWith('%PDF-') || !pdf.includes('/MediaBox [0 0 595.28 841.89]') || !pdf.trimEnd().endsWith('%%EOF')) fail('la tarjeta no bajó como PDF A4');
+  if (!descarga.suggestedFilename().endsWith('.pdf')) fail('la tarjeta no se baja con extensión .pdf');
+  // Al final: «¡Realizado!», volver al inicio o ver los regalos.
+  await page.getByRole('heading', { name: '¡Realizado!' }).waitFor();
+  if ((await page.getByRole('link', { name: 'Volver al inicio' }).count()) !== 1 || (await page.getByRole('link', { name: 'Ver mis regalos' }).count()) !== 1) fail('falta el cierre con Volver al inicio y Ver mis regalos');
   const created = (await sql`select id, para, de, idioma, ocasion, imagen, estilo, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
   if (created === undefined || created.para !== 'Ana' || created.idioma !== 'pt' || created.imagen !== 1 || created.estilo !== 'mano' || created.sats_esperados !== '30500') {
     fail(`el regalo quedó mal registrado: ${JSON.stringify(created)}`);
