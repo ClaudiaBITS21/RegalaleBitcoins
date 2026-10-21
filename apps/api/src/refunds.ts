@@ -1,6 +1,7 @@
 import { isCoreError, type Network, parseDestination } from '@regalale/core';
 import type { Context, Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
+import { adminEmails as allAdmins, isAdmin } from './admins.ts';
 import type { Account } from './accounts.ts';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
@@ -108,7 +109,7 @@ export function registerRefundRoutes(app: Hono, deps: { sql: Sql; network: Netwo
       insert into arrepentimientos (codigo, pago_id, usuario_id, direccion_devolucion, sats)
       values (${codigo}, ${p.id}, ${account.id}, ${address}, ${p.sats_recibidos})`;
     const text = `Pedido de arrepentimiento ${codigo}: pago ${p.id.slice(0, 8)} (${p.producto}), devolver ${p.sats_recibidos} sats a ${address}.`;
-    for (const to of adminEmails) await mailer.send({ to, subject: `Regalale Bitcoin: arrepentimiento ${codigo}`, text }).catch(() => undefined);
+    for (const to of await allAdmins(sql, adminEmails)) await mailer.send({ to, subject: `Regalale Bitcoin: arrepentimiento ${codigo}`, text }).catch(() => undefined);
     await mailer
       .send({
         to: account.email,
@@ -122,7 +123,7 @@ export function registerRefundRoutes(app: Hono, deps: { sql: Sql; network: Netwo
   /** El admin marca una devolución hecha: el pago queda «devuelto» y se quita lo otorgado. Exige passkey. */
   app.post('/api/admin/arrepentimiento/:codigo/devuelto', async (c) => {
     const account = await signedIn(c);
-    if (!adminEmails.includes(account.email.toLowerCase())) throw new ApiError(404, 'no_encontrado');
+    if (!(await isAdmin(sql, adminEmails, account.email))) throw new ApiError(404, 'no_encontrado');
     if (account.viaPasskey !== true) throw new ApiError(403, 'passkey_requerida');
     const codigo = c.req.param('codigo');
     const done = await sql.begin(async (tx) => {
@@ -149,7 +150,7 @@ export function registerRefundRoutes(app: Hono, deps: { sql: Sql; network: Netwo
   /** Pedidos de arrepentimiento para el admin (con la dirección a la que hay que devolver). */
   app.get('/api/admin/arrepentimientos', async (c) => {
     const account = await signedIn(c);
-    if (!adminEmails.includes(account.email.toLowerCase())) throw new ApiError(404, 'no_encontrado');
+    if (!(await isAdmin(sql, adminEmails, account.email))) throw new ApiError(404, 'no_encontrado');
     const rows = await sql<{ codigo: string; pago_id: string; producto: string; sats: string; direccion_devolucion: string; estado: string; creado: Date }[]>`
       select a.codigo, a.pago_id, p.producto, a.sats, a.direccion_devolucion, a.estado, a.creado
       from arrepentimientos a join pagos p on p.id = a.pago_id order by a.creado desc limit 50`;

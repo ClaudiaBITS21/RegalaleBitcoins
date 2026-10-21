@@ -14,6 +14,7 @@ import { registerListRoutes } from './lists.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
+import { registerAdminUserRoutes } from './admins.ts';
 import { registerRefundRoutes } from './refunds.ts';
 import { balance, canGive, chargingActive, consumeGiftCredits, hasPlanFeatures, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
@@ -145,6 +146,7 @@ export function createApp(deps: AppDeps): Hono {
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
+  registerAdminUserRoutes(app, { sql, fixed: deps.adminEmails ?? [], mailer: accounts.mailer });
   if (deps.indexHtml !== undefined) registerShareRoutes(app, { sql, publicUrl: accounts.publicUrl, indexHtml: deps.indexHtml });
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */

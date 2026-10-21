@@ -126,6 +126,7 @@ describe('Cuentas con passkey', () => {
     await sql`delete from pagos`;
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
+    await sql`delete from admins`;
     funded.clear();
     spent.clear();
     pays.clear();
@@ -544,6 +545,31 @@ describe('Cuentas con passkey', () => {
     usdPerBtc = 200_000;
     pays.set(p.direccion, { confirmed: 10_500n, mempool: [] });
     assert.equal(await state(), 'confirmado');
+  });
+
+  it('admins desde el panel: con passkey se suma y se quita; los fijos no se quitan; todos reciben aviso', async () => {
+    const admin = await signUp('admin@example.com');
+    const bea = await signUp('bea@example.com');
+    assert.equal((await req('/api/admin/cobro', undefined, bea.cookie)).status, 404);
+    // Con link de mail no alcanza.
+    await req('/api/cuenta/link', { email: 'admin@example.com' });
+    const token = /#acceso=([A-Za-z0-9_-]{43})/.exec(mails.at(-1)?.text ?? '')?.[1] as string;
+    const viaLink = cookieOf(await req('/api/cuenta/link/canje', { token }));
+    assert.equal((await req('/api/admin/admins', { email: 'bea@example.com' }, viaLink)).status, 403);
+    mails = [];
+    assert.equal((await req('/api/admin/admins', { email: ' Bea@Example.com ' }, admin.cookie)).status, 201);
+    assert.deepEqual(mails.map((m) => m.to).sort(), ['admin@example.com', 'bea@example.com']);
+    assert.equal((await req('/api/admin/cobro', undefined, bea.cookie)).status, 200);
+    assert.equal((await req('/api/admin/admins', { email: 'bea@example.com' }, admin.cookie)).status, 409);
+    const lista = (await (await req('/api/admin/admins', undefined, bea.cookie)).json()) as { fijos: string[]; agregados: Array<{ email: string; agregadoPor: string }> };
+    assert.deepEqual(lista.fijos, ['admin@example.com']);
+    assert.deepEqual(lista.agregados.map((a) => [a.email, a.agregadoPor]), [['bea@example.com', 'admin@example.com']]);
+    // Un fijo no se quita desde el panel; uno agregado, sí.
+    assert.equal((await req('/api/admin/admins/quitar', { email: 'admin@example.com' }, bea.cookie)).status, 409);
+    assert.equal((await req('/api/admin/admins/quitar', { email: 'bea@example.com' }, admin.cookie)).status, 200);
+    assert.equal((await req('/api/admin/cobro', undefined, bea.cookie)).status, 404);
+    const registro = await sql<{ accion: string }[]>`select accion from registro_admin order by id`;
+    assert.deepEqual(registro.map((r) => r.accion).filter((a) => a.startsWith('admin_')), ['admin_agregado', 'admin_quitado']);
   });
 
   it('admin del cobro: llave con vista previa, passkey obligatoria, cambio a las 24 h, cobro, precios y ajustes', async () => {

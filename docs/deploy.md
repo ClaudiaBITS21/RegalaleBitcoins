@@ -31,6 +31,8 @@ Variables de cuentas (etapa 4, paso 4):
 - `PUBLIC_URL`: origen público, base de los links de los mails y rpId de las passkeys.
 - `ALLOWED_ORIGINS`: otros orígenes aceptados (coma).
 - `MAIL_FROM` y el secreto `RESEND_API_KEY=resend-api-key:latest`.
+- `ADMIN_EMAILS`: admins fijos (coma). Desde el 21/10 se pueden sumar más admins desde `/admin`
+  (tabla `admins`, con passkey y aviso por mail a todos); los fijos no se quitan desde el panel.
 
 ```sh
 gcloud run services update regalalebitcoins-api --region southamerica-east1 \
