@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
+import { isAdmin } from './admins.ts';
 import type { ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
@@ -225,7 +226,7 @@ export function registerAdminRoutes(app: Hono, deps: AdminDeps): void {
     const account = await currentAccount(deps.sql, c);
     if (account === null) throw new ApiError(401, 'sesion_requerida');
     // Para quien no es admin, la ruta no existe.
-    if (!deps.adminEmails.includes(account.email.toLowerCase())) throw new ApiError(404, 'no_encontrado');
+    if (!(await isAdmin(deps.sql, deps.adminEmails, account.email))) throw new ApiError(404, 'no_encontrado');
     if (cached === null || now() - cached.at > CACHE_MS || c.req.query('fresco') === '1') {
       cached = { at: now(), body: await adminSummary(deps) };
     }
