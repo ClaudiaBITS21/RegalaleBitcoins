@@ -141,7 +141,6 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
   }, []);
   // Mientras el cobro no esté activo (o no se sepa), la página avisa que hoy regalar es gratis.
   const cobroActivo = vivos?.cobroActivo === true;
-  const numero = (n: number) => new Intl.NumberFormat(lang).format(n);
 
   return (
     <div class="pagina pagina-home pagina-precios">
@@ -174,11 +173,10 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                 <tr>
                   <td />
                   {PRODUCTOS.map((p) => {
-                    const { sats, cupo } = contenido(p, vivos);
+                    const { sats } = contenido(p, vivos);
                     return (
                       <th scope="col" key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
                         <span class="precio-nombre">{t(`precios.${p.id}.n` as Key)}</span>
-                        {cupo !== null && <span class="precio-cupo">{t('precios.soloN', { n: numero(cupo) })}</span>}
                         <span class="precio-monto">{sats === 0n ? t('precios.gratis') : formatSatsShort(sats, lang)}</span>
                         {sats > 0n && usdPorBtc !== null && <span class="precio-sats">{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(sats, usdPorBtc), lang) })}</span>}
                       </th>
@@ -243,11 +241,6 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                     <span class="precio-nombre">{t(`precios.${p.id}.n` as Key)}</span>
                     <span class="precio-monto">{ct.sats === 0n ? t('precios.gratis') : formatSatsShort(ct.sats, lang)}</span>
                     {ct.sats > 0n && usdPorBtc !== null && <span class="precio-sats">{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(ct.sats, usdPorBtc), lang) })}</span>}
-                    {ct.cupo !== null && (
-                      <span class="precio-cupo">
-                        {vivos !== null ? (agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })) : t('precios.soloN', { n: numero(ct.cupo) })}
-                      </span>
-                    )}
                   </div>
                   {n > 0 && <p class="precio-tarjeta-base">{t('precios.todoLoGratis')}</p>}
                   <dl class="precio-tarjeta-filas">
@@ -264,6 +257,10 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                     <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
                       {t('precios.comprar')}
                     </a>
+                  )}
+                  {/* Los lugares que quedan de Genesis, solo debajo del botón (Rodolfo, 21/10). */}
+                  {p.id === 'fundador' && ct.cupo !== null && vivos !== null && (
+                    <span class="precio-sats precio-quedan">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
                   )}
                 </li>
               );

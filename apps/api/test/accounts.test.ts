@@ -123,7 +123,9 @@ describe('Cuentas con passkey', () => {
     await sql`delete from regalos`;
     await sql`delete from listas`;
     await sql`delete from arrepentimientos`;
+    await sql`delete from cupon_usos`;
     await sql`delete from pagos`;
+    await sql`delete from cupones`;
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
     await sql`delete from admins`;
@@ -430,13 +432,13 @@ describe('Cuentas con passkey', () => {
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -5, 'bienvenida', 'prueba'), (${id}, 'compra', 'regalo', 10, 'pago', null)`;
     funded.add(b?.address as string);
     assert.equal((await run()).creditos, 1);
-    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9 });
+    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9, porOcasion: {} });
     await sql`insert into planes (usuario_id, tipo, hasta, regalos) values (${id}, 'anual', now() + interval '365 days', 1)`;
     const c = deriveGift(root, 2, 'es', signet);
     await req('/api/gifts', { direccion: c.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 2 }, cookie);
     funded.add(c.address);
     assert.equal((await run()).creditos, 1);
-    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9 });
+    assert.deepEqual((await creditos()).regalos, { bienvenida: 0, pagos: 9, porOcasion: {} });
     const [uso] = await sql<{ origen: string; cantidad: number }[]>`select origen, cantidad from movimientos where tipo = 'consumo' order by id desc limit 1`;
     assert.deepEqual(uso, { origen: 'plan', cantidad: 0 });
     // El plan tenía 1 regalo: ya no cubre otro, y sin saldo no puede regalar.
@@ -550,6 +552,68 @@ describe('Cuentas con passkey', () => {
     usdPerBtc = 200_000;
     pays.set(p.direccion, { confirmed: 10_500n, mempool: [] });
     assert.equal(await state(), 'confirmado');
+  });
+
+  it('cupones: canje de créditos con ocasión, descuento con reserva, 100 % sin pago, una vez por cuenta, y consumo por ocasión', async () => {
+    const admin = await signUp('admin@example.com');
+    const ana = await signUp('ana@example.com');
+    const beto = await signUp('beto@example.com');
+    const cupon = async (b: Record<string, unknown>) => (await req('/api/admin/cupones', b, admin.cookie)).status;
+    const creditos = async (cookie: string) =>
+      (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { pagos: number; porOcasion: Record<string, number> }; listas: { otras: number }; plan: { tipo: string } | null };
+    // Crear: con passkey, en mayúsculas; un cupón tiene que dar algo.
+    assert.equal(await cupon({ codigo: 'navidad25', da: { unidad: 'regalo', cantidad: 3, ocasion: 'navidad' }, maxUsos: 2 }), 201);
+    assert.equal(await cupon({ codigo: 'NAVIDAD25', da: { unidad: 'regalo', cantidad: 1 }, maxUsos: 1 }), 409);
+    assert.equal(await cupon({ codigo: 'NADA', maxUsos: 1 }), 400);
+    assert.equal(await cupon({ codigo: 'MITAD', descuento: 50, productos: ['pack10'], maxUsos: 1 }), 201);
+    assert.equal(await cupon({ codigo: 'GRATIS100', descuento: 100, da: { unidad: 'lista_otras', cantidad: 1 }, maxUsos: 5 }), 201);
+    assert.equal((await req('/api/admin/cupones', { codigo: 'OTRO', descuento: 10, maxUsos: 1 }, ana.cookie)).status, 404);
+    // Canje en «Mi plan»: créditos de Navidad, una sola vez por cuenta.
+    const canje = async (codigo: string, cookie: string) => {
+      const r = await req('/api/cuenta/cupon', { codigo }, cookie);
+      return [r.status, ((await r.json()) as { error?: string }).error ?? null];
+    };
+    assert.deepEqual(await canje('navidad25', ana.cookie), [201, null]);
+    assert.deepEqual(await canje('NAVIDAD25', ana.cookie), [409, 'cupon_usado']);
+    assert.deepEqual(await canje('NOEXISTE', ana.cookie), [404, 'cupon_invalido']);
+    assert.deepEqual(await canje('MITAD', ana.cookie), [409, 'cupon_es_de_compra']);
+    assert.deepEqual((await creditos(ana.cookie)).regalos.porOcasion, { navidad: 3 });
+    // Descuento al comprar: precio con el descuento, solo en los productos del cupón.
+    const ver = async (codigo: string, producto: string) => (await req('/api/cuenta/cupon/ver', { codigo, producto }, ana.cookie)).json() as Promise<{ precio?: string; precioOriginal?: string; error?: string }>;
+    assert.deepEqual([(await ver('MITAD', 'pack10')).precio, (await ver('MITAD', 'pack10')).precioOriginal], ['5250', '10500']);
+    assert.equal((await ver('MITAD', 'anual')).error, 'cupon_no_aplica');
+    await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
+    const pago = (await (await req('/api/cuenta/pagos', { producto: 'pack10', cupon: 'mitad' }, ana.cookie)).json()) as { id: string; sats: string; direccion: string };
+    assert.equal(pago.sats, '5250');
+    // La reserva cuenta para el máximo: otra cuenta ya no puede usarlo.
+    const otro = await req('/api/cuenta/pagos', { producto: 'pack10', cupon: 'MITAD' }, beto.cookie);
+    assert.deepEqual([otro.status, ((await otro.json()) as { error: string }).error], [409, 'cupon_agotado']);
+    pays.set(pago.direccion, { confirmed: 5250n, mempool: [] });
+    await req(`/api/cuenta/pagos/${pago.id}`, undefined, ana.cookie);
+    assert.equal((await creditos(ana.cookie)).regalos.pagos, 10);
+    // 100 %: sin pago on-chain; se acredita en el acto, con lo que da el cupón además.
+    const libre = (await (await req('/api/cuenta/pagos', { producto: 'fundador', cupon: 'GRATIS100' }, beto.cookie)).json()) as { gratis?: boolean };
+    assert.equal(libre.gratis, true);
+    const cb = await creditos(beto.cookie);
+    assert.deepEqual([cb.plan?.tipo, cb.listas.otras], ['fundador', 1]);
+    assert.equal(((await (await req('/api/productos')).json()) as { fundadoresQuedan: number }).fundadoresQuedan, 20);
+    // El admin ve los usos y los sats resignados.
+    const lista = (await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; usados: number; satsResignados: string; porProducto: Record<string, number> }> };
+    const mitad = lista.cupones.find((c) => c.codigo === 'MITAD');
+    assert.deepEqual([mitad?.usados, mitad?.satsResignados, mitad?.porProducto], [1, '5250', { pack10: 1 }]);
+    // Pausado: ya no se puede usar.
+    assert.equal((await req('/api/admin/cupones/GRATIS100/activo', { activo: false }, admin.cookie)).status, 200);
+    assert.equal(((await (await req('/api/cuenta/cupon/ver', { codigo: 'GRATIS100' }, ana.cookie)).json()) as { error: string }).error, 'cupon_invalido');
+    // Consumo con el cobro activo: un regalo de Navidad usa primero los créditos de Navidad.
+    await setChargingActive(sql, true);
+    const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
+    await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'navidad', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 }, ana.cookie);
+    funded.add(g.address);
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } });
+    const ca = await creditos(ana.cookie);
+    assert.deepEqual([ca.regalos.porOcasion, ca.regalos.pagos], [{ navidad: 2 }, 10]);
   });
 
   it('admins desde el panel: con passkey se suma y se quita; los fijos no se quitan; todos reciben aviso', async () => {

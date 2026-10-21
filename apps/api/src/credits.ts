@@ -65,25 +65,35 @@ export function planCovers(plan: Plan | null): boolean {
 export interface Balance {
   /** Regalos de bienvenida que quedan. */
   readonly welcome: number;
-  /** Regalos pagos (packs, códigos, campañas, ajustes del admin). */
+  /** Regalos pagos (packs, códigos, campañas, ajustes del admin) que sirven para cualquier ocasión. */
   readonly paid: number;
   readonly birthdayLists: number;
   readonly otherLists: number;
+  /** Créditos de cupón que solo sirven para una ocasión (21/10): ocasión → cantidad. */
+  readonly giftsByOccasion: Readonly<Record<string, number>>;
+  readonly listsByOccasion: Readonly<Record<string, number>>;
   readonly plan: Plan | null;
 }
 
 export async function balance(sql: Tx, accountId: string): Promise<Balance> {
-  const rows = await sql<{ unidad: string; bienvenida: boolean; total: string }[]>`
-    select unidad, origen = 'bienvenida' as bienvenida, coalesce(sum(cantidad), 0) as total
+  const rows = await sql<{ unidad: string; bienvenida: boolean; ocasion: string | null; total: string }[]>`
+    select unidad, origen = 'bienvenida' as bienvenida, ocasion, coalesce(sum(cantidad), 0) as total
     from movimientos where usuario_id = ${accountId}
-    group by 1, 2`;
+    group by 1, 2, 3`;
   const sum = (unit: string, welcome?: boolean) =>
-    rows.filter((r) => r.unidad === unit && (welcome === undefined || r.bienvenida === welcome)).reduce((a, r) => a + Number(r.total), 0);
+    rows.filter((r) => r.unidad === unit && r.ocasion === null && (welcome === undefined || r.bienvenida === welcome)).reduce((a, r) => a + Number(r.total), 0);
+  const byOccasion = (units: readonly string[]) => {
+    const out: Record<string, number> = {};
+    for (const r of rows) if (r.ocasion !== null && units.includes(r.unidad)) out[r.ocasion] = (out[r.ocasion] ?? 0) + Number(r.total);
+    return Object.fromEntries(Object.entries(out).filter(([, n]) => n > 0));
+  };
   return {
     welcome: sum('regalo', true),
     paid: sum('regalo', false),
     birthdayLists: sum('lista_cumple'),
     otherLists: sum('lista_otras'),
+    giftsByOccasion: byOccasion(['regalo']),
+    listsByOccasion: byOccasion(['lista_cumple', 'lista_otras']),
     plan: await activePlan(sql, accountId),
   };
 }
@@ -109,9 +119,13 @@ export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charg
   return row !== undefined;
 }
 
-/** ¿Puede crear un regalo más? Con el cobro apagado, siempre. */
-export function canGive(b: Balance, charging: boolean): boolean {
-  return !charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0;
+/**
+ * ¿Puede crear un regalo más? Con el cobro apagado, siempre. Con una ocasión, cuentan también los
+ * créditos de cupón de esa ocasión del catálogo (nunca la ocasión libre).
+ */
+export function canGive(b: Balance, charging: boolean, occasion?: string): boolean {
+  if (!charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0) return true;
+  return occasion !== undefined && occasion !== 'otra' && (b.giftsByOccasion[occasion] ?? 0) > 0;
 }
 
 /**
@@ -120,8 +134,8 @@ export function canGive(b: Balance, charging: boolean): boolean {
  */
 export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient }): Promise<number> {
   const { sql, chain } = deps;
-  const pending = await sql<{ id: string; direccion: string; usuario_id: string }[]>`
-    select id, direccion, usuario_id from regalos
+  const pending = await sql<{ id: string; direccion: string; usuario_id: string; ocasion: string }[]>`
+    select id, direccion, usuario_id, ocasion from regalos
     where credito is null and usuario_id is not null and creado > now() - interval '90 days'
     order by creado limit 100`;
   let consumed = 0;
@@ -141,10 +155,18 @@ export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient })
       const b = await balance(tx, g.usuario_id);
       // Sin saldo ni plan (no debería pasar: la web ofrece los packs antes de mostrar la
       // dirección), el consumo va a los pagos y el saldo queda en negativo hasta que compre.
-      const [cantidad, origen] = planCovers(b.plan) ? [0, 'plan'] : b.welcome > 0 ? [-1, 'bienvenida'] : [-1, 'pago'];
+      // Orden (21/10): plan vigente → créditos de cupón de la ocasión del regalo → bienvenida → pagos.
+      const forOccasion = g.ocasion !== 'otra' && (b.giftsByOccasion[g.ocasion] ?? 0) > 0;
+      const [cantidad, origen, ocasion] = planCovers(b.plan)
+        ? [0, 'plan', null]
+        : forOccasion
+          ? [-1, 'codigo', g.ocasion]
+          : b.welcome > 0
+            ? [-1, 'bienvenida', null]
+            : [-1, 'pago', null];
       await tx`
-        insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
-        values (${g.usuario_id}, 'consumo', 'regalo', ${cantidad}, ${origen}, ${g.id})
+        insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia, ocasion)
+        values (${g.usuario_id}, 'consumo', 'regalo', ${cantidad}, ${origen}, ${g.id}, ${ocasion})
         on conflict do nothing`;
       return true;
     });
@@ -156,8 +178,8 @@ export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient })
 /** Devuelve el crédito de los regalos cancelados (recuperados) que nunca se abrieron. */
 export async function refundCanceledGifts(sql: Sql): Promise<number> {
   const rows = await sql`
-    insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
-    select m.usuario_id, 'devolucion', m.unidad, -m.cantidad, m.origen, m.referencia
+    insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia, ocasion)
+    select m.usuario_id, 'devolucion', m.unidad, -m.cantidad, m.origen, m.referencia, m.ocasion
     from movimientos m join regalos r on r.id = m.referencia
     where m.tipo = 'consumo' and m.cantidad < 0 and r.reclamo_tipo = 'recupero'
     on conflict do nothing

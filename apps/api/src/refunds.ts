@@ -45,7 +45,7 @@ async function refundBlocker(sql: Sql, accountId: string, p: Purchase): Promise<
   // Créditos pagos: el saldo de cada unidad tiene que cubrir lo que otorgó esta compra.
   const rows = await sql<{ unidad: string; total: string }[]>`
     select unidad, coalesce(sum(cantidad), 0) as total from movimientos
-    where usuario_id = ${accountId} and origen <> 'bienvenida' group by unidad`;
+    where usuario_id = ${accountId} and origen <> 'bienvenida' and ocasion is null group by unidad`;
   const left = (u: string) => Number(rows.find((r) => r.unidad === u)?.total ?? 0);
   if (left('regalo') < p.regalos || left('lista_cumple') < p.listas_cumple || left('lista_otras') < p.listas_otras) return 'usado';
   return null;
