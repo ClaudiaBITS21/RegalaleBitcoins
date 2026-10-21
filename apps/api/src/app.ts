@@ -15,6 +15,7 @@ import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
 import { registerAdminUserRoutes } from './admins.ts';
+import { normalizeCode, registerCouponRoutes } from './coupons.ts';
 import { registerRefundRoutes } from './refunds.ts';
 import { balance, canGive, chargingActive, consumeGiftCredits, hasPlanFeatures, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
@@ -147,6 +148,7 @@ export function createApp(deps: AppDeps): Hono {
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerAdminUserRoutes(app, { sql, fixed: deps.adminEmails ?? [], mailer: accounts.mailer });
+  registerCouponRoutes(app, { sql, adminEmails: deps.adminEmails ?? [] });
   if (deps.indexHtml !== undefined) registerShareRoutes(app, { sql, publicUrl: accounts.publicUrl, indexHtml: deps.indexHtml });
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */
@@ -179,9 +181,14 @@ export function createApp(deps: AppDeps): Hono {
   app.post('/api/cuenta/pagos', async (c) => {
     const account = await currentAccount(sql, c);
     if (account === null) throw new ApiError(401, 'sesion_requerida');
-    const body = ((await c.req.json().catch(() => null)) ?? {}) as { producto?: unknown };
+    const body = ((await c.req.json().catch(() => null)) ?? {}) as { producto?: unknown; cupon?: unknown };
     if (typeof body.producto !== 'string') throw new ApiError(400, 'pedido_invalido');
-    const payment = await createPayment({ sql, price, network }, account.id, body.producto);
+    // Con cupón (opcional): «¿Tenés un código?» en la pantalla de compra.
+    const coupon = body.cupon === undefined || body.cupon === null || body.cupon === '' ? null : normalizeCode(body.cupon);
+    if (body.cupon !== undefined && body.cupon !== null && body.cupon !== '' && coupon === null) throw new ApiError(404, 'cupon_invalido');
+    const payment = await createPayment({ sql, price, network }, account.id, body.producto, coupon);
+    // Con un cupón del 100 % no hay nada que pagar: ya quedó acreditado.
+    if ('free' in payment) return c.json({ gratis: true, producto: payment.product, cupon: payment.coupon }, 201);
     return c.json(paymentView(payment), 201);
   });
 
@@ -236,7 +243,7 @@ export function createApp(deps: AppDeps): Hono {
     if (await chargingActive(sql)) {
       if (account === null) throw new ApiError(401, 'cuenta_requerida');
       const b = await balance(sql, account.id);
-      if (!canGive(b, true)) throw new ApiError(409, 'sin_creditos');
+      if (!canGive(b, true, g.occasion)) throw new ApiError(409, 'sin_creditos');
       // La imagen con IA (imagen propia) viene con los planes; lo gratis no la trae.
       if (g.style === 'propia' && !hasPlanFeatures(b, true)) throw new ApiError(403, 'plan_requerido');
     }

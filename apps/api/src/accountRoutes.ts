@@ -247,8 +247,8 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       puedeRegalar: canGive(b, charging),
       conPlan: hasPlanFeatures(b, charging),
       conSaludo: await hasGreetings(sql, account.id, b, charging),
-      regalos: { bienvenida: b.welcome, pagos: b.paid },
-      listas: { cumple: b.birthdayLists, otras: b.otherLists },
+      regalos: { bienvenida: b.welcome, pagos: b.paid, porOcasion: b.giftsByOccasion },
+      listas: { cumple: b.birthdayLists, otras: b.otherLists, porOcasion: b.listsByOccasion },
       plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },
       movimientos: moves.map((m) => ({ tipo: m.tipo, unidad: m.unidad, cantidad: m.cantidad, origen: m.origen, fecha: m.creado.toISOString() })),
     });

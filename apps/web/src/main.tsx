@@ -20,6 +20,7 @@ import { Home } from './home.tsx';
 import { detectLang, translate, type UiLang } from './i18n/index.ts';
 import { browserTrato, type Trato } from './i18n/trato.ts';
 import { OpenGiftPage } from './open.tsx';
+import { CuponesPage } from './admin/CuponesPage.tsx';
 import { AdminPage } from './admin/AdminPage.tsx';
 import { ContributionPage } from './lists/ContributionPage.tsx';
 import { ListPage } from './lists/ListPage.tsx';
@@ -94,6 +95,8 @@ function App() {
         <GivePage />
       ) : /^\/admin\/?$/.test(path) ? (
         <AdminPage />
+      ) : /^\/cupones(\.html)?\/?$/.test(path) ? (
+        <CuponesPage />
       ) : /^\/panel\/?$/.test(path) ? (
         <PanelPage />
       ) : /^\/abrir\/?$/.test(path) ? (

@@ -16,5 +16,7 @@ export default defineConfig({
     // Sin módulos inline ni "data:" en el JS: todo sale de archivos del mismo origen.
     assetsInlineLimit: 0,
     modulePreload: { polyfill: false },
+    // Cupones (solo admins) tiene su propia entrada: otro manifest, para instalarla aparte en el celular.
+    rollupOptions: { input: { main: 'index.html', cupones: 'cupones.html' } },
   },
 });
