@@ -140,12 +140,16 @@ export interface AccountGift {
   readonly claimTxid: string | null;
   readonly claimKind: string | null;
   readonly createdAt: Date;
+  /** Estilo de la tarjeta (para la miniatura del panel). */
+  readonly style: string;
+  /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
+  readonly claimedAt: Date | null;
 }
 
-export async function accountGifts(sql: Sql, accountId: string, limit = 50): Promise<AccountGift[]> {
+export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
@@ -159,6 +163,8 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 50): Pro
     claimTxid: r.reclamo_txid,
     claimKind: r.reclamo_tipo,
     createdAt: r.creado,
+    style: r.estilo,
+    claimedAt: r.reclamado,
   }));
 }
 

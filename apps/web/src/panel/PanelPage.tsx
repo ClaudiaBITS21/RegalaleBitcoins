@@ -2,13 +2,17 @@ import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, typ
 import { useEffect, useState } from 'preact/hooks';
 import { WordsList } from '../give/WordsList.tsx';
 import { accessErrorCode, accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
-import { ApiFailure, api } from '../api.ts';
+import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
 import { MyPlan } from './MyPlan.tsx';
 import { reminderText } from './recordatorio.ts';
 import { type Channel, readSent } from '../give/envios.ts';
 import { occasionLabel } from '../content/occasions.ts';
+import { GiftCardArt } from '../content/GiftCardArt.tsx';
+import { PrintCard } from '../give/PrintCard.tsx';
+import { usePlanFeatures } from '../give/planFeatures.ts';
+import { filterGifts, GIFT_ORDERS, type GiftOrder, sortGifts } from './orden.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -26,6 +30,24 @@ const STATE_KEYS: Readonly<Record<string, Key>> = {
   recuperado: 'panel.estado.recuperado',
   retirado: 'panel.estado.retirado',
 };
+
+// Vista de «Mis regalos» (Rodolfo, 21/10): tarjetas en dos columnas por defecto, o lista. Se
+// recuerda en este navegador.
+const VIEW_KEY = 'regalale.panel.vista';
+function readView(): 'tarjetas' | 'lista' {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'lista' ? 'lista' : 'tarjetas';
+  } catch {
+    return 'tarjetas';
+  }
+}
+function saveView(v: 'tarjetas' | 'lista') {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // Sin almacenamiento, la vista vuelve a la de siempre la próxima vez.
+  }
+}
 
 /** Lee y borra el token de acceso del link del mail (#acceso=…): queda solo en memoria. */
 function readAccessToken(): string | null {
@@ -49,6 +71,13 @@ export function PanelPage() {
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
   const [mailSent, setMailSent] = useState(false);
+  const [layout, setLayout] = useState(readView);
+  const [order, setOrder] = useState<GiftOrder>('fecha');
+  const [query, setQuery] = useState('');
+  // La tarjeta imprimible de un regalo: se arma con el link (bóveda) y los datos públicos del regalo.
+  const [card, setCard] = useState<GiftView | null>(null);
+  const [cardFailed, setCardFailed] = useState<string | null>(null);
+  const conPlan = usePlanFeatures();
 
   const load = async () => {
     try {
@@ -173,23 +202,76 @@ export function PanelPage() {
             </a>
           </div>
         ) : (
-          <ul class="lista-regalos">
-            {view.regalos.map((g) => {
+          <>
+            <div class="regalos-barra">
+              <label class="campo regalos-buscar">
+                <span class="solo-lector">{t('panel.buscar')}</span>
+                <input type="search" placeholder={t('panel.buscar')} value={query} onInput={(e) => setQuery((e.currentTarget as HTMLInputElement).value)} />
+              </label>
+              <label class="regalos-orden">
+                <span>{t('panel.ordenar')}</span>
+                <select value={order} onChange={(e) => setOrder((e.currentTarget as HTMLSelectElement).value as GiftOrder)}>
+                  {GIFT_ORDERS.map((o) => (
+                    <option key={o} value={o}>
+                      {t(`panel.orden.${o}` as Key)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div class="regalos-vista" role="group" aria-label={t('panel.vista')}>
+                {(['tarjetas', 'lista'] as const).map((v) => (
+                  <button key={v} type="button" aria-pressed={layout === v} onClick={() => (setLayout(v), saveView(v))}>
+                    {t(`panel.vista.${v}` as Key)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {(() => {
+              const shown = sortGifts(filterGifts(view.regalos, query), order, (g) => occasionLabel(g.ocasion, lang, g.ocasionLibre), lang);
+              if (shown.length === 0) return <p class="texto-suave">{t('panel.sinResultados')}</p>;
+              return (
+          <ul class={`lista-regalos regalos-${layout}`}>
+            {shown.map((g) => {
               const canDerive = master !== null && network !== null && g.indice !== null;
-              const derived = canDerive && (open === g.id || reminder === g.id) ? deriveGift(masterRoot(master), g.indice as number, g.idioma, network) : null;
+              const derived = canDerive && (open === g.id || reminder === g.id || card?.id === g.id) ? deriveGift(masterRoot(master), g.indice as number, g.idioma, network) : null;
               const link = derived === null ? null : `${window.location.origin}/r/${g.id}#${encodeGiftFragment(derived.entropy)}`;
               const pending = g.estado === 'esperando' || g.estado === 'en_la_red' || g.estado === 'activo';
               const sats = g.sats !== null && g.sats !== '0' ? BigInt(g.sats) : g.satsEsperados !== null ? BigInt(g.satsEsperados) : null;
+              const expanded = open === g.id || reminder === g.id || card?.id === g.id || cardFailed === g.id;
               return (
-                <li class="regalo-item" key={g.id}>
-                  <div class="regalo-cabecera">
-                    <strong>{t('panel.para', { para: g.para })}</strong>
-                    <span class={`estado estado-${g.estado ?? 'desconocido'}`}>{g.estado === null ? '—' : t(STATE_KEYS[g.estado] ?? 'panel.estado.esperando')}</span>
+                <li class={`regalo-item${expanded ? ' expandido' : ''}`} key={g.id}>
+                  <GiftCardArt class="regalo-miniatura" occasion={g.ocasion} estilo={g.estilo} src={g.estilo === 'propia' ? `/api/gifts/${g.id}/imagen` : null} />
+                  <div class="regalo-datos">
+                    <div class="regalo-cabecera">
+                      <strong>{t('panel.para', { para: g.para })}</strong>
+                      <span class={`estado estado-${g.estado ?? 'desconocido'}`}>{g.estado === null ? '—' : t(STATE_KEYS[g.estado] ?? 'panel.estado.esperando')}</span>
+                    </div>
+                    <span class="regalo-motivo">{occasionLabel(g.ocasion, lang, g.ocasionLibre)}</span>
+                    <span class="texto-suave">
+                      {new Date(g.creado).toLocaleDateString(lang)}
+                      {sats !== null ? ` · ${formatSats(sats, lang)}` : ''}
+                    </span>
+                    {g.abierto !== null && <span class="texto-suave">{t('panel.abierto', { dia: new Date(g.abierto).toLocaleDateString(lang) })}</span>}
                   </div>
-                  <span class="texto-suave">
-                    {occasionLabel(g.ocasion, lang, g.ocasionLibre)} · {new Date(g.creado).toLocaleDateString(lang)}
-                    {sats !== null ? ` · ${formatSats(sats, lang)}` : ''}
-                  </span>
+                  <div class="regalo-acciones">
+                  {g.indice !== null && (
+                    <Button
+                      kind="contorno"
+                      disabled={busy}
+                      onClick={async () => {
+                        setCardFailed(null);
+                        if (card?.id === g.id) return setCard(null);
+                        if ((await unlock()) === null) return;
+                        try {
+                          setCard(await api.gift(g.id));
+                        } catch {
+                          setCardFailed(g.id);
+                        }
+                      }}
+                    >
+                      {t(card?.id === g.id ? 'panel.ocultarTarjeta' : 'panel.verTarjeta')}
+                    </Button>
+                  )}
                   {g.indice !== null && pending && (
                     <Button
                       kind="contorno"
@@ -201,18 +283,6 @@ export function PanelPage() {
                     >
                       {t(open === g.id ? 'panel.ocultar' : 'panel.verLink')}
                     </Button>
-                  )}
-                  {derived !== null && link !== null && open === g.id && (
-                    <div class="regalo-secretos">
-                      <p class="mono enlace-regalo" translate={false}>
-                        {link}
-                      </p>
-                      <WordsList words={derived.passphraseWords} />
-                      <small class="texto-suave">
-                        <strong>{t('regalar.mandar.orden')}</strong>
-                      </small>
-                      <small class="texto-suave">{t('regalar.mandar.palabrasTexto')}</small>
-                    </div>
                   )}
                   {pending && (
                     <Button
@@ -231,6 +301,21 @@ export function PanelPage() {
                       {t(reminder === g.id ? 'panel.recordatorio.ocultar' : 'panel.recordatorio')}
                     </Button>
                   )}
+                  </div>
+                  {derived !== null && link !== null && open === g.id && (
+                    <div class="regalo-secretos">
+                      <p class="mono enlace-regalo" translate={false}>
+                        {link}
+                      </p>
+                      <WordsList words={derived.passphraseWords} />
+                      <small class="texto-suave">
+                        <strong>{t('regalar.mandar.orden')}</strong>
+                      </small>
+                      <small class="texto-suave">{t('regalar.mandar.palabrasTexto')}</small>
+                    </div>
+                  )}
+                  {cardFailed === g.id && <small class="error-campo">{t('panel.tarjetaError')}</small>}
+                  {card?.id === g.id && link !== null && <PrintCard link={link} view={card} conPlan={conPlan} />}
                   {reminder === g.id && (
                     <div class="regalo-secretos">
                       <p class="recordatorio-texto">{reminderText(g, trato, link)}</p>
@@ -254,6 +339,9 @@ export function PanelPage() {
               );
             })}
           </ul>
+              );
+            })()}
+          </>
         )}
         <MyPlan />
         <MyLists network={network} />
