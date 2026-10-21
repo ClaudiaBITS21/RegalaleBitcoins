@@ -3688,3 +3688,8 @@ svg.tarjeta-imagen {
 .vincular-qr .qr { display: block; width: 100%; height: auto; }
 .reparar-otra-forma > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .reparar-otra-forma[open] > summary { margin-bottom: 8px; }
+.reportar-lista { margin-top: 18px; }
+.reportar-lista > summary { cursor: pointer; font-size: 14px; color: var(--suave); text-decoration: underline; }
+.reportar-lista[open] > summary { margin-bottom: 10px; }
+.lista-pausada { display: flex; flex-direction: column; gap: 8px; }
+.admin-denuncia { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }

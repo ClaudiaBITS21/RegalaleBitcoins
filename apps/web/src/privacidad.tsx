@@ -61,11 +61,16 @@ export function PrivacyPage() {
               una (se achica y se le sacan los datos ocultos, como la ubicación, en el propio teléfono antes de enviarla). También su estado y las transacciones, que son públicas en la red de bitcoin.
             </li>
             <li>
-              <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta pesos, el alias y el nombre de su titular. De cada
-              aporte, el nombre y el mensaje que deja quien aporta.
+              <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta transferencias, el país y la moneda; el dato
+              para transferir y su titular se guardan cifrados en el navegador de quien arma la lista y no los podemos ver (la clave va en el link de la lista). De cada aporte, el nombre, el
+              mensaje y el monto que deja quien aporta.
             </li>
             <li>
               <strong>Compras del servicio:</strong> el producto, el monto en sats, la dirección de pago y sus transacciones; si se usa el botón de arrepentimiento, la dirección para la devolución.
+            </li>
+            <li>
+              <strong>Reportes de listas:</strong> el mail y el motivo de quien reporta una lista, y su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le
+              llega el motivo, nunca el mail de quien la reportó.
             </li>
             <li>
               <strong>Cupones:</strong> el código, lo que da, quién lo usó y cuándo. Un cupón puede estar hecho para un mail: ese mail queda guardado con el cupón aunque la persona todavía no
@@ -83,7 +88,7 @@ export function PrivacyPage() {
           <ul>
             <li>Para prestar el servicio: crear y mostrar los regalos y las listas, seguir los pagos y llevar los créditos.</li>
             <li>Para mandar los mails del servicio: confirmar el mail, el acceso a la cuenta, el aviso de regalo listo y el recordatorio si sigue sin abrirse.</li>
-            <li>Para prevenir abusos y fraudes.</li>
+            <li>Para prevenir abusos y fraudes (por ejemplo, pausar una lista reportada mientras se revisa).</li>
           </ul>
           <p>
             No vendemos datos ni los usamos para publicidad. El sitio no tiene analytics, píxeles, chats ni ningún otro script de terceros.

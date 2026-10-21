@@ -33,8 +33,13 @@ export interface PublicList {
   readonly abierta: boolean;
   /** Tope por aporte en dólares; null en listas con billetera propia (sin tope). */
   readonly topeUsd: number | null;
-  /** Quien armó la lista acepta transferencias en pesos a su alias. */
-  readonly aceptaPesos: boolean;
+  /** Quien armó la lista acepta transferencias a su cuenta (el dato va cifrado; la clave, en el link). */
+  readonly aceptaTransferencias: boolean;
+  /** Denuncias: fuera de «activa» no muestra datos para aportar. */
+  readonly estado: 'activa' | 'pausada' | 'en_revision' | 'baja';
+  readonly pais: string | null;
+  /** Moneda de las transferencias (ISO 4217). */
+  readonly moneda: string | null;
   /** Para quién es ({nombres} en los ejemplos) y si es de varias personas. */
   readonly para: string | null;
   readonly varios: boolean;
@@ -44,7 +49,8 @@ export interface Transfer {
   readonly codigo: string;
   readonly nombre: string | null;
   readonly mensaje: string;
-  readonly montoArs: number;
+  /** En la unidad menor de la moneda de la lista. */
+  readonly monto: string;
   readonly estado: 'anunciada' | 'recibida' | 'convertida';
   readonly satsConvertidos: string | null;
   /** La compra de la que salió (total y cuántas transferencias entraron). */
@@ -65,9 +71,15 @@ export interface ListContribution {
 
 export interface OwnedList extends PublicList {
   readonly xpub: string;
+  /** Dato de cobro cifrado y la clave de la lista envuelta con la clave maestra (si hay bóveda). */
+  readonly cobro: string | null;
+  readonly claveCifrada: string | null;
+  /** Listas viejas: alias en claro hasta que se vuelva a cargar. */
   readonly alias: string | null;
   readonly aliasTitular: string | null;
   readonly totalRecibido: string;
+  readonly puedeReactivar: boolean;
+  readonly denuncias: ReadonlyArray<{ readonly motivo: string; readonly creada: string }>;
   readonly aportes: readonly ListContribution[];
   readonly transferencias: readonly Transfer[];
 }
@@ -75,10 +87,14 @@ export interface OwnedList extends PublicList {
 type ListRef = { id: string; titulo: string; ocasion: string; ocasionLibre: string | null; idioma: string };
 
 export interface MyTransfer extends Transfer {
-  readonly tipo: 'pesos';
+  readonly tipo: 'transferencia';
   readonly lista: ListRef;
-  readonly alias: string;
-  readonly titular: string;
+  readonly moneda: string;
+  readonly cobro: string | null;
+  readonly alias: string | null;
+  readonly titular: string | null;
+  /** La lista está pausada por una denuncia: el dato de cobro no se muestra. */
+  readonly listaPausada: boolean;
 }
 
 export type MyGift = MyContribution | MyTransfer;
@@ -108,9 +124,20 @@ export interface NewList {
   readonly varios: boolean;
   /** Armada con "Semilla nueva" (lleva el tope de los regalos). */
   readonly semilla: boolean;
-  readonly alias?: string;
-  readonly aliasTitular?: string;
+  /** Transferencias: país (y moneda en «Otro»); el dato cifrado se carga después con setCobro. */
+  readonly pais?: string;
+  readonly moneda?: string;
   readonly convertir?: boolean;
+}
+
+export interface Announced {
+  readonly codigo: string;
+  readonly monto: string;
+  readonly moneda: string;
+  readonly token: string;
+  readonly cobro: string | null;
+  readonly alias: string | null;
+  readonly titular: string | null;
 }
 
 export const listApi = {
@@ -120,18 +147,20 @@ export const listApi = {
     call<{ direccion: string; sats: string; token: string }>(`/api/listas/${encodeURIComponent(id)}/aportes`, a),
   turn: (id: string) => call<{ turno: number }>(`/api/listas/${encodeURIComponent(id)}/ejemplo`, {}),
   mine: (token: string) => call<MyGift>('/api/aportes/consulta', { token }),
-  announce: (id: string, t: { nombre?: string; mensaje?: string; monto: number }) =>
-    call<{ codigo: string; alias: string; titular: string; monto: number; token: string }>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),
+  announce: (id: string, t: { nombre?: string; mensaje?: string; monto: string }) => call<Announced>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),
+  setCobro: (id: string, c: { pais: string; moneda: string; cobro: string; clave: string | null }) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cobro`, c),
   mark: (id: string, codigo: string, estado: 'recibida') =>
     call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado }),
   tanda: (id: string, codigos: readonly string[], sats: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/tanda`, { codigos, sats }),
   owned: () => call<{ listas: OwnedList[] }>('/api/cuenta/listas'),
+  report: (id: string, r: { email: string; motivo: string }) => call<{ estado: string }>(`/api/listas/${encodeURIComponent(id)}/denuncias`, r),
+  reactivate: (id: string) => call<{ estado: string }>(`/api/cuenta/listas/${encodeURIComponent(id)}/reactivar`, {}),
   close: (id: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cerrar`, {}),
 };
 
-/** Alias de Mercado Pago o banco (mismo formato que valida la API). */
-export const ALIAS = /^[a-z0-9.-]{6,20}$/;
-
-/** Link público de una lista y link privado de un aporte (el token va después del #). */
-export const listUrl = (id: string) => `${window.location.origin}/l/${id}`;
-export const contributionUrl = (token: string) => `${window.location.origin}/aporte#${token}`;
+/**
+ * Link público de una lista (con la clave del dato de cobro después del #, si acepta
+ * transferencias) y link privado de un aporte (el token y, si hay, la clave, después del #).
+ */
+export const listUrl = (id: string, key?: string | null) => `${window.location.origin}/l/${id}${key ? `#${key}` : ''}`;
+export const contributionUrl = (token: string, key?: string | null) => `${window.location.origin}/aporte#${token}${key ? `.${key}` : ''}`;

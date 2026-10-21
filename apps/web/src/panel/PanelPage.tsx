@@ -420,7 +420,7 @@ export function PanelPage() {
           </>
         )}
         <MyPlan />
-        <MyLists network={network} />
+        <MyLists network={network} master={master} onUnlock={unlock} />
         <div class="caja">
           <strong>{t('regalar.codigo.titulo')}</strong>
           <p class="texto-suave">{t('regalar.codigo.texto1')}</p>

@@ -11,6 +11,7 @@ import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
 import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
+import { registerReportRoutes } from './reports.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
@@ -145,6 +146,7 @@ export function createApp(deps: AppDeps): Hono {
   registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')) });
   registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
+  registerReportRoutes(app, { sql, network: network.name, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer, publicUrl: accounts.publicUrl });
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerAdminUserRoutes(app, { sql, fixed: deps.adminEmails ?? [], mailer: accounts.mailer });

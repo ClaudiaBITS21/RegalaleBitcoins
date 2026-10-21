@@ -6,6 +6,7 @@ import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AdminAdminsPanel } from './AdminAdmins.tsx';
 import { AdminCobroPanel } from './AdminCobro.tsx';
+import { AdminDenunciasPanel } from './AdminDenuncias.tsx';
 
 // Panel interno de administración (/admin). Solo para los mails de ADMIN_EMAILS; muestra
 // números agregados, nunca datos de las personas ni de los regalos. Textos solo en castellano:
@@ -193,6 +194,7 @@ export function AdminPage() {
         </div>
         {data.regalos.parcial && <Notice>Estados y montos de los {n(data.regalos.muestra)} regalos más recientes.</Notice>}
         <AdminCobroPanel />
+        <AdminDenunciasPanel />
         <AdminAdminsPanel />
         <Days data={data.porDia} />
         <Bars title="Embudo" data={{ 'Creados': data.regalos.muestra, 'Pagados': paid, 'Abiertos': opened }} />

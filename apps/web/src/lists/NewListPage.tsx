@@ -8,7 +8,9 @@ import { groupAddress } from '../format.ts';
 import { VerifyCode } from '../give/CodeSteps.tsx';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
-import { ALIAS, listApi, listUrl } from './listApi.ts';
+import { localListKey, newListKey, sealCobro, wrapKeyFor } from './cobro.ts';
+import { checkCobro, CobroFields, type CobroDraft, emptyCobro } from './CobroFields.tsx';
+import { listApi, listUrl } from './listApi.ts';
 import { useNetwork } from './useNetwork.ts';
 
 // Armar una lista (/listas/nueva). Hace falta una cuenta (mail + passkey) para ver después
@@ -18,6 +20,9 @@ import { useNetwork } from './useNetwork.ts';
 // genera 12 palabras, las anota y las verifica, y de ahí sale la llave pública (BIP84, cuenta 0,
 // la que lee cualquier billetera al importarlas). Las palabras no se guardan en ningún lado,
 // ni en la bóveda ni en el servidor: son la billetera de la lista y quedan solo en su papel.
+// Si acepta transferencias (handoff 21/10, «listas por país»), el dato de cobro se cifra acá con
+// una clave nueva que va en el link; con bóveda, la clave se guarda además envuelta con la clave
+// maestra, para verla en «Mis listas» desde cualquier dispositivo.
 
 type Step = 'acceso' | 'datos' | 'llave' | 'lista';
 const LIMITS = { title: 60, message: 280 } as const;
@@ -44,9 +49,12 @@ export function NewListPage() {
   const [message, setMessage] = useState('');
   const [date, setDate] = useState('');
   const [pesos, setPesos] = useState(false);
-  const [alias, setAlias] = useState('');
-  const [holder, setHolder] = useState('');
+  const [cobro, setCobro] = useState<CobroDraft>(() => emptyCobro(lang === 'pt' ? 'BR' : lang === 'it' ? 'EU' : 'AR'));
   const [convert, setConvert] = useState(false);
+  const [master, setMaster] = useState<string | null>(null);
+  const [listKey, setListKey] = useState<string | null>(null);
+  const [keyInAccount, setKeyInAccount] = useState(false);
+  const [cobroFailed, setCobroFailed] = useState(false);
   const [xpub, setXpub] = useState('');
   const [same, setSame] = useState(false);
   const [keyMode, setKeyMode] = useState<'cold' | 'semilla' | null>(null);
@@ -79,8 +87,9 @@ export function NewListPage() {
     setBusy(true);
     setError(null);
     try {
-      if (mode === 'crear') await createAccess(email.trim(), lang);
-      else await signIn();
+      // Con bóveda, la clave maestra queda en memoria para guardar la clave de la lista (envuelta).
+      const res = mode === 'crear' ? await createAccess(email.trim(), lang) : await signIn();
+      setMaster(res.master);
       setStep('datos');
     } catch (e) {
       setError(accessErrorKey(e));
@@ -91,6 +100,8 @@ export function NewListPage() {
 
   const publish = async () => {
     if (first === null || occasion === null) return;
+    const checked = pesos ? checkCobro(cobro) : null;
+    if (checked !== null && !checked.ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -106,8 +117,23 @@ export function NewListPage() {
         idioma: lang,
         xpub: xpub.trim(),
         primeraDireccion: first,
-        ...(pesos ? { alias: alias.trim().toLowerCase(), aliasTitular: holder.trim(), convertir: convert } : {}),
+        ...(checked?.ok ? { pais: cobro.pais, moneda: checked.moneda, convertir: convert } : {}),
       });
+      if (checked?.ok) {
+        // El dato se cifra con el id de la lista (AAD): por eso va después de crearla.
+        const key = newListKey();
+        localListKey.set(id, key);
+        setListKey(key);
+        try {
+          // Sin la clave maestra en memoria (sesión abierta de antes), se pide la passkey; si no hay bóveda, queda en este navegador.
+          const m = master ?? (await signIn().then((r) => r.master).catch(() => null));
+          const clave = m === null ? null : await (await wrapKeyFor(masterRootFromMnemonic(m).privateKey as Uint8Array)).wrap(key, id);
+          await listApi.setCobro(id, { pais: cobro.pais, moneda: checked.moneda, cobro: await sealCobro(key, id, checked.cobro), clave });
+          setKeyInAccount(clave !== null);
+        } catch {
+          setCobroFailed(true);
+        }
+      }
       setCreated(id);
       setStep('lista');
     } catch (e) {
@@ -141,8 +167,7 @@ export function NewListPage() {
       </div>
     );
   } else if (step === 'datos') {
-    const aliasOk = ALIAS.test(alias.trim().toLowerCase());
-    const pesosOk = !pesos || (aliasOk && holder.trim() !== '' && convert);
+    const pesosOk = !pesos || (checkCobro(cobro).ok && convert);
     const ok = forWhom.trim() !== '' && title.trim() !== '' && [...title.trim()].length <= LIMITS.title && occasion !== null && [...message].length <= LIMITS.message && pesosOk;
     body = (
       <form
@@ -188,15 +213,7 @@ export function NewListPage() {
         {pesos && (
           <div class="caja lista-pesos">
             <p class="texto-suave">{t('lista.pesos.explica')}</p>
-            <label class="campo">
-              <span>{t('lista.pesos.alias')}</span>
-              <input type="text" value={alias} maxLength={20} autocapitalize="none" spellcheck={false} placeholder="ana.leo.mp" onInput={(e) => setAlias((e.currentTarget as HTMLInputElement).value)} />
-              {alias.trim() !== '' && !aliasOk && <small class="error-campo">{t('lista.pesos.aliasInvalido')}</small>}
-            </label>
-            <label class="campo">
-              <span>{t('lista.pesos.titular')}</span>
-              <input type="text" value={holder} maxLength={60} autocomplete="name" onInput={(e) => setHolder((e.currentTarget as HTMLInputElement).value)} />
-            </label>
+            <CobroFields value={cobro} onChange={setCobro} />
             <small class="texto-suave">{t('lista.pesos.bancoAviso')}</small>
             <label class="casilla casilla-destacada">
               <input type="checkbox" checked={convert} onChange={(e) => setConvert((e.currentTarget as HTMLInputElement).checked)} />
@@ -348,7 +365,7 @@ export function NewListPage() {
       </div>
     );
   } else if (created !== null) {
-    const url = listUrl(created);
+    const url = listUrl(created, listKey);
     const share = t('lista.compartir.mensaje', { titulo: title.trim(), link: url });
     body = (
       <div class="paso">
@@ -357,6 +374,8 @@ export function NewListPage() {
         <p class="mono enlace-regalo" translate={false}>
           {url}
         </p>
+        {listKey !== null && !cobroFailed && <Notice>{t('lista.lista.guardaLink')}{keyInAccount ? ` ${t('lista.lista.guardadoCuenta')}` : ''}</Notice>}
+        {cobroFailed && <Notice kind="error">{t('lista.lista.errorCobro')}</Notice>}
         <div class="botones-copiar">
           <a class="boton boton-primario" href={`https://wa.me/?text=${encodeURIComponent(share)}`} target="_blank" rel="noopener noreferrer">
             WhatsApp

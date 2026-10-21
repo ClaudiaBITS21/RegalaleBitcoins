@@ -157,6 +157,46 @@ export function reminderMail(to: string, lang: Lang, para: string, link: string)
   return { to, subject, text: fill(t.body, { para, link }), html: fromText(lang, subject, t.body, { para }, link, CONGRATS[lang].buttonPanel) };
 }
 
+// Aviso a quien armó una lista que fue reportada (sin el mail de quien la reportó). Sin formas de
+// vos ni de tú: el mismo texto sirve para los dos tratos.
+const REPORT: Record<Lang, { subject: string; body: string; again: string; review: string; button: string }> = {
+  es: {
+    subject: 'Pausamos tu lista «{titulo}»',
+    body: 'Alguien reportó la lista «{titulo}» y la pausamos mientras se revisa: por ahora no muestra datos para aportar. Los aportes que ya estaban anunciados no cambian.\n\nMotivo del reporte: «{motivo}»\n\n{next}',
+    again: 'Si todo está bien, se puede reactivar una vez desde el panel.',
+    review: 'Como ya se había reactivado una vez, ahora la revisa nuestro equipo y vamos a escribir por este medio.',
+    button: 'Ir a mi panel',
+  },
+  pt: {
+    subject: 'Pausamos sua lista «{titulo}»',
+    body: 'Alguém denunciou a lista «{titulo}» e ela foi pausada enquanto é revisada: por enquanto não mostra dados para presentear. Os presentes já anunciados não mudam.\n\nMotivo da denúncia: «{motivo}»\n\n{next}',
+    again: 'Se estiver tudo certo, dá para reativar uma vez pelo painel.',
+    review: 'Como já tinha sido reativada uma vez, agora nossa equipe revisa e vamos escrever por aqui.',
+    button: 'Ir ao meu painel',
+  },
+  en: {
+    subject: 'We paused your list «{titulo}»',
+    body: 'Someone reported the list «{titulo}» and it’s paused while it’s reviewed: for now it doesn’t show details for giving. Gifts already announced don’t change.\n\nReason given: «{motivo}»\n\n{next}',
+    again: 'If everything is fine, it can be reactivated once from the dashboard.',
+    review: 'Since it had already been reactivated once, our team will now review it and we’ll write back here.',
+    button: 'Open my dashboard',
+  },
+  it: {
+    subject: 'Abbiamo messo in pausa la tua lista «{titulo}»',
+    body: 'Qualcuno ha segnalato la lista «{titulo}» ed è in pausa mentre viene verificata: per ora non mostra i dati per contribuire. I contributi già annunciati non cambiano.\n\nMotivo della segnalazione: «{motivo}»\n\n{next}',
+    again: 'Se è tutto a posto, si può riattivare una volta dal pannello.',
+    review: 'Poiché era già stata riattivata una volta, ora la verifica il nostro team e scriveremo qui.',
+    button: 'Vai al mio pannello',
+  },
+};
+
+export function reportMail(to: string, lang: Lang, r: { titulo: string; motivo: string; review: boolean; link: string }): Mail {
+  const t = REPORT[lang];
+  const subject = fill(t.subject, { titulo: r.titulo });
+  const vars = { titulo: r.titulo, motivo: r.motivo, next: r.review ? t.review : t.again };
+  return { to, subject, text: `${fill(t.body, vars)}\n\n${r.link}`, html: fromText(lang, subject, t.body, vars, r.link, t.button) };
+}
+
 const LOGIN_BUTTON: Readonly<Record<Lang, string>> = { es: 'Entrar a mi panel', pt: 'Entrar no meu painel', en: 'Open my dashboard', it: 'Entra nel mio pannello' };
 const CONFIRM_BUTTON: Readonly<Record<Lang, string>> = { es: 'Confirmar mi mail', pt: 'Confirmar meu e-mail', en: 'Confirm my email', it: 'Conferma la mia email' };
 const FOOTER: Readonly<Record<Lang, string>> = {
