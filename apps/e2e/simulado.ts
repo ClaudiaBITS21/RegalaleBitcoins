@@ -226,14 +226,19 @@ try {
   if ((await ars100k.locator('.opcion-monto-sats').innerText()) !== '62.500 sats') fail('el sugerido en pesos no muestra sus sats');
   await ars100k.click();
   await page.getByText('Vas a regalar 62.500 sats.').waitFor();
-  await page.getByText('Hoy equivale a $ 100.000,00.').waitFor();
+  await page.getByText('Hoy equivale a $ 100.000.').waitFor();
   await shot('r3-cuanto-sugeridos');
+  // En sats, los sugeridos son lo que valen hoy US$ 25, 50 y 100, con los dólares en chico.
+  await page.getByRole('button', { name: 'En sats' }).click();
+  const sats25 = page.locator('.opcion-monto', { hasText: /^25\.000 sats/ });
+  if ((await sats25.locator('.opcion-monto-sats').innerText()).replace(/\s/g, ' ') !== 'US$ 25') fail('el sugerido en sats no muestra su equivalente en dólares');
+  await page.getByRole('button', { name: 'En pesos' }).click();
   // Otro monto en pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
   await page.getByRole('button', { name: 'Otro monto' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('40.000');
   await page.getByText('Vas a regalar 25.000 sats.').waitFor();
-  await page.getByText('Hoy equivale a $ 40.000,00.').waitFor();
-  await page.getByText('Cotización: 1 BTC = $ 160.000.000,00 (mediana del precio de compra en exchanges argentinos, según CriptoYa). Cálculo: $ 40.000,00 ÷ $ 160.000.000,00 × 100.000.000 = 25.000 sats.').waitFor();
+  await page.getByText('Hoy equivale a $ 40.000.').waitFor();
+  await page.getByText('Cotización: 1 BTC = $ 160.000.000 (mediana del precio de compra en exchanges argentinos, según CriptoYa). Cálculo: $ 40.000 ÷ $ 160.000.000 × 100.000.000 = 25.000 sats.').waitFor();
   await shot('r3-cuanto-pesos');
   // En dólares, el punto es de miles y la coma, de decimales.
   await page.getByRole('button', { name: 'En dólares' }).click();

@@ -794,8 +794,8 @@ h1 {
 
 /* Abajo de cada monto sugerido, su equivalente en chico (en sats, o en plata si son sats). */
 .opcion-monto-sats {
-  font: 500 12px var(--texto);
-  opacity: 0.75;
+  font: 500 11px var(--texto);
+  opacity: 0.7;
 }
 
 .monto-centrado {
