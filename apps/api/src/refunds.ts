@@ -60,6 +60,15 @@ async function ownPurchases(sql: Sql, accountId: string): Promise<Purchase[]> {
     order by p.confirmado desc`;
 }
 
+/** Nombres de Precios para los mails a los admins (los mismos de la web; código interno al lado). */
+const PRODUCT_NAMES: Readonly<Record<string, string>> = {
+  pack10: 'Satoshi (pack10)',
+  pack10_lista: 'Node (pack10_lista)',
+  lista_cumple: 'Lista de cumpleaños (lista_cumple)',
+  anual: 'Hodler (anual)',
+  fundador: 'Genesis (fundador)',
+};
+
 export function registerRefundRoutes(app: Hono, deps: { sql: Sql; network: Network; adminEmails: readonly string[]; mailer: Mailer }): void {
   const { sql, network, adminEmails, mailer } = deps;
   const signedIn = async (c: Context): Promise<Account> => {
@@ -108,7 +117,7 @@ export function registerRefundRoutes(app: Hono, deps: { sql: Sql; network: Netwo
     await sql`
       insert into arrepentimientos (codigo, pago_id, usuario_id, direccion_devolucion, sats)
       values (${codigo}, ${p.id}, ${account.id}, ${address}, ${p.sats_recibidos})`;
-    const text = `Pedido de arrepentimiento ${codigo}: pago ${p.id.slice(0, 8)} (${p.producto}), devolver ${p.sats_recibidos} sats a ${address}.`;
+    const text = `Pedido de arrepentimiento ${codigo}: pago ${p.id.slice(0, 8)} (${PRODUCT_NAMES[p.producto] ?? p.producto}), devolver ${p.sats_recibidos} sats a ${address}.`;
     for (const to of await allAdmins(sql, adminEmails)) await mailer.send({ to, subject: `Regalale Bitcoin: arrepentimiento ${codigo}`, text }).catch(() => undefined);
     await mailer
       .send({

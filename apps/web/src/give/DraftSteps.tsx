@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
 import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats, formatWhole } from '../format.ts';
 import { examplesFor, fillName, pickExample, useExamples } from '../content/mensajes.ts';
-import { usePlanFeatures } from './planFeatures.ts';
+import { useGreetings, usePlanFeatures } from './planFeatures.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { browserCountry } from '../content/temporada.ts';
@@ -50,7 +50,8 @@ export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; on
   const examples = useExamples(draft.lang, trato);
   // La salutación automática (el mensaje de ejemplo de cada ocasión) viene con los planes.
   const conPlan = usePlanFeatures();
-  const list = examples === null || conPlan !== true ? [] : examplesFor(examples, draft.occasion, 'mensajes');
+  const conSaludo = useGreetings();
+  const list = examples === null || conSaludo !== true ? [] : examplesFor(examples, draft.occasion, 'mensajes');
   // Si cambia el nombre o el idioma y el mensaje sigue siendo el ejemplo, se actualiza con ellos.
   const onChange = (p: Partial<Draft>) => {
     if (isUntouched(draft) && draft.example !== null && p.to !== undefined) p = { ...p, message: fillName(draft.example, p.to, NO_NAME) };
@@ -112,7 +113,7 @@ export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; on
           )}
         </span>
         {isUntouched(draft) && <small class="texto-suave">{t('regalar.mensaje.empujoncito')}</small>}
-        {conPlan === false && (
+        {conSaludo === false && (
           <small class="texto-suave">
             {t('regalar.mensaje.soloPlanes')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
           </small>

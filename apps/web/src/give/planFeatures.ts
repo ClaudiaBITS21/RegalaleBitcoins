@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { api } from '../api.ts';
+import { api, type Credits } from '../api.ts';
 
 // Lo que traen los planes (imagen con IA, tarjeta imprimible, salutación automática): lo gratis
 // (solo la bienvenida) no lo trae (Rodolfo, 20/10). Con el cobro apagado, todos lo tienen. Sin
@@ -8,12 +8,21 @@ import { api } from '../api.ts';
 // pone candado (el servidor igual controla la imagen propia).
 
 export function usePlanFeatures(): boolean | null {
+  return useFeature((c) => c.conPlan ?? true);
+}
+
+/** La salutación automática: la traen los planes salvo Satoshi (Rodolfo, 21/10). */
+export function useGreetings(): boolean | null {
+  return useFeature((c) => c.conSaludo ?? c.conPlan ?? true);
+}
+
+function useFeature(pick: (c: Credits) => boolean): boolean | null {
   const [with_, setWith] = useState<boolean | null>(null);
   useEffect(() => {
     let alive = true;
     api
       .creditsIfSignedIn()
-      .then(async (c) => (c !== null ? (c.conPlan ?? true) : !(await api.products()).cobroActivo))
+      .then(async (c) => (c !== null ? pick(c) : !(await api.products()).cobroActivo))
       .then((v) => alive && setWith(v))
       .catch(() => alive && setWith(true));
     return () => {

@@ -151,8 +151,8 @@ export function createApp(deps: AppDeps): Hono {
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */
   app.get('/api/productos', async (c) => {
-    const rows = await sql<{ codigo: string; precio_sats: string; regalos: number; listas_cumple: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null }[]>`
-      select codigo, precio_sats, regalos, listas_cumple, listas_otras, plan, regalos_libres, dias, cupo from productos where activo order by precio_sats, codigo`;
+    const rows = await sql<{ codigo: string; precio_sats: string; regalos: number; listas_cumple: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null; saludo: boolean }[]>`
+      select codigo, precio_sats, regalos, listas_cumple, listas_otras, plan, regalos_libres, dias, cupo, saludo from productos where activo order by precio_sats, codigo`;
     const [charging, key, founders] = await Promise.all([chargingActive(sql), paymentKey(sql, network).catch(() => null), foundersLeft(sql)]);
     return c.json({
       cobroActivo: charging,
@@ -169,6 +169,7 @@ export function createApp(deps: AppDeps): Hono {
         regalosLibres: p.regalos_libres,
         dias: p.dias,
         cupo: p.cupo,
+        saludo: p.saludo,
         seVendeSuelto: (BUYABLE as readonly string[]).includes(p.codigo),
       })),
     });

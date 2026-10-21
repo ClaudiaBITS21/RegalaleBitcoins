@@ -140,6 +140,8 @@ export interface Products {
     readonly regalosLibres: boolean;
     readonly dias: number | null;
     readonly cupo: number | null;
+    /** Si trae la salutación automática (API desde el 21/10). */
+    readonly saludo?: boolean;
     readonly seVendeSuelto: boolean;
   }>;
 }
@@ -150,6 +152,8 @@ export interface Credits {
   readonly puedeRegalar: boolean;
   /** Si tiene lo que traen los planes (lo gratis no). */
   readonly conPlan: boolean;
+  /** Si tiene la salutación automática (Satoshi no la trae; API desde el 21/10). */
+  readonly conSaludo?: boolean;
   readonly regalos: { readonly bienvenida: number; readonly pagos: number };
   readonly listas: { readonly cumple: number; readonly otras: number };
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
