@@ -96,6 +96,14 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 - Web `pnpm build:mainnet` en el sitio `regalalebitcoins` (`firebase deploy --only hosting:mainnet`).
 - Acceso público al servicio (`--no-invoker-iam-check`): lo corre la responsable desde Cloud Shell.
 
+## Tercer deploy de la API del 21/10/2026
+
+- Imagen `api:2204a44-v1`, desplegada por la responsable desde Cloud Shell. Al arrancar aplica las
+  migraciones 025 (listas por país: país, moneda, dato de cobro cifrado; transferencias en la
+  unidad menor de la moneda) y 026 (denuncias y pausa escalonada). Además, `/api/cuenta` manda la
+  cotización de hoy para el valor de cada regalo.
+- Después, la web `2204a44` (la publicó la responsable con el workflow «Deploy web mainnet»).
+
 ## Segundo deploy de la API del 21/10/2026
 
 - Imagen `api:dc713eb-v1`, desplegada por la responsable desde Cloud Shell. Al arrancar aplica las
