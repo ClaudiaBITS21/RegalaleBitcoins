@@ -1,11 +1,13 @@
 import { LANGS, type Lang, minimumGiftAmount } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api.ts';
-import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats } from '../format.ts';
+import { fiatCentsToSats, formatArsExact, formatSats, formatUsd, formatUsdExact, parseAmount, satsToUsd, usdCentsToSats, formatWhole } from '../format.ts';
 import { examplesFor, fillName, pickExample, useExamples } from '../content/mensajes.ts';
 import { usePlanFeatures } from './planFeatures.ts';
 import { type Key, LANG_NAMES } from '../i18n/index.ts';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
+import { browserCountry } from '../content/temporada.ts';
+import { defaultUnit, presetsFor, type Unit } from './montos.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
 import { StylePicker } from './StylePicker.tsx';
@@ -149,8 +151,8 @@ interface Market {
   readonly maxSats: bigint | null;
 }
 
-type Unit = 'USD' | 'ARS' | 'SAT';
-type Choice = { kind: 'preset'; usd: number } | { kind: 'otro'; unit: Unit; text: string };
+type Choice = { kind: 'preset'; value: number } | { kind: 'otro'; text: string };
+type Picked = Pick<Draft, 'currency' | 'amount' | 'sats'>;
 
 export function AmountStep({
   draft,
@@ -165,11 +167,12 @@ export function AmountStep({
   ceilingUsd: number | null;
   /** Montos sugeridos en dólares; si no, salen del techo. */
   presets?: readonly number[];
-  onNext: (a: Pick<Draft, 'currency' | 'amount' | 'sats'>) => void;
+  onNext: (a: Picked) => void;
 }) {
   const { t, lang } = useI18n();
   const [market, setMarket] = useState<Market | null>(null);
   const [failed, setFailed] = useState(false);
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
 
   const load = async () => {
@@ -177,6 +180,7 @@ export function AmountStep({
     try {
       const [{ usdPorBtc: usdPerBtc, arsPorBtc: arsPerBtc, fuenteArs: arsSource }, fees] = await Promise.all([api.price(), api.fees()]);
       setMarket({ usdPerBtc, arsPerBtc, arsSource, minSats: minimumGiftAmount(fees.halfHour), maxSats: ceilingUsd === null ? null : usdCentsToSats(BigInt(Math.round(ceilingUsd * 100)), usdPerBtc) });
+      setUnit((u) => u ?? defaultUnit(browserCountry(), arsPerBtc !== null));
     } catch {
       setFailed(true);
     }
@@ -194,22 +198,28 @@ export function AmountStep({
       </div>
     );
   }
-  if (market === null) return <p class="texto-suave cargando">{t('reclamo.cargando')}</p>;
+  if (market === null || unit === null) return <p class="texto-suave cargando">{t('reclamo.cargando')}</p>;
+
+  /** Un monto en la moneda elegida, en centavos (o sats), pasado a lo que se guarda. */
+  const pick = (value: bigint): Picked | null => {
+    if (unit === 'USD') return { currency: 'USD', amount: Number(value) / 100, sats: usdCentsToSats(value, market.usdPerBtc) };
+    if (unit === 'ARS') return market.arsPerBtc === null ? null : { currency: 'ARS', amount: Number(value) / 100, sats: fiatCentsToSats(value, market.arsPerBtc) };
+    return { currency: 'SAT', amount: Number(value), sats: value };
+  };
+  const centsOf = (n: number): bigint => (unit === 'SAT' ? BigInt(n) : BigInt(n) * 100n);
 
   // Lo que eligió, ya interpretado: en sats y en la moneda elegida.
-  let picked: Pick<Draft, 'currency' | 'amount' | 'sats'> | null = null;
+  let picked: Picked | null = null;
   let problem: string | null = null;
   if (choice?.kind === 'preset') {
-    picked = { currency: 'USD', amount: choice.usd, sats: usdCentsToSats(BigInt(choice.usd * 100), market.usdPerBtc) };
+    picked = pick(centsOf(choice.value));
   } else if (choice?.kind === 'otro') {
-    const fiat = choice.unit !== 'SAT';
+    const fiat = unit !== 'SAT';
     const parsed = parseAmount(choice.text, lang, fiat ? 2 : 0);
     if (parsed.ok && parsed.value > 0n) {
-      if (choice.unit === 'USD') picked = { currency: 'USD', amount: Number(parsed.value) / 100, sats: usdCentsToSats(parsed.value, market.usdPerBtc) };
-      else if (choice.unit === 'ARS' && market.arsPerBtc !== null) picked = { currency: 'ARS', amount: Number(parsed.value) / 100, sats: fiatCentsToSats(parsed.value, market.arsPerBtc) };
-      else if (choice.unit === 'SAT') picked = { currency: 'SAT', amount: Number(parsed.value), sats: parsed.value };
+      picked = pick(parsed.value);
     } else if (!parsed.ok && parsed.error !== 'vacio') {
-      const example = choice.unit === 'USD' ? formatUsdExact(1234.5, lang) : choice.unit === 'ARS' ? formatArsExact(1234.5, lang) : formatSats(12_500n, lang).replace(' sats', '');
+      const example = unit === 'USD' ? formatUsdExact(1234.5, lang) : unit === 'ARS' ? formatArsExact(1234.5, lang) : formatSats(12_500n, lang).replace(' sats', '');
       problem = parsed.error === 'formato' ? t('regalar.cuanto.formato', { ejemplo: example }) : t(fiat ? 'regalar.cuanto.decimales' : 'regalar.cuanto.sinDecimales');
     }
   }
@@ -219,14 +229,15 @@ export function AmountStep({
     problem = t('regalar.cuanto.maximo', { maximo: formatUsd(ceilingUsd, lang) });
   }
   const valid = picked !== null && problem === null;
-  const usdOf = (sats: bigint) => formatUsdExact(satsToUsd(sats, market.usdPerBtc), lang);
-  const otro = choice?.kind === 'otro' ? choice : null;
   const units: Unit[] = market.arsPerBtc === null ? ['USD', 'SAT'] : ['USD', 'ARS', 'SAT'];
-  const shown = (p: Pick<Draft, 'currency' | 'amount' | 'sats'>): string =>
-    p.currency === 'USD' ? formatUsdExact(p.amount, lang) : p.currency === 'ARS' ? formatArsExact(p.amount, lang) : formatSats(p.sats, lang);
-  // Equivalencias: siempre en sats, y en dólares si eligió otra moneda.
-  const equivalent = (p: Pick<Draft, 'currency' | 'amount' | 'sats'>): string =>
-    p.currency === 'USD' ? formatSats(p.sats, lang) : p.currency === 'ARS' ? `${formatSats(p.sats, lang)} · ${usdOf(p.sats)}` : usdOf(p.sats);
+  // Lo que vale en plata: en la moneda elegida, y en dólares si eligió sats. Los pesos, sin decimales.
+  const money = (p: Picked): string => {
+    if (p.currency === 'USD') return formatUsdExact(p.amount, lang);
+    if (p.currency === 'ARS') return formatWhole(p.amount, 'ARS', lang);
+    return formatUsdExact(satsToUsd(p.sats, market.usdPerBtc), lang);
+  };
+  const otro = choice?.kind === 'otro' ? choice : null;
+  const usdPresets = presets ?? presetsUsd(ceilingUsd ?? 100);
 
   return (
     <form
@@ -237,55 +248,59 @@ export function AmountStep({
       }}
     >
       <StepTitle>{t('regalar.cuanto.titulo')}</StepTitle>
+      <div class="selector-unidad" role="group" aria-label={t('regalar.cuanto.unidad')}>
+        {units.map((u) => (
+          <button
+            type="button"
+            key={u}
+            class={`unidad${unit === u ? ' elegida' : ''}`}
+            aria-pressed={unit === u}
+            onClick={() => {
+              setUnit(u);
+              if (choice?.kind === 'preset') setChoice(null);
+            }}
+          >
+            {t(u === 'USD' ? 'regalar.cuanto.enDolares' : u === 'ARS' ? 'regalar.cuanto.enPesos' : 'regalar.cuanto.enSats')}
+          </button>
+        ))}
+      </div>
       <div class="opciones-monto">
-        {(presets ?? presetsUsd(ceilingUsd ?? 100)).map((usd) => {
-          const tooSmall = usdCentsToSats(BigInt(usd * 100), market.usdPerBtc) < market.minSats;
-          const on = choice?.kind === 'preset' && choice.usd === usd;
+        {presetsFor(unit, usdPresets).map((n) => {
+          const p = pick(centsOf(n));
+          const out = p === null || p.sats < market.minSats || (market.maxSats !== null && p.sats > market.maxSats);
+          const on = choice?.kind === 'preset' && choice.value === n;
           return (
-            <button type="button" key={usd} class={`opcion-monto${on ? ' elegida' : ''}`} aria-pressed={on} disabled={tooSmall} onClick={() => setChoice({ kind: 'preset', usd })}>
-              {formatUsd(usd, lang)}
+            <button type="button" key={n} class={`opcion-monto${on ? ' elegida' : ''}`} aria-pressed={on} disabled={out} onClick={() => setChoice({ kind: 'preset', value: n })}>
+              <span>{unit === 'SAT' ? formatSats(BigInt(n), lang) : formatWhole(n, unit, lang)}</span>
+              {p !== null && (
+                <small class="opcion-monto-sats">{unit === 'SAT' ? money(p) : formatSats(p.sats, lang)}</small>
+              )}
             </button>
           );
         })}
-        <button
-          type="button"
-          class={`opcion-monto${otro !== null ? ' elegida' : ''}`}
-          aria-pressed={otro !== null}
-          onClick={() => setChoice({ kind: 'otro', unit: otro?.unit ?? 'USD', text: otro?.text ?? '' })}
-        >
+        <button type="button" class={`opcion-monto${otro !== null ? ' elegida' : ''}`} aria-pressed={otro !== null} onClick={() => setChoice({ kind: 'otro', text: otro?.text ?? '' })}>
           {t('regalar.cuanto.otro')}
         </button>
       </div>
       {otro !== null && (
         <div class="otro-monto">
-          <div class="selector-unidad" role="group" aria-label={t('regalar.cuanto.unidad')}>
-            {units.map((u) => (
-              <button type="button" key={u} class={`unidad${otro.unit === u ? ' elegida' : ''}`} aria-pressed={otro.unit === u} onClick={() => setChoice({ ...otro, unit: u })}>
-                {t(u === 'USD' ? 'regalar.cuanto.enDolares' : u === 'ARS' ? 'regalar.cuanto.enPesos' : 'regalar.cuanto.enSats')}
-              </button>
-            ))}
-          </div>
           <label class="campo">
             <span>{t('regalar.cuanto.monto')}</span>
             <input
               type="text"
-              inputMode={otro.unit === 'SAT' ? 'numeric' : 'decimal'}
+              inputMode={unit === 'SAT' ? 'numeric' : 'decimal'}
               autocomplete="off"
               value={otro.text}
-              onInput={(e) => setChoice({ ...otro, text: (e.currentTarget as HTMLInputElement).value })}
+              onInput={(e) => setChoice({ kind: 'otro', text: (e.currentTarget as HTMLInputElement).value })}
             />
           </label>
-          {otro.unit === 'SAT' && <small class="texto-suave">{t('regalar.cuanto.queEsSat')}</small>}
+          {unit === 'SAT' && <small class="texto-suave">{t('regalar.cuanto.queEsSat')}</small>}
         </div>
       )}
       {picked !== null && problem === null && (
-        <div class="caja monto" aria-live="polite">
-          <strong>
-            {t('regalar.cuanto.vasARegalar', { monto: shown(picked) })}
-          </strong>
-          <span class="texto-suave">
-            {t('regalar.cuanto.equivale', { otro: equivalent(picked) })}
-          </span>
+        <div class="caja monto monto-centrado" aria-live="polite">
+          <strong>{t('regalar.cuanto.vasARegalar', { monto: formatSats(picked.sats, lang) })}</strong>
+          <span class="texto-suave">{t('regalar.cuanto.equivale', { otro: money(picked) })}</span>
           <Calculation picked={picked} market={market} />
         </div>
       )}
@@ -310,9 +325,9 @@ function Calculation({ picked, market }: { picked: Pick<Draft, 'currency' | 'amo
   if (picked.currency === 'ARS' && market.arsPerBtc !== null && market.arsSource !== null) {
     lines.push(
       t('regalar.cuanto.calculo', {
-        precio: formatArsExact(market.arsPerBtc, lang),
+        precio: formatWhole(market.arsPerBtc, 'ARS', lang),
         fuente: t(`regalar.fuente.${market.arsSource}`),
-        monto: formatArsExact(picked.amount, lang),
+        monto: formatWhole(picked.amount, 'ARS', lang),
         unBtc: oneBtc,
         sats: formatSats(picked.sats, lang),
       }),
