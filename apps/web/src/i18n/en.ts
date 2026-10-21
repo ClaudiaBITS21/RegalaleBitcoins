@@ -293,6 +293,7 @@ export const en: Dict = {
   'panel.cuenta': 'Account: {email}',
   'panel.vacio': 'You haven’t made any gifts yet.',
   'panel.para': 'For {para}',
+  'panel.hoy': "Today: {valor}",
   'panel.buscar': 'Search by name',
   'panel.ordenar': 'Sort by',
   'panel.orden.fecha': 'Date',

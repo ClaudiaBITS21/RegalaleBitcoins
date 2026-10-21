@@ -143,7 +143,7 @@ export function createApp(deps: AppDeps): Hono {
   app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
-  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')) });
+  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice });
   registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerReportRoutes(app, { sql, network: network.name, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer, publicUrl: accounts.publicUrl });

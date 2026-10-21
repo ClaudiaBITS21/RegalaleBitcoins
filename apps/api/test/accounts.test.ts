@@ -299,9 +299,15 @@ describe('Cuentas con passkey', () => {
       cookie,
     );
     assert.equal(created.status, 201);
-    const me = (await (await req('/api/cuenta', undefined, cookie)).json()) as { proximoIndice: number; regalos: Array<{ indice: number; para: string; estado: string }> };
+    const me = (await (await req('/api/cuenta', undefined, cookie)).json()) as {
+      proximoIndice: number;
+      regalos: Array<{ indice: number; para: string; estado: string; original: { moneda: string; monto: number; usdPorBtc: number | null } }>;
+      cotizacion: { usdPorBtc: number | null; arsPorBtc: number | null };
+    };
     assert.equal(me.proximoIndice, 1);
     assert.deepEqual(me.regalos.map((r) => [r.indice, r.para, r.estado]), [[0, 'Tomi', 'esperando']]);
+    // Para mostrar cuánto vale hoy: lo que se puso al armarlo y la cotización de hoy.
+    assert.deepEqual([me.regalos[0]?.original.moneda, me.regalos[0]?.original.monto, me.cotizacion.usdPorBtc], ['SAT', 30000, usdPerBtc]);
 
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });

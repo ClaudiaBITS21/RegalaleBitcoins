@@ -293,6 +293,7 @@ export const it: Dict = {
   'panel.cuenta': 'Account: {email}',
   'panel.vacio': 'Non hai ancora fatto regali.',
   'panel.para': 'Per {para}',
+  'panel.hoy': "Oggi: {valor}",
   'panel.buscar': 'Cerca per nome',
   'panel.ordenar': 'Ordina per',
   'panel.orden.fecha': 'Data',

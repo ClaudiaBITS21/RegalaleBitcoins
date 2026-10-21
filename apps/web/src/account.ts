@@ -39,6 +39,8 @@ export interface AccountGift {
   readonly estilo: string;
   /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
   readonly abierto: string | null;
+  /** Lo que se puso al armarlo (moneda, monto y cotización del dólar ese día). */
+  readonly original?: { readonly moneda: string; readonly monto: number; readonly usdPorBtc: number | null } | null;
   readonly estado: string | null;
   readonly sats: string | null;
 }
@@ -48,6 +50,8 @@ export interface AccountView {
   readonly credenciales: ReadonlyArray<{ id: string; prf: boolean }>;
   readonly proximoIndice: number;
   readonly regalos: readonly AccountGift[];
+  /** Cotización de hoy (null si no respondió). */
+  readonly cotizacion?: { readonly usdPorBtc: number | null; readonly arsPorBtc: number | null };
 }
 
 export const accountApi = {

@@ -294,6 +294,7 @@ export const pt: Dict = {
   'panel.cuenta': 'Conta: {email}',
   'panel.vacio': 'Você ainda não deu presentes.',
   'panel.para': 'Para {para}',
+  'panel.hoy': "Hoje: {valor}",
   'panel.buscar': 'Buscar por nome',
   'panel.ordenar': 'Ordenar por',
   'panel.orden.fecha': 'Data',

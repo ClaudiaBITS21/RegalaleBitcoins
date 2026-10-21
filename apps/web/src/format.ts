@@ -40,6 +40,16 @@ export function formatFiat(amount: number, currency: string, lang: UiLang): stri
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
 }
 
+/** Variación con signo y un decimal: "+3,2 %", "−10 %" (sin decimal si es entera). */
+export function formatChange(change: number, lang: UiLang): string {
+  return new Intl.NumberFormat(LOCALES[lang], { style: 'percent', signDisplay: 'exceptZero', maximumFractionDigits: 1 }).format(change);
+}
+
+/** Valor de hoy de un regalo: dólares (sin centavos desde 10) o pesos sin decimales. */
+export function formatValue(amount: number, currency: 'USD' | 'ARS', lang: UiLang): string {
+  return currency === 'USD' ? formatUsd(amount, lang) : new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount);
+}
+
 export function satsToUsd(sats: bigint, usdPerBtc: number): number {
   return (Number(sats) / 1e8) * usdPerBtc;
 }
