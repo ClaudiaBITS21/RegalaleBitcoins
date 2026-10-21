@@ -1,8 +1,8 @@
 # Handoff 21/10/2026: listas por país, dato de cobro cifrado y denuncias
 
-Estado: EN CURSO. Secciones 1 a 5 INTEGRADAS (PR «Listas por país: dato de cobro cifrado y
-moneda de la lista»); sección 6 (denuncias y pausa escalonada) en el PR siguiente. Tarea 1
-(`docs/operacion.md`) en el PR «docs/operacion.md y test de la regla 3».
+Estado: INTEGRADO (PR «Listas por país: dato de cobro cifrado, moneda de la lista y denuncias»;
+la tarea 1, `docs/operacion.md`, en el PR «docs/operacion.md y test de la regla 3»), salvo lo
+ABIERTO.
 
 Decidido por Rodolfo en chat (Cowork), 21/10/2026. Reglas que aplican: `docs/operacion.md`
 (regla 5). Lo marcado **ABIERTO** se consulta antes de implementar.
@@ -63,7 +63,7 @@ listas. Términos y condiciones: revisión del abogado.
 
 No se suben comprobantes, ni cifrados. La conciliación es con el código `RB-XXXX` y el monto.
 
-## 6. Denuncias y pausa escalonada (pendiente: PR siguiente)
+## 6. Denuncias y pausa escalonada
 
 Botón "Reportar esta lista" al pie de toda lista pública; primera denuncia pausa en el acto y
 oculta dato de cobro, dirección y QR; el dueño puede reactivarla una sola vez; una denuncia
@@ -81,6 +81,11 @@ sección "Denuncias" con Reactivar y Dar de baja, con passkey y en `registro_adm
   la moneda no cambia si ya hay transferencias). Anunciar y consultar devuelven el cifrado.
 - Web: `lists/cobro.ts` (cifrado, vector de prueba), `lists/medios.ts` (validaciones),
   `lists/CobroFields.tsx`; «Mis listas» muestra el link completo y deja volver a cargar el dato.
+- Denuncias: migración `026_denuncias.sql` y `apps/api/src/reports.ts`. La primera pausa (no se
+  puede aportar ni anunciar, y la página pública y «Mi aporte» no muestran el dato); el dueño ve
+  los motivos en «Mis listas» y la reactiva una vez; la siguiente la deja en revisión. Mail al
+  dueño sin el mail de quien denunció. Admin: sección «Denuncias» (Reactivar / Dar de baja, con
+  passkey y en `registro_admin`). Una lista dada de baja deja de existir para los invitados.
 - La clave de la lista se guarda en la cuenta envuelta con una llave derivada de la clave
   maestra (HKDF), en vez de dentro de la bóveda: misma propiedad (el servidor no la puede abrir)
   sin cambiar el formato de la bóveda.

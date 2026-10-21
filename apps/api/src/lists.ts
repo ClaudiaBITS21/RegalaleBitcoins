@@ -42,6 +42,9 @@ interface ListRow {
   moneda: string | null;
   cobro: string | null;
   clave_cifrada: string | null;
+  /** Denuncias (reports.ts): fuera de «activa» no muestra datos para aportar. */
+  estado: 'activa' | 'pausada' | 'en_revision' | 'baja';
+  reactivada: Date | null;
   red: string;
   usuario_id: string;
   xpub: string;
@@ -152,8 +155,9 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   idioma: l.idioma,
   abierta: l.cerrada === null,
   topeUsd: listCeiling(l, ceilingUsd),
+  estado: l.estado,
   // Acepta transferencias de persona a persona en la moneda de la lista (el dato va cifrado).
-  aceptaTransferencias: l.cobro !== null || l.alias !== null,
+  aceptaTransferencias: l.estado === 'activa' && (l.cobro !== null || l.alias !== null),
   pais: l.pais,
   moneda: l.moneda,
   para: l.para,
@@ -280,7 +284,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
   /** La lista para los invitados: nunca muestra aportes ni totales. */
   app.get('/api/listas/:id', async (c) => {
     const list = await findList(sql, c.req.param('id'));
-    if (list === null || list.red !== network.name) throw new ApiError(404, 'no_encontrado');
+    if (list === null || list.red !== network.name || list.estado === 'baja') throw new ApiError(404, 'no_encontrado');
     return c.json(publicList(list, deps.ceilingUsd));
   });
 
@@ -300,7 +304,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!limiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const list = await findList(sql, c.req.param('id'));
-    if (list === null || list.red !== network.name) throw new ApiError(404, 'no_encontrado');
+    if (list === null || list.red !== network.name || list.estado === 'baja') throw new ApiError(404, 'no_encontrado');
+    if (list.estado !== 'activa') throw new ApiError(409, 'lista_pausada');
     if (list.cerrada !== null) throw new ApiError(409, 'regalo_no_disponible', 'lista_cerrada');
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
@@ -375,7 +380,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!limiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const list = await findList(sql, c.req.param('id'));
-    if (list === null || list.red !== network.name || (list.cobro === null && list.alias === null) || list.moneda === null) throw new ApiError(404, 'no_encontrado');
+    if (list === null || list.red !== network.name || (list.cobro === null && list.alias === null) || list.moneda === null || list.estado === 'baja') throw new ApiError(404, 'no_encontrado');
+    if (list.estado !== 'activa') throw new ApiError(409, 'lista_pausada');
     if (list.cerrada !== null) throw new ApiError(409, 'regalo_no_disponible', 'lista_cerrada');
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     // En la unidad menor de la moneda de la lista (centavos), como texto.
@@ -407,15 +413,17 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       select a.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma from aportes a join listas l on l.id = a.lista_id
       where a.token_hash = ${hashToken(b.token)} and l.red = ${network.name} and not a.externa`;
     if (r === undefined) {
-      const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string } & Pick<ListRow, 'alias' | 'alias_titular' | 'cobro' | 'moneda'>)[]>`
-        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular, l.cobro, l.moneda from transferencias t join listas l on l.id = t.lista_id
+      const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string } & Pick<ListRow, 'alias' | 'alias_titular' | 'cobro' | 'moneda'> & { lista_estado: ListRow['estado'] })[]>`
+        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular, l.cobro, l.moneda, l.estado as lista_estado from transferencias t join listas l on l.id = t.lista_id
         where t.token_hash = ${hashToken(b.token)} and l.red = ${network.name}`;
       if (tr === undefined) throw new ApiError(404, 'no_encontrado');
       return c.json({
         tipo: 'transferencia',
         lista: { id: tr.lista_id, titulo: tr.titulo, ocasion: tr.ocasion, ocasionLibre: tr.ocasion_libre, idioma: tr.idioma },
         moneda: tr.moneda,
-        ...collectData(tr),
+        // Con la lista pausada por una denuncia, el dato de cobro no se muestra (el aporte sí).
+        ...(tr.lista_estado === 'activa' ? collectData(tr) : { cobro: null, alias: null, titular: null }),
+        listaPausada: tr.lista_estado !== 'activa',
         ...transferView(tr),
       });
     }
@@ -458,6 +466,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
           };
         });
         const transfers = await sql<TransferRow[]>`select * from transferencias where lista_id = ${l.id} order by creada`;
+        // Los motivos de las denuncias, sin el mail de quien denunció.
+        const reports = await sql<{ motivo: string; creada: Date }[]>`select motivo, creada from denuncias where lista_id = ${l.id} order by creada`;
         return {
           ...publicList(l, deps.ceilingUsd),
           xpub: l.xpub,
@@ -466,6 +476,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
           alias: l.alias,
           aliasTitular: l.alias_titular,
           totalRecibido: total.toString(),
+          puedeReactivar: l.estado === 'pausada' && l.reactivada === null,
+          denuncias: reports.map((r) => ({ motivo: r.motivo, creada: r.creada.toISOString() })),
           aportes,
           transferencias: transfers.map(transferView),
         };

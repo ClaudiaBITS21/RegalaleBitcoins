@@ -69,6 +69,10 @@ export function PrivacyPage() {
               <strong>Compras del servicio:</strong> el producto, el monto en sats, la dirección de pago y sus transacciones; si se usa el botón de arrepentimiento, la dirección para la devolución.
             </li>
             <li>
+              <strong>Reportes de listas:</strong> el mail y el motivo de quien reporta una lista, y su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le
+              llega el motivo, nunca el mail de quien la reportó.
+            </li>
+            <li>
               <strong>Cupones:</strong> el código, lo que da, quién lo usó y cuándo. Un cupón puede estar hecho para un mail: ese mail queda guardado con el cupón aunque la persona todavía no
               tenga cuenta, solo para que nadie más lo pueda usar. No le mandamos mails a esa dirección por el cupón; la invitación la manda quien la reparte.
             </li>
@@ -84,7 +88,7 @@ export function PrivacyPage() {
           <ul>
             <li>Para prestar el servicio: crear y mostrar los regalos y las listas, seguir los pagos y llevar los créditos.</li>
             <li>Para mandar los mails del servicio: confirmar el mail, el acceso a la cuenta, el aviso de regalo listo y el recordatorio si sigue sin abrirse.</li>
-            <li>Para prevenir abusos y fraudes.</li>
+            <li>Para prevenir abusos y fraudes (por ejemplo, pausar una lista reportada mientras se revisa).</li>
           </ul>
           <p>
             No vendemos datos ni los usamos para publicidad. El sitio no tiene analytics, píxeles, chats ni ningún otro script de terceros.

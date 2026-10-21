@@ -46,6 +46,7 @@ let sql: Sql;
 let chain: Chain;
 let app: ReturnType<typeof createApp>;
 let cookie: string;
+let mails: Array<{ to: string; subject: string; text: string }> = [];
 
 const req = (path: string, body?: unknown, withCookie = true) =>
   app.request(path, {
@@ -70,6 +71,7 @@ describe('listas de regalos', () => {
     await sql.end();
   });
   beforeEach(async () => {
+    await sql`delete from denuncias`;
     await sql`delete from transferencias`;
     await sql`delete from aportes`;
     await sql`delete from listas`;
@@ -82,10 +84,12 @@ describe('listas de regalos', () => {
       network: signet,
       ceilingUsd: 20,
       listContributionsPerHour: 50,
-      accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async () => {} }, cookieSecure: true },
+      adminEmails: ['admin@example.com'],
+      accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true },
     });
     const account = await createAccount(sql, { email: 'ana@example.com', lang: 'es', credential: { id: randomBytes(16).toString('base64url'), publicKey: randomBytes(65), alg: -7, signCount: 0, vault: null } });
     cookie = `__session=${await createSession(sql, account.id, 'passkey')}`;
+    mails = [];
   });
 
   it('crear: hace falta sesión, una vpub válida y confirmar la primera dirección', async () => {
@@ -217,6 +221,56 @@ describe('listas de regalos', () => {
     const l = panel.listas.find((x) => x.id === id);
     assert.deepEqual([l?.cobro, l?.claveCifrada, l?.moneda], [COBRO, CLAVE, 'BRL']);
     assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.monto, x.estado]), [[t1.codigo, '25000000', 'convertida'], [t2.codigo, '1500050', 'convertida']]);
+  });
+
+  it('denuncias: la primera pausa y oculta los datos; el dueño reactiva una vez; la siguiente la deja en revisión; el admin decide', async () => {
+    const { id } = (await (await newList({ pais: 'AR', convertir: true })).json()) as { id: string };
+    await req(`/api/cuenta/listas/${id}/cobro`, { pais: 'AR', cobro: `v1.${'I'.repeat(16)}.${'C'.repeat(80)}` });
+    const t = (await (await req(`/api/listas/${id}/transferencias`, { monto: '100000' }, false)).json()) as { token: string; codigo: string };
+    const report = (email: string, motivo = 'El alias no es de los novios', ip = '203.0.113.7') =>
+      app.request(`/api/listas/${id}/denuncias`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ORIGIN, 'x-forwarded-for': ip }, body: JSON.stringify({ email, motivo }) });
+    const pub = async () => (await (await req(`/api/listas/${id}`, undefined, false)).json()) as { estado: string; aceptaTransferencias: boolean };
+    assert.equal((await report('no-es-mail')).status, 400);
+    assert.equal((await report('tia@example.com', '')).status, 400);
+    // 1. Primera denuncia: pausa en el acto; no se puede aportar ni ver el dato; mail al dueño sin el mail de quien denunció.
+    assert.equal((await report('Tia@Example.com')).status, 201);
+    assert.deepEqual(await pub().then((p) => [p.estado, p.aceptaTransferencias]), ['pausada', false]);
+    assert.equal((await aporte(id)).status, 409);
+    assert.equal((await req(`/api/listas/${id}/transferencias`, { monto: '5000' }, false)).status, 409);
+    const mine = (await (await req('/api/aportes/consulta', { token: t.token }, false)).json()) as { estado: string; cobro: string | null; listaPausada: boolean; codigo: string };
+    assert.deepEqual([mine.estado, mine.cobro, mine.listaPausada, mine.codigo], ['anunciada', null, true, t.codigo], 'el aporte anunciado sigue, sin el dato de cobro');
+    assert.equal(mails.length, 1);
+    assert.equal(mails[0]?.to, 'ana@example.com');
+    assert.ok(mails[0]?.text.includes('El alias no es de los novios') && !mails[0]?.text.includes('tia@example.com'));
+    assert.equal((await report('tia@example.com')).status, 409, 'una denuncia por mail y por lista');
+    const panel = async () =>
+      ((await (await req('/api/cuenta/listas')).json()) as { listas: Array<{ id: string; estado: string; puedeReactivar: boolean; denuncias: Array<{ motivo: string; email?: string }> }> }).listas.find((x) => x.id === id);
+    const p1 = await panel();
+    assert.deepEqual([p1?.estado, p1?.puedeReactivar, p1?.denuncias.map((d) => d.motivo), p1?.denuncias[0]?.email], ['pausada', true, ['El alias no es de los novios'], undefined]);
+    // 2. El dueño la reactiva una sola vez.
+    assert.equal((await req(`/api/cuenta/listas/${id}/reactivar`, {}, false)).status, 401);
+    assert.equal((await req(`/api/cuenta/listas/${id}/reactivar`, {})).status, 200);
+    assert.equal((await pub()).estado, 'activa');
+    // 3. Otra denuncia después de reactivar: en revisión; el dueño ya no puede reactivarla.
+    assert.equal((await report('primo@example.com', 'Sigue raro', '203.0.113.8')).status, 201);
+    assert.equal((await pub()).estado, 'en_revision');
+    assert.equal((await req(`/api/cuenta/listas/${id}/reactivar`, {})).status, 409);
+    assert.ok(mails[1]?.text.includes('revisa nuestro equipo'));
+    // Admin: ve las denuncias con el mail de quien denunció (no el dato de cobro) y decide, con passkey.
+    const adminAccount = await createAccount(sql, { email: 'admin@example.com', lang: 'es', credential: { id: randomBytes(16).toString('base64url'), publicKey: randomBytes(65), alg: -7, signCount: 0, vault: null } });
+    const adminCookie = `__session=${await createSession(sql, adminAccount.id, 'passkey')}`;
+    const adminReq = (path: string, body?: unknown, ck = adminCookie) =>
+      app.request(path, { method: body === undefined ? 'GET' : 'POST', headers: { 'content-type': 'application/json', origin: ORIGIN, cookie: ck }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    assert.equal((await adminReq('/api/admin/denuncias', undefined, cookie)).status, 404);
+    const list = (await (await adminReq('/api/admin/denuncias')).json()) as { listas: Array<{ id: string; estado: string; dueno: string; denuncias: Array<{ email: string }> }> };
+    assert.deepEqual([list.listas[0]?.id, list.listas[0]?.estado, list.listas[0]?.dueno, list.listas[0]?.denuncias.map((d) => d.email)], [id, 'en_revision', 'ana@example.com', ['tia@example.com', 'primo@example.com']]);
+    assert.ok(!JSON.stringify(list).includes('CCCC'), 'el admin no ve el dato de cobro');
+    const linkCookie = `__session=${await createSession(sql, adminAccount.id, 'link')}`;
+    assert.equal((await adminReq(`/api/admin/denuncias/${id}`, { accion: 'baja' }, linkCookie)).status, 403);
+    assert.equal((await adminReq(`/api/admin/denuncias/${id}`, { accion: 'baja' })).status, 200);
+    assert.equal((await req(`/api/listas/${id}`, undefined, false)).status, 404);
+    assert.equal((await adminReq(`/api/admin/denuncias/${id}`, { accion: 'reactivar' })).status, 200);
+    assert.equal((await pub()).estado, 'activa');
   });
 
   it('listas viejas con alias en claro: siguen funcionando; al volver a cargar el dato, el alias se borra', async () => {

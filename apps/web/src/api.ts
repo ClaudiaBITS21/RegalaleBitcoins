@@ -263,6 +263,20 @@ export const api = {
     email?: string;
   }) => post<{ codigo: string }>('/api/admin/cupones', c),
   adminCouponActive: (codigo: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/${encodeURIComponent(codigo)}/activo`, { activo }),
+  adminReports: () =>
+    call<{
+      listas: Array<{
+        id: string;
+        titulo: string;
+        ocasion: string;
+        creada: string;
+        estado: 'activa' | 'pausada' | 'en_revision' | 'baja';
+        reactivada: string | null;
+        dueno: string;
+        denuncias: Array<{ email: string; motivo: string; creada: string }>;
+      }>;
+    }>('/api/admin/denuncias'),
+  adminReportAction: (id: string, accion: 'reactivar' | 'baja') => post<{ estado: string }>(`/api/admin/denuncias/${encodeURIComponent(id)}`, { accion }),
   adminAdmins: () => call<{ fijos: string[]; agregados: Array<{ email: string; agregadoPor: string; creado: string }> }>('/api/admin/admins'),
   adminAddAdmin: (email: string) => post<{ email: string }>('/api/admin/admins', { email }),
   adminRemoveAdmin: (email: string) => post<{ ok: true }>('/api/admin/admins/quitar', { email }),

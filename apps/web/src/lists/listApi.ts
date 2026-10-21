@@ -35,6 +35,8 @@ export interface PublicList {
   readonly topeUsd: number | null;
   /** Quien armó la lista acepta transferencias a su cuenta (el dato va cifrado; la clave, en el link). */
   readonly aceptaTransferencias: boolean;
+  /** Denuncias: fuera de «activa» no muestra datos para aportar. */
+  readonly estado: 'activa' | 'pausada' | 'en_revision' | 'baja';
   readonly pais: string | null;
   /** Moneda de las transferencias (ISO 4217). */
   readonly moneda: string | null;
@@ -76,6 +78,8 @@ export interface OwnedList extends PublicList {
   readonly alias: string | null;
   readonly aliasTitular: string | null;
   readonly totalRecibido: string;
+  readonly puedeReactivar: boolean;
+  readonly denuncias: ReadonlyArray<{ readonly motivo: string; readonly creada: string }>;
   readonly aportes: readonly ListContribution[];
   readonly transferencias: readonly Transfer[];
 }
@@ -89,6 +93,8 @@ export interface MyTransfer extends Transfer {
   readonly cobro: string | null;
   readonly alias: string | null;
   readonly titular: string | null;
+  /** La lista está pausada por una denuncia: el dato de cobro no se muestra. */
+  readonly listaPausada: boolean;
 }
 
 export type MyGift = MyContribution | MyTransfer;
@@ -147,6 +153,8 @@ export const listApi = {
     call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado }),
   tanda: (id: string, codigos: readonly string[], sats: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/tanda`, { codigos, sats }),
   owned: () => call<{ listas: OwnedList[] }>('/api/cuenta/listas'),
+  report: (id: string, r: { email: string; motivo: string }) => call<{ estado: string }>(`/api/listas/${encodeURIComponent(id)}/denuncias`, r),
+  reactivate: (id: string) => call<{ estado: string }>(`/api/cuenta/listas/${encodeURIComponent(id)}/reactivar`, {}),
   close: (id: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cerrar`, {}),
 };
 

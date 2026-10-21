@@ -760,6 +760,28 @@ try {
   await cousin.getByText('¡Listo! Tu parte se convirtió en 35.000 sats.').waitFor({ timeout: 15_000 });
   await cousin.getByText(/^lupe\.e2e\.mp \(Lupe Pérez\) · código RB-/).waitFor();
 
+  // Denuncia: la primera pausa la lista en el acto y oculta los datos para aportar; Lupe ve el
+  // motivo en su panel y la reactiva (una sola vez).
+  const [bday] = await sql<{ id: string }[]>`select id from listas where titulo = 'Cumple de Lupe'`;
+  const reporter = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR' });
+  reporter.on('pageerror', (e) => problems.push(`denuncia: ${e.message}`));
+  await reporter.goto(`${BASE}/l/${bday?.id}`);
+  await reporter.getByText('Reportar esta lista').click();
+  await reporter.getByLabel('Contanos por qué').fill('No creo que sea de Lupe');
+  await reporter.getByLabel('Tu mail (no se muestra)').fill('vecino.e2e@example.com');
+  await reporter.getByRole('button', { name: 'Pausar esta lista' }).click();
+  await reporter.getByText('Esta lista está en revisión. Mientras tanto no muestra datos para aportar.').waitFor({ timeout: 15_000 });
+  if ((await reporter.getByRole('button', { name: 'Regalar bitcoin' }).count()) > 0) fail('una lista pausada sigue mostrando cómo aportar');
+  await shot2(reporter, 'l7-denunciada');
+  await reporter.close();
+  await giver.goto(`${BASE}/panel`);
+  const paused = giver.locator('.lista-panel').filter({ hasText: 'Cumple de Lupe' });
+  await paused.getByText('Motivo: «No creo que sea de Lupe»').waitFor({ timeout: 15_000 });
+  await paused.screenshot({ path: join(SHOTS, 'l7-panel-pausada.png') });
+  await paused.getByRole('button', { name: 'Reactivar mi lista' }).click();
+  await paused.getByText('Pausamos esta lista por un reporte').waitFor({ state: 'detached', timeout: 15_000 });
+  if ((await sql<{ estado: string }[]>`select estado from listas where id = ${bday?.id ?? ''}`)[0]?.estado !== 'activa') fail('la lista no quedó activa al reactivarla');
+
   // Compra de créditos: con la llave de cobro cargada (aunque el cobro esté apagado) se puede
   // comprar desde la página de precios; el pago va a una dirección de esa llave y acredita.
   const cobroVpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
@@ -816,6 +838,7 @@ try {
   console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey; passkey que no abre la bóveda (QR) se repara vinculando el celu o con las 12 palabras.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
+  console.log('OK: denuncia: la lista se pausa y no muestra cómo aportar; el dueño ve el motivo y la reactiva.');
   console.log('OK: transferencia en pesos: dato de cobro cifrado en el navegador (clave en el link), código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log('OK: compra de un pack desde precios con cupón del 20 %: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');

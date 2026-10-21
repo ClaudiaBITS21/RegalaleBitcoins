@@ -31,6 +31,51 @@ const POLL_MS = 5_000;
 /** Sugeridos en listas con billetera propia (sin tope); "Otro" deja poner cualquier monto. */
 const LIST_PRESETS_USD = [50, 100, 150] as const;
 
+/** «Reportar esta lista» (handoff 21/10, sección 6): la primera denuncia la pausa en el acto. */
+function ReportList({ id, nombre, onDone }: { id: string; nombre: string; onDone: () => void }) {
+  const { t } = useI18n();
+  const [reason, setReason] = useState('');
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<Key | null>(null);
+  const ok = reason.trim() !== '' && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  return (
+    <details class="reportar-lista">
+      <summary>{t('lista.reportar.boton')}</summary>
+      <form
+        class="formulario"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!ok) return;
+          setBusy(true);
+          listApi
+            .report(id, { email: email.trim(), motivo: reason.trim() })
+            .then(() => {
+              setResult('lista.reportar.listo');
+              onDone();
+            })
+            .catch((err: unknown) => setResult(err instanceof ApiFailure && err.code === 'ya_denunciada' ? 'lista.reportar.ya' : 'lista.reportar.error'))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <p class="texto-suave">{t('lista.reportar.texto', { nombre })}</p>
+        <label class="campo">
+          <span>{t('lista.reportar.motivo')}</span>
+          <textarea rows={3} maxLength={500} value={reason} onInput={(e) => setReason((e.currentTarget as HTMLTextAreaElement).value)} />
+        </label>
+        <label class="campo">
+          <span>{t('lista.reportar.mail')}</span>
+          <input type="email" autocomplete="email" value={email} onInput={(e) => setEmail((e.currentTarget as HTMLInputElement).value)} />
+        </label>
+        {result !== null && <Notice kind={result === 'lista.reportar.listo' ? 'ok' : 'error'}>{t(result)}</Notice>}
+        <Button kind="contorno" type="submit" disabled={busy || !ok}>
+          {t('lista.reportar.cta')}
+        </Button>
+      </form>
+    </details>
+  );
+}
+
 export function ListPage({ id }: { id: string }) {
   const { t, lang, trato } = useI18n();
   const { network, ceilingUsd } = useNetwork();
@@ -113,7 +158,7 @@ export function ListPage({ id }: { id: string }) {
       setStep('pagar');
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : '';
-      setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : code === 'lista_cerrada' ? 'lista.cerrada' : 'regalar.error');
+      setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : code === 'lista_cerrada' ? 'lista.cerrada' : code === 'lista_pausada' ? 'lista.revision' : 'regalar.error');
     } finally {
       setBusy(false);
     }
@@ -142,7 +187,7 @@ export function ListPage({ id }: { id: string }) {
       setStep('transferir');
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : '';
-      setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : code === 'lista_cerrada' ? 'lista.cerrada' : 'regalar.error');
+      setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : code === 'lista_cerrada' ? 'lista.cerrada' : code === 'lista_pausada' ? 'lista.revision' : 'regalar.error');
     } finally {
       setBusy(false);
     }
@@ -194,7 +239,9 @@ export function ListPage({ id }: { id: string }) {
           </div>
         </article>
         <p class="texto-suave">{t('lista.invitado.texto')}</p>
-        {!list.abierta ? (
+        {list.estado !== 'activa' ? (
+          <Notice>{t('lista.revision')}</Notice>
+        ) : !list.abierta ? (
           <Notice>{t('lista.cerrada')}</Notice>
         ) : list.aceptaTransferencias ? (
           <div class="lista-metodos">
@@ -207,6 +254,7 @@ export function ListPage({ id }: { id: string }) {
         ) : (
           <Button onClick={() => setStep('cuanto')}>{t('lista.invitado.cta')}</Button>
         )}
+        {list.estado === 'activa' && <ReportList id={id} nombre={list.para ?? list.titulo} onDone={() => void listApi.get(id).then(setList)} />}
       </div>
     );
   } else if (step === 'cuanto') {

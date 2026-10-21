@@ -372,6 +372,24 @@ export function MyLists({ network, master = null, onUnlock = async () => null }:
               </p>
               <p>{t(l.aportes.length === 1 ? 'lista.panel.total1' : 'lista.panel.total', { total: formatSats(BigInt(l.totalRecibido), lang), n: l.aportes.length })}</p>
               {bad.length > 0 && <Notice kind="error">{t('lista.panel.direccionAjena')}</Notice>}
+              {l.estado !== 'activa' && (
+                <div class="caja lista-pausada">
+                  <Notice kind={l.estado === 'pausada' ? 'error' : 'info'}>{t(l.estado === 'pausada' ? 'lista.panel.pausada' : l.estado === 'en_revision' ? 'lista.panel.enRevision' : 'lista.panel.baja')}</Notice>
+                  {l.denuncias.map((d) => (
+                    <p class="texto-suave" key={d.creada}>
+                      {t('lista.panel.motivo', { motivo: d.motivo })}
+                    </p>
+                  ))}
+                  {l.puedeReactivar && (
+                    <>
+                      <small class="texto-suave">{t('lista.panel.reactivarTexto')}</small>
+                      <Button kind="contorno" onClick={() => void listApi.reactivate(l.id).then(load)}>
+                        {t('lista.panel.reactivar')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
               {l.aportes.length > 0 && (
                 <ul class="lista-aportes">
                   {l.aportes.map((a) => (

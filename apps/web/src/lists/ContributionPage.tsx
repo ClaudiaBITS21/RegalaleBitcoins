@@ -60,6 +60,7 @@ export function ContributionPage() {
           {data.nombre !== null && <p class="texto-suave">{t('lista.mio.firmado', { nombre: data.nombre })}</p>}
           {data.mensaje !== '' && <p class="texto-suave">“{data.mensaje}”</p>}
         </div>
+        {data.listaPausada && <Notice>{t('lista.revision')}</Notice>}
         <Notice kind={data.estado === 'anunciada' ? 'info' : 'ok'}>{t(stateKey, { sats: data.satsConvertidos === null ? '' : formatSats(BigInt(data.satsConvertidos), lang) })}</Notice>
         {data.estado === 'convertida' && data.tanda !== null && data.tanda.aportes > 1 && (
           <small class="texto-suave">{t('lista.mio.tanda', { total: formatSats(BigInt(data.tanda.sats), lang), n: String(data.tanda.aportes) })}</small>
