@@ -97,6 +97,18 @@ export function hasPlanFeatures(b: Balance, charging: boolean): boolean {
   return !charging || planCovers(b.plan) || b.paid > 0;
 }
 
+/**
+ * La salutación automática (Rodolfo, 21/10): la trae un plan vigente o haber comprado alguna vez un
+ * producto que la incluye (todos menos Satoshi). Con el cobro apagado, todos la tienen.
+ */
+export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charging: boolean): Promise<boolean> {
+  if (!charging || planCovers(b.plan)) return true;
+  const [row] = await sql`
+    select 1 from pagos p join productos pr on pr.codigo = p.producto
+    where p.usuario_id = ${accountId} and p.estado = 'confirmado' and pr.saludo limit 1`;
+  return row !== undefined;
+}
+
 /** ¿Puede crear un regalo más? Con el cobro apagado, siempre. */
 export function canGive(b: Balance, charging: boolean): boolean {
   return !charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0;

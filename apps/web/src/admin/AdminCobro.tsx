@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type AdminCobro, type AdminProduct, ApiFailure, api } from '../api.ts';
 import { formatSats, formatUsdPrice } from '../format.ts';
+import { PRODUCT_NAME } from '../comprar.tsx';
 import { Button, Notice, useI18n } from '../ui.tsx';
 
 // Admin del cobro (handoff 2026-10-19, «cobro y créditos»). Herramienta interna: solo en
@@ -24,8 +25,18 @@ const errorText = (e: unknown): string => {
   return 'No se pudo completar.';
 };
 
+/** Nombre de Precios con el código interno al lado: «Hodler (anual)» (Rodolfo, 21/10). */
+function useProductName(): (codigo: string) => string {
+  const { t } = useI18n();
+  return (codigo) => {
+    const key = PRODUCT_NAME[codigo];
+    return key === undefined ? codigo : `${t(key)} (${codigo})`;
+  };
+}
+
 export function AdminCobroPanel() {
   const { lang } = useI18n();
+  const productName = useProductName();
   const [data, setData] = useState<AdminCobro | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [llave, setLlave] = useState('');
@@ -175,7 +186,7 @@ export function AdminCobroPanel() {
             ))}
         </tbody>
       </table>
-      <p class="texto-suave">Quedan {data.fundadoresQuedan} lugares de fundador.</p>
+      <p class="texto-suave">Quedan {data.fundadoresQuedan} lugares de Genesis.</p>
 
       <h3>Ajuste manual de créditos</h3>
       <form
@@ -210,7 +221,7 @@ export function AdminCobroPanel() {
         <ul class="admin-lista">
           {refunds.map((r) => (
             <li key={r.codigo}>
-              <strong>{r.codigo}</strong> · {r.producto} · pago <code>{r.pago}</code> · {new Date(r.fecha).toLocaleString(lang)}
+              <strong>{r.codigo}</strong> · {productName(r.producto)} · pago <code>{r.pago}</code> · {new Date(r.fecha).toLocaleString(lang)}
               <br />
               Devolver {sats(r.sats)} a <code>{r.direccion}</code>
               <br />
@@ -258,7 +269,7 @@ export function AdminCobroPanel() {
                   <td>
                     <code>{p.id.slice(0, 8)}</code>
                   </td>
-                  <td>{p.producto}</td>
+                  <td>{productName(p.producto)}</td>
                   <td>{ESTADOS[p.estado] ?? p.estado}</td>
                   <td>{formatUsdPrice(p.precioUsd, lang)}</td>
                   <td>
@@ -287,6 +298,7 @@ export function AdminCobroPanel() {
 
 /** Una fila editable de producto: precio y contenido (los valores y límites pueden cambiar). */
 function ProductRow({ product: p, busy, onError, run }: { product: AdminProduct; busy: boolean; onError: (e: string) => void; run: (fn: () => Promise<unknown>) => Promise<void> }) {
+  const productName = useProductName();
   const opt = (n: number | null) => (n === null ? '' : String(n));
   const [precio, setPrecio] = useState(p.precioSats);
   const [regalos, setRegalos] = useState(opt(p.regalos));
@@ -313,8 +325,8 @@ function ProductRow({ product: p, busy, onError, run }: { product: AdminProduct;
   return (
     <tr>
       <td>
-        {p.codigo}
-        {p.plan !== null && ' (plan)'}
+        {productName(p.codigo)}
+        {p.plan !== null && ' · plan'}
       </td>
       {campo(precio, setPrecio, 'Precio en sats')}
       {campo(regalos, setRegalos, 'Regalos')}

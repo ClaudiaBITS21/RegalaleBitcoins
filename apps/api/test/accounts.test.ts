@@ -463,7 +463,7 @@ describe('Cuentas con passkey', () => {
     const productos = async () => (await (await req('/api/productos')).json()) as { seVende: boolean; cobroActivo: boolean; fundadoresQuedan: number; productos: Array<{ codigo: string; precioSats: string; seVendeSuelto: boolean }> };
     const p0 = await productos();
     assert.deepEqual([p0.seVende, p0.cobroActivo, p0.fundadoresQuedan], [false, false, 21]);
-    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, regalosLibres: false, dias: null, cupo: null, seVendeSuelto: true });
+    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, regalosLibres: false, dias: null, cupo: null, saludo: false, seVendeSuelto: true });
     assert.equal(p0.productos.find((p) => p.codigo === 'lista_otras')?.seVendeSuelto, false);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' })).status, 401);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).status, 409);
@@ -489,7 +489,8 @@ describe('Cuentas con passkey', () => {
     await setPaymentKey(sql, signet, accountKeyText(masterRootFromMnemonic(MASTER), signet));
     const buy = async (producto: string) => (await (await req('/api/cuenta/pagos', { producto }, cookie)).json()) as { id: string; direccion: string; sats: string };
     const state = async (id: string) => ((await (await req(`/api/cuenta/pagos/${id}`, undefined, cookie)).json()) as { estado: string }).estado;
-    const creditos = async () => ((await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { pagos: number }; listas: { otras: number }; plan: { tipo: string; hasta: string | null; regalosQuedan: number | null; listas: number } | null });
+    const creditos = async () => ((await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { conSaludo: boolean; regalos: { pagos: number }; listas: { otras: number }; plan: { tipo: string; hasta: string | null; regalosQuedan: number | null; listas: number } | null });
+    await setChargingActive(sql, true);
     const tx = (n: number) => 'ab'.repeat(31) + String(n).padStart(2, '0');
     // RBF: 10.300 sats (más del 98 % de 10.500) en la mempool, señalando RBF → «visto», todavía sin acreditar.
     const a = await buy('pack10');
@@ -501,6 +502,8 @@ describe('Cuentas con passkey', () => {
     assert.equal((await creditos()).regalos.pagos, 10);
     assert.equal(await state(a.id), 'confirmado');
     assert.equal((await creditos()).regalos.pagos, 10); // una sola vez
+    // Satoshi trae IA y tarjeta, pero no la salutación automática (21/10).
+    assert.equal((await creditos()).conSaludo, false);
     // Sin RBF: alcanza con la mempool. Pack con lista: 10 regalos más y una lista de cualquier ocasión.
     const b = await buy('pack10_lista');
     pays.set(b.direccion, { confirmed: 0n, mempool: [{ txid: tx(2), feeRate: 2, value: BigInt(b.sats), rbf: false }] });
@@ -518,14 +521,16 @@ describe('Cuentas con passkey', () => {
     assert.equal(await state(d.id), 'confirmado');
     // La lista de cumpleaños suelta ya no se vende.
     assert.equal((await req('/api/cuenta/pagos', { producto: 'lista_cumple' }, cookie)).status, 422);
-    // Timechain (anual): 30 regalos y 3 listas por 365 días, en el plan (no como créditos sueltos).
+    // Node trae la salutación.
+    assert.equal((await creditos()).conSaludo, true);
+    // Hodler (código «anual», 21/10): 30 regalos y 3 listas como créditos, que no vencen; sin plan.
+    const antes = await creditos();
     const e = await buy('anual');
     pays.set(e.direccion, { confirmed: BigInt(e.sats), mempool: [] });
     assert.equal(await state(e.id), 'confirmado');
-    const plan = (await creditos()).plan;
-    assert.deepEqual([plan?.tipo, plan?.regalosQuedan, plan?.listas], ['anual', 30, 3]);
-    assert.ok(Math.abs(Date.parse(plan?.hasta as string) - Date.now() - 365 * 86_400_000) < 60_000);
-    assert.equal((await creditos()).regalos.pagos, 30); // los 20 + 10 de antes, sin sumar los del plan
+    const despues = await creditos();
+    assert.equal(despues.plan, null);
+    assert.deepEqual([despues.regalos.pagos - antes.regalos.pagos, despues.listas.otras - antes.listas.otras], [30, 3]);
     // Genesis Block (fundador): regalos libres y 10 listas, para siempre; solo 21.
     const f = await buy('fundador');
     pays.set(f.direccion, { confirmed: BigInt(f.sats), mempool: [] });
@@ -602,12 +607,12 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/admin/precio', { producto: 'pack10', precioSats: 10.5 }, admin.cookie)).status, 400);
     assert.equal((await req('/api/admin/precio', { producto: 'bienvenida', precioSats: 1000 }, admin.cookie)).status, 404);
     // Qué incluye cada producto (los valores y límites pueden cambiar).
-    assert.equal((await req('/api/admin/producto', { producto: 'anual', regalos: 40, listas: 4, dias: 365, cupo: null }, admin.cookie)).status, 200);
+    assert.equal((await req('/api/admin/producto', { producto: 'anual', regalos: 40, listas: 4, dias: null, cupo: null }, admin.cookie)).status, 200);
     assert.equal((await req('/api/admin/producto', { producto: 'fundador', regalos: null, listas: 10, dias: null, cupo: 5 }, admin.cookie)).status, 200);
     assert.equal((await req('/api/admin/producto', { producto: 'pack10', regalos: null, listas: 0, dias: null, cupo: null }, admin.cookie)).status, 400);
     assert.equal((await req('/api/admin/producto', { producto: 'pack10', regalos: 12, listas: 0, dias: 30, cupo: null }, admin.cookie)).status, 400);
     const prods = (await get()).productos as unknown as Array<{ codigo: string; regalos: number | null; listas: number; dias: number | null; cupo: number | null }>;
-    assert.deepEqual(prods.find((p) => p.codigo === 'anual'), { codigo: 'anual', precioSats: '42000', activo: true, plan: 'anual', regalos: 40, listas: 4, dias: 365, cupo: null });
+    assert.deepEqual(prods.find((p) => p.codigo === 'anual'), { codigo: 'anual', precioSats: '42000', activo: true, plan: null, regalos: 40, listas: 4, dias: null, cupo: null });
     assert.equal(((await get()) as unknown as { fundadoresQuedan: number }).fundadoresQuedan, 5);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'x' }, admin.cookie)).status, 400);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'Regalo por ayudar con las pruebas' }, admin.cookie)).status, 200);
@@ -656,7 +661,7 @@ describe('Cuentas con passkey', () => {
     await sql`update pagos set confirmado = now() - interval '11 days' where id = ${d.id}`;
     const vencido = await req('/api/cuenta/arrepentimiento', { pago: d.id, direccion: devolucion }, ana.cookie);
     assert.deepEqual([vencido.status, ((await vencido.json()) as { error: string }).error], [409, 'arrepentimiento_vencido']);
-    // Un plan anual sin usar se puede devolver: el plan termina.
+    // Un Hodler sin usar se puede devolver: se quitan sus créditos.
     const e = await buy('anual');
     const codigoPlan = ((await (await req('/api/cuenta/arrepentimiento', { pago: e.id, direccion: devolucion }, ana.cookie)).json()) as { codigo: string }).codigo;
     await req(`/api/admin/arrepentimiento/${codigoPlan}/devuelto`, {}, admin.cookie);

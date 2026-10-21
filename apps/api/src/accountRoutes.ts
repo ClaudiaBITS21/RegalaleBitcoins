@@ -22,7 +22,7 @@ import {
 } from './accounts.ts';
 import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
-import { balance, canGive, chargingActive, hasPlanFeatures } from './credits.ts';
+import { balance, canGive, chargingActive, hasGreetings, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
@@ -246,6 +246,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       cobroActivo: charging,
       puedeRegalar: canGive(b, charging),
       conPlan: hasPlanFeatures(b, charging),
+      conSaludo: await hasGreetings(sql, account.id, b, charging),
       regalos: { bienvenida: b.welcome, pagos: b.paid },
       listas: { cumple: b.birthdayLists, otras: b.otherLists },
       plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },

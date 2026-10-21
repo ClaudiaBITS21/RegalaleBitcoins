@@ -23,6 +23,8 @@ interface Contenido {
   readonly dias: number | null;
   /** Cuántos se venden; null = sin límite. */
   readonly cupo: number | null;
+  /** Si trae la salutación automática (Satoshi no, 21/10). */
+  readonly saludo: boolean;
 }
 
 interface Producto {
@@ -49,15 +51,15 @@ const FILAS: readonly Key[] = [
   'precios.fila.vigencia',
 ];
 
-// Una sola tabla comparativa: la bienvenida gratis y los cuatro planes (Satoshi, Node, Timechain y
-// Genesis). Lo gratis no trae imagen con IA, tarjeta imprimible (solo la vista previa) ni la
+// Una sola tabla comparativa: la bienvenida gratis y los cuatro planes (Satoshi, Node, Hodler y
+// Genesis). Hodler (código «anual») no vence desde el 21/10; Satoshi no trae la salutación. Lo gratis no trae imagen con IA, tarjeta imprimible (solo la vista previa) ni la
 // salutación automática; los planes sí (Rodolfo, 20/10).
 const PRODUCTOS: readonly Producto[] = [
-  { id: 'bienvenida', codigo: 'bienvenida', base: { sats: 0n, regalos: 5, listas: 0, plan: false, dias: null, cupo: null } },
-  { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null } },
-  { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null } },
-  { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: true, dias: 365, cupo: null } },
-  { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21 } },
+  { id: 'bienvenida', codigo: 'bienvenida', base: { sats: 0n, regalos: 5, listas: 0, plan: false, dias: null, cupo: null, saludo: false } },
+  { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null, saludo: false } },
+  { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null, saludo: true } },
+  { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: false, dias: null, cupo: null, saludo: true } },
+  { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21, saludo: true } },
 ];
 
 function contenido(p: Producto, vivos: Products | null): Contenido {
@@ -71,15 +73,16 @@ function contenido(p: Producto, vivos: Products | null): Contenido {
     plan: v.plan !== null,
     dias: v.dias,
     cupo: v.cupo,
+    // API anterior (sin el dato): el de la tabla.
+    saludo: v.saludo ?? p.base.saludo,
   };
 }
 
 function celdas(c: Contenido): readonly Celda[] {
-  const vigencia: Celda = !c.plan
+  // Lo que no vence dice «No vencen» en todos, también Genesis (21/10).
+  const vigencia: Celda = !c.plan || c.dias === null
     ? ['precios.v.noVencen']
-    : c.dias === null
-      ? ['precios.v.siempre']
-      : c.dias % 365 === 0
+    : c.dias % 365 === 0
         ? c.dias === 365
           ? ['precios.v.unAnio']
           : ['precios.v.anios', { n: c.dias / 365 }]
@@ -93,8 +96,8 @@ function celdas(c: Contenido): readonly Celda[] {
     'si',
     'si',
     gratis ? 'no' : 'si',
-    gratis ? ['precios.v.vistaPrevia'] : 'si',
     gratis ? 'no' : 'si',
+    c.saludo ? 'si' : 'no',
     vigencia,
   ];
 }
@@ -206,14 +209,15 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                     const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
                     return (
                       <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
-                        {p.id === 'fundador' && cupo !== null && vivos !== null && (
-                          <span class="precio-sats">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
-                        )}
                         {/* Se puede comprar en cuanto hay llave de cobro, aunque el cobro no esté activo (compra de prueba). */}
                         {sats > 0n && vivos?.seVende === true && !agotado && (
                           <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
                             {t('precios.comprar')}
                           </a>
+                        )}
+                        {/* Los lugares que quedan de Genesis, debajo del botón (Rodolfo, 21/10). */}
+                        {p.id === 'fundador' && cupo !== null && vivos !== null && (
+                          <span class="precio-sats">{agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })}</span>
                         )}
                       </td>
                     );
@@ -228,10 +232,10 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
               const ct = contenido(p, vivos);
               const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
               const cs = celdas(ct);
-              // Desde la segunda tarjeta, solo lo que cambia respecto de la anterior (Rodolfo, 21/10):
-              // «Todo lo de Satoshi, y además: 10 regalos → 1 lista…», sin repetir lo que ya trae.
-              const prev = n === 0 ? null : (PRODUCTOS[n - 1] as Producto);
-              const prevCs = prev === null ? null : celdas(contenido(prev, vivos));
+              // Cada plan pago lista todo lo que trae por encima de lo gratis (Rodolfo, 21/10):
+              // «Todo lo gratis, y además: …», sin repetir lo que ya trae la bienvenida.
+              const gratis = PRODUCTOS[0] as Producto;
+              const prevCs = n === 0 ? null : celdas(contenido(gratis, vivos));
               const filas = FILAS.map((fila, i) => ({ fila, c: cs[i] as Celda })).filter(({ c }, i) => prevCs === null || JSON.stringify(c) !== JSON.stringify(prevCs[i]));
               return (
                 <li key={p.id} class={`precio-tarjeta${p.id === 'listaOtras' ? ' precios-destacado' : ''}`}>
@@ -245,7 +249,7 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                       </span>
                     )}
                   </div>
-                  {prev !== null && <p class="precio-tarjeta-base">{t('precios.todoLoDe', { plan: t(`precios.${prev.id}.n` as Key) })}</p>}
+                  {n > 0 && <p class="precio-tarjeta-base">{t('precios.todoLoGratis')}</p>}
                   <dl class="precio-tarjeta-filas">
                     {filas.map(({ fila, c }) => (
                       <div key={fila} class={c === 'no' ? 'fila-no' : undefined}>
