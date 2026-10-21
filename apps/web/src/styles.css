@@ -3683,3 +3683,8 @@ svg.tarjeta-imagen {
 .ticket-mail { font-weight: 700; color: var(--tinta); overflow-wrap: anywhere; }
 .cupones-hoja input[type='file'] { font: inherit; font-size: 0.9rem; }
 .invitacion-da { margin: 0; font-weight: 700; font-size: 1.1rem; }
+.vincular-celu { display: flex; flex-direction: column; gap: 10px; }
+.vincular-qr { width: min(260px, 100%); margin: 0 auto; }
+.vincular-qr .qr { display: block; width: 100%; height: auto; }
+.reparar-otra-forma > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+.reparar-otra-forma[open] > summary { margin-bottom: 8px; }

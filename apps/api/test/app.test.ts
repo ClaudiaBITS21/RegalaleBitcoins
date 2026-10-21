@@ -88,7 +88,7 @@ const post = (path: string, body: unknown) =>
 describe('API del reclamo', () => {
   before(async () => {
     sql = connect(DB);
-    await sql`drop table if exists cupon_usos, cupones, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
+    await sql`drop table if exists vinculos, bovedas_extra, cupon_usos, cupones, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
     await sql`drop function if exists movimientos_sin_cambios()`;
     await migrate(sql);
   });

@@ -1,4 +1,4 @@
-import { generateMasterMnemonic, openVault, sealVault } from '@regalale/core';
+import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openVault, sealVault } from '@regalale/core';
 import { ApiFailure } from './api.ts';
 import type { Key } from './i18n/index.ts';
 import { setSignedIn } from './sesion.ts';
@@ -33,6 +33,8 @@ export interface AccountGift {
   readonly ocasionLibre: string | null;
   readonly para: string;
   readonly satsEsperados: string | null;
+  /** Dirección del regalo: sirve para comprobar en el navegador unas 12 palabras. */
+  readonly direccion?: string;
   readonly creado: string;
   readonly estilo: string;
   /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
@@ -103,6 +105,9 @@ export function accessErrorCode(key: Key): string {
 
 export function accessErrorKey(e: unknown): Key {
   lastDetail = detailOf(e);
+  // Entró bien, pero la passkey dio otra clave que al crearla: pasa al usarla desde otro dispositivo
+  // con el QR (el celu le contesta a la compu). Desde donde se creó, o con el código, abre.
+  if (e instanceof CoreError && e.code === 'INVALID_VAULT') return 'guardar.bovedaOtroDispositivo';
   if (e instanceof PasskeyError) return e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.errorDispositivo';
   if (e instanceof ApiFailure) {
     if (e.status === 0) return 'guardar.errorServidor';
@@ -148,7 +153,7 @@ export async function createAccess(email: string, lang: string): Promise<Unlocke
 /** Entra con una passkey ya creada y abre la bóveda de esa passkey. */
 export async function signIn(allow?: readonly string[]): Promise<Unlocked> {
   const used = await unlockWithPasskey({ challenge: await challenge('ingreso'), ...(allow === undefined ? {} : { allow }) }).catch(report('ingreso'));
-  let res: { email: string; credencial: string; boveda: string | null };
+  let res: { email: string; credencial: string; boveda: string | null; bovedasExtra?: string[] };
   try {
     res = await call('/api/cuenta/ingreso', { credencial: used.assertion });
   } catch (e) {
@@ -159,8 +164,74 @@ export async function signIn(allow?: readonly string[]): Promise<Unlocked> {
   setSignedIn(true);
   let master: string | null = null;
   if (res.boveda !== null && used.prf !== null) {
-    master = await openVault(used.prf, res.boveda, used.credentialId);
+    // La bóveda de la passkey y, si las hay, sus copias para cuando se usa por QR (otra salida PRF).
+    for (const sealed of [res.boveda, ...(res.bovedasExtra ?? [])]) {
+      try {
+        master = await openVault(used.prf, sealed, used.credentialId);
+        break;
+      } catch {
+        // Probamos la siguiente.
+      }
+    }
+    if (master === null) {
+      // Entró, pero ninguna abre: se guarda la salida PRF (solo en memoria) para armar una copia con las 12 palabras.
+      repair = { prf: used.prf, credentialId: used.credentialId };
+      throw new CoreError('INVALID_VAULT', 'Esta passkey no abre esta bóveda.');
+    }
     used.prf.fill(0);
   }
   return { email: res.email, master };
 }
+
+/** La salida PRF de la última entrada que no abrió la bóveda (en memoria, hasta repararla). */
+let repair: { prf: Uint8Array; credentialId: Uint8Array } | null = null;
+
+/** ¿Se puede guardar una copia de la bóveda para la passkey con la que se acaba de entrar? */
+export function canRepairVault(): boolean {
+  return repair !== null;
+}
+
+export type RepairProblem = 'invalidas' | 'noCoinciden' | 'sinRegalos';
+export class RepairError extends Error {
+  readonly problem: RepairProblem;
+  constructor(problem: RepairProblem) {
+    super(problem);
+    this.problem = problem;
+  }
+}
+
+/**
+ * Con la clave maestra (de las 12 palabras o del celu): comprueba que es la de esta cuenta
+ * (derivando la dirección de un regalo, si hay) y guarda otra copia de la bóveda cifrada con la
+ * salida PRF que dio la passkey acá. La clave no sale del navegador.
+ */
+async function saveVaultCopy(master: string, gifts: readonly AccountGift[], network: Network, requireProbe: boolean): Promise<string> {
+  if (repair === null) throw new RepairError('sinRegalos');
+  const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined);
+  if (probe === undefined && requireProbe) throw new RepairError('sinRegalos');
+  if (probe !== undefined && deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
+  const sealed = await sealVault(repair.prf, master, repair.credentialId);
+  await call('/api/cuenta/boveda-extra', { boveda: sealed });
+  repair.prf.fill(0);
+  repair = null;
+  return master;
+}
+
+/** Con las 12 palabras escritas: sin regalos con qué comprobarlas, no se guardan (podrían ser otras). */
+export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+  if (!isValidMasterMnemonic(words)) throw new RepairError('invalidas');
+  return saveVaultCopy(normalizeMnemonic(words), gifts, network, true);
+}
+
+/** Con la clave que mandó el celu (que abrió la bóveda de verdad). */
+export async function repairVaultFromPhone(master: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+  if (!isValidMasterMnemonic(master)) throw new RepairError('invalidas');
+  return saveVaultCopy(normalizeMnemonic(master), gifts, network, false);
+}
+
+/** Vínculo compu-celu (vinculo.ts): pedirlo, esperarlo y, desde el celu, completarlo. */
+export const linkApi = {
+  create: () => call<{ id: string; minutos: number }>('/api/cuenta/vinculos', {}),
+  poll: (id: string) => call<{ paquete: string | null }>(`/api/cuenta/vinculos/${encodeURIComponent(id)}`),
+  complete: (id: string, paquete: string) => call<{ ok: true }>(`/api/cuenta/vinculos/${encodeURIComponent(id)}`, { paquete }),
+};

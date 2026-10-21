@@ -12,6 +12,8 @@ export type ErrorCode =
   | 'cupon_es_de_canje'
   | 'cupon_es_de_compra'
   | 'cupon_de_otra_cuenta'
+  | 'sin_boveda'
+  | 'vinculo_invalido'
   | 'lote_invalido'
   | 'cupon_existente'
   | 'ya_es_admin'

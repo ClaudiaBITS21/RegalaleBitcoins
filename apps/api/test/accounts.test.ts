@@ -189,9 +189,48 @@ describe('Cuentas con passkey', () => {
     const ch = await challenge('ingreso');
     const ok = await req('/api/cuenta/ingreso', { credencial: pk.assert(ch) });
     assert.equal(ok.status, 200);
-    assert.deepEqual(await ok.json(), { email: 'ana@example.com', credencial: pk.id.toString('base64url'), boveda: VAULT });
+    assert.deepEqual(await ok.json(), { email: 'ana@example.com', credencial: pk.id.toString('base64url'), boveda: VAULT, bovedasExtra: [] });
     pk.counter = 2;
     assert.equal((await req('/api/cuenta/ingreso', { credencial: pk.assert(ch) })).status, 401); // desafío ya usado
+  });
+
+  it('copias extra de la bóveda (passkey por QR): solo con sesión de passkey, hasta 3, vuelven al entrar', async () => {
+    const { pk, cookie: alta } = await signUp('ana@example.com');
+    const extra = (n: number) => `v1.${'C'.repeat(16)}.${String(n).repeat(64)}`;
+    // La sesión del alta ya es de esa passkey.
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: extra(1) }, alta)).status, 201);
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: 'cualquier cosa' }, alta)).status, 400);
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: extra(2) })).status, 401);
+    for (const n of [2, 3, 4]) await req('/api/cuenta/boveda-extra', { boveda: extra(n) }, alta);
+    pk.counter = 1;
+    const ok = await req('/api/cuenta/ingreso', { credencial: pk.assert(await challenge('ingreso')) });
+    const { bovedasExtra } = (await ok.json()) as { bovedasExtra: string[] };
+    assert.deepEqual(new Set(bovedasExtra), new Set([extra(2), extra(3), extra(4)]));
+    // Con una sesión abierta por link (sin passkey) no se puede.
+    const mailRes = await req('/api/cuenta/link', { email: 'ana@example.com' });
+    assert.equal(mailRes.status, 202);
+  });
+
+  it('vincular la compu con el celu: pide la compu, sube el celu (misma cuenta), entrega una vez', async () => {
+    const pk = new FakePasskey();
+    const { cookie: compu } = await signUp('ana@example.com', pk);
+    pk.counter = 1;
+    const celu = cookieOf(await req('/api/cuenta/ingreso', { credencial: pk.assert(await challenge('ingreso')) }));
+    const { cookie: otra } = await signUp('beto@example.com');
+    const pedido = await req('/api/cuenta/vinculos', {}, compu);
+    assert.equal(pedido.status, 201);
+    const { id } = (await pedido.json()) as { id: string };
+    assert.deepEqual(await (await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).json(), { paquete: null });
+    const paquete = `v1.${'P'.repeat(87)}.${'I'.repeat(16)}.${'C'.repeat(60)}`;
+    // Otra cuenta no puede ni subir ni leer.
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, otra)).status, 404);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, undefined, otra)).status, 404);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete: 'x' }, celu)).status, 400);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, celu)).status, 200);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, celu)).status, 404); // una sola vez
+    assert.deepEqual(await (await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).json(), { paquete });
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).status, 404); // ya se entregó
+    assert.equal((await req('/api/cuenta/vinculos', {})).status, 401);
   });
 
   it('rechaza firmas falsas, otra passkey, otro sitio, sin verificación de la persona y contador que no avanza', async () => {

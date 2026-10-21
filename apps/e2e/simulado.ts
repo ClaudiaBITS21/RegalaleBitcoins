@@ -24,11 +24,13 @@ import {
   inspectTransaction,
   masterRootFromMnemonic,
   openGiftWallet,
+  sealVault,
 } from '@regalale/core';
 import { chromium } from 'playwright-core';
 import { connect, migrate } from '../api/src/db.ts';
 import { insertGift } from '../api/src/gifts.ts';
 import { startFakeEsplora } from './fake-esplora.ts';
+import { parseLinkFragment, sealForLink, startLink } from '../web/src/vinculo.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist');
@@ -475,6 +477,7 @@ try {
   await giver.getByRole('button', { name: 'Tarjetas' }).click();
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
+  const lupeWords12 = (await giver.locator('.codigo li').allInnerTexts()).map((x) => x.replace(/^\d+\s*/, '').trim()).join(' ');
   await shot2(giver, 'p1-panel');
   // Con la cuenta abierta, la personita de la cabecera lleva a «Mis regalos»; al salir, desaparece.
   if ((await giver.locator('.nav-movil .icono-cuenta').getAttribute('href')) !== '/panel') fail('falta el ícono de la cuenta en la cabecera');
@@ -482,8 +485,76 @@ try {
   await giver.getByRole('button', { name: 'Salir' }).click();
   await giver.getByRole('heading', { name: 'Tus regalos' }).waitFor();
   if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
+  // Passkey usada por QR desde otro dispositivo: da otra salida PRF y la bóveda no abre. Se simula
+  // cerrando la bóveda guardada con otra salida; con las 12 palabras se guarda una copia que sí abre.
+  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email = 'lupe.e2e@example.com'`)[0]!;
+  const otherPrf = crypto.getRandomValues(new Uint8Array(32));
+  await sql`update credenciales set boveda = ${await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'))} where id = ${lupeCode.id}`;
+  await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await giver.getByText(/^Entraste, pero desde acá tu passkey no puede abrir tus regalos guardados/).waitFor({ timeout: 15_000 });
+  await giver.getByText('¿No tenés el celu a mano? Usá tus 12 palabras').click();
+  await giver.getByLabel('Tus 12 palabras').fill('abandon '.repeat(11) + 'about');
+  await giver.getByRole('button', { name: 'Abrir mis regalos' }).click();
+  await giver.getByText('Esas palabras no son las de esta cuenta.').waitFor();
+  await giver.getByLabel('Tus 12 palabras').fill(lupeWords12.toUpperCase());
+  await giver.getByRole('button', { name: 'Abrir mis regalos' }).click();
+  await giver.getByText('Listo: desde ahora tu passkey abre tus regalos también desde acá.').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'p2-boveda-reparada');
+  await giver.getByRole('button', { name: 'Salir' }).click();
+  // Página nueva: nada de lo abierto antes queda en memoria.
+  await giver.reload();
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+  await giver.getByRole('button', { name: 'Ver link y palabras' }).click();
+  await giver.locator('.regalo-secretos .enlace-regalo').waitFor({ timeout: 15_000 });
+  if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('con la copia de la bóveda no se reconstruyó el mismo link');
+  // Lo mismo sin escribir las palabras: la compu muestra un QR, el celu (donde la bóveda abre) le
+  // pasa la clave cifrada y la compu guarda su copia.
+  await sql`delete from bovedas_extra where credencial_id = ${lupeCode.id}`;
+  const brokenVault = await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'));
+  await sql`update credenciales set boveda = ${brokenVault} where id = ${lupeCode.id}`;
+  await giver.getByRole('button', { name: 'Salir' }).click();
+  await giver.reload();
+  await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await giver.locator('.vincular-qr svg').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'p3-vincular-qr');
+  const linkUrl = (await giver.locator('.vincular-qr').getAttribute('data-link')) ?? '';
+  if (!/\/vincular#[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{87}$/.test(linkUrl)) fail(`link de vínculo inesperado: ${linkUrl}`);
+  // El celu (acá, Node con el mismo vinculo.ts) abre la bóveda y sube la clave cifrada para la compu.
+  const cookiesNow = async () => (await giver.context().cookies()).map((c) => `${c.name}=${c.value}`).join('; ');
+  const apiPost = async (path: string, body: unknown) =>
+    fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE, cookie: await cookiesNow() }, body: JSON.stringify(body) });
+  const qrTarget = parseLinkFragment(linkUrl.slice(linkUrl.indexOf('#')))!;
+  const paquete = await sealForLink(qrTarget.id, qrTarget.pub, lupeWords12);
+  if (paquete.includes(lupeWords12.split(' ')[0]!)) fail('el paquete del vínculo lleva la clave a la vista');
+  if ((await apiPost(`/api/cuenta/vinculos/${qrTarget.id}`, { paquete })).status !== 200) fail('el celu no pudo subir el paquete del vínculo');
+  await giver.getByText('Listo: desde ahora tu passkey abre tus regalos también desde acá.').waitFor({ timeout: 20_000 });
+  // La copia que guardó la compu abre aunque la bóveda original no abra.
+  await sql`update credenciales set boveda = ${brokenVault} where id = ${lupeCode.id}`;
+  await giver.getByRole('button', { name: 'Salir' }).click();
+  await giver.reload();
+  await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+  if ((await giver.getByText(/^Entraste, pero desde acá/).count()) > 0) fail('la copia del vínculo no abrió la bóveda');
+  await sql`update credenciales set boveda = ${lupeCode.boveda} where id = ${lupeCode.id}`;
+  // La página del celu (/vincular): abre la bóveda con la passkey y le pasa la clave a la «compu» (Node).
+  const linkRes = await apiPost('/api/cuenta/vinculos', {});
+  const linkBody = (await linkRes.json()) as { id: string };
+  if (linkRes.status !== 201) fail(`no se pudo pedir el vínculo: ${linkRes.status} ${JSON.stringify(linkBody)}`);
+  const phoneLinkId = linkBody.id;
+  const nodeComputer = await startLink(phoneLinkId);
+  await giver.goto(`${BASE}/vincular#${nodeComputer.fragment}`);
+  await giver.getByRole('button', { name: 'Pasar mi llave con mi cara o huella' }).waitFor();
+  if (giver.url().includes('#')) fail('/vincular deja la clave pública en la barra de direcciones');
+  await giver.getByRole('button', { name: 'Pasar mi llave con mi cara o huella' }).click();
+  await giver.getByText('Listo: seguí en la compu.').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'p3-vincular-celu');
+  const got = (await (await fetch(`${BASE}/api/cuenta/vinculos/${phoneLinkId}`, { headers: { origin: BASE, cookie: await cookiesNow() } })).json()) as { paquete: string };
+  if ((await nodeComputer.open(got.paquete)) !== lupeWords12) fail('la compu no recibió la clave correcta del celu');
+  await giver.goto(`${BASE}/panel`);
+  await giver.goto(`${BASE}/vincular#nada`);
+  await giver.getByText('Este código venció o ya se usó. Pedí otro en la compu.').waitFor();
+  await giver.goto(`${BASE}/panel`);
   // Con la sesión abierta, el paso 4 no vuelve a pedir el mail: abre la llave con la passkey de la cuenta.
   await giver.goto(`${BASE}/regalar?ocasion=cumple`);
   await giver.getByLabel('Su nombre').fill('Tomi');
@@ -718,7 +789,7 @@ try {
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
-  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey.');
+  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey; passkey que no abre la bóveda (QR) se repara vinculando el celu o con las 12 palabras.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
