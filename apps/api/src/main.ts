@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { indexHtmlLoader } from './share.ts';
 import { createApp } from './app.ts';
 import { startBroadcaster } from './broadcaster.ts';
 import { arsPriceClient, cachedFees, esploraClient, fallbackChain, priceClient } from './chain.ts';
@@ -21,7 +22,7 @@ const chain = cachedFees(
         console.warn(`Cadena: ${method} con respaldo (${(error as Error).message.slice(0, 120)})`),
       ),
 );
-const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken, adminEmails: config.adminEmails, ...(config.ceilingUsd === undefined ? {} : { ceilingUsd: config.ceilingUsd }) });
+const app = createApp({ sql, chain, price: priceClient(config.priceUrl), arsPrice: arsPriceClient(config.arsPriceUrls), accounts: { origins: config.allowedOrigins, publicUrl: config.publicUrl, mailer: config.resendApiKey === null ? consoleMailer : resendMailer(config.resendApiKey, config.mailFrom), cookieSecure: config.cookieSecure }, network: config.network, tasksToken: config.tasksToken, adminEmails: config.adminEmails, indexHtml: indexHtmlLoader({ webDist: config.webDist, publicUrl: config.publicUrl }), ...(config.ceilingUsd === undefined ? {} : { ceilingUsd: config.ceilingUsd }) });
 
 if (config.webDist !== null) {
   // La web compilada se sirve desde el mismo origen que la API, con cabeceras estrictas.

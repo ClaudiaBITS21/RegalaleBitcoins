@@ -13,6 +13,7 @@ import { SaveStep } from './SaveStep.tsx';
 import { AmountStep, CardStep, isUntouched, OccasionStep } from './DraftSteps.tsx';
 import { PayStep } from './PayStep.tsx';
 import { SendStep } from './SendStep.tsx';
+import { sharePreview } from './vistaCompartir.ts';
 
 // Regalar en 5 pasos: ocasión, para quién, cuánto, pagá y mandalo. Todo lo secreto
 // (clave maestra, semilla del regalo, palabras) vive solo en la memoria de esta página.
@@ -84,6 +85,15 @@ const MAX_INDEX_TRIES = 500;
  * existe (un regalo anterior con el mismo código), prueba el siguiente.
  */
 async function register(session: Session, draft: Draft, network: Network): Promise<MadeGift> {
+  // La imagen para la vista previa del link (WhatsApp, redes); sin ella, el link usa la general.
+  const vista = await sharePreview({
+    lang: draft.lang,
+    occasion: draft.occasion,
+    occasionFree: draft.occasionFree,
+    style: draft.style,
+    ownImage: draft.style === 'propia' ? (draft.ownImage?.dataUrl ?? null) : null,
+    to: draft.to,
+  });
   for (let index = session.next; index < session.next + MAX_INDEX_TRIES; index++) {
     const gift = deriveGift(session.root, index, draft.lang, network);
     try {
@@ -98,6 +108,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         imagen: 1, // una sola imagen por estilo; el campo queda por compatibilidad
         estilo: draft.style,
         ...(draft.style === 'propia' && draft.ownImage !== null ? { imagenPropia: draft.ownImage.base64 } : {}),
+        ...(vista === null ? {} : { vista }),
         moneda: draft.currency,
         monto: draft.amount,
         sats: draft.sats.toString(),

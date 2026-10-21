@@ -46,6 +46,8 @@ export interface NewGift {
   readonly estilo?: string;
   /** Base64 de la imagen propia (solo con estilo 'propia'). */
   readonly imagenPropia?: string;
+  /** Imagen para compartir el link (JPEG en base64; give/vistaCompartir.ts). */
+  readonly vista?: string;
   readonly moneda: 'USD' | 'ARS' | 'SAT';
   readonly monto: number;
   readonly sats: string;

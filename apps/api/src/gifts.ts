@@ -50,6 +50,8 @@ export interface NewGift {
   readonly style?: CardStyle;
   /** Solo con style 'propia'. */
   readonly ownImage?: OwnImage | null;
+  /** Imagen para compartir el link (JPEG; ver share.ts). */
+  readonly preview?: Uint8Array | null;
   readonly currency?: string | null;
   readonly amount?: number | null;
   readonly usdPerBtc?: number | null;
@@ -129,6 +131,7 @@ export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
     if (g.ownImage != null) {
       await tx`insert into imagenes (regalo_id, tipo, datos) values (${gift.id}, ${g.ownImage.type}, ${Buffer.from(g.ownImage.data)})`;
     }
+    if (g.preview != null) await tx`insert into vistas (regalo_id, datos) values (${gift.id}, ${Buffer.from(g.preview)})`;
     return gift;
   }) as Promise<Gift>;
 }
