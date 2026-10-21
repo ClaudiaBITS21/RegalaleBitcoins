@@ -357,7 +357,7 @@ export function SiteFooter() {
           (Res. 424/2020), además de estar al final de Precios; la leyenda de Defensa del
           Consumidor es la de la Res. 38/2017. */}
       <small class="pie-legal">
-        <span>© {new Date().getFullYear()} Regalale Bitcoin</span>
+        <span>© {new Date().getFullYear()} Regalale Bitcoin · Apptivalo S.R.L. · CUIT 30-71671196-6</span>
         <a href="/arrepentimiento">{t('pie.arrepentimiento')}</a>
         <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">
           {t('pie.consumidor')}

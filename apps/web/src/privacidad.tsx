@@ -6,7 +6,7 @@ import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // en castellano y escrita sin vos ni tú, para que valga con los dos tratos. Si cambia lo que se
 // guarda o con quién se comparte, esta página cambia con el mismo PR.
 
-const VERSION = '20 de octubre de 2026';
+const VERSION = '21 de octubre de 2026';
 const CONTACTO = 'hola@regalalebitcoin.com';
 
 export function PrivacyPage() {
@@ -32,7 +32,8 @@ export function PrivacyPage() {
         <section class="seccion">
           <h2>Quién es responsable</h2>
           <p>
-            Regalale Bitcoin (regalalebitcoin.com) es responsable de los datos que se describen acá. Para cualquier consulta o pedido sobre datos personales:{' '}
+            Regalale Bitcoin (regalalebitcoin.com) es un servicio de Apptivalo S.R.L., CUIT 30-71671196-6, con domicilio en Marcelo T. de Alvear 405, Ciudad Autónoma de Buenos Aires
+            (C1058AAC), responsable de los datos que se describen acá. Para cualquier consulta o pedido sobre datos personales:{' '}
             <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>.
           </p>
         </section>
@@ -51,7 +52,9 @@ export function PrivacyPage() {
           <h2>Qué datos guardamos</h2>
           <ul>
             <li>
-              <strong>Cuenta de quien regala:</strong> mail, idioma y si el mail ya fue confirmado. Con passkey, además, su clave pública y una caja cifrada que solo abre esa passkey.
+              <strong>Cuenta de quien regala:</strong> mail, idioma y si el mail ya fue confirmado. Con passkey, además, su clave pública y una caja cifrada que solo abre esa passkey (y, si se
+              usa desde otro dispositivo con el QR, hasta tres copias de esa caja, también cifradas). Para abrirla en otra compu, el celu le pasa la llave cifrada para esa compu: nosotros solo
+              guardamos ese paquete, que no podemos abrir, hasta que la compu lo recibe o pasan 10 minutos.
             </li>
             <li>
               <strong>Regalos:</strong> la dirección bitcoin, la ocasión, el nombre de quien recibe, quién lo manda, el mensaje, el idioma, el monto, el estilo de la tarjeta y la imagen propia si se sube
@@ -63,6 +66,10 @@ export function PrivacyPage() {
             </li>
             <li>
               <strong>Compras del servicio:</strong> el producto, el monto en sats, la dirección de pago y sus transacciones; si se usa el botón de arrepentimiento, la dirección para la devolución.
+            </li>
+            <li>
+              <strong>Cupones:</strong> el código, lo que da, quién lo usó y cuándo. Un cupón puede estar hecho para un mail: ese mail queda guardado con el cupón aunque la persona todavía no
+              tenga cuenta, solo para que nadie más lo pueda usar. No le mandamos mails a esa dirección por el cupón; la invitación la manda quien la reparte.
             </li>
             <li>
               <strong>Datos técnicos:</strong> una cookie de sesión (<code>__session</code>) solo para mantener la cuenta abierta; el idioma elegido, en el propio navegador. La dirección IP se usa en
