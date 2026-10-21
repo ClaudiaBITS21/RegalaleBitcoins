@@ -462,6 +462,21 @@ try {
   if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+  // Con la sesión abierta, el paso 4 no vuelve a pedir el mail: abre la llave con la passkey de la cuenta.
+  await giver.goto(`${BASE}/regalar?ocasion=cumple`);
+  await giver.getByLabel('Su nombre').fill('Tomi');
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('button', { name: 'En dólares' }).click();
+  await giver.getByRole('button', { name: 'US$ 25' }).click();
+  await giver.getByRole('button', { name: 'Seguir' }).click();
+  await giver.getByRole('heading', { name: 'Seguí con tu cuenta' }).waitFor();
+  await giver.getByText('Ya entraste como lupe.e2e@example.com.').waitFor();
+  if ((await giver.getByLabel('Tu mail').count()) > 0) fail('con la sesión abierta no debería pedir el mail');
+  await shot2(giver, 'r4-guardar-con-sesion');
+  await giver.getByRole('button', { name: 'Seguir con mi cara o huella' }).click();
+  await giver.getByRole('heading', { name: /^Pagá .+ sats$/ }).waitFor({ timeout: 20_000 });
+  // El regalo a medio pagar avisa al salir de la página: se acepta para seguir con la prueba.
+  giver.once('dialog', (d) => void d.accept());
 
   // Passkey huérfana (bug del 17/10): "crear cuenta" con un mail que ya tiene cuenta no llega a
   // crear la passkey en el teléfono y lleva directo a entrar.
