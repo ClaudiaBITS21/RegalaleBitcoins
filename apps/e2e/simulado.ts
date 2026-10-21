@@ -413,6 +413,10 @@ try {
   }
   if (lupeWords.some((w) => String(account.boveda).includes(w))) fail('la bóveda contiene las palabras en claro');
 
+  // Link por WhatsApp y palabras en persona: el panel lo recuerda después.
+  const [waPopup] = await Promise.all([giver.waitForEvent('popup'), giver.locator('.envio').first().getByRole('link', { name: 'WhatsApp' }).click()]);
+  await waPopup.close();
+  await giver.getByRole('button', { name: 'Se las doy en persona' }).click();
   await giver.goto(`${BASE}/panel`);
   await giver.getByRole('heading', { name: 'Regalos que hiciste' }).waitFor();
   await giver.getByText('Para Lupe').waitFor();
@@ -423,6 +427,8 @@ try {
   if ((await giver.locator('.regalo-secretos .palabras-regalo li strong').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
   await giver.getByRole('button', { name: 'Recordatorio para mandar' }).click();
   const reminder = await giver.locator('.recordatorio-texto').innerText();
+  await giver.getByText('Envío original: link por WhatsApp + palabras en persona').waitFor();
+  if ((await giver.locator('.regalo-item').first().getByRole('link', { name: 'WhatsApp' }).count()) > 0) fail('el recordatorio no debería abrir WhatsApp');
   if (!reminder.startsWith('Te recuerdo que el ') || !reminder.trim().endsWith(lupeLink)) fail(`recordatorio sin el formato esperado: ${reminder}`);
   await giver.locator('.regalo-item').first().screenshot({ path: join(SHOTS, 'p1-recordatorio.png') });
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
