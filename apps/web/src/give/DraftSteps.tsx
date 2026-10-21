@@ -265,7 +265,7 @@ export function AmountStep({
         ))}
       </div>
       <div class="opciones-monto">
-        {presetsFor(unit, usdPresets, market.usdPerBtc).map((n, i) => {
+        {presetsFor(unit, usdPresets).map((n) => {
           const p = pick(centsOf(n));
           const out = p === null || p.sats < market.minSats || (market.maxSats !== null && p.sats > market.maxSats);
           const on = choice?.kind === 'preset' && choice.value === n;
@@ -273,7 +273,7 @@ export function AmountStep({
             <button type="button" key={n} class={`opcion-monto${on ? ' elegida' : ''}`} aria-pressed={on} disabled={out} onClick={() => setChoice({ kind: 'preset', value: n })}>
               <span>{unit === 'SAT' ? formatSats(BigInt(n), lang) : formatWhole(n, unit, lang)}</span>
               {p !== null && (
-                <small class="opcion-monto-sats">{unit === 'SAT' ? formatWhole(usdPresets[i] ?? 0, 'USD', lang) : formatSats(p.sats, lang)}</small>
+                <small class="opcion-monto-sats">{unit === 'SAT' ? money(p) : formatSats(p.sats, lang)}</small>
               )}
             </button>
           );

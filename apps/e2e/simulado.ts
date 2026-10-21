@@ -228,10 +228,10 @@ try {
   await page.getByText('Vas a regalar 62.500 sats.').waitFor();
   await page.getByText('Hoy equivale a $ 100.000.').waitFor();
   await shot('r3-cuanto-sugeridos');
-  // En sats, los sugeridos son lo que valen hoy US$ 25, 50 y 100, con los dólares en chico.
+  // En sats, sugeridos redondos (25.000, 50.000, 100.000) con su equivalente en dólares en chico.
   await page.getByRole('button', { name: 'En sats' }).click();
   const sats25 = page.locator('.opcion-monto', { hasText: /^25\.000 sats/ });
-  if ((await sats25.locator('.opcion-monto-sats').innerText()).replace(/\s/g, ' ') !== 'US$ 25') fail('el sugerido en sats no muestra su equivalente en dólares');
+  if ((await sats25.locator('.opcion-monto-sats').innerText()).replace(/\s/g, ' ') !== 'US$ 25,00') fail('el sugerido en sats no muestra su equivalente en dólares');
   await page.getByRole('button', { name: 'En pesos' }).click();
   // Otro monto en pesos: cotización directa BTC/ARS, con la fuente y la cuenta en letra chica.
   await page.getByRole('button', { name: 'Otro monto' }).click();
