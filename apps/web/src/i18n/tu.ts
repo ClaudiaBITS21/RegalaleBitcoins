@@ -99,7 +99,7 @@ export const tu: Partial<Record<Key, string>> = {
   'guardar.textoMail': 'Con el código no hace falta passkey, pero sí tu mail, confirmado: ahí te avisamos de tus regalos, y con él entras a tu cuenta y ves tus créditos.',
   'guardar.linkEnviado': 'Te mandamos un link a {email} para confirmar tu mail. Ábrelo en este mismo navegador y después toca «Ya confirmé».',
   'guardar.todaviaNo': 'Todavía no se confirmó tu mail. Abre el link en este navegador y prueba de nuevo.',
-  'guardar.demasiados': 'Pediste muchos links seguidos. Espera un rato y prueba de nuevo.',
+  'guardar.demasiados': 'Hubo muchos intentos seguidos. Espera un rato y prueba de nuevo.',
   'guardar.passkeyInvalida': 'No pudimos verificar tu acceso. Prueba de nuevo.',
   'panel.entrarTexto': 'Entra para ver cómo van los regalos que hiciste.',
   'panel.linkBoton': 'Mándame el link',

@@ -273,7 +273,7 @@ export const pt: Dict = {
   'guardar.yaEntre': 'Já confirmei, continuar',
   'guardar.todaviaNo': 'Seu e-mail ainda não foi confirmado. Abra o link neste navegador e tente de novo.',
   'guardar.volver': 'Voltar',
-  'guardar.demasiados': 'Você pediu muitos links seguidos. Espere um pouco e tente de novo.',
+  'guardar.demasiados': 'Foram muitas tentativas seguidas. Espere um pouco e tente de novo.',
   'guardar.nuevaConfirmar': "Entendo, criar uma conta nova",
   'guardar.nuevaVolver': "Voltar a tentar entrar",
   'guardar.passkeyInvalida': 'Não conseguimos verificar seu acesso. Tente de novo.',

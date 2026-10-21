@@ -63,9 +63,11 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
 
 - **Mails:** Resend sin dominio verificado solo entrega a la dueña de la cuenta. El acceso por
   mail y los avisos no llegan a otras personas; la passkey funciona igual.
-- **Passkeys:** quedan con rpId `regalalebitcoins.web.app`. Al mudarse a `regalalebitcoin.com`
-  se pueden seguir usando con *Related Origin Requests* de WebAuthn (`/.well-known/webauthn` en
-  web.app con el origen del .com) en vez de pedir a cada persona que cree otra.
+- **Passkeys:** opción A (Rodolfo, 21/10): quedan atadas a `regalalebitcoin.com` (el rpId es el
+  dominio de la página y el servidor acepta los orígenes de `ALLOWED_ORIGINS`). La web de mainnet
+  manda a quien entra por `regalalebitcoins.web.app` al .com, con el # intacto. Las passkeys creadas
+  en web.app dejan de servir: esas cuentas entran con el link del mail o las 12 palabras y crean
+  una nueva. `PUBLIC_URL` en Cloud Run pasa a `https://regalalebitcoin.com` (links de los mails).
 
 ## Revisión de seguridad (17/10/2026)
 
