@@ -34,7 +34,20 @@ interface Producto {
   readonly base: Contenido;
 }
 
-const FILAS: readonly Key[] = ['precios.fila.regalos', 'precios.fila.listas', 'precios.fila.ia', 'precios.fila.tarjeta', 'precios.fila.saludo', 'precios.fila.vigencia'];
+// Primero lo que trae todo, también lo gratis, para que se vea lo que ya incluye (Rodolfo, 21/10);
+// después lo que suman los planes.
+const FILAS: readonly Key[] = [
+  'precios.fila.regalos',
+  'precios.fila.listas',
+  'precios.fila.estilos',
+  'precios.fila.panel',
+  'precios.fila.recordatorio',
+  'precios.fila.recupero',
+  'precios.fila.ia',
+  'precios.fila.tarjeta',
+  'precios.fila.saludo',
+  'precios.fila.vigencia',
+];
 
 // Una sola tabla comparativa: la bienvenida gratis y los cuatro planes (Satoshi, Node, Timechain y
 // Genesis). Lo gratis no trae imagen con IA, tarjeta imprimible (solo la vista previa) ni la
@@ -75,11 +88,33 @@ function celdas(c: Contenido): readonly Celda[] {
   return [
     c.regalos === null ? ['precios.v.libres'] : c.regalos,
     c.listas === 0 ? 'no' : c.listas,
+    'si',
+    'si',
+    'si',
+    'si',
     gratis ? 'no' : 'si',
     gratis ? ['precios.v.vistaPrevia'] : 'si',
     gratis ? 'no' : 'si',
     vigencia,
   ];
+}
+
+function Valor({ c }: { c: Celda }) {
+  const { t, lang } = useI18n();
+  if (c === 'si')
+    return (
+      <span class="precio-si" role="img" aria-label={t('precios.si')}>
+        ✓
+      </span>
+    );
+  if (c === 'no')
+    return (
+      <span class="precio-no" role="img" aria-label={t('precios.no')}>
+        —
+      </span>
+    );
+  if (typeof c === 'number') return <strong>{new Intl.NumberFormat(lang).format(c)}</strong>;
+  return <>{t(c[0], c[1])}</>;
 }
 
 export function PricingPage({ testnet }: { testnet: boolean }) {
@@ -156,19 +191,7 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                       const c = celdas(contenido(p, vivos))[i] as Celda;
                       return (
                         <td key={p.id} class={p.id === 'listaOtras' ? 'precios-destacado' : undefined}>
-                          {c === 'si' ? (
-                            <span class="precio-si" role="img" aria-label={t('precios.si')}>
-                              ✓
-                            </span>
-                          ) : c === 'no' ? (
-                            <span class="precio-no" role="img" aria-label={t('precios.no')}>
-                              —
-                            </span>
-                          ) : typeof c === 'number' ? (
-                            <strong>{numero(c)}</strong>
-                          ) : (
-                            t(c[0], c[1])
-                          )}
+                          <Valor c={c} />
                         </td>
                       );
                     })}
@@ -199,6 +222,43 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
               </tfoot>
             </table>
           </div>
+          {/* En el celular, una tarjeta por plan en vez de la tabla ancha (Rodolfo, 21/10). */}
+          <ul class="precios-tarjetas">
+            {PRODUCTOS.map((p) => {
+              const ct = contenido(p, vivos);
+              const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
+              const cs = celdas(ct);
+              return (
+                <li key={p.id} class={`precio-tarjeta${p.id === 'listaOtras' ? ' precios-destacado' : ''}`}>
+                  <div class="precio-tarjeta-cabeza">
+                    <span class="precio-nombre">{t(`precios.${p.id}.n` as Key)}</span>
+                    <span class="precio-monto">{ct.sats === 0n ? t('precios.gratis') : formatSatsShort(ct.sats, lang)}</span>
+                    {ct.sats > 0n && usdPorBtc !== null && <span class="precio-sats">{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(ct.sats, usdPorBtc), lang) })}</span>}
+                    {ct.cupo !== null && (
+                      <span class="precio-cupo">
+                        {vivos !== null ? (agotado ? t('comprar.agotado') : t('precios.quedanFundadores', { n: vivos.fundadoresQuedan })) : t('precios.soloN', { n: numero(ct.cupo) })}
+                      </span>
+                    )}
+                  </div>
+                  <dl class="precio-tarjeta-filas">
+                    {FILAS.map((fila, i) => (
+                      <div key={fila} class={cs[i] === 'no' ? 'fila-no' : undefined}>
+                        <dt>{t(fila)}</dt>
+                        <dd>
+                          <Valor c={cs[i] as Celda} />
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {ct.sats > 0n && vivos?.seVende === true && !agotado && (
+                    <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
+                      {t('precios.comprar')}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
           <p class="texto-suave precios-nota">{t('precios.cotizacion')}</p>
         </section>
 
