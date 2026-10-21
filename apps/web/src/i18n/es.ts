@@ -175,7 +175,7 @@ export const es = {
   'regalar.mandar.mismoCanal': 'Las palabras no van por el mismo medio que el link.',
   'regalar.mandar.mismoCanalLink': 'El link no puede ir por el mismo canal que las palabras: elegí otro.',
   'regalar.mandar.hecho': 'Elegiste: {canal}.',
-  'regalar.mandar.mensajeLink': '{para}, te hice un regalo: {link}\nPara abrirlo vas a necesitar 4 palabras que te paso por otro lado.',
+  'regalar.mandar.mensajeLink': '{para}, te hice un regalo{motivo}.\n\n{link}\n\nPara abrirlo vas a necesitar además 4 palabras en orden que, por seguridad, te pasaré por otro lado o en persona.',
   'regalar.mandar.mensajePalabras': "Las 4 palabras para abrir tu regalo, en este orden: {palabras}",
   'regalar.mandar.asunto': 'Te hice un regalo',
   'regalar.mandar.asuntoPalabras': 'Las palabras de tu regalo',

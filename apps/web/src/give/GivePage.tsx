@@ -63,6 +63,9 @@ export interface MadeGift {
   readonly lang: Lang;
   readonly to: string;
   readonly sats: bigint;
+  /** Ocasión (y la libre), para el mensaje que se manda con el link. */
+  readonly occasion: string;
+  readonly occasionFree: string;
 }
 
 type Root = ReturnType<typeof masterRootFromMnemonic>;
@@ -110,6 +113,8 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         lang: draft.lang,
         to: draft.to,
         sats: draft.sats,
+        occasion: draft.occasion,
+        occasionFree: draft.occasionFree,
       };
     } catch (error) {
       if (error instanceof ApiFailure && error.code === 'regalo_existente') continue;

@@ -176,7 +176,7 @@ export const it: Dict = {
   'regalar.mandar.mismoCanal': 'Le parole non vanno per lo stesso canale del link.',
   'regalar.mandar.mismoCanalLink': 'Il link non può passare per lo stesso canale delle parole: scegline un altro.',
   'regalar.mandar.hecho': 'Hai scelto: {canal}.',
-  'regalar.mandar.mensajeLink': '{para}, ti ho fatto un regalo: {link}\nPer aprirlo ti serviranno 4 parole che ti mando per un’altra via.',
+  'regalar.mandar.mensajeLink': '{para}, ti ho fatto un regalo{motivo}.\n\n{link}\n\nPer aprirlo ti serviranno anche 4 parole in ordine che, per sicurezza, ti passerò per un’altra via o di persona.',
   'regalar.mandar.mensajePalabras': "Le 4 parole per aprire il tuo regalo, in quest’ordine: {palabras}",
   'regalar.mandar.asunto': 'Ti ho fatto un regalo',
   'regalar.mandar.asuntoPalabras': 'Le parole del tuo regalo',

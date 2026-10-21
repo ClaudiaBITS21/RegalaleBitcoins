@@ -49,6 +49,54 @@ export type OccasionKey = keyof typeof OCCASION_LABELS;
 
 export const isOccasion = (key: string): key is OccasionKey => Object.hasOwn(OCCASION_LABELS, key);
 
+/**
+ * La ocasión dentro del mensaje que manda quien regala («te hice un regalo por tu cumpleaños»):
+ * una frase por ocasión, porque el nombre solo no siempre entra («por tu Porque sí»). Sirve con
+ * vos y con tú. La ocasión libre va como «por …» con lo que escribió la persona; sin ocasión, vacío.
+ */
+const OCCASION_REASONS: Readonly<Partial<Record<OccasionKey, Labels>>> = {
+  cumple: L('por tu cumpleaños', 'pelo seu aniversário', 'for your birthday', 'per il tuo compleanno'),
+  bautismo: L('por tu bautismo', 'pelo seu batizado', 'for your baptism', 'per il tuo battesimo'),
+  navidad: L('por Navidad', 'de Natal', 'for Christmas', 'per Natale'),
+  casamiento: L('por tu casamiento', 'pelo seu casamento', 'for your wedding', 'per il tuo matrimonio'),
+  babyshower: L('por tu baby shower', 'pelo seu chá de bebê', 'for your baby shower', 'per il tuo baby shower'),
+  porque: L('porque sí', 'só porque sim', 'just because', 'così, perché sì'),
+  nacimiento: L('por el nacimiento', 'pelo nascimento', 'for the new baby', 'per la nascita'),
+  comunion: L('por tu primera comunión', 'pela sua primeira comunhão', 'for your first communion', 'per la tua prima comunione'),
+  mitzva: L('por tu Bar / Bat Mitzvá', 'pelo seu Bar / Bat Mitzvá', 'for your Bar / Bat Mitzvah', 'per il tuo Bar / Bat Mitzvah'),
+  quince: L('por tus 15', 'pelos seus 15 anos', 'for your quinceañera', 'per i tuoi 15 anni'),
+  egresados: L('por tu egreso', 'pela sua formatura', 'for your graduation', 'per il tuo diploma'),
+  recibido: L('porque te recibiste', 'pela sua formatura', 'for your college graduation', 'per la tua laurea'),
+  aniversario: L('por tu aniversario', 'pelo seu aniversário de casamento', 'for your anniversary', 'per il vostro anniversario'),
+  jubilacion: L('por tu jubilación', 'pela sua aposentadoria', 'for your retirement', 'per la tua pensione'),
+  casanueva: L('por tu casa nueva', 'pela sua casa nova', 'for your new home', 'per la tua casa nuova'),
+  reyes: L('por Reyes', 'de Dia de Reis', 'for Three Kings Day', 'per l’Epifania'),
+  anionuevo: L('por Año Nuevo', 'de Ano Novo', 'for New Year', 'per Capodanno'),
+  sanvalentin: L('por San Valentín', 'pelo Dia dos Namorados', 'for Valentine’s Day', 'per San Valentino'),
+  pascuas: L('por Pascuas', 'de Páscoa', 'for Easter', 'per Pasqua'),
+  diamadre: L('por el Día de la Madre', 'pelo Dia das Mães', 'for Mother’s Day', 'per la Festa della mamma'),
+  diapadre: L('por el Día del Padre', 'pelo Dia dos Pais', 'for Father’s Day', 'per la Festa del papà'),
+  dianino: L('por el Día del Niño', 'pelo Dia das Crianças', 'for Children’s Day', 'per la Giornata dei bambini'),
+  amigo: L('por el Día del Amigo', 'pelo Dia do Amigo', 'for Friendship Day', 'per la Giornata dell’amicizia'),
+  abuelos: L('por el Día de los Abuelos', 'pelo Dia dos Avós', 'for Grandparents’ Day', 'per la Festa dei nonni'),
+  maestro: L('por el Día del Maestro', 'pelo Dia do Professor', 'for Teachers’ Day', 'per la Giornata dell’insegnante'),
+  pizzaday: L('por el Bitcoin Pizza Day', 'pelo Bitcoin Pizza Day', 'for Bitcoin Pizza Day', 'per il Bitcoin Pizza Day'),
+  genesis: L('por el cumple del bloque génesis', 'pelo aniversário do bloco gênese', 'for the genesis block’s birthday', 'per il compleanno del blocco genesi'),
+  whitepaper: L('por el aniversario del whitepaper', 'pelo aniversário do whitepaper', 'for the whitepaper’s anniversary', 'per l’anniversario del whitepaper'),
+  halving: L('por el halving', 'pelo halving', 'for the halving', 'per l’halving'),
+  trabajo: L('por tu nuevo trabajo', 'pelo seu emprego novo', 'for your new job', 'per il tuo nuovo lavoro'),
+  gracias: L('para darte las gracias', 'para te agradecer', 'to say thank you', 'per dirti grazie'),
+  mejorate: L('para que te mejores pronto', 'para desejar melhoras', 'to wish you a speedy recovery', 'per augurarti di guarire presto'),
+  graduacion: L('por tu graduación', 'pela sua formatura', 'for your graduation', 'per la tua laurea'),
+};
+
+const FREE_REASON: Labels = L('por', 'por', 'for', 'per');
+
+export function occasionReason(key: string, lang: UiLang, free?: string | null): string {
+  if (key === 'otra') return free ? `${FREE_REASON[lang]} ${free}` : '';
+  return isOccasion(key) ? (OCCASION_REASONS[key]?.[lang] ?? '') : '';
+}
+
 /** Etiqueta de la ocasión; para la ocasión libre, el texto que escribió quien regala. */
 export function occasionLabel(key: string, lang: UiLang, free?: string | null): string {
   if (key === 'otra' && free) return free;
