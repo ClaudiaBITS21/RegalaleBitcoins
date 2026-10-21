@@ -652,7 +652,6 @@ export const it: Dict = {
   'precios.v.dias': '{n} giorni',
   'precios.v.unAnio': '1 anno',
   'precios.v.anios': '{n} anni',
-  'precios.soloN': 'Solo {n}',
   // Compra de créditos, «Mi plan» y créditos al regalar (handoff de cobro).
   'comprar.titulo': 'Compra',
   'comprar.producto': 'Stai comprando: {producto}.',

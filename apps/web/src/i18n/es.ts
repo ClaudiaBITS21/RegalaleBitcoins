@@ -651,7 +651,6 @@ export const es = {
   'precios.v.dias': '{n} días',
   'precios.v.unAnio': '1 año',
   'precios.v.anios': '{n} años',
-  'precios.soloN': 'Solo {n}',
 
   // Compra de créditos, «Mi plan» y créditos al regalar (handoff de cobro).
   'comprar.titulo': 'Comprar',
