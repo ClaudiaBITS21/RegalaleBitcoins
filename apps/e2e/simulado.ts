@@ -447,8 +447,12 @@ try {
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   await shot2(giver, 'p1-panel');
+  // Con la cuenta abierta, la personita de la cabecera lleva a «Mis regalos»; al salir, desaparece.
+  if ((await giver.locator('.nav-movil .icono-cuenta').getAttribute('href')) !== '/panel') fail('falta el ícono de la cuenta en la cabecera');
+  await giver.locator('.cabecera').screenshot({ path: join(SHOTS, 'p1-cabecera-cuenta.png') });
   await giver.getByRole('button', { name: 'Salir' }).click();
   await giver.getByRole('heading', { name: 'Tus regalos' }).waitFor();
+  if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
 
