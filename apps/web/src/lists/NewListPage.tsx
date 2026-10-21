@@ -1,6 +1,6 @@
 import { accountKeyText, deriveListAddress, generateMasterMnemonic, isCoreError, masterRootFromMnemonic, parseAccountKey } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
-import { accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
+import { accessErrorCode, accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { OccasionPicker, type OccasionChoice } from '../content/OccasionPicker.tsx';
@@ -135,7 +135,9 @@ export function NewListPage() {
         <button type="button" class="boton-texto enlace-centrado" disabled={busy} onClick={() => void access('entrar')}>
           {t('guardar.yaTengo')}
         </button>
-        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        {error !== null && <Notice kind="error">{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
       </div>
     );
   } else if (step === 'datos') {
@@ -296,7 +298,9 @@ export function NewListPage() {
             </p>
           </div>
         )}
-        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        {error !== null && <Notice kind="error">{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
         <Button disabled={busy || first === null} onClick={() => void publish()}>
           {busy ? t('lista.publicando') : t('lista.publicar')}
         </Button>
@@ -332,7 +336,9 @@ export function NewListPage() {
             </label>
           </div>
         )}
-        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        {error !== null && <Notice kind="error">{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
         <Button disabled={busy || first === null || !same} onClick={() => void publish()}>
           {busy ? t('lista.publicando') : t('lista.publicar')}
         </Button>

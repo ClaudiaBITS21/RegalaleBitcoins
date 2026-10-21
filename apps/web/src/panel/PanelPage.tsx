@@ -1,7 +1,7 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { WordsList } from '../give/WordsList.tsx';
-import { accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
+import { accessErrorCode, accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
 import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
@@ -152,7 +152,9 @@ export function PanelPage() {
           </Button>
           {mailSent && <Notice kind="ok">{t('panel.linkEnviado')}</Notice>}
         </form>
-        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        {error !== null && <Notice kind="error">{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
       </div>
     );
   } else if (view !== null) {
@@ -160,7 +162,9 @@ export function PanelPage() {
       <div class="paso panel">
         <StepTitle>{t('panel.titulo')}</StepTitle>
         <p class="texto-suave">{t('panel.cuenta', { email: view.email })}</p>
-        {error !== null && <Notice kind="error">{t(error)}</Notice>}
+        {error !== null && <Notice kind="error">{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
         {view.regalos.length === 0 ? (
           <div class="caja">
             <p>{t('panel.vacio')}</p>

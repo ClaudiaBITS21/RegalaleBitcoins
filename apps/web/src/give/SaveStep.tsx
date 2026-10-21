@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { accessErrorKey, accountApi, type AccountView, createAccess, signIn } from '../account.ts';
+import { accessErrorCode, accessErrorKey, accountApi, type AccountView, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import type { Key } from '../i18n/index.ts';
 import { passkeysAvailable } from '../passkey.ts';
@@ -88,7 +88,7 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
       setLinkTo(email.trim());
       setMode('mail');
     } catch (e) {
-      setError(e instanceof ApiFailure && e.code === 'demasiados_pedidos' ? 'guardar.demasiados' : 'guardar.errorServidor');
+      setError(accessErrorKey(e));
     } finally {
       setBusy(false);
     }
@@ -134,7 +134,9 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
             )}
           </>
         )}
-        {error !== null && <Notice kind={error === 'guardar.todaviaNo' ? 'info' : 'error'}>{t(error)}</Notice>}
+        {error !== null && <Notice kind={error === 'guardar.todaviaNo' ? 'info' : 'error'}>{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
         <button
           type="button"
           class="boton-texto enlace-centrado"
@@ -172,7 +174,9 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
           <Button onClick={() => onNeedCode(true)}>{t('guardar.seguir')}</Button>
         )}
         {withPasskey && !supported && <Notice kind="error">{t('guardar.noSoportada')}</Notice>}
-        {error !== null && <Notice kind={error === 'guardar.sinPrf' ? 'info' : 'error'}>{t(error)}</Notice>}
+        {error !== null && <Notice kind={error === 'guardar.sinPrf' ? 'info' : 'error'}>{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
         {withPasskey && (
           <Button kind="contorno" disabled={busy} onClick={() => onNeedCode(true)}>
             {t('guardar.entrarPalabras')}
@@ -225,7 +229,9 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
         <li>{t('guardar.punto2')}</li>
       </ul>
       {!supported && <Notice kind="error">{t('guardar.noSoportada')}</Notice>}
-      {error !== null && <Notice kind={error === 'guardar.sinPrf' || error === 'guardar.yaExiste' ? 'info' : 'error'}>{t(error)}</Notice>}
+      {error !== null && <Notice kind={error === 'guardar.sinPrf' || error === 'guardar.yaExiste' ? 'info' : 'error'}>{t(error)}
+            {accessErrorCode(error)}
+          </Notice>}
       {mode === 'entrar' ? (
         <>
           <Button kind="contorno" disabled={busy} onClick={() => void withCode(true)}>
