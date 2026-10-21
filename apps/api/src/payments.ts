@@ -2,6 +2,7 @@ import { type AccountKey, deriveListAddress, type Network, parsePaymentKey } fro
 import type postgres from 'postgres';
 import type { ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
+import { confirmCouponUse, couponDiscount, discounted, grantCouponCredits, usableCoupon } from './coupons.ts';
 import { ApiError } from './errors.ts';
 
 // Pagos del costo por servicio (handoff 2026-10-19, «cobro y créditos»), solo on-chain:
@@ -127,7 +128,8 @@ export async function unitsLeft(sql: Tx, product: string): Promise<number | null
   const [r] = await sql<{ cupo: number | null; n: string }[]>`
     select (select cupo from productos where codigo = ${product}) as cupo,
            (select count(*) from pagos where producto = ${product}
-              and (estado = 'confirmado' or (estado in ('pendiente', 'visto', 'incompleto') and creado > now() - interval '1 day'))) as n`;
+              and (estado = 'confirmado' or (estado in ('pendiente', 'visto', 'incompleto') and creado > now() - interval '1 day')))
+           + (select count(*) from cupon_usos where producto = ${product} and pago_id is null and estado = 'usado') as n`;
   return r?.cupo == null ? null : Math.max(0, r.cupo - Number(r.n));
 }
 
@@ -136,15 +138,26 @@ export async function foundersLeft(sql: Tx): Promise<number> {
   return (await unitsLeft(sql, 'fundador')) ?? 1_000_000;
 }
 
-export async function createPayment(deps: { sql: Sql; price: PriceClient; network: Network }, accountId: string, product: string): Promise<Payment> {
+/** Un producto que salió gratis con un cupón del 100 %: no hay pago on-chain, se acredita en el acto. */
+export interface FreeWithCoupon {
+  readonly free: true;
+  readonly product: string;
+  readonly coupon: string;
+}
+
+export async function createPayment(
+  deps: { sql: Sql; price: PriceClient; network: Network },
+  accountId: string,
+  product: string,
+  couponCode: string | null = null,
+): Promise<Payment | FreeWithCoupon> {
   const { sql, price, network } = deps;
   if (!(BUYABLE as readonly string[]).includes(product)) throw new ApiError(422, 'producto_invalido');
   const [p] = await sql<{ precio_sats: string; activo: boolean }[]>`select precio_sats, activo from productos where codigo = ${product}`;
   if (p === undefined || !p.activo || BigInt(p.precio_sats) <= 0n) throw new ApiError(422, 'producto_invalido');
-  const sats = BigInt(p.precio_sats);
+  const original = BigInt(p.precio_sats);
   // El equivalente en dólares queda como referencia (no se usa para cobrar).
   const usdPerBtc = await price.btcUsd().catch(() => 0);
-  const cents = usdPerBtc > 0 ? Math.round((Number(sats) * usdPerBtc) / 1_000_000) : 0;
   return sql.begin(async (tx) => {
     // Un pago a la vez: el índice de la dirección y el cupo de fundadores no se leen en paralelo.
     await tx`select pg_advisory_xact_lock(hashtext('pagos'))`;
@@ -152,15 +165,37 @@ export async function createPayment(deps: { sql: Sql; price: PriceClient; networ
     if (key === null) throw new ApiError(409, 'cobro_no_configurado');
     const left = await unitsLeft(tx, product);
     if (left !== null && left <= 0) throw new ApiError(409, product === 'fundador' ? 'fundadores_agotados' : 'agotado');
+    // Con cupón: el descuento (redondeado hacia abajo) y el uso reservado hasta que se confirme.
+    const coupon = couponCode === null ? null : await usableCoupon(tx, couponCode, accountId);
+    const percent = coupon === null ? null : couponDiscount(coupon, product);
+    const { sats, resigned } = percent === null ? { sats: original, resigned: 0n } : discounted(original, percent);
+    if (coupon !== null && sats === 0n) {
+      // 100 %: no hay pago on-chain; se acredita directo, con el cupón como origen.
+      await tx`
+        insert into cupon_usos (cupon, usuario_id, producto, estado, resignado, usado)
+        values (${coupon.codigo}, ${accountId}, ${product}, 'usado', ${resigned.toString()}, now())`;
+      await grantProduct(tx, accountId, product, 'codigo', coupon.codigo);
+      await grantCouponCredits(tx, coupon, accountId);
+      return { free: true, product, coupon: coupon.codigo } as const;
+    }
+    const cents = usdPerBtc > 0 ? Math.round((Number(sats) * usdPerBtc) / 1_000_000) : 0;
     const [n] = await tx<{ next: number }[]>`select coalesce(max(indice) + 1, 0)::int as next from pagos where llave = ${key.text}`;
     const index = n?.next ?? 0;
     const address = deriveListAddress(key, index).address;
     const [r] = await tx<Row[]>`
-      insert into pagos (id, usuario_id, producto, precio_cents, sats, usd_por_btc, llave, indice, direccion, vence_cotizacion)
+      insert into pagos (id, usuario_id, producto, precio_cents, sats, usd_por_btc, llave, indice, direccion, vence_cotizacion,
+                         cupon, descuento, precio_original_sats)
       values (${newId()}, ${accountId}, ${product}, ${cents}, ${sats.toString()}, ${usdPerBtc}, ${key.text}, ${index}, ${address},
-              now() + make_interval(days => ${WATCH_DAYS}))
+              now() + make_interval(days => ${WATCH_DAYS}),
+              ${coupon?.codigo ?? null}, ${percent}, ${coupon === null ? null : original.toString()})
       returning *`;
-    return fromRow(r as Row);
+    const payment = fromRow(r as Row);
+    if (coupon !== null) {
+      await tx`
+        insert into cupon_usos (cupon, usuario_id, producto, pago_id, estado, resignado)
+        values (${coupon.codigo}, ${accountId}, ${product}, ${payment.id}, 'reservado', ${resigned.toString()})`;
+    }
+    return payment;
   });
 }
 
@@ -169,24 +204,32 @@ export async function findPayment(sql: Tx, id: string): Promise<Payment | null> 
   return r === undefined ? null : fromRow(r);
 }
 
-/** Lo que otorga el producto: créditos en movimientos o un plan (con el cupo que tiene hoy el producto). */
-async function grant(tx: Tx, payment: Payment): Promise<void> {
+/**
+ * Lo que otorga un producto: créditos en movimientos o un plan (con el cupo que tiene hoy el
+ * producto). Viene de un pago o de un cupón del 100 % (origen «codigo», referencia el cupón).
+ */
+async function grantProduct(tx: Tx, accountId: string, product: string, origen: 'pago' | 'codigo', referencia: string): Promise<void> {
   const [p] = await tx<{ regalos: number; listas_cumple: number; listas_otras: number; plan: 'anual' | 'fundador' | null; regalos_libres: boolean; dias: number | null }[]>`
-    select regalos, listas_cumple, listas_otras, plan, regalos_libres, dias from productos where codigo = ${payment.product}`;
-  if (p === undefined) throw new Error(`Producto desconocido: ${payment.product}`);
+    select regalos, listas_cumple, listas_otras, plan, regalos_libres, dias from productos where codigo = ${product}`;
+  if (p === undefined) throw new Error(`Producto desconocido: ${product}`);
   if (p.plan !== null) {
     await tx`
       insert into planes (usuario_id, tipo, hasta, regalos, listas, referencia)
-      values (${payment.accountId}, ${p.plan}, ${p.dias === null ? null : daysFromNow(p.dias)}, ${p.regalos_libres ? null : p.regalos},
-              ${p.listas_cumple + p.listas_otras}, ${payment.id})`;
+      values (${accountId}, ${p.plan}, ${p.dias === null ? null : daysFromNow(p.dias)}, ${p.regalos_libres ? null : p.regalos},
+              ${p.listas_cumple + p.listas_otras}, ${referencia})`;
     return;
   }
   for (const [unidad, cantidad] of [['regalo', p.regalos], ['lista_cumple', p.listas_cumple], ['lista_otras', p.listas_otras]] as const) {
     if (cantidad <= 0) continue;
     await tx`
       insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
-      values (${payment.accountId}, 'compra', ${unidad}, ${cantidad}, 'pago', ${payment.id})`;
+      values (${accountId}, 'compra', ${unidad}, ${cantidad}, ${origen}, ${referencia})`;
   }
+}
+
+async function grant(tx: Tx, payment: Payment): Promise<void> {
+  await grantProduct(tx, payment.accountId, payment.product, 'pago', payment.id);
+  await confirmCouponUse(tx, payment.id);
 }
 
 function daysFromNow(days: number): Date {

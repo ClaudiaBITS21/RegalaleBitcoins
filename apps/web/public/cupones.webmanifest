@@ -1,0 +1,16 @@
+{
+  "id": "/cupones",
+  "name": "Cupones · Regalale Bitcoin",
+  "short_name": "Cupones",
+  "description": "Cupones de Regalale Bitcoin (solo admins).",
+  "lang": "es",
+  "start_url": "/cupones",
+  "scope": "/cupones",
+  "display": "standalone",
+  "background_color": "#FFF8F1",
+  "theme_color": "#FF8A1F",
+  "icons": [
+    { "src": "/cupones-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/cupones-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

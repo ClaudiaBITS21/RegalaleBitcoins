@@ -652,12 +652,20 @@ try {
   if (await giver.locator('.precios-caja').isVisible()) fail('en el celular se ve la tabla ancha de precios');
   await giver.locator('.precio-tarjeta').first().getByText('Recuperar un regalo que no se abrió').waitFor();
   await giver.locator('.precios-tarjetas').screenshot({ path: join(SHOTS, 'c0-precios-celu.png') });
+  await sql`insert into cupones (codigo, descuento, max_usos, creado_por) values ('E2EVEINTE', 20, 5, 'e2e') on conflict do nothing`;
   await giver.locator('.precios-tarjetas a[href="/comprar?producto=pack10"]').click();
+  // Antes del pago: código de descuento (cupón del 20 %), precio original tachado.
+  await giver.getByLabel('¿Tenés un código?').fill('e2eveinte');
+  await giver.getByRole('button', { name: 'Aplicar' }).click();
+  await giver.getByText('Código E2EVEINTE: 20 % de descuento.').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'c1-codigo');
+  await giver.getByRole('button', { name: 'Seguir al pago' }).click();
   await giver.getByRole('heading', { name: /^Pagá .+ sats$/ }).waitFor({ timeout: 15_000 });
   const buyAddr = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   if (buyAddr !== deriveListAddress(parseAccountKey(cobroVpub, signet), 0).address) fail('la compra no usa la primera dirección de la llave de cobro');
   await shot2(giver, 'c1-comprar');
-  const [compra] = await sql<{ sats: string }[]>`select sats from pagos where direccion = ${buyAddr}`;
+  const [compra] = await sql<{ sats: string; cupon: string | null; precio_original_sats: string }[]>`select sats, cupon, precio_original_sats from pagos where direccion = ${buyAddr}`;
+  if (compra?.cupon !== 'E2EVEINTE' || BigInt(compra.sats) >= BigInt(compra.precio_original_sats)) fail('el pago no tiene el descuento del cupón');
   chain.pay(buyAddr, BigInt(compra?.sats ?? '0'), true);
   await giver.getByRole('heading', { name: '¡Listo! Ya tenés tus créditos.' }).waitFor({ timeout: 25_000 });
   await giver.getByRole('button', { name: 'Ver mi plan' }).click();
@@ -683,7 +691,7 @@ try {
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
-  console.log('OK: compra de un pack desde precios: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
+  console.log('OK: compra de un pack desde precios con cupón del 20 %: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
   console.log('OK: botón de arrepentimiento: valida la dirección y da el código de trámite.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
@@ -695,7 +703,9 @@ try {
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from cupon_usos where cupon = 'E2EVEINTE'`;
   await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from cupones where codigo = 'E2EVEINTE'`;
   await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();

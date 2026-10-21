@@ -154,9 +154,35 @@ export interface Credits {
   readonly conPlan: boolean;
   /** Si tiene la salutación automática (Satoshi no la trae; API desde el 21/10). */
   readonly conSaludo?: boolean;
-  readonly regalos: { readonly bienvenida: number; readonly pagos: number };
-  readonly listas: { readonly cumple: number; readonly otras: number };
+  readonly regalos: { readonly bienvenida: number; readonly pagos: number; readonly porOcasion?: Readonly<Record<string, number>> };
+  readonly listas: { readonly cumple: number; readonly otras: number; readonly porOcasion?: Readonly<Record<string, number>> };
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
+}
+
+/** Lo que da un cupón (y, con un producto, su precio con el descuento). */
+export interface CouponView {
+  readonly codigo: string;
+  readonly descuento: number | null;
+  readonly productos: readonly string[];
+  readonly da: { readonly unidad: 'regalo' | 'lista_otras'; readonly cantidad: number; readonly ocasion: string | null } | null;
+  readonly precioOriginal?: string;
+  readonly precio?: string;
+}
+
+/** Un cupón en el admin, con sus usos. */
+export interface AdminCoupon extends CouponView {
+  readonly desde: string;
+  /** Exclusivo: vence en ese instante. null = sin fecha de fin. */
+  readonly hasta: string | null;
+  readonly maxUsos: number;
+  readonly activo: boolean;
+  readonly nota: string;
+  readonly creadoPor: string;
+  readonly creado: string;
+  readonly usados: number;
+  readonly reservados: number;
+  readonly satsResignados: string;
+  readonly porProducto: Readonly<Record<string, number>>;
 }
 
 /** Un pago del costo por servicio. */
@@ -186,9 +212,24 @@ export const api = {
   adminRefunded: (codigo: string) => post<{ ok: true }>(`/api/admin/arrepentimiento/${encodeURIComponent(codigo)}/devuelto`, {}),
   /** Créditos de la cuenta si hay sesión; sin sesión, null (sin pedir algo que dé 401). */
   creditsIfSignedIn: async (): Promise<Credits | null> => ((await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta ? call<Credits>('/api/cuenta/creditos') : null),
-  buy: (producto: string) => post<Purchase>('/api/cuenta/pagos', { producto }),
+  /** Con un cupón del 100 % no hay pago: vuelve { gratis: true }. */
+  buy: (producto: string, cupon?: string) => post<Purchase | { gratis: true; producto: string }>('/api/cuenta/pagos', { producto, ...(cupon === undefined ? {} : { cupon }) }),
+  couponPreview: (codigo: string, producto?: string) => post<CouponView>('/api/cuenta/cupon/ver', { codigo, ...(producto === undefined ? {} : { producto }) }),
+  redeemCoupon: (codigo: string) => post<CouponView>('/api/cuenta/cupon', { codigo }),
   purchase: (id: string) => call<Purchase>(`/api/cuenta/pagos/${encodeURIComponent(id)}`),
   adminCobro: () => call<AdminCobro>('/api/admin/cobro'),
+  adminCoupons: () => call<{ cupones: AdminCoupon[] }>('/api/admin/cupones'),
+  adminCreateCoupon: (c: {
+    codigo: string;
+    descuento: number | null;
+    productos: string[];
+    da: { unidad: 'regalo' | 'lista_otras'; cantidad: number; ocasion: string | null } | null;
+    desde: string;
+    hasta: string;
+    maxUsos: number;
+    nota: string;
+  }) => post<{ codigo: string }>('/api/admin/cupones', c),
+  adminCouponActive: (codigo: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/${encodeURIComponent(codigo)}/activo`, { activo }),
   adminAdmins: () => call<{ fijos: string[]; agregados: Array<{ email: string; agregadoPor: string; creado: string }> }>('/api/admin/admins'),
   adminAddAdmin: (email: string) => post<{ email: string }>('/api/admin/admins', { email }),
   adminRemoveAdmin: (email: string) => post<{ ok: true }>('/api/admin/admins/quitar', { email }),
