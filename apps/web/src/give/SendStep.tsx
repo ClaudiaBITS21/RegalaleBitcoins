@@ -6,35 +6,20 @@ import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
 import { usePlanFeatures } from './planFeatures.ts';
+import { type Channel, type Part, readSent, saveSent } from './envios.ts';
 import { PrintCard } from './PrintCard.tsx';
 import { numberedWords, WordsList } from './WordsList.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
-type Channel = 'whatsapp' | 'mail' | 'copiar' | 'mano';
-const CHANNELS = ['whatsapp', 'mail', 'copiar', 'mano'] as const;
-
-/**
- * Por qué canal salió el link y por cuál las palabras, recordado mientras dure la pestaña
- * (solo el nombre del canal, nunca el link ni las palabras).
- */
-function useSentBy(giftId: string, part: 'link' | 'palabras'): [Channel | null, (c: Channel) => void] {
-  const key = `envio:${giftId}:${part}`;
-  const [value, setValue] = useState<Channel | null>(() => {
-    try {
-      const v = sessionStorage.getItem(key);
-      return (CHANNELS as readonly string[]).includes(v ?? '') ? (v as Channel) : null;
-    } catch {
-      return null;
-    }
-  });
-  useEffect(() => {
-    try {
-      if (value !== null) sessionStorage.setItem(key, value);
-    } catch {
-      // Sin almacenamiento (modo privado): se recuerda solo mientras no se recargue.
-    }
-  }, [key, value]);
-  return [value, setValue];
+/** Por qué canal salió cada parte, recordado en este navegador (give/envios.ts). */
+function useSentBy(giftId: string, part: Part): [Channel | null, (c: Channel) => void] {
+  const [value, setValue] = useState<Channel | null>(() => readSent(giftId, part));
+  // Se guarda en el momento: abrir WhatsApp o el mail puede sacar a la persona de la página.
+  const set = (c: Channel) => {
+    saveSent(giftId, part, c);
+    setValue(c);
+  };
+  return [value, set];
 }
 
 /**

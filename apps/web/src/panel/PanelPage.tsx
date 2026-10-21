@@ -7,6 +7,7 @@ import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
 import { MyPlan } from './MyPlan.tsx';
 import { reminderText } from './recordatorio.ts';
+import { type Channel, readSent } from '../give/envios.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
@@ -230,23 +231,19 @@ export function PanelPage() {
                     <div class="regalo-secretos">
                       <p class="recordatorio-texto">{reminderText(g, trato, link)}</p>
                       <small class="texto-suave">{t('panel.recordatorio.texto')}</small>
-                      <div class="canales">
-                        <Button
-                          onClick={async () => {
-                            try {
-                              await navigator.clipboard.writeText(reminderText(g, trato, link));
-                              setCopied(true);
-                            } catch {
-                              // El texto queda a la vista para copiarlo a mano.
-                            }
-                          }}
-                        >
-                          {t(copied ? 'panel.recordatorio.copiado' : 'regalar.mandar.copiar')}
-                        </Button>
-                        <a class="boton boton-contorno" href={`https://wa.me/?text=${encodeURIComponent(reminderText(g, trato, link))}`} target="_blank" rel="noopener noreferrer">
-                          {t('regalar.mandar.whatsapp')}
-                        </a>
-                      </div>
+                      <SentBy giftId={g.id} />
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(reminderText(g, trato, link));
+                            setCopied(true);
+                          } catch {
+                            // El texto queda a la vista para copiarlo a mano.
+                          }
+                        }}
+                      >
+                        {t(copied ? 'panel.recordatorio.copiado' : 'panel.recordatorio.copiar')}
+                      </Button>
                     </div>
                   )}
                 </li>
@@ -308,6 +305,30 @@ export function PanelPage() {
   }
 
   return <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'}>{body}</Layout>;
+}
+
+const SENT_KEYS: Readonly<Record<Channel, Key>> = {
+  whatsapp: 'panel.envio.whatsapp',
+  mail: 'panel.envio.mail',
+  copiar: 'panel.envio.copiar',
+  mano: 'panel.envio.mano',
+};
+
+/** Cómo salieron el link y las palabras cuando se hizo el regalo, si este navegador lo recuerda. */
+function SentBy({ giftId }: { giftId: string }) {
+  const { t } = useI18n();
+  const link = readSent(giftId, 'link');
+  const words = readSent(giftId, 'palabras');
+  if (link === null && words === null) return null;
+  const parts = [
+    ...(link === null ? [] : [t('panel.envio.link', { canal: t(SENT_KEYS[link]) })]),
+    ...(words === null ? [] : [t('panel.envio.palabras', { canal: t(SENT_KEYS[words]) })]),
+  ];
+  return (
+    <small class="texto-suave envio-original">
+      <strong>{t('panel.envio.titulo')}</strong> {parts.join(' + ')}
+    </small>
+  );
 }
 
 const roots = new Map<string, ReturnType<typeof masterRootFromMnemonic>>();
