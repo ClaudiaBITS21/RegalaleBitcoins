@@ -289,6 +289,7 @@ export const pt: Dict = {
   'guardar.nuevaConfirmar': "Entendo, criar uma conta nova",
   'guardar.nuevaVolver': "Voltar a tentar entrar",
   'guardar.passkeyInvalida': "Não conseguimos verificar seu acesso. Tente no dispositivo onde você criou seu acesso; se continuar, escreva para hola@regalalebitcoin.com.",
+  'guardar.bovedaOtroDispositivo': "Você entrou, mas daqui sua passkey não consegue abrir seus presentes guardados: às vezes acontece ao usá-la com o QR de outro dispositivo. Seus presentes estão bem: abra-os no dispositivo onde criou seu acesso ou com seu código de recuperação.",
   'panel.titulo': 'Presentes que você deu',
   'panel.cuenta': 'Conta: {email}',
   'panel.vacio': 'Você ainda não deu presentes.',

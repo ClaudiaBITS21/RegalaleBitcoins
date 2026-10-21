@@ -288,6 +288,7 @@ export const it: Dict = {
   'guardar.nuevaConfirmar': "Ho capito, crea un account nuovo",
   'guardar.nuevaVolver': "Torna a provare ad entrare",
   'guardar.passkeyInvalida': "Non siamo riusciti a verificare l’accesso. Prova dal dispositivo dove hai creato l’accesso; se continua, scrivici a hola@regalalebitcoin.com.",
+  'guardar.bovedaOtroDispositivo': "Sei entrato, ma da qui la tua passkey non riesce ad aprire i regali salvati: a volte succede usandola con il QR da un altro dispositivo. I tuoi regali stanno bene: aprili dal dispositivo dove hai creato l’accesso o con il codice di recupero.",
   'panel.titulo': 'Regali che hai fatto',
   'panel.cuenta': 'Account: {email}',
   'panel.vacio': 'Non hai ancora fatto regali.',

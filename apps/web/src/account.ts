@@ -1,4 +1,4 @@
-import { generateMasterMnemonic, openVault, sealVault } from '@regalale/core';
+import { CoreError, generateMasterMnemonic, openVault, sealVault } from '@regalale/core';
 import { ApiFailure } from './api.ts';
 import type { Key } from './i18n/index.ts';
 import { setSignedIn } from './sesion.ts';
@@ -103,6 +103,9 @@ export function accessErrorCode(key: Key): string {
 
 export function accessErrorKey(e: unknown): Key {
   lastDetail = detailOf(e);
+  // Entró bien, pero la passkey dio otra clave que al crearla: pasa al usarla desde otro dispositivo
+  // con el QR (el celu le contesta a la compu). Desde donde se creó, o con el código, abre.
+  if (e instanceof CoreError && e.code === 'INVALID_VAULT') return 'guardar.bovedaOtroDispositivo';
   if (e instanceof PasskeyError) return e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.errorDispositivo';
   if (e instanceof ApiFailure) {
     if (e.status === 0) return 'guardar.errorServidor';

@@ -288,6 +288,7 @@ export const en: Dict = {
   'guardar.nuevaConfirmar': "I understand, create a new account",
   'guardar.nuevaVolver': "Go back to signing in",
   'guardar.passkeyInvalida': "We couldn’t verify your access. Try on the device where you created your access; if it keeps happening, write to hola@regalalebitcoin.com.",
+  'guardar.bovedaOtroDispositivo': "You’re signed in, but from here your passkey can’t open your saved gifts: this sometimes happens when you use it through the QR code from another device. Your gifts are fine: open them on the device where you created your access, or with your recovery code.",
   'panel.titulo': 'Gifts you made',
   'panel.cuenta': 'Account: {email}',
   'panel.vacio': 'You haven’t made any gifts yet.',

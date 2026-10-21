@@ -287,6 +287,7 @@ export const es = {
   'guardar.nuevaConfirmar': "Entiendo, crear una cuenta nueva",
   'guardar.nuevaVolver': "Volver a intentar entrar",
   'guardar.passkeyInvalida': "No pudimos verificar tu acceso. Probá desde el dispositivo donde creaste tu acceso; si sigue, escribinos a hola@regalalebitcoin.com.",
+  'guardar.bovedaOtroDispositivo': "Entraste, pero desde acá tu passkey no puede abrir tus regalos guardados: pasa a veces al usarla con el QR desde otro dispositivo. Tus regalos están bien: abrilos desde el dispositivo donde creaste tu acceso, o con tu código de recuperación.",
   'panel.titulo': 'Regalos que hiciste',
   'panel.cuenta': 'Cuenta: {email}',
   'panel.vacio': 'Todavía no hiciste regalos.',

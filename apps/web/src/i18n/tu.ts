@@ -113,6 +113,7 @@ export const tu: Partial<Record<Key, string>> = {
   'guardar.todaviaNo': 'Todavía no se confirmó tu mail. Abre el link en este navegador y prueba de nuevo.',
   'guardar.demasiados': 'Hubo muchos intentos seguidos. Espera un rato y prueba de nuevo.',
   'guardar.passkeyInvalida': "No pudimos verificar tu acceso. Prueba desde el dispositivo donde creaste tu acceso; si sigue, escríbenos a hola@regalalebitcoin.com.",
+  'guardar.bovedaOtroDispositivo': "Entraste, pero desde aquí tu passkey no puede abrir tus regalos guardados: pasa a veces al usarla con el QR desde otro dispositivo. Tus regalos están bien: ábrelos desde el dispositivo donde creaste tu acceso, o con tu código de recuperación.",
   'panel.entrarTexto': 'Entra para ver cómo van los regalos que hiciste.',
   'panel.linkBoton': 'Mándame el link',
   'panel.linkVencido': 'Ese link ya se usó o venció. Pide uno nuevo.',
