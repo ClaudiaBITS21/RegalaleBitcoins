@@ -96,6 +96,14 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 - Web `pnpm build:mainnet` en el sitio `regalalebitcoins` (`firebase deploy --only hosting:mainnet`).
 - Acceso público al servicio (`--no-invoker-iam-check`): lo corre la responsable desde Cloud Shell.
 
+## Segundo deploy de la API del 21/10/2026
+
+- Imagen `api:dc713eb-v1`, desplegada por la responsable desde Cloud Shell. Al arrancar aplica las
+  migraciones 020–024: admins editables, Hodler sin vencimiento y salutación por producto, cupones,
+  cupones para un mail y lotes con invitación, y copias extra de la bóveda con vínculo compu-celu
+  (passkey usada por QR).
+- La web `dc713eb` salió después, para no pedirle a la API datos que todavía no tenía.
+
 ## Deploy de la API del 21/10/2026
 
 - Imagen `api:d1158b4-v1`; revisión `regalalebitcoins-api-mainnet-00016-9fc` con el 100% del
