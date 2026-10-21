@@ -95,3 +95,11 @@ verificados contra el txid, barrido de una sola salida controlado antes y despu�
 - Secretos nuevos: `db-password-mainnet`, `tareas-token-mainnet`. Scheduler `difusiones-mainnet`.
 - Web `pnpm build:mainnet` en el sitio `regalalebitcoins` (`firebase deploy --only hosting:mainnet`).
 - Acceso público al servicio (`--no-invoker-iam-check`): lo corre la responsable desde Cloud Shell.
+
+## Deploy de la API del 21/10/2026
+
+- Imagen `api:d1158b4-v1`; revisión `regalalebitcoins-api-mainnet-00016-9fc` con el 100% del
+  tráfico. Al arrancar aplica las migraciones 016–019 (precios en sats, planes con cupo, cuentas
+  con mail y vistas previas de los links). La desplegó la responsable desde Cloud Shell.
+- Después, la web `5e3197c` sumó en Firebase la regla `/r/**` → `regalalebitcoins-api-mainnet`
+  (vista previa de cada regalo en WhatsApp).
