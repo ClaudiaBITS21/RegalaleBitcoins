@@ -220,6 +220,13 @@ try {
   await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
+  // Las rayitas de los pasos hechos llevan de vuelta: al paso 2 y otra vez al 3, sin perder lo escrito.
+  await page.locator('.progreso').screenshot({ path: join(SHOTS, 'r3-rayitas.png') });
+  await page.getByRole('button', { name: 'Volver al paso 2' }).click();
+  await page.getByLabel('Idioma de quien lo recibe').waitFor();
+  if ((await page.getByLabel('Idioma de quien lo recibe').inputValue()) !== 'pt') fail('volver al paso 2 perdió lo elegido');
+  await page.getByRole('button', { name: 'Seguir' }).click();
+  await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
   // Desde Argentina arranca en pesos, con sugeridos redondos y los sats en chico abajo.
   if ((await page.getByRole('button', { name: 'En pesos' }).getAttribute('aria-pressed')) !== 'true') fail('en es-AR el monto no arranca en pesos');
   const ars100k = page.locator('.opcion-monto', { hasText: /^\$\s100\.000/ });

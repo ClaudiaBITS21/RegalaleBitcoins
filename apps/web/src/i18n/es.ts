@@ -92,6 +92,7 @@ export const es = {
   'listo.cta': 'Regalarle bitcoin a alguien',
 
   'regalar.paso': 'Paso {n} de 5',
+  'regalar.volverAlPaso': 'Volver al paso {n}',
   'regalar.ocasion.titulo': '¿Qué ocasión es?',
   'regalar.para.titulo': '¿Para quién es?',
   'regalar.para.nombre': 'Su nombre',

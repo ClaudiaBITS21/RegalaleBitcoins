@@ -766,18 +766,47 @@ h1 {
   color: var(--suave);
 }
 
-.progreso-barra {
+.progreso-rayas {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progreso-rayas li {
+  flex: 1;
+}
+
+/* La raya se dibuja adentro: el botón es más alto para que se pueda tocar con el dedo. */
+.raya {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+}
+
+.raya::before {
+  content: '';
   display: block;
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right, var(--acento) var(--avance), var(--gris) var(--avance));
+  background: var(--gris);
 }
 
-.progreso-1 { --avance: 20%; }
-.progreso-2 { --avance: 40%; }
-.progreso-3 { --avance: 60%; }
-.progreso-4 { --avance: 80%; }
-.progreso-5 { --avance: 100%; }
+.raya.hecha::before {
+  background: var(--acento);
+}
+
+button.raya {
+  cursor: pointer;
+}
+
+button.raya:hover::before,
+button.raya:focus-visible::before {
+  background: var(--tinta);
+}
 
 .grilla-ocasiones,
 .opciones-monto {

@@ -93,6 +93,7 @@ export const it: Dict = {
   'listo.cta': 'Regala bitcoin a qualcuno',
 
   'regalar.paso': 'Passo {n} di 5',
+  'regalar.volverAlPaso': 'Torna al passo {n}',
   'regalar.ocasion.titulo': 'Qual è l’occasione?',
   'regalar.para.titulo': 'Per chi è?',
   'regalar.para.nombre': 'Il suo nome',
