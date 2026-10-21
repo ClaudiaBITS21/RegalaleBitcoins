@@ -1,34 +1,24 @@
 import type { Lang } from '@regalale/core';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { GiftView } from '../api.ts';
-import { BitcoinB } from '../content/BitcoinB.tsx';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { examplesFor, looksLikeLink, pickExample, REMATE_MAX, useExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { type Key, translate } from '../i18n/index.ts';
 import { Button, useI18n } from '../ui.tsx';
-import { Qr } from './Qr.tsx';
+import { artImage, type CardTexts, canvasJpeg, drawCard, jpegToPdf, previewUrl } from './tarjetaPdf.ts';
 
 // Tarjeta para entregar en mano (docs/handoff/2026-10-17/INDICE-chat.txt, sección 3): una hoja
 // A4 impresa de un solo lado y doblada en cuatro, queda en A6. Arriba (girada 180°) la tapa y
 // la contratapa; abajo, el interior: el mensaje a la izquierda y, a la derecha, el QR del link
 // con un recuadro para escribir a mano las 4 palabras. Las palabras nunca se imprimen.
-// Todo se arma en el navegador: el link no sale de esta página.
+// Todo se arma en el navegador (give/tarjetaPdf.ts): el link no sale de esta página.
 
 const chars = (s: string) => [...s].length;
 
-function Coin({ size }: { size: number }) {
-  return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 72 72">
-      <circle cx="36" cy="36" r="32" fill="#FF8A1F" stroke="#1A1530" stroke-width="4" />
-      <circle cx="36" cy="36" r="23" fill="none" stroke="#1A1530" stroke-width="2" />
-      <BitcoinB cx={36} cy={36} h={37} color="#1A1530" />
-    </svg>
-  );
-}
-
-// Lo gratis no trae la tarjeta imprimible: solo se puede ver cómo quedaría, con la marca «Vista
-// previa» y sin imprimir (Rodolfo, 20/10).
+// Se baja como PDF A4 (Rodolfo, 21/10: imprimir desde el celular sacaba la hoja desarmada), con
+// su vista preliminar debajo de la frase. Lo gratis no trae la tarjeta: se ve la vista preliminar
+// con la marca «Vista previa» y no se baja (Rodolfo, 20/10).
 export function PrintCard({ link, view, conPlan }: { link: string; view: GiftView; conPlan: boolean | null }) {
   const { t, trato } = useI18n();
   const lang = view.idioma as Lang;
@@ -39,7 +29,6 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
   const [example, setExample] = useState<string | null>(null);
   const [remate, setRemate] = useState('');
   const [undo, setUndo] = useState<string | null>(null);
-  const [ver, setVer] = useState(false);
 
   // Viene un remate de ejemplo al azar según la ocasión; "Otra idea" lo cambia.
   useEffect(() => {
@@ -61,58 +50,68 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
   const isLink = looksLikeLink(remate);
   const ok = !tooLong && !isLink;
 
-  const hoja = (
-    <div class="hoja-a4" aria-hidden="true" lang={lang}>
-      <div class="panel panel-girado panel-tapa">
-        <span class="tapa-ocasion">{occasionLabel(view.ocasion, lang, view.ocasionLibre)}</span>
-        <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} class="tapa-arte" />
-        <div class="tapa-para">
-          <span>{r('tarjeta.para')}</span>
-          <strong>{view.para}</strong>
-          <span class="tapa-adentro">{r('tarjeta.adentro')}</span>
-        </div>
-      </div>
-      <div class="panel panel-girado panel-contratapa">
-        <Coin size={96} />
-        <p class="contratapa-remate">{ok ? remate : ''}</p>
-        <p class="contratapa-marca">
-          <Coin size={18} /> {r('tarjeta.hecho')} <strong>regalalebitcoin.com</strong>
-        </p>
-      </div>
-      <div class="panel panel-mensaje">
-        {view.mensaje !== '' && (
-          <>
-            <span class="mensaje-comillas">“</span>
-            <p>{view.mensaje}</p>
-          </>
-        )}
-        {view.de !== null && view.de !== '' && <strong class="mensaje-firma">{view.de}</strong>}
-      </div>
-      <div class="panel panel-abrir">
-        <div class="abrir-cabeza">
-          <Qr text={link} label={r('regalar.pagar.qr')} />
-          <div>
-            <strong>{r('tarjeta.abrir')}</strong>
-            <span>{r('tarjeta.todo')}</span>
-          </div>
-        </div>
-        <ol class="abrir-pasos">
-          <li>{r('tarjeta.paso1')}</li>
-          <li>{r('tarjeta.paso2')}</li>
-          <li>{r('tarjeta.paso3')}</li>
-        </ol>
-        <div class="abrir-palabras">
-          <strong>{r('tarjeta.palabras')}</strong>
-          <div class="renglones">
-            {[1, 2, 3, 4].map((n) => (
-              <span key={n}>{n}</span>
-            ))}
-          </div>
-          <small>{r('tarjeta.palabrasAviso')}</small>
-        </div>
-      </div>
-    </div>
-  );
+  const texts: CardTexts = {
+    ocasion: occasionLabel(view.ocasion, lang, view.ocasionLibre),
+    para: r('tarjeta.para'),
+    nombre: view.para,
+    adentro: r('tarjeta.adentro'),
+    remate: ok ? remate.trim() : '',
+    hecho: r('tarjeta.hecho'),
+    mensaje: view.mensaje,
+    de: view.de ?? '',
+    abrir: r('tarjeta.abrir'),
+    todo: r('tarjeta.todo'),
+    pasos: [r('tarjeta.paso1'), r('tarjeta.paso2'), r('tarjeta.paso3')],
+    palabras: r('tarjeta.palabras'),
+    aviso: r('tarjeta.palabrasAviso'),
+  };
+  const marca = conPlan === false ? t('tarjeta.vistaPrevia') : undefined;
+
+  // Vista preliminar del PDF: se vuelve a dibujar cuando cambia la frase (con una pausa corta).
+  const artRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const key = JSON.stringify([texts, marca]);
+  useEffect(() => {
+    let alive = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const art = await artImage(artRef.current);
+        // data: y no blob:, que la política de seguridad del sitio no deja mostrar como imagen.
+        const url = previewUrl(await drawCard(texts, link, art, marca));
+        if (!alive) return;
+        setPreview(url);
+        setFailed(false);
+      } catch {
+        if (alive) setFailed(true);
+      }
+    }, 400);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [key]);
+
+  const download = async () => {
+    setBusy(true);
+    try {
+      const art = await artImage(artRef.current);
+      const pdf = await jpegToPdf(await canvasJpeg(await drawCard(texts, link, art)));
+      const url = URL.createObjectURL(pdf);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tarjeta-${view.para.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'regalo'}.pdf`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <section class="caja envio imprimir">
@@ -139,32 +138,31 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
           <small class={tooLong ? 'error-campo' : 'contador'}>{tooLong ? t('regalar.para.sobran', { n: String(chars(remate) - REMATE_MAX) }) : t('regalar.para.quedan', { n: String(REMATE_MAX - chars(remate)) })}</small>
         )}
       </label>
+
+      <div class="tarjeta-vista">
+        <strong>{t('tarjeta.vistaPreliminar')}</strong>
+        {preview === null ? <p class="texto-suave">{t('tarjeta.preparando')}</p> : <img src={preview} alt={t('tarjeta.vistaPreliminar')} />}
+      </div>
+      {/* La ilustración de la tapa, fuera de la pantalla: de acá sale la imagen del PDF. */}
+      <div class="tarjeta-arte-fuente" ref={artRef} aria-hidden="true">
+        <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} />
+      </div>
+
       {conPlan === false ? (
-        <>
-          <Button kind="contorno" onClick={() => setVer((v) => !v)}>
-            {t(ver ? 'tarjeta.ocultar' : 'tarjeta.verComo')}
-          </Button>
-          <small class="texto-suave">
-            {t('planes.incluido')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
-          </small>
-          {ver && (
-            <div class="vista-previa" data-marca={t('tarjeta.vistaPrevia')}>
-              {hoja}
-            </div>
-          )}
-        </>
+        <small class="texto-suave">
+          {t('planes.incluido')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+        </small>
       ) : (
         <>
           {conPlan === true && (
-            <Button kind="contorno" disabled={!ok} onClick={() => window.print()}>
-              {t('tarjeta.imprimir')}
+            <Button kind="contorno" disabled={!ok || busy} onClick={() => void download()}>
+              {busy ? t('tarjeta.preparando') : t('tarjeta.imprimir')}
             </Button>
           )}
           <small class="texto-suave">{t('tarjeta.doblar')}</small>
-          {/* La hoja que se imprime: oculta en pantalla. */}
-          {hoja}
         </>
       )}
+      {failed && <small class="error-campo">{t('tarjeta.error')}</small>}
     </section>
   );
 }

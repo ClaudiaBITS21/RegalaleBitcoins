@@ -2852,61 +2852,6 @@ svg.tarjeta-imagen {
 .mensaje-acciones { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .mensaje-acciones .boton-texto { padding: 4px 0; }
 
-/* ── Tarjeta imprimible: A4 de un solo lado, doblada en cuatro (A6) ── */
-.hoja-a4 { display: none; }
-/* Lo gratis: solo la vista previa en pantalla, achicada y con marca; no se imprime. */
-.vista-previa { position: relative; overflow: hidden; border: 2px solid var(--tinta); border-radius: 12px; background: #fff; }
-.vista-previa .hoja-a4 {
-  display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm;
-  width: 210mm; height: 297mm; background: #fff; color: var(--tinta); font-family: var(--texto); zoom: 0.4;
-}
-.vista-previa::after {
-  content: attr(data-marca); position: absolute; inset: 0; display: grid; place-items: center; transform: rotate(-30deg);
-  font-family: var(--titulos); font-weight: 800; font-size: 32px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: rgba(26, 21, 48, 0.28); pointer-events: none;
-}
-.estilo-opcion.bloqueada { opacity: 0.55; cursor: not-allowed; }
-@media print {
-  @page { size: A4; margin: 0; }
-  html, body { background: #fff !important; }
-  body * { visibility: hidden; }
-  .hoja-a4, .hoja-a4 * { visibility: visible; }
-  .vista-previa, .vista-previa * { display: none !important; }
-  .hoja-a4 {
-    display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm;
-    position: fixed; left: 0; top: 0; width: 210mm; height: 297mm; background: #fff; color: var(--tinta);
-    font-family: var(--texto); -webkit-print-color-adjust: exact; print-color-adjust: exact;
-  }
-}
-/* El interior de la hoja vale para imprimir y para la vista previa. */
-.hoja-a4 .panel { box-sizing: border-box; overflow: hidden; padding: 11mm 10mm; display: flex; flex-direction: column; }
-/* Arriba va girada: al doblar por la mitad horizontal hacia atrás queda derecha. */
-.hoja-a4 .panel-girado { transform: rotate(180deg); }
-.panel-tapa { background: var(--naranja); align-items: center; justify-content: space-between; text-align: center; }
-.tapa-ocasion { background: var(--tinta); color: var(--amarillo); border-radius: 999px; padding: 2mm 4mm; font-weight: 700; font-size: 11pt; }
-.tapa-arte { width: 75mm; max-height: 62mm; border-radius: 4mm; overflow: hidden; }
-.tapa-arte svg, .tapa-arte img { width: 100%; height: auto; display: block; }
-.tapa-para { display: flex; flex-direction: column; align-items: center; gap: 1mm; font-size: 12pt; }
-.tapa-para strong { font-family: var(--titulos); font-weight: 800; font-size: 30pt; line-height: 1; overflow-wrap: anywhere; }
-.tapa-adentro { margin-top: 3mm; font-size: 11pt; font-weight: 500; }
-.panel-contratapa { align-items: center; text-align: center; padding-top: 16mm; }
-.contratapa-remate { flex: 1; display: flex; align-items: center; margin: 0; font-family: var(--titulos); font-weight: 800; font-size: 22pt; line-height: 1.1; text-wrap: balance; overflow-wrap: anywhere; }
-.contratapa-marca { margin: 0; display: flex; align-items: center; gap: 2mm; font-size: 9pt; color: var(--suave); }
-.panel-mensaje { justify-content: center; gap: 5mm; }
-.mensaje-comillas { font-family: var(--titulos); font-weight: 800; font-size: 44pt; line-height: 0.6; color: var(--rosa); }
-.panel-mensaje p { margin: 0; font-size: 12pt; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
-.mensaje-firma { font-family: var(--titulos); font-weight: 800; font-size: 16pt; }
-.panel-abrir { gap: 5mm; }
-.abrir-cabeza { display: flex; align-items: center; gap: 4mm; }
-.abrir-cabeza .qr { flex: none; width: 30mm; height: 30mm; border: 0.8mm solid var(--tinta); border-radius: 3mm; padding: 1.5mm; background: #fff; }
-.abrir-cabeza div { display: flex; flex-direction: column; gap: 1.5mm; font-size: 10pt; }
-.abrir-cabeza strong { font-family: var(--titulos); font-weight: 800; font-size: 18pt; line-height: 1.05; }
-.abrir-pasos { margin: 0; padding-left: 5mm; display: grid; gap: 2mm; font-size: 10.5pt; line-height: 1.35; }
-.abrir-palabras { margin-top: auto; border: 0.6mm dashed var(--tinta); border-radius: 4mm; padding: 4mm; display: grid; gap: 3mm; font-size: 10.5pt; }
-.renglones { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm 6mm; }
-.renglones span { font-weight: 700; border-bottom: 0.4mm solid var(--tinta); padding-top: 5mm; }
-.abrir-palabras small { font-size: 8.5pt; color: var(--suave); line-height: 1.35; }
-
 /* Listas: elegir dónde llegan los regalos */
 .lista-modos { display: grid; gap: 12px; }
 .lista-modo { display: grid; gap: 6px; justify-items: start; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 2px solid var(--borde); }
@@ -3450,3 +3395,12 @@ svg.tarjeta-imagen {
 .legal p, .legal ul { margin: 0; line-height: 1.6; }
 .legal ul { padding-left: 20px; display: grid; gap: 8px; }
 .legal-aaip { font-size: 14px; color: var(--suave); }
+
+/* Tarjeta en PDF: vista preliminar debajo de la frase; la ilustración fuente, fuera de la pantalla. */
+.tarjeta-vista { display: grid; gap: 8px; }
+.tarjeta-vista img { width: 100%; height: auto; border: 1px solid var(--borde); border-radius: 8px; box-shadow: 0 2px 10px rgba(26, 21, 48, 0.12); background: #fff; }
+.tarjeta-arte-fuente { position: absolute; left: -10000px; top: 0; width: 320px; pointer-events: none; }
+/* Final del regalo. */
+.realizado { display: grid; gap: 12px; text-align: center; }
+.realizado h3 { margin: 0; font-size: 24px; }
+.realizado-botones { display: grid; gap: 10px; }
