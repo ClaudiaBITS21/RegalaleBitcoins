@@ -267,8 +267,14 @@ describe('Cuentas con passkey', () => {
     funded.add(g.address);
     assert.equal((await run()).avisos, 1);
     assert.equal((await run()).avisos, 0); // una sola vez
-    assert.equal(mails.at(-1)?.subject, 'Tu regalo para Tomi ya está listo');
-    assert.ok(!mails.at(-1)?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
+    // «¡Felicitaciones!» con el diseño de la marca; el primero dice «tu primer regalo».
+    const ready = mails.at(-1);
+    assert.equal(ready?.subject, '¡Felicitaciones! Hiciste tu primer regalo');
+    assert.ok(!ready?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
+    // El mail todavía no está confirmado: el botón lo confirma (y abre el panel).
+    assert.match(ready?.text ?? '', /Confirmar mi mail: https:\/\/[^ ]+\/panel#acceso=[A-Za-z0-9_-]{43}/);
+    assert.ok(ready?.html?.includes('/mail/logo-naranja.png') && ready.html.includes('Confirmar mi mail') && ready.html.includes('#FF8A1F'));
+    assert.ok(!ready?.html?.includes('/r/'), 'el HTML tampoco lleva el link del regalo');
   });
 
   it('si el regalo pago sigue sin abrirse, recuerda a quien regala a los 14 y a los 60 días, y nada más', async () => {
