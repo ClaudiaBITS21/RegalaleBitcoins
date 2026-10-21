@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
+import { occasionReason } from '../content/occasions.ts';
 import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
@@ -49,7 +50,8 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
   const [wordsBy, setWordsBy] = useSentBy(gift.id, 'palabras');
   const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars, trato);
 
-  const linkText = r('regalar.mandar.mensajeLink', { para: gift.to, link: gift.link });
+  const reason = occasionReason(gift.occasion, gift.lang as UiLang, gift.occasionFree);
+  const linkText = r('regalar.mandar.mensajeLink', { para: gift.to, link: gift.link, motivo: reason === '' ? '' : ` ${reason}` });
   const wordsText = r('regalar.mandar.mensajePalabras', { palabras: numberedWords(gift.words) });
   const href = (channel: 'whatsapp' | 'mail', text: string, subject: string) =>
     channel === 'whatsapp'
