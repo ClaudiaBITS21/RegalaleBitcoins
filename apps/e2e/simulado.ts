@@ -421,6 +421,10 @@ try {
   await giver.locator('.regalo-secretos').waitFor({ timeout: 15_000 });
   if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('el panel no reconstruyó el mismo link');
   if ((await giver.locator('.regalo-secretos .palabras-regalo li strong').allInnerTexts()).join(' ') !== lupeWords.join(' ')) fail('el panel no reconstruyó las mismas palabras');
+  await giver.getByRole('button', { name: 'Recordatorio para mandar' }).click();
+  const reminder = await giver.locator('.recordatorio-texto').innerText();
+  if (!reminder.startsWith('Te recuerdo que el ') || !reminder.trim().endsWith(lupeLink)) fail(`recordatorio sin el formato esperado: ${reminder}`);
+  await giver.locator('.regalo-item').first().screenshot({ path: join(SHOTS, 'p1-recordatorio.png') });
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   await shot2(giver, 'p1-panel');
