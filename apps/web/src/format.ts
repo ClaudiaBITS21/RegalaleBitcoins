@@ -104,6 +104,11 @@ export function paymentUri(address: string, sats: bigint, upper = true): string 
   return `bitcoin:${upper ? address.toUpperCase() : address}?amount=${satsToBtcString(sats)}`;
 }
 
+/** Un monto redondo sin centavos ("$ 25.000", "US$ 50"): para los montos sugeridos. */
+export function formatWhole(amount: number, currency: 'USD' | 'ARS', lang: UiLang): string {
+  return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+}
+
 /** Centavos (de dólar o de peso) a sats con la cotización de 1 BTC en esa moneda. */
 export function fiatCentsToSats(cents: bigint, pricePerBtc: number): bigint {
   return BigInt(Math.round((Number(cents) * 1_000_000) / pricePerBtc));
