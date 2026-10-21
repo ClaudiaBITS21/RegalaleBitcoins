@@ -6,6 +6,8 @@ import { ApiFailure, api } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
 import { MyPlan } from './MyPlan.tsx';
+import { reminderText } from './recordatorio.ts';
+import { type Channel, readSent } from '../give/envios.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
@@ -34,13 +36,15 @@ function readAccessToken(): string | null {
 }
 
 export function PanelPage() {
-  const { t, lang } = useI18n();
+  const { t, lang, trato } = useI18n();
   const [view, setView] = useState<AccountView | null>(null);
   const [state, setState] = useState<'cargando' | 'afuera' | 'adentro' | 'sin_red'>('cargando');
   const [network, setNetwork] = useState<Network | null>(null);
   const [master, setMaster] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
+  const [reminder, setReminder] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
@@ -167,8 +171,10 @@ export function PanelPage() {
         ) : (
           <ul class="lista-regalos">
             {view.regalos.map((g) => {
-              const isOpen = open === g.id && master !== null && network !== null && g.indice !== null;
-              const derived = isOpen ? deriveGift(masterRoot(master as string), g.indice as number, g.idioma, network as Network) : null;
+              const canDerive = master !== null && network !== null && g.indice !== null;
+              const derived = canDerive && (open === g.id || reminder === g.id) ? deriveGift(masterRoot(master), g.indice as number, g.idioma, network) : null;
+              const link = derived === null ? null : `${window.location.origin}/r/${g.id}#${encodeGiftFragment(derived.entropy)}`;
+              const pending = g.estado === 'esperando' || g.estado === 'en_la_red' || g.estado === 'activo';
               const sats = g.sats !== null && g.sats !== '0' ? BigInt(g.sats) : g.satsEsperados !== null ? BigInt(g.satsEsperados) : null;
               return (
                 <li class="regalo-item" key={g.id}>
@@ -180,7 +186,7 @@ export function PanelPage() {
                     {occasionLabel(g.ocasion, lang, g.ocasionLibre)} · {new Date(g.creado).toLocaleDateString(lang)}
                     {sats !== null ? ` · ${formatSats(sats, lang)}` : ''}
                   </span>
-                  {g.indice !== null && (g.estado === 'esperando' || g.estado === 'en_la_red' || g.estado === 'activo') && (
+                  {g.indice !== null && pending && (
                     <Button
                       kind="contorno"
                       disabled={busy}
@@ -192,16 +198,52 @@ export function PanelPage() {
                       {t(open === g.id ? 'panel.ocultar' : 'panel.verLink')}
                     </Button>
                   )}
-                  {derived !== null && (
+                  {derived !== null && link !== null && open === g.id && (
                     <div class="regalo-secretos">
                       <p class="mono enlace-regalo" translate={false}>
-                        {`${window.location.origin}/r/${g.id}#${encodeGiftFragment(derived.entropy)}`}
+                        {link}
                       </p>
                       <WordsList words={derived.passphraseWords} />
                       <small class="texto-suave">
                         <strong>{t('regalar.mandar.orden')}</strong>
                       </small>
                       <small class="texto-suave">{t('regalar.mandar.palabrasTexto')}</small>
+                    </div>
+                  )}
+                  {pending && (
+                    <Button
+                      kind="contorno"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (reminder === g.id) return setReminder(null);
+                        // Con bóveda, el recordatorio lleva el link; si no se puede abrir, va sin él.
+                        if (g.indice !== null && network !== null && (view.credenciales.length > 0 || master !== null)) {
+                          if ((await unlock()) === null) setError(null);
+                        }
+                        setCopied(false);
+                        setReminder(g.id);
+                      }}
+                    >
+                      {t(reminder === g.id ? 'panel.recordatorio.ocultar' : 'panel.recordatorio')}
+                    </Button>
+                  )}
+                  {reminder === g.id && (
+                    <div class="regalo-secretos">
+                      <p class="recordatorio-texto">{reminderText(g, trato, link)}</p>
+                      <small class="texto-suave">{t('panel.recordatorio.texto')}</small>
+                      <SentBy giftId={g.id} />
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(reminderText(g, trato, link));
+                            setCopied(true);
+                          } catch {
+                            // El texto queda a la vista para copiarlo a mano.
+                          }
+                        }}
+                      >
+                        {t(copied ? 'panel.recordatorio.copiado' : 'panel.recordatorio.copiar')}
+                      </Button>
                     </div>
                   )}
                 </li>
@@ -263,6 +305,30 @@ export function PanelPage() {
   }
 
   return <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'}>{body}</Layout>;
+}
+
+const SENT_KEYS: Readonly<Record<Channel, Key>> = {
+  whatsapp: 'panel.envio.whatsapp',
+  mail: 'panel.envio.mail',
+  copiar: 'panel.envio.copiar',
+  mano: 'panel.envio.mano',
+};
+
+/** Cómo salieron el link y las palabras cuando se hizo el regalo, si este navegador lo recuerda. */
+function SentBy({ giftId }: { giftId: string }) {
+  const { t } = useI18n();
+  const link = readSent(giftId, 'link');
+  const words = readSent(giftId, 'palabras');
+  if (link === null && words === null) return null;
+  const parts = [
+    ...(link === null ? [] : [t('panel.envio.link', { canal: t(SENT_KEYS[link]) })]),
+    ...(words === null ? [] : [t('panel.envio.palabras', { canal: t(SENT_KEYS[words]) })]),
+  ];
+  return (
+    <small class="texto-suave envio-original">
+      <strong>{t('panel.envio.titulo')}</strong> {parts.join(' + ')}
+    </small>
+  );
 }
 
 const roots = new Map<string, ReturnType<typeof masterRootFromMnemonic>>();

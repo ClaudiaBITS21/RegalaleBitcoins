@@ -219,6 +219,23 @@ h3 {
   cursor: pointer;
 }
 
+.icono-cuenta {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 2px solid var(--tinta);
+  border-radius: 50%;
+  background: var(--blanco);
+  color: var(--tinta);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cabecera-naranja .icono-cuenta {
+  border-color: var(--blanco);
+}
+
 .cabecera-naranja .boton-hamburguesa {
   border-color: var(--blanco);
 }
@@ -749,18 +766,47 @@ h1 {
   color: var(--suave);
 }
 
-.progreso-barra {
+.progreso-rayas {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progreso-rayas li {
+  flex: 1;
+}
+
+/* La raya se dibuja adentro: el botón es más alto para que se pueda tocar con el dedo. */
+.raya {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+}
+
+.raya::before {
+  content: '';
   display: block;
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right, var(--acento) var(--avance), var(--gris) var(--avance));
+  background: var(--gris);
 }
 
-.progreso-1 { --avance: 20%; }
-.progreso-2 { --avance: 40%; }
-.progreso-3 { --avance: 60%; }
-.progreso-4 { --avance: 80%; }
-.progreso-5 { --avance: 100%; }
+.raya.hecha::before {
+  background: var(--acento);
+}
+
+button.raya {
+  cursor: pointer;
+}
+
+button.raya:hover::before,
+button.raya:focus-visible::before {
+  background: var(--tinta);
+}
 
 .grilla-ocasiones,
 .opciones-monto {
@@ -783,8 +829,24 @@ h1 {
 }
 
 .opcion-monto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   font-family: var(--titulos);
   font-size: 18px;
+}
+
+/* Abajo de cada monto sugerido, su equivalente en chico (en sats, o en plata si son sats). */
+.opcion-monto-sats {
+  font: 500 11px var(--texto);
+  opacity: 0.7;
+}
+
+.monto-centrado {
+  align-items: center;
+  text-align: center;
 }
 
 .unidad {
@@ -1883,6 +1945,12 @@ textarea {
   gap: 8px;
   padding-top: 6px;
   border-top: 1px dashed var(--borde);
+}
+
+.recordatorio-texto {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 /* Imagen ilustrada de la tarjeta (content/GiftCardArt.tsx) */
 

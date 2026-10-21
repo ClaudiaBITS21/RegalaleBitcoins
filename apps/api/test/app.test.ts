@@ -88,7 +88,7 @@ const post = (path: string, body: unknown) =>
 describe('API del reclamo', () => {
   before(async () => {
     sql = connect(DB);
-    await sql`drop table if exists arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
+    await sql`drop table if exists vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
     await sql`drop function if exists movimientos_sin_cambios()`;
     await migrate(sql);
   });
@@ -309,6 +309,33 @@ describe('API para regalar', () => {
     const again = await post('/api/gifts', nuevo(1));
     assert.equal(again.status, 409);
     assert.deepEqual(await again.json(), { error: 'regalo_existente', detalle: 'regalo_existente' });
+  });
+
+  it('vista previa del link: la imagen del regalo y «Un regalo para …» en /r/<id>, sin datos de la clave', async () => {
+    const INDEX = '<!doctype html><html><head><title>Regalale Bitcoin</title><meta property="og:title" content="Regalale Bitcoin" /><meta property="og:description" content="x" /><meta property="og:image" content="https://ejemplo.test/og.jpg" /><meta property="og:image:alt" content="x" /></head><body><div id="app"></div></body></html>';
+    const share = createApp({ sql, chain, price, network: signet, createLimitPerHour: 8, accounts: { origins: ['https://ejemplo.test'], publicUrl: 'https://ejemplo.test', mailer: { send: async () => undefined }, cookieSecure: true }, indexHtml: async () => INDEX });
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(3000, 9)]);
+    const req = (body: unknown) => share.request('/api/gifts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    // Solo JPEG.
+    assert.equal((await req(nuevo(7, { vista: Buffer.from('<svg/>'.repeat(300)).toString('base64') }))).status, 400);
+    const res = await req(nuevo(7, { para: 'Ana <3', vista: jpeg.toString('base64') }));
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const img = await share.request(`/api/gifts/${id}/vista.jpg`);
+    assert.deepEqual([img.status, img.headers.get('content-type')], [200, 'image/jpeg']);
+    assert.ok(Buffer.from(await img.arrayBuffer()).equals(jpeg));
+    const page = await share.request(`/r/${id}`);
+    const html = await page.text();
+    assert.equal(page.status, 200);
+    assert.ok(html.includes(`<meta property="og:image" content="https://ejemplo.test/api/gifts/${id}/vista.jpg" />`), html);
+    assert.ok(html.includes('<title>Um presente para Ana &lt;3</title>'), 'en el idioma del regalo y escapado');
+    assert.ok(html.includes('<div id="app"></div>'), 'es la misma web');
+    assert.ok(page.headers.get('content-security-policy')?.includes("default-src 'self'"));
+    // Sin imagen propia para compartir, la general; un id que no existe, la web tal cual.
+    const sin = (await (await req(nuevo(8))).json()) as { id: string };
+    assert.ok((await (await share.request(`/r/${sin.id}`)).text()).includes('content="https://ejemplo.test/og.jpg"'));
+    assert.equal((await share.request(`/api/gifts/${sin.id}/vista.jpg`)).headers.get('location'), 'https://ejemplo.test/og.jpg');
+    assert.equal(await (await share.request('/r/AAAAAAAAAAAAAAAAAAAAAA')).text(), INDEX);
   });
 
   it('estilos: dibujo por defecto, elegido, o imagen propia validada y servida como archivo inerte', async () => {

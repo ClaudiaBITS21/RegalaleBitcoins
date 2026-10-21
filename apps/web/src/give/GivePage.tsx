@@ -13,6 +13,7 @@ import { SaveStep } from './SaveStep.tsx';
 import { AmountStep, CardStep, isUntouched, OccasionStep } from './DraftSteps.tsx';
 import { PayStep } from './PayStep.tsx';
 import { SendStep } from './SendStep.tsx';
+import { sharePreview } from './vistaCompartir.ts';
 
 // Regalar en 5 pasos: ocasión, para quién, cuánto, pagá y mandalo. Todo lo secreto
 // (clave maestra, semilla del regalo, palabras) vive solo en la memoria de esta página.
@@ -84,6 +85,15 @@ const MAX_INDEX_TRIES = 500;
  * existe (un regalo anterior con el mismo código), prueba el siguiente.
  */
 async function register(session: Session, draft: Draft, network: Network): Promise<MadeGift> {
+  // La imagen para la vista previa del link (WhatsApp, redes); sin ella, el link usa la general.
+  const vista = await sharePreview({
+    lang: draft.lang,
+    occasion: draft.occasion,
+    occasionFree: draft.occasionFree,
+    style: draft.style,
+    ownImage: draft.style === 'propia' ? (draft.ownImage?.dataUrl ?? null) : null,
+    to: draft.to,
+  });
   for (let index = session.next; index < session.next + MAX_INDEX_TRIES; index++) {
     const gift = deriveGift(session.root, index, draft.lang, network);
     try {
@@ -98,6 +108,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         imagen: 1, // una sola imagen por estilo; el campo queda por compatibilidad
         estilo: draft.style,
         ...(draft.style === 'propia' && draft.ownImage !== null ? { imagenPropia: draft.ownImage.base64 } : {}),
+        ...(vista === null ? {} : { vista }),
         moneda: draft.currency,
         monto: draft.amount,
         sats: draft.sats.toString(),
@@ -321,10 +332,25 @@ export function GivePage() {
   return (
     <Layout testnet={network === null ? !ALLOW_MAINNET : network.name !== 'mainnet'} onBack={back}>
       {network !== null && netError === null && (
-        <div class="progreso" role="progressbar" aria-valuemin={1} aria-valuemax={5} aria-valuenow={PROGRESS[step]} aria-label={t('regalar.paso', { n: PROGRESS[step] })}>
+        <nav class="progreso" aria-label={t('regalar.paso', { n: PROGRESS[step] })}>
           <span class="progreso-texto">{t('regalar.paso', { n: PROGRESS[step] })}</span>
-          <span class={`progreso-barra progreso-${PROGRESS[step]}`} />
-        </div>
+          {/* Cinco rayitas que se van pintando; las de pasos ya hechos llevan de vuelta ahí (Rodolfo, 21/10). */}
+          <ol class="progreso-rayas">
+            {[1, 2, 3, 4, 5].map((n) => {
+              const at = steps.findIndex((s) => PROGRESS[s] === n);
+              const cls = `raya${n <= PROGRESS[step] ? ' hecha' : ''}`;
+              return (
+                <li key={n}>
+                  {back !== undefined && n < PROGRESS[step] && at >= 0 ? (
+                    <button type="button" class={cls} aria-label={t('regalar.volverAlPaso', { n })} onClick={() => setSteps((prev) => prev.slice(0, at + 1))} />
+                  ) : (
+                    <span class={cls} aria-current={n === PROGRESS[step] ? 'step' : undefined} />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       )}
       {error !== null && step !== 'cuanto' && step !== 'verificar' && step !== 'tengoCodigo' && <Notice kind="error">{t(error)}</Notice>}
       {body}

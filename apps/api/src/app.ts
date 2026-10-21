@@ -6,6 +6,7 @@ import type { Sql } from './db.ts';
 import { processPending } from './broadcaster.ts';
 import { CARD_STYLES, type CardStyle, clearClaim, findGift, findOwnImage, type OwnImage, type Gift, insertGift, isDuplicateAddress, pendingFor, recordClaim, schedulePending } from './gifts.ts';
 import { RateLimiter } from './ratelimit.ts';
+import { parsePreview, registerShareRoutes } from './share.ts';
 import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
 import { registerAdminRoutes } from './admin.ts';
@@ -38,6 +39,8 @@ export interface AppDeps {
   readonly listContributionsPerHour?: number;
   /** Mails con acceso al panel de administración (ADMIN_EMAILS). */
   readonly adminEmails?: readonly string[];
+  /** El index.html de la web, para servir /r/<id> con la vista previa del regalo (share.ts). */
+  readonly indexHtml?: () => Promise<string>;
 }
 
 /** Techo de la beta en redes de prueba: un regalo no puede superar este valor en dólares. */
@@ -142,6 +145,7 @@ export function createApp(deps: AppDeps): Hono {
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
+  if (deps.indexHtml !== undefined) registerShareRoutes(app, { sql, publicUrl: accounts.publicUrl, indexHtml: deps.indexHtml });
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */
   app.get('/api/productos', async (c) => {
@@ -437,6 +441,8 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     image: b.imagen,
     style,
     ownImage,
+    // Imagen para compartir el link (opcional: los navegadores que no la arman siguen igual).
+    preview: b.vista === undefined ? null : parsePreview(b.vista),
     currency: b.moneda,
     amount: b.monto,
     satsExpected: BigInt(b.sats),

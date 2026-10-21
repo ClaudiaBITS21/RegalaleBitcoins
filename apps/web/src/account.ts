@@ -1,6 +1,7 @@
 import { generateMasterMnemonic, openVault, sealVault } from '@regalale/core';
 import { ApiFailure } from './api.ts';
 import type { Key } from './i18n/index.ts';
+import { setSignedIn } from './sesion.ts';
 import { createPasskey, PasskeyError, signalUnknownPasskey, unlockWithPasskey } from './passkey.ts';
 
 // Cuenta de quien regala: crear el acceso (passkey + bóveda) y entrar. La clave maestra
@@ -46,13 +47,21 @@ export interface AccountView {
 
 export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
-  logout: () => call<{ ok: boolean }>('/api/cuenta/salir', {}),
+  logout: async () => {
+    const res = await call<{ ok: boolean }>('/api/cuenta/salir', {});
+    setSignedIn(false);
+    return res;
+  },
   sendLink: (email: string) => call<{ ok: boolean }>('/api/cuenta/link', { email }),
   /** Cuenta con solo el mail (quien regala con el código, sin passkey): manda el link para confirmarlo. */
   registerMail: (email: string, idioma: string) => call<{ ok: boolean }>('/api/cuenta/registro-mail', { email, idioma }),
   /** ¿Hay una sesión iniciada? (por ejemplo, abrió el link del mail en otra pestaña). */
   signedIn: async () => (await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta,
-  redeemLink: (token: string) => call<{ email: string }>('/api/cuenta/link/canje', { token }),
+  redeemLink: async (token: string) => {
+    const res = await call<{ email: string }>('/api/cuenta/link/canje', { token });
+    setSignedIn(true);
+    return res;
+  },
 };
 
 const challenge = async (tipo: 'registro' | 'ingreso', email?: string) =>
@@ -101,6 +110,7 @@ export async function createAccess(email: string, lang: string): Promise<Unlocke
     created.prf.fill(0);
   }
   const res = await call<{ email: string }>('/api/cuenta/registro', { email, idioma: lang, boveda: vault, credencial: created.registration });
+  setSignedIn(true);
   return { email: res.email, master };
 }
 
@@ -115,6 +125,7 @@ export async function signIn(allow?: readonly string[]): Promise<Unlocked> {
     if (e instanceof ApiFailure && e.code === 'passkey_desconocida') await signalUnknownPasskey(used.assertion.id);
     throw e;
   }
+  setSignedIn(true);
   let master: string | null = null;
   if (res.boveda !== null && used.prf !== null) {
     master = await openVault(used.prf, res.boveda, used.credentialId);
