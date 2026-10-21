@@ -224,10 +224,15 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
           </div>
           {/* En el celular, una tarjeta por plan en vez de la tabla ancha (Rodolfo, 21/10). */}
           <ul class="precios-tarjetas">
-            {PRODUCTOS.map((p) => {
+            {PRODUCTOS.map((p, n) => {
               const ct = contenido(p, vivos);
               const agotado = p.id === 'fundador' && vivos !== null && vivos.fundadoresQuedan <= 0;
               const cs = celdas(ct);
+              // Desde la segunda tarjeta, solo lo que cambia respecto de la anterior (Rodolfo, 21/10):
+              // «Todo lo de Satoshi, y además: 10 regalos → 1 lista…», sin repetir lo que ya trae.
+              const prev = n === 0 ? null : (PRODUCTOS[n - 1] as Producto);
+              const prevCs = prev === null ? null : celdas(contenido(prev, vivos));
+              const filas = FILAS.map((fila, i) => ({ fila, c: cs[i] as Celda })).filter(({ c }, i) => prevCs === null || JSON.stringify(c) !== JSON.stringify(prevCs[i]));
               return (
                 <li key={p.id} class={`precio-tarjeta${p.id === 'listaOtras' ? ' precios-destacado' : ''}`}>
                   <div class="precio-tarjeta-cabeza">
@@ -240,12 +245,13 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                       </span>
                     )}
                   </div>
+                  {prev !== null && <p class="precio-tarjeta-base">{t('precios.todoLoDe', { plan: t(`precios.${prev.id}.n` as Key) })}</p>}
                   <dl class="precio-tarjeta-filas">
-                    {FILAS.map((fila, i) => (
-                      <div key={fila} class={cs[i] === 'no' ? 'fila-no' : undefined}>
+                    {filas.map(({ fila, c }) => (
+                      <div key={fila} class={c === 'no' ? 'fila-no' : undefined}>
                         <dt>{t(fila)}</dt>
                         <dd>
-                          <Valor c={cs[i] as Celda} />
+                          <Valor c={c} />
                         </dd>
                       </div>
                     ))}

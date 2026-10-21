@@ -3367,6 +3367,12 @@ svg.tarjeta-imagen {
     margin: 0;
   }
 
+  .precio-tarjeta-base {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
   .precio-tarjeta-filas > div {
     display: flex;
     justify-content: space-between;
