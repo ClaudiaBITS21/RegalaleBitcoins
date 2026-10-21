@@ -1,5 +1,5 @@
-import { useState } from 'preact/hooks';
-import { accessErrorKey, accountApi, createAccess, signIn } from '../account.ts';
+import { useEffect, useState } from 'preact/hooks';
+import { accessErrorKey, accountApi, type AccountView, createAccess, signIn } from '../account.ts';
 import { ApiFailure } from '../api.ts';
 import type { Key } from '../i18n/index.ts';
 import { passkeysAvailable } from '../passkey.ts';
@@ -26,6 +26,16 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
   const [codeHas, setCodeHas] = useState(false);
   const [linkTo, setLinkTo] = useState<string | null>(null);
   const supported = passkeysAvailable();
+  // Con la sesión ya abierta no se pide el mail otra vez (Rodolfo, 21/10): alcanza con abrir la
+  // llave con la passkey de esa cuenta. undefined = todavía no se sabe; null = sin sesión.
+  const [account, setAccount] = useState<AccountView | null | undefined>(undefined);
+  useEffect(() => {
+    // Primero si hay sesión (siempre responde 200): sin sesión, /api/cuenta daría 401.
+    accountApi
+      .signedIn()
+      .then((open) => (open ? accountApi.me() : null))
+      .then(setAccount, () => setAccount(null));
+  }, []);
 
   const finish = async (master: string | null) => {
     if (master === null) {
@@ -135,6 +145,51 @@ export function SaveStep({ onReady, onNeedCode }: { onReady: (master: string, ne
           }}
         >
           {t('guardar.volver')}
+        </button>
+      </div>
+    );
+  }
+
+  if (account === undefined) return <p class="texto-suave cargando">{t('reclamo.cargando')}</p>;
+
+  if (account !== null) {
+    const withPasskey = account.credenciales.length > 0;
+    return (
+      <div class="paso">
+        <StepTitle>{t('guardar.tituloSesion')}</StepTitle>
+        <p class="texto-suave">{t(withPasskey ? 'guardar.textoSesion' : 'guardar.textoSesionCodigo', { email: account.email })}</p>
+        {withPasskey ? (
+          <Button
+            disabled={busy || !supported}
+            onClick={() => {
+              setMode('entrar');
+              void run(() => signIn(account.credenciales.map((c) => c.id)));
+            }}
+          >
+            {busy ? t('guardar.esperando') : t('guardar.seguirSesion')}
+          </Button>
+        ) : (
+          <Button onClick={() => onNeedCode(true)}>{t('guardar.seguir')}</Button>
+        )}
+        {withPasskey && !supported && <Notice kind="error">{t('guardar.noSoportada')}</Notice>}
+        {error !== null && <Notice kind={error === 'guardar.sinPrf' ? 'info' : 'error'}>{t(error)}</Notice>}
+        {withPasskey && (
+          <Button kind="contorno" disabled={busy} onClick={() => onNeedCode(true)}>
+            {t('guardar.entrarPalabras')}
+          </Button>
+        )}
+        <button
+          type="button"
+          class="boton-texto enlace-centrado"
+          disabled={busy}
+          onClick={async () => {
+            await accountApi.logout().catch(() => null);
+            setError(null);
+            setMode('crear');
+            setAccount(null);
+          }}
+        >
+          {t('guardar.otraCuenta')}
         </button>
       </div>
     );

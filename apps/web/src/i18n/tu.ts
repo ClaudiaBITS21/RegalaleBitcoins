@@ -85,6 +85,8 @@ export const tu: Partial<Record<Key, string>> = {
   'abrir.texto': 'Toca el link que te mandaron por WhatsApp o mail: te lleva directo. Si no puedes tocarlo, pégalo aquí.',
   'abrir.invalido': 'Ese link no parece de un regalo. Cópialo completo, con todo lo que va después del #.',
   'guardar.titulo': 'Guarda tu regalo',
+  'guardar.tituloSesion': 'Sigue con tu cuenta',
+  'guardar.textoSesion': 'Ya entraste como {email}. Para guardar este regalo, abre tu llave con tu cara o tu huella.',
   'guardar.tituloEntrar': 'Entra a tu cuenta',
   'guardar.texto': 'Con tu mail y tu cara o tu huella. Así lo sigues, lo vuelves a mandar o lo recuperas si nunca lo abren.',
   'guardar.textoEntrar': 'Usa la passkey que creaste la otra vez: tu cara, tu huella o el PIN del teléfono.',
