@@ -2,7 +2,8 @@
 
 Web para regalar bitcoin por una ocasión o armar una lista para recibirlo, sin custodia.
 Especificación de producto: "RegalaleBitcoin.com — Especificación v0.1" (doc aparte).
-Técnico: `docs/arquitectura.md` y `docs/derivacion.md`.
+Técnico: `docs/arquitectura.md` y `docs/derivacion.md`. Antes de cambiar flujos de fondos, leer
+`docs/operacion.md` (reglas de operación: sin custodia, no PSAV).
 
 ## Principios no negociables
 
