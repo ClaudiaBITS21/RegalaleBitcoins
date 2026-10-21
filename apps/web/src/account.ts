@@ -75,16 +75,25 @@ function report(paso: 'registro' | 'ingreso') {
   };
 }
 
-/** Mensaje para cada falla al crear el acceso o entrar: cancelaste, el teléfono, la passkey o el servidor. */
+/**
+ * Mensaje para cada falla al crear el acceso o entrar: cancelaste, el teléfono, la passkey o el
+ * servidor. «No pudimos conectarnos» queda solo para cuando de verdad no hubo conexión: antes salía
+ * para cualquier falla y no dejaba ver la causa (Rodolfo, 21/10).
+ */
 export function accessErrorKey(e: unknown): Key {
   if (e instanceof PasskeyError) return e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.errorDispositivo';
   if (e instanceof ApiFailure) {
+    if (e.status === 0) return 'guardar.errorServidor';
     if (e.code === 'cuenta_existente') return 'guardar.yaExiste';
     if (e.status === 429) return 'guardar.demasiados';
     if (e.code === 'passkey_desconocida') return 'guardar.passkeyDesconocida';
     if (e.code === 'passkey_invalida') return 'guardar.passkeyInvalida';
+    // La página se abrió desde una dirección que el servidor no acepta (por ejemplo, una app instalada vieja).
+    if (e.code === 'no_autorizado') return 'guardar.otroSitio';
+    if (e.status >= 500) return 'guardar.errorInterno';
   }
-  return 'guardar.errorServidor';
+  // Cualquier otra cosa (incluida una caja que no se pudo abrir): falló el acceso, no la conexión.
+  return 'guardar.errorAcceso';
 }
 
 /** Resultado de crear el acceso o entrar: la clave maestra (si la passkey tiene PRF). */
