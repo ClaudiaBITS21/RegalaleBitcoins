@@ -24,7 +24,12 @@ export function RefundPage({ testnet }: { testnet: boolean }) {
       setData(await api.purchases());
       setState('listo');
     } catch (e) {
-      setState(e instanceof ApiFailure && e.status === 401 ? 'afuera' : 'error');
+      if (e instanceof ApiFailure && e.status === 401) setState('afuera');
+      // Sin la ruta de compras (API anterior al cobro), no hay compras de las que arrepentirse.
+      else if (e instanceof ApiFailure && e.status === 404) {
+        setData({ dias: 10, compras: [] });
+        setState('listo');
+      } else setState('error');
     }
   };
   useEffect(() => {
