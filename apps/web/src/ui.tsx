@@ -171,7 +171,8 @@ interface GrupoMenu {
 // Grupos del menú (handoff 2026-10-19, «marca y menú», con los cambios de Rodolfo del 19/10:
 // «Recibir» agrupa Abrir un regalo, las listas y Mis regalos). Solo lo que ya existe: Paso a paso,
 // Preguntas frecuentes, Precios y Mi plan se suman cuando estén. Regla: un tema nuevo entra en un
-// grupo existente; arriba, como máximo, 4 links y 2 botones.
+// grupo existente; arriba, como máximo, 4 links y 2 botones. «Seguridad» pasó al pie, en negrita
+// (Rodolfo, 21/10).
 const GRUPOS: readonly GrupoMenu[] = [
   {
     id: 'recibir',
@@ -183,7 +184,6 @@ const GRUPOS: readonly GrupoMenu[] = [
       { href: '/panel', label: 'menu.misRegalos', desc: 'menu.misRegalos.d' },
     ],
   },
-  { id: 'como', label: 'menu.comoFunciona', items: [{ href: '/sin-custodia', label: 'menu.seguridad' }] },
   {
     id: 'porque',
     label: 'menu.porQueBitcoin',
@@ -310,6 +310,7 @@ export function SiteFooter() {
       {/* El pie queda para las políticas (Rodolfo, 20/10). Términos, Cómo operamos y Contacto se
           suman cuando estén escritas. */}
       <nav class="pie-links" aria-label={t('pie.politicas')}>
+        <a href="/sin-custodia">{t('menu.seguridad')}</a>
         <a href="/mediakit">{t('pie.mediakit')}</a>
         <a href="/privacidad">{t('pie.privacidad')}</a>
       </nav>
