@@ -10,7 +10,8 @@ import {
   planSweep,
   signSweep,
 } from '@regalale/core';
-import { createApp } from '../src/app.ts';
+import { createApp, verifySweep } from '../src/app.ts';
+import { ApiError } from '../src/errors.ts';
 import { processPending } from '../src/broadcaster.ts';
 import { type AddressStats, arsPriceClient, ChainError, type ChainClient, type FeeRates, type MempoolPayment, type PriceClient, type Utxo } from '../src/chain.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
@@ -187,6 +188,20 @@ describe('API del reclamo', () => {
     assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' })).status, 409);
     assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: 'zz', modo: 'ahora' })).status, 422);
     assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ya' })).status, 400);
+    assert.equal(chain.broadcasts.length, 0);
+  });
+
+  it('regla 3 (docs/operacion.md): el barrido tiene una sola salida; con dos se rechaza y no se difunde', async () => {
+    chain.fund(50_000n, true, 1);
+    const sweep = await signedSweep(3);
+    // Mismo barrido firmado, con la salida repetida: una salida más para «otro».
+    const h = sweep.hex;
+    const outStart = 12 + 2 + 82; // versión + marca segwit, cantidad de entradas, la única entrada
+    const scriptLen = parseInt(h.slice(outStart + 2 + 16, outStart + 2 + 18), 16);
+    const output = h.slice(outStart + 2, outStart + 2 + 16 + 2 + scriptLen * 2);
+    const twoOutputs = `${h.slice(0, outStart)}02${output}${output}${h.slice(outStart + 2 + output.length)}`;
+    assert.throws(() => verifySweep(twoOutputs, chain.utxos), (e: unknown) => e instanceof ApiError && e.code === 'transaccion_invalida' && /una sola salida/.test(e.message));
+    assert.equal((await post(`/api/gifts/${giftId}/claim`, { hex: twoOutputs, modo: 'ahora' })).status, 422);
     assert.equal(chain.broadcasts.length, 0);
   });
 
