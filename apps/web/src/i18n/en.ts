@@ -272,7 +272,7 @@ export const en: Dict = {
   'guardar.yaEntre': 'I confirmed it, continue',
   'guardar.todaviaNo': 'Your email isn’t confirmed yet. Open the link in this browser and try again.',
   'guardar.volver': 'Back',
-  'guardar.demasiados': 'You asked for many links in a row. Wait a while and try again.',
+  'guardar.demasiados': 'Too many attempts in a row. Wait a while and try again.',
   'guardar.nuevaConfirmar': "I understand, create a new account",
   'guardar.nuevaVolver': "Go back to signing in",
   'guardar.passkeyInvalida': 'We couldn’t verify your access. Try again.',

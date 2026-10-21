@@ -272,7 +272,7 @@ export const it: Dict = {
   'guardar.yaEntre': 'Ho confermato, continua',
   'guardar.todaviaNo': 'La tua email non è ancora confermata. Apri il link in questo browser e riprova.',
   'guardar.volver': 'Indietro',
-  'guardar.demasiados': 'Hai chiesto molti link di seguito. Aspetta un po’ e riprova.',
+  'guardar.demasiados': 'Troppi tentativi di seguito. Aspetta un po’ e riprova.',
   'guardar.nuevaConfirmar': "Ho capito, crea un account nuovo",
   'guardar.nuevaVolver': "Torna a provare ad entrare",
   'guardar.passkeyInvalida': 'Non siamo riusciti a verificare l’accesso. Riprova.',

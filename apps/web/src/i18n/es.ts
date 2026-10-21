@@ -271,7 +271,7 @@ export const es = {
   'guardar.yaEntre': 'Ya confirmé, seguir',
   'guardar.todaviaNo': 'Todavía no se confirmó tu mail. Abrí el link en este navegador y probá de nuevo.',
   'guardar.volver': 'Volver',
-  'guardar.demasiados': 'Pediste muchos links seguidos. Esperá un rato y probá de nuevo.',
+  'guardar.demasiados': 'Hubo muchos intentos seguidos. Esperá un rato y probá de nuevo.',
   'guardar.nuevaConfirmar': "Entiendo, crear una cuenta nueva",
   'guardar.nuevaVolver': "Volver a intentar entrar",
   'guardar.passkeyInvalida': 'No pudimos verificar tu acceso. Probá de nuevo.',

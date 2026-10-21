@@ -122,4 +122,11 @@ function App() {
 }
 
 listenForInstall();
-render(<App />, document.getElementById('app') as HTMLElement);
+// Las passkeys quedan atadas a regalalebitcoin.com (opción A de Rodolfo, 21/10): quien entra por
+// el dominio de Firebase pasa al .com en la misma página, con el # intacto (ahí va la clave del
+// regalo, que nunca llega a ningún servidor).
+if (ALLOW_MAINNET && window.location.hostname === 'regalalebitcoins.web.app') {
+  window.location.replace(`https://regalalebitcoin.com${window.location.pathname}${window.location.search}${window.location.hash}`);
+} else {
+  render(<App />, document.getElementById('app') as HTMLElement);
+}

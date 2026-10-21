@@ -71,6 +71,7 @@ export function accessErrorKey(e: unknown): Key {
   if (e instanceof PasskeyError) return e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.errorDispositivo';
   if (e instanceof ApiFailure) {
     if (e.code === 'cuenta_existente') return 'guardar.yaExiste';
+    if (e.status === 429) return 'guardar.demasiados';
     if (e.code === 'passkey_desconocida') return 'guardar.passkeyDesconocida';
     if (e.code === 'passkey_invalida') return 'guardar.passkeyInvalida';
   }
