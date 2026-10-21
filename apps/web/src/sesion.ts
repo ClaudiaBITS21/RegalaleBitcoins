@@ -22,6 +22,8 @@ function ask(): Promise<boolean> {
 export function setSignedIn(open: boolean): void {
   known = open;
   for (const l of listeners) l(open);
+  // Si llegó con una invitación, el código se canjea apenas hay cuenta.
+  if (open) void import('./cuponPendiente.ts').then((m) => m.redeemPendingCoupon());
 }
 
 export function useSignedIn(): boolean {

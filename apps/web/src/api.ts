@@ -183,6 +183,33 @@ export interface AdminCoupon extends CouponView {
   readonly reservados: number;
   readonly satsResignados: string;
   readonly porProducto: Readonly<Record<string, number>>;
+  /** Solo lo usa la cuenta con este mail; null = cualquiera. */
+  readonly email: string | null;
+}
+
+/** Un lote de cupones de un solo uso, con las mismas condiciones. */
+export interface AdminCouponBatch extends CouponView {
+  readonly id: string;
+  readonly nombre: string;
+  readonly creadoPor: string;
+  readonly creado: string;
+  readonly total: number;
+  readonly activos: number;
+  readonly conMail: number;
+  readonly usados: number;
+  readonly desde: string | null;
+  readonly hasta: string | null;
+  readonly nota: string;
+}
+
+/** Condiciones de un cupón o de un lote. */
+export interface CouponTerms {
+  readonly descuento: number | null;
+  readonly productos: string[];
+  readonly da: { unidad: 'regalo' | 'lista_otras'; cantidad: number; ocasion: string | null } | null;
+  readonly desde: string;
+  readonly hasta: string;
+  readonly nota: string;
 }
 
 /** Un pago del costo por servicio. */
@@ -218,7 +245,12 @@ export const api = {
   redeemCoupon: (codigo: string) => post<CouponView>('/api/cuenta/cupon', { codigo }),
   purchase: (id: string) => call<Purchase>(`/api/cuenta/pagos/${encodeURIComponent(id)}`),
   adminCobro: () => call<AdminCobro>('/api/admin/cobro'),
-  adminCoupons: () => call<{ cupones: AdminCoupon[] }>('/api/admin/cupones'),
+  adminCoupons: () => call<{ cupones: AdminCoupon[]; lotes: AdminCouponBatch[] }>('/api/admin/cupones'),
+  adminCreateBatch: (b: CouponTerms & { nombre: string; prefijo: string } & ({ emails: string[] } | { cantidad: number })) =>
+    post<{ lote: string; cupones: Array<{ codigo: string; email: string | null }> }>('/api/admin/cupones/lotes', b),
+  adminBatch: (id: string) => call<{ nombre: string; cupones: Array<{ codigo: string; email: string | null; usado: boolean }> }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}`),
+  adminBatchActive: (id: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}/activo`, { activo }),
+  invitation: (codigo: string) => call<CouponView & { paraUnMail: boolean }>(`/api/invitacion/${encodeURIComponent(codigo)}`),
   adminCreateCoupon: (c: {
     codigo: string;
     descuento: number | null;
@@ -228,6 +260,7 @@ export const api = {
     hasta: string;
     maxUsos: number;
     nota: string;
+    email?: string;
   }) => post<{ codigo: string }>('/api/admin/cupones', c),
   adminCouponActive: (codigo: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/${encodeURIComponent(codigo)}/activo`, { activo }),
   adminAdmins: () => call<{ fijos: string[]; agregados: Array<{ email: string; agregadoPor: string; creado: string }> }>('/api/admin/admins'),

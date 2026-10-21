@@ -126,6 +126,7 @@ describe('Cuentas con passkey', () => {
     await sql`delete from cupon_usos`;
     await sql`delete from pagos`;
     await sql`delete from cupones`;
+    await sql`delete from cupon_lotes`;
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
     await sql`delete from admins`;
@@ -614,6 +615,54 @@ describe('Cuentas con passkey', () => {
     await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } });
     const ca = await creditos(ana.cookie);
     assert.deepEqual([ca.regalos.porOcasion, ca.regalos.pagos], [{ navidad: 2 }, 10]);
+  });
+
+  it('cupones para un mail y lotes: solo la cuenta de ese mail (aunque se cree después), CSV de mails, invitación pública', async () => {
+    const admin = await signUp('admin@example.com');
+    const ana = await signUp('ana@example.com');
+    const canje = async (codigo: string, cookie: string) => {
+      const r = await req('/api/cuenta/cupon', { codigo }, cookie);
+      return [r.status, ((await r.json()) as { error?: string }).error ?? null];
+    };
+    // Para un mail: una vez, y solo esa cuenta.
+    assert.equal((await req('/api/admin/cupones', { codigo: 'PARAANA', email: 'Ana@Example.com', da: { unidad: 'regalo', cantidad: 2 }, maxUsos: 50 }, admin.cookie)).status, 201);
+    assert.equal((await req('/api/admin/cupones', { codigo: 'MALMAIL', email: 'no-es-un-mail', da: { unidad: 'regalo', cantidad: 2 }, maxUsos: 1 }, admin.cookie)).status, 400);
+    assert.deepEqual(await canje('PARAANA', admin.cookie), [403, 'cupon_de_otra_cuenta']);
+    assert.deepEqual(await canje('paraana', ana.cookie), [201, null]);
+    // Lote por CSV: uno por mail (sin repetidos), de un solo uso; mails de quienes todavía no tienen cuenta.
+    const lote = await req('/api/admin/cupones/lotes', { nombre: 'Amigos', prefijo: 'amigo', emails: ['zoe@example.com', 'ZOE@example.com', 'ana@example.com'], descuento: 20 }, admin.cookie);
+    assert.equal(lote.status, 201);
+    const { lote: id, cupones } = (await lote.json()) as { lote: string; cupones: Array<{ codigo: string; email: string }> };
+    assert.equal(cupones.length, 2);
+    assert.ok(cupones.every((c) => /^AMIGO[A-HJ-NP-Z2-9]{8}$/.test(c.codigo)));
+    assert.equal((await req('/api/admin/cupones/lotes', { nombre: 'Malo', emails: ['zoe@example.com', 'x'], descuento: 20 }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/cupones/lotes', { nombre: 'Demasiados', cantidad: 2001, descuento: 20 }, admin.cookie)).status, 400);
+    // La invitación muestra qué da, sin decir para qué mail.
+    const zoeCode = cupones.find((c) => c.email === 'zoe@example.com')!.codigo;
+    const inv = (await (await req(`/api/invitacion/${zoeCode.toLowerCase()}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([inv.descuento, inv.paraUnMail, JSON.stringify(inv).includes('zoe')], [20, true, false]);
+    assert.equal((await req('/api/invitacion/NOEXISTE')).status, 404);
+    // Zoe se crea la cuenta después: el código ya es suyo.
+    const zoe = await signUp('zoe@example.com');
+    const ver = (await (await req('/api/cuenta/cupon/ver', { codigo: zoeCode, producto: 'pack10' }, zoe.cookie)).json()) as { precio?: string };
+    assert.equal(ver.precio, '8400');
+    assert.equal(((await (await req('/api/cuenta/cupon/ver', { codigo: zoeCode }, ana.cookie)).json()) as { error: string }).error, 'cupon_de_otra_cuenta');
+    // Lote de códigos sueltos: cualquiera, una vez cada uno.
+    const sueltos = (await (await req('/api/admin/cupones/lotes', { nombre: 'Feria', cantidad: 3, da: { unidad: 'regalo', cantidad: 1 } }, admin.cookie)).json()) as { lote: string; cupones: Array<{ codigo: string; email: null }> };
+    assert.equal(new Set(sueltos.cupones.map((c) => c.codigo)).size, 3);
+    assert.deepEqual(await canje(sueltos.cupones[0]!.codigo, ana.cookie), [201, null]);
+    assert.deepEqual(await canje(sueltos.cupones[0]!.codigo, zoe.cookie), [409, 'cupon_agotado']);
+    // El admin ve los lotes resumidos (no sus cupones en la lista) y baja el detalle para el CSV.
+    const lista = (await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; email: string | null }>; lotes: Array<{ id: string; nombre: string; total: number; usados: number; conMail: number; descuento: number | null }> };
+    assert.deepEqual(lista.cupones.map((c) => [c.codigo, c.email]), [['PARAANA', 'ana@example.com']]);
+    assert.deepEqual(lista.lotes.map((l) => [l.nombre, l.total, l.usados, l.conMail]), [['Feria', 3, 1, 0], ['Amigos', 2, 0, 2]]);
+    assert.equal(lista.lotes[1]!.descuento, 20);
+    const detalle = (await (await req(`/api/admin/cupones/lotes/${sueltos.lote}`, undefined, admin.cookie)).json()) as { cupones: Array<{ usado: boolean }> };
+    assert.equal(detalle.cupones.filter((c) => c.usado).length, 1);
+    assert.equal((await req(`/api/admin/cupones/lotes/${id}`, undefined, ana.cookie)).status, 404);
+    // Pausar el lote entero.
+    assert.equal((await req(`/api/admin/cupones/lotes/${id}/activo`, { activo: false }, admin.cookie)).status, 200);
+    assert.equal((await req(`/api/invitacion/${zoeCode}`)).status, 404);
   });
 
   it('admins desde el panel: con passkey se suma y se quita; los fijos no se quitan; todos reciben aviso', async () => {
