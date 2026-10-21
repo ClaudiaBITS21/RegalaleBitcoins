@@ -698,6 +698,16 @@ try {
   await giver.getByText(/^Pedido ARR-[A-Z0-9]{6}: la devolución está en trámite\.$/).waitFor({ timeout: 15_000 });
   await shot2(giver, 'c3-arrepentimiento');
 
+  // Invitación de un cupón para su mail: muestra qué da y, con la cuenta abierta, se suma.
+  await sql`insert into cupones (codigo, da_unidad, da_cantidad, max_usos, creado_por, email) values ('E2EINVITA', 'regalo', 2, 1, 'e2e', 'lupe.e2e@example.com') on conflict do nothing`;
+  await giver.goto(`${BASE}/invitacion/e2einvita`);
+  await giver.getByText('Tu código E2EINVITA te da 2 regalos gratis.').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'i1-invitacion');
+  await giver.getByRole('button', { name: 'Sumarlo a mi cuenta' }).click();
+  await giver.getByText('¡Listo! Ya está en tu cuenta.').waitFor({ timeout: 15_000 });
+  await giver.goto(`${BASE}/invitacion/NOEXISTE`);
+  await giver.getByText('Esta invitación ya no está vigente.').waitFor({ timeout: 15_000 });
+
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
@@ -708,6 +718,7 @@ try {
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log('OK: compra de un pack desde precios con cupón del 20 %: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
   console.log('OK: botón de arrepentimiento: valida la dirección y da el código de trámite.');
+  console.log('OK: invitación con cupón para un mail: muestra qué da y se suma a la cuenta.');
   console.log(`Capturas en ${SHOTS}`);
 } finally {
   await browser.close();
@@ -718,9 +729,9 @@ try {
   await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
   await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from cupon_usos where cupon = 'E2EVEINTE'`;
+  await sql`delete from cupon_usos where cupon in ('E2EVEINTE', 'E2EINVITA')`;
   await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from cupones where codigo = 'E2EVEINTE'`;
+  await sql`delete from cupones where codigo in ('E2EVEINTE', 'E2EINVITA')`;
   await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
   await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
   await sql.end();

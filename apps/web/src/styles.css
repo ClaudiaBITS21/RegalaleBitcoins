@@ -3676,3 +3676,8 @@ svg.tarjeta-imagen {
 .cupones-main > .cupones-principal { display: block; max-width: 360px; margin: 0 auto; }
 .cupones-toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 40; transform: translateX(-50%); padding: 10px 18px; border-radius: 999px; background: var(--tinta); color: #fff; font-weight: 600; }
 @media (max-width: 380px) { .cupones-lista.grilla { grid-template-columns: 1fr; } }
+.cupones-segmento.tres { grid-template-columns: repeat(3, 1fr); }
+.cupones-seccion { margin: 18px 16px 0; font: 800 1.15rem var(--titulos); }
+.ticket-mail { font-weight: 700; color: var(--tinta); overflow-wrap: anywhere; }
+.cupones-hoja input[type='file'] { font: inherit; font-size: 0.9rem; }
+.invitacion-da { margin: 0; font-weight: 700; font-size: 1.1rem; }

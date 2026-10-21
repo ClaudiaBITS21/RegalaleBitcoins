@@ -12,6 +12,7 @@ import { MediakitPage } from './mediakit.tsx';
 import { PricingPage } from './precios.tsx';
 import { PrivacyPage } from './privacidad.tsx';
 import { BuyPage } from './comprar.tsx';
+import { InvitationPage } from './invitacion.tsx';
 import { RefundPage } from './arrepentimiento.tsx';
 import { ClaimPage } from './claim/ClaimPage.tsx';
 import { GivePage } from './give/GivePage.tsx';
@@ -105,6 +106,8 @@ function App() {
         <WhyPage testnet={!ALLOW_MAINNET} />
       ) : /^\/arrepentimiento\/?$/.test(path) ? (
         <RefundPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/invitacion\/[A-Za-z0-9]{4,24}\/?$/.test(path) ? (
+        <InvitationPage testnet={!ALLOW_MAINNET} code={path.split('/')[2] as string} />
       ) : /^\/comprar\/?$/.test(path) ? (
         <BuyPage testnet={!ALLOW_MAINNET} />
       ) : /^\/precios\/?$/.test(path) ? (

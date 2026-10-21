@@ -36,13 +36,37 @@ export interface Coupon {
   readonly nota: string;
   readonly creado_por: string;
   readonly creado: Date;
+  /** Solo lo usa la cuenta con este mail (en minúsculas); null = cualquiera. */
+  readonly email: string | null;
+  readonly lote: string | null;
 }
 
-/** Letras y números, 4 a 20, sin distinguir mayúsculas. */
+/** Letras y números, 4 a 24 (los de lote llevan prefijo y 8 al azar), sin distinguir mayúsculas. */
 export function normalizeCode(input: unknown): string | null {
   if (typeof input !== 'string') return null;
   const code = input.trim().toUpperCase();
-  return /^[A-Z0-9]{4,20}$/.test(code) ? code : null;
+  return /^[A-Z0-9]{4,24}$/.test(code) ? code : null;
+}
+
+/** Un mail razonable, en minúsculas; null si no parece un mail. */
+export function normalizeEmail(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  const email = input.trim().toLowerCase();
+  return email.length <= 254 && /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/.test(email) ? email : null;
+}
+
+/** Sin letras ni números que se confundan (I, O, 0, 1) al dictar o copiar a mano. */
+const RANDOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** Parte al azar de un código de lote: 8 caracteres (40 bits), con crypto.getRandomValues. */
+export function randomCodePart(length = 8): string {
+  let out = '';
+  while (out.length < length) {
+    const bytes = crypto.getRandomValues(new Uint8Array(length * 2));
+    // 256 es múltiplo de 32: cada byte da un carácter sin sesgo.
+    for (const b of bytes) if (out.length < length) out += RANDOM_ALPHABET[b % RANDOM_ALPHABET.length];
+  }
+  return out;
 }
 
 /** Lo que cuesta un producto con el descuento: se redondea hacia abajo lo descontado. */
@@ -72,6 +96,10 @@ export async function usableCoupon(tx: Tx, code: string, accountId: string): Pro
       and (pago_id is null or pago_id not in (select id from pagos where estado = 'confirmado'))`;
   const [c] = await tx<Coupon[]>`select * from cupones where codigo = ${code}`;
   if (c === undefined || !c.activo) throw new ApiError(404, 'cupon_invalido');
+  if (c.email !== null) {
+    const [me] = await tx<{ email: string }[]>`select lower(email) as email from usuarios where id = ${accountId}`;
+    if (me?.email !== c.email) throw new ApiError(403, 'cupon_de_otra_cuenta');
+  }
   const now = Date.now();
   if (c.desde.getTime() > now || (c.hasta !== null && c.hasta.getTime() <= now)) throw new ApiError(409, 'cupon_vencido');
   const [own] = await tx`select 1 from cupon_usos where cupon = ${code} and usuario_id = ${accountId} and estado <> 'liberado'`;
@@ -139,6 +167,20 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     return code;
   };
 
+  /**
+   * La página de invitación (/invitacion/CODIGO), sin cuenta: qué da el código, si todavía sirve.
+   * No dice para qué mail es.
+   */
+  app.get('/api/invitacion/:codigo', async (c) => {
+    const code = codeOf(c.req.param('codigo'));
+    const [k] = await sql<Coupon[]>`select * from cupones where codigo = ${code}`;
+    const now = Date.now();
+    if (k === undefined || !k.activo || k.desde.getTime() > now || (k.hasta !== null && k.hasta.getTime() <= now)) throw new ApiError(404, 'cupon_invalido');
+    if ((await usesTaken(sql, code)) >= k.max_usos) throw new ApiError(409, 'cupon_agotado');
+    c.header('cache-control', 'no-store');
+    return c.json({ ...couponView(k), paraUnMail: k.email !== null });
+  });
+
   /** Ver qué da un cupón antes de usarlo (con un producto: el precio con el descuento). */
   app.post('/api/cuenta/cupon/ver', async (c) => {
     const account = await signedIn(c);
@@ -174,7 +216,16 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<Coupon[]>`select * from cupones order by creado desc limit 500`;
+    const rows = await sql<Coupon[]>`select * from cupones where lote is null order by creado desc limit 500`;
+    const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
+      select l.id, l.nombre, l.creado_por, l.creado,
+             count(k.*) as total, count(k.*) filter (where k.activo) as activos, count(k.email) as con_mail,
+             (select count(*) from cupon_usos u join cupones x on x.codigo = u.cupon where x.lote = l.id and u.estado = 'usado') as usados,
+             min(k.codigo) as codigo
+      from cupon_lotes l join cupones k on k.lote = l.id
+      group by l.id order by l.creado desc limit 200`;
+    // Las condiciones de cada lote, de uno de sus cupones (son iguales en todos).
+    const loteTerms = lotes.length === 0 ? [] : await sql<Coupon[]>`select * from cupones where codigo in ${sql(lotes.map((l) => l.codigo))}`;
     const uses = await sql<{ cupon: string; producto: string | null; usados: string; reservados: string; resignado: string }[]>`
       select cupon, producto,
              count(*) filter (where estado = 'usado') as usados,
@@ -195,20 +246,35 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           nota: r.nota,
           creadoPor: r.creado_por,
           creado: r.creado.toISOString(),
+          email: r.email,
           usados: mine.reduce((a, u) => a + Number(u.usados), 0),
           reservados: mine.reduce((a, u) => a + Number(u.reservados), 0),
           satsResignados: mine.reduce((a, u) => a + BigInt(u.resignado), 0n).toString(),
           porProducto: Object.fromEntries(mine.filter((u) => u.producto !== null && Number(u.usados) > 0).map((u) => [u.producto, Number(u.usados)])),
         };
       }),
+      lotes: lotes.map((l) => {
+        const k = loteTerms.find((x) => x.codigo === l.codigo);
+        return {
+          id: l.id,
+          nombre: l.nombre,
+          creadoPor: l.creado_por,
+          creado: l.creado.toISOString(),
+          total: Number(l.total),
+          activos: Number(l.activos),
+          conMail: Number(l.con_mail),
+          usados: Number(l.usados),
+          ...(k === undefined ? { descuento: null, productos: [], da: null } : couponView(k)),
+          desde: k?.desde.toISOString() ?? null,
+          hasta: k?.hasta?.toISOString() ?? null,
+          nota: k?.nota ?? '',
+        };
+      }),
     });
   });
 
-  app.post('/api/admin/cupones', async (c) => {
-    const account = await admin(c, true);
-    const b = await body(c);
-    const code = normalizeCode(b.codigo);
-    if (code === null) throw new ApiError(400, 'pedido_invalido');
+  /** Las condiciones de un cupón (o de todos los de un lote), validadas. */
+  const termsOf = (b: Record<string, unknown>) => {
     const descuento = b.descuento === null || b.descuento === undefined ? null : b.descuento;
     if (descuento !== null && (typeof descuento !== 'number' || !Number.isInteger(descuento) || descuento < 1 || descuento > 100)) throw new ApiError(400, 'pedido_invalido');
     const productos = Array.isArray(b.productos) ? b.productos : [];
@@ -220,8 +286,6 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
       if (da.ocasion !== null && da.ocasion !== undefined && !(COUPON_OCCASIONS as readonly unknown[]).includes(da.ocasion)) throw new ApiError(400, 'pedido_invalido');
     }
     if (descuento === null && da === null) throw new ApiError(400, 'pedido_invalido');
-    const maxUsos = b.maxUsos;
-    if (typeof maxUsos !== 'number' || !Number.isInteger(maxUsos) || maxUsos < 1 || maxUsos > 1_000_000) throw new ApiError(400, 'pedido_invalido');
     const date = (v: unknown): Date | null => {
       if (v === null || v === undefined || v === '') return null;
       const d = typeof v === 'string' ? new Date(v) : null;
@@ -231,15 +295,107 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     const desde = date(b.desde) ?? new Date();
     const hasta = date(b.hasta);
     if (hasta !== null && hasta <= desde) throw new ApiError(400, 'pedido_invalido');
-    const nota = typeof b.nota === 'string' ? b.nota.trim().slice(0, 300) : '';
-    const inserted = await sql`
-      insert into cupones (codigo, descuento, productos, da_unidad, da_cantidad, ocasion, desde, hasta, max_usos, nota, creado_por)
-      values (${code}, ${descuento as number | null}, ${productos as string[]}, ${(da?.unidad as string | undefined) ?? null}, ${(da?.cantidad as number | undefined) ?? null},
-              ${(da?.ocasion as string | undefined) ?? null}, ${desde}, ${hasta}, ${maxUsos}, ${nota}, ${account.email})
-      on conflict (codigo) do nothing returning codigo`;
+    return {
+      descuento: descuento as number | null,
+      productos: productos as string[],
+      daUnidad: (da?.unidad as string | undefined) ?? null,
+      daCantidad: (da?.cantidad as number | undefined) ?? null,
+      ocasion: (da?.ocasion as string | undefined) ?? null,
+      desde,
+      hasta,
+      nota: typeof b.nota === 'string' ? b.nota.trim().slice(0, 300) : '',
+    };
+  };
+  type Terms = ReturnType<typeof termsOf>;
+  const insertCoupon = (tx: Tx, code: string, t: Terms, maxUsos: number, email: string | null, lote: string | null, by: string) => tx`
+    insert into cupones (codigo, descuento, productos, da_unidad, da_cantidad, ocasion, desde, hasta, max_usos, nota, creado_por, email, lote)
+    values (${code}, ${t.descuento}, ${t.productos}, ${t.daUnidad}, ${t.daCantidad}, ${t.ocasion}, ${t.desde}, ${t.hasta}, ${maxUsos}, ${t.nota}, ${by}, ${email}, ${lote})
+    on conflict (codigo) do nothing returning codigo`;
+
+  /** Un cupón. Con `email`, solo lo usa esa cuenta (y una vez). */
+  app.post('/api/admin/cupones', async (c) => {
+    const account = await admin(c, true);
+    const b = await body(c);
+    const code = normalizeCode(b.codigo);
+    if (code === null || code.length > 20) throw new ApiError(400, 'pedido_invalido');
+    const terms = termsOf(b);
+    const email = b.email === null || b.email === undefined || b.email === '' ? null : normalizeEmail(b.email);
+    if (email === null && b.email !== null && b.email !== undefined && b.email !== '') throw new ApiError(400, 'pedido_invalido');
+    const maxUsos = email !== null ? 1 : b.maxUsos;
+    if (typeof maxUsos !== 'number' || !Number.isInteger(maxUsos) || maxUsos < 1 || maxUsos > 1_000_000) throw new ApiError(400, 'pedido_invalido');
+    const inserted = await insertCoupon(sql, code, terms, maxUsos, email, null, account.email);
     if (inserted.length === 0) throw new ApiError(409, 'cupon_existente');
-    await sql`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_creado', ${code})`;
+    await sql`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_creado', ${email === null ? code : `${code} para ${email}`})`;
     return c.json({ codigo: code }, 201);
+  });
+
+  /**
+   * Un lote: `cantidad` códigos sueltos o uno por cada mail de `emails` (por ejemplo, de un CSV;
+   * pueden ser de personas que todavía no tienen cuenta). Todos de un solo uso, con prefijo y 8
+   * caracteres al azar. Devuelve los códigos para armar el CSV con los links de invitación.
+   */
+  app.post('/api/admin/cupones/lotes', async (c) => {
+    const account = await admin(c, true);
+    const b = await body(c);
+    const nombre = typeof b.nombre === 'string' ? b.nombre.trim().slice(0, 80) : '';
+    if (nombre === '') throw new ApiError(400, 'lote_invalido');
+    const prefijo = b.prefijo === undefined || b.prefijo === null || b.prefijo === '' ? '' : typeof b.prefijo === 'string' ? b.prefijo.trim().toUpperCase() : null;
+    if (prefijo === null || !/^[A-Z0-9]{0,12}$/.test(prefijo)) throw new ApiError(400, 'lote_invalido');
+    const terms = termsOf(b);
+    let emails: (string | null)[];
+    if (Array.isArray(b.emails)) {
+      const ok = b.emails.map(normalizeEmail);
+      if (ok.some((e) => e === null)) throw new ApiError(400, 'lote_invalido');
+      emails = [...new Set(ok as string[])];
+    } else {
+      const n = b.cantidad;
+      if (typeof n !== 'number' || !Number.isInteger(n)) throw new ApiError(400, 'lote_invalido');
+      emails = Array.from({ length: n }, () => null);
+    }
+    if (emails.length < 1 || emails.length > 2000) throw new ApiError(400, 'lote_invalido');
+    const result = await sql.begin(async (tx) => {
+      const [lote] = await tx<{ id: string }[]>`insert into cupon_lotes (nombre, creado_por) values (${nombre}, ${account.email}) returning id`;
+      const codes: { codigo: string; email: string | null }[] = [];
+      for (const email of emails) {
+        // 40 bits al azar: un choque es rarísimo, pero si pasa se sortea otro.
+        for (;;) {
+          const code = prefijo + randomCodePart();
+          if ((await insertCoupon(tx, code, terms, 1, email, lote!.id, account.email)).length > 0) {
+            codes.push({ codigo: code, email });
+            break;
+          }
+        }
+      }
+      await tx`insert into registro_admin (email, accion, detalle) values (${account.email}, 'lote_creado', ${`${nombre}: ${codes.length} cupones`})`;
+      return { id: lote!.id, codes };
+    });
+    return c.json({ lote: result.id, cupones: result.codes }, 201);
+  });
+
+  /** Los cupones de un lote, con mail y si ya se usaron (para bajar el CSV). */
+  app.get('/api/admin/cupones/lotes/:id', async (c) => {
+    await admin(c, false);
+    const id = c.req.param('id');
+    if (!/^[0-9]{1,18}$/.test(id)) throw new ApiError(404, 'no_encontrado');
+    const [lote] = await sql<{ nombre: string }[]>`select nombre from cupon_lotes where id = ${id}`;
+    if (lote === undefined) throw new ApiError(404, 'no_encontrado');
+    const rows = await sql<{ codigo: string; email: string | null; usado: boolean }[]>`
+      select k.codigo, k.email, exists (select 1 from cupon_usos u where u.cupon = k.codigo and u.estado = 'usado') as usado
+      from cupones k where k.lote = ${id} order by k.email nulls last, k.codigo`;
+    return c.json({ nombre: lote.nombre, cupones: rows });
+  });
+
+  /** Pausar o reactivar todos los cupones de un lote. */
+  app.post('/api/admin/cupones/lotes/:id/activo', async (c) => {
+    const account = await admin(c, true);
+    const id = c.req.param('id');
+    if (!/^[0-9]{1,18}$/.test(id)) throw new ApiError(404, 'no_encontrado');
+    const { activo } = await body(c);
+    if (typeof activo !== 'boolean') throw new ApiError(400, 'pedido_invalido');
+    const rows = await sql`update cupones set activo = ${activo} where lote = ${id} returning codigo`;
+    if (rows.length === 0) throw new ApiError(404, 'no_encontrado');
+    await sql`insert into registro_admin (email, accion, detalle) values (${account.email}, ${activo ? 'lote_reactivado' : 'lote_pausado'}, ${id})`;
+    return c.json({ lote: id, activo });
   });
 
   /** Pausar o reactivar (lo que da un cupón usado no se edita: se pausa y se crea otro). */
