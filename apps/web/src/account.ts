@@ -1,4 +1,4 @@
-import { CoreError, generateMasterMnemonic, openVault, sealVault } from '@regalale/core';
+import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openVault, sealVault } from '@regalale/core';
 import { ApiFailure } from './api.ts';
 import type { Key } from './i18n/index.ts';
 import { setSignedIn } from './sesion.ts';
@@ -33,6 +33,8 @@ export interface AccountGift {
   readonly ocasionLibre: string | null;
   readonly para: string;
   readonly satsEsperados: string | null;
+  /** Dirección del regalo: sirve para comprobar en el navegador unas 12 palabras. */
+  readonly direccion?: string;
   readonly creado: string;
   readonly estilo: string;
   /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
@@ -151,7 +153,7 @@ export async function createAccess(email: string, lang: string): Promise<Unlocke
 /** Entra con una passkey ya creada y abre la bóveda de esa passkey. */
 export async function signIn(allow?: readonly string[]): Promise<Unlocked> {
   const used = await unlockWithPasskey({ challenge: await challenge('ingreso'), ...(allow === undefined ? {} : { allow }) }).catch(report('ingreso'));
-  let res: { email: string; credencial: string; boveda: string | null };
+  let res: { email: string; credencial: string; boveda: string | null; bovedasExtra?: string[] };
   try {
     res = await call('/api/cuenta/ingreso', { credencial: used.assertion });
   } catch (e) {
@@ -162,8 +164,57 @@ export async function signIn(allow?: readonly string[]): Promise<Unlocked> {
   setSignedIn(true);
   let master: string | null = null;
   if (res.boveda !== null && used.prf !== null) {
-    master = await openVault(used.prf, res.boveda, used.credentialId);
+    // La bóveda de la passkey y, si las hay, sus copias para cuando se usa por QR (otra salida PRF).
+    for (const sealed of [res.boveda, ...(res.bovedasExtra ?? [])]) {
+      try {
+        master = await openVault(used.prf, sealed, used.credentialId);
+        break;
+      } catch {
+        // Probamos la siguiente.
+      }
+    }
+    if (master === null) {
+      // Entró, pero ninguna abre: se guarda la salida PRF (solo en memoria) para armar una copia con las 12 palabras.
+      repair = { prf: used.prf, credentialId: used.credentialId };
+      throw new CoreError('INVALID_VAULT', 'Esta passkey no abre esta bóveda.');
+    }
     used.prf.fill(0);
   }
   return { email: res.email, master };
+}
+
+/** La salida PRF de la última entrada que no abrió la bóveda (en memoria, hasta repararla). */
+let repair: { prf: Uint8Array; credentialId: Uint8Array } | null = null;
+
+/** ¿Se puede guardar una copia de la bóveda para la passkey con la que se acaba de entrar? */
+export function canRepairVault(): boolean {
+  return repair !== null;
+}
+
+export type RepairProblem = 'invalidas' | 'noCoinciden' | 'sinRegalos';
+export class RepairError extends Error {
+  readonly problem: RepairProblem;
+  constructor(problem: RepairProblem) {
+    super(problem);
+    this.problem = problem;
+  }
+}
+
+/**
+ * Con las 12 palabras: comprueba que son las de esta cuenta (derivando la dirección de un regalo)
+ * y guarda otra copia de la bóveda cifrada con la salida PRF que dio la passkey acá. Las palabras
+ * no salen del navegador. Devuelve la clave maestra.
+ */
+export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+  if (repair === null) throw new RepairError('sinRegalos');
+  if (!isValidMasterMnemonic(words)) throw new RepairError('invalidas');
+  const master = normalizeMnemonic(words);
+  const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined);
+  if (probe === undefined) throw new RepairError('sinRegalos');
+  if (deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
+  const sealed = await sealVault(repair.prf, master, repair.credentialId);
+  await call('/api/cuenta/boveda-extra', { boveda: sealed });
+  repair.prf.fill(0);
+  repair = null;
+  return master;
 }

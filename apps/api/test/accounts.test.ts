@@ -189,9 +189,26 @@ describe('Cuentas con passkey', () => {
     const ch = await challenge('ingreso');
     const ok = await req('/api/cuenta/ingreso', { credencial: pk.assert(ch) });
     assert.equal(ok.status, 200);
-    assert.deepEqual(await ok.json(), { email: 'ana@example.com', credencial: pk.id.toString('base64url'), boveda: VAULT });
+    assert.deepEqual(await ok.json(), { email: 'ana@example.com', credencial: pk.id.toString('base64url'), boveda: VAULT, bovedasExtra: [] });
     pk.counter = 2;
     assert.equal((await req('/api/cuenta/ingreso', { credencial: pk.assert(ch) })).status, 401); // desafío ya usado
+  });
+
+  it('copias extra de la bóveda (passkey por QR): solo con sesión de passkey, hasta 3, vuelven al entrar', async () => {
+    const { pk, cookie: alta } = await signUp('ana@example.com');
+    const extra = (n: number) => `v1.${'C'.repeat(16)}.${String(n).repeat(64)}`;
+    // La sesión del alta ya es de esa passkey.
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: extra(1) }, alta)).status, 201);
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: 'cualquier cosa' }, alta)).status, 400);
+    assert.equal((await req('/api/cuenta/boveda-extra', { boveda: extra(2) })).status, 401);
+    for (const n of [2, 3, 4]) await req('/api/cuenta/boveda-extra', { boveda: extra(n) }, alta);
+    pk.counter = 1;
+    const ok = await req('/api/cuenta/ingreso', { credencial: pk.assert(await challenge('ingreso')) });
+    const { bovedasExtra } = (await ok.json()) as { bovedasExtra: string[] };
+    assert.deepEqual(new Set(bovedasExtra), new Set([extra(2), extra(3), extra(4)]));
+    // Con una sesión abierta por link (sin passkey) no se puede.
+    const mailRes = await req('/api/cuenta/link', { email: 'ana@example.com' });
+    assert.equal(mailRes.status, 202);
   });
 
   it('rechaza firmas falsas, otra passkey, otro sitio, sin verificación de la persona y contador que no avanza', async () => {

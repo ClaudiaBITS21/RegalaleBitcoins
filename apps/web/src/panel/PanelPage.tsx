@@ -1,7 +1,7 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useState } from 'preact/hooks';
 import { numberedWords, WordsList } from '../give/WordsList.tsx';
-import { accessErrorCode, accessErrorKey, accountApi, type AccountView, signIn } from '../account.ts';
+import { accessErrorCode, accessErrorKey, accountApi, type AccountView, canRepairVault, RepairError, repairVault, signIn } from '../account.ts';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
@@ -81,6 +81,25 @@ export function PanelPage() {
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
   const [mailSent, setMailSent] = useState(false);
+  // Abrir con las 12 palabras cuando la passkey (por QR) no abre la bóveda.
+  const [words, setWords] = useState('');
+  const [repairProblem, setRepairProblem] = useState<Key | null>(null);
+  const [repaired, setRepaired] = useState(false);
+  const repair = async () => {
+    if (view === null || network === null) return;
+    setBusy(true);
+    setRepairProblem(null);
+    try {
+      setMaster(await repairVault(words, view.regalos, network));
+      setWords('');
+      setError(null);
+      setRepaired(true);
+    } catch (e) {
+      setRepairProblem(e instanceof RepairError ? (`panel.reparar.${e.problem}` as Key) : 'panel.mailError');
+    } finally {
+      setBusy(false);
+    }
+  };
   const [layout, setLayout] = useState(readView);
   const [order, setOrder] = useState<GiftOrder>('fecha');
   const [query, setQuery] = useState('');
@@ -149,6 +168,8 @@ export function PanelPage() {
       await load();
     } catch (e) {
       setError(accessErrorKey(e));
+      // Entró pero la bóveda no abrió (passkey por QR): la sesión está abierta, se muestra el panel.
+      if (canRepairVault()) await load();
     } finally {
       setBusy(false);
     }
@@ -204,6 +225,27 @@ export function PanelPage() {
         {error !== null && <Notice kind="error">{t(error)}
             {accessErrorCode(error)}
           </Notice>}
+        {error === 'guardar.bovedaOtroDispositivo' && canRepairVault() && network !== null && (
+          <form
+            class="caja formulario reparar-boveda"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void repair();
+            }}
+          >
+            <strong>{t('panel.reparar.titulo')}</strong>
+            <p class="texto-suave">{t('panel.reparar.texto')}</p>
+            <label class="campo">
+              <span>{t('panel.reparar.campo')}</span>
+              <textarea rows={3} autocomplete="off" autocapitalize="none" spellcheck={false} translate={false} value={words} onInput={(e) => setWords((e.currentTarget as HTMLTextAreaElement).value)} />
+            </label>
+            {repairProblem !== null && <Notice kind="error">{t(repairProblem)}</Notice>}
+            <Button type="submit" disabled={busy || words.trim() === ''}>
+              {t('panel.reparar.boton')}
+            </Button>
+          </form>
+        )}
+        {repaired && <Notice kind="ok">{t('panel.reparar.listo')}</Notice>}
         {view.regalos.length === 0 ? (
           <div class="caja">
             <p>{t('panel.vacio')}</p>

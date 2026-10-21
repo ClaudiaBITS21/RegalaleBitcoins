@@ -12,6 +12,8 @@ export interface Account {
   readonly lang: Lang;
   /** Si la sesión se abrió con passkey (y no con un link por mail). */
   readonly viaPasskey?: boolean;
+  /** La passkey con la que se abrió la sesión (si fue con passkey). */
+  readonly credentialId?: string | null;
 }
 
 export interface Credential {
@@ -91,19 +93,19 @@ export async function accountCredentials(sql: Sql, accountId: string): Promise<A
   return rows.map((r) => ({ id: r.id, prf: r.prf }));
 }
 
-export async function createSession(sql: Sql, accountId: string, method: 'passkey' | 'link' | 'mail'): Promise<string> {
+export async function createSession(sql: Sql, accountId: string, method: 'passkey' | 'link' | 'mail', credentialId: string | null = null): Promise<string> {
   const token = newToken();
   await sql`delete from sesiones where expira < now()`;
-  await sql`insert into sesiones (token_hash, usuario_id, expira, metodo) values (${hash(token)}, ${accountId}, now() + make_interval(days => ${SESSION_DAYS}), ${method})`;
+  await sql`insert into sesiones (token_hash, usuario_id, expira, metodo, credencial) values (${hash(token)}, ${accountId}, now() + make_interval(days => ${SESSION_DAYS}), ${method}, ${credentialId})`;
   return token;
 }
 
 export async function sessionAccount(sql: Sql, token: string | undefined): Promise<Account | null> {
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' | 'mail' }[]>`
-    select u.id, u.email, u.idioma, s.metodo from sesiones s join usuarios u on u.id = s.usuario_id
+  const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' | 'mail'; credencial: string | null }[]>`
+    select u.id, u.email, u.idioma, s.metodo, s.credencial from sesiones s join usuarios u on u.id = s.usuario_id
     where s.token_hash = ${hash(token)} and s.expira > now()`;
-  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma, viaPasskey: r.metodo === 'passkey' };
+  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma, viaPasskey: r.metodo === 'passkey', credentialId: r.credencial };
 }
 
 export async function deleteSession(sql: Sql, token: string | undefined): Promise<void> {

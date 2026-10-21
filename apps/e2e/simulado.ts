@@ -24,6 +24,7 @@ import {
   inspectTransaction,
   masterRootFromMnemonic,
   openGiftWallet,
+  sealVault,
 } from '@regalale/core';
 import { chromium } from 'playwright-core';
 import { connect, migrate } from '../api/src/db.ts';
@@ -475,6 +476,7 @@ try {
   await giver.getByRole('button', { name: 'Tarjetas' }).click();
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
+  const lupeWords12 = (await giver.locator('.codigo li').allInnerTexts()).map((x) => x.replace(/^\d+\s*/, '').trim()).join(' ');
   await shot2(giver, 'p1-panel');
   // Con la cuenta abierta, la personita de la cabecera lleva a «Mis regalos»; al salir, desaparece.
   if ((await giver.locator('.nav-movil .icono-cuenta').getAttribute('href')) !== '/panel') fail('falta el ícono de la cuenta en la cabecera');
@@ -482,8 +484,28 @@ try {
   await giver.getByRole('button', { name: 'Salir' }).click();
   await giver.getByRole('heading', { name: 'Tus regalos' }).waitFor();
   if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
+  // Passkey usada por QR desde otro dispositivo: da otra salida PRF y la bóveda no abre. Se simula
+  // cerrando la bóveda guardada con otra salida; con las 12 palabras se guarda una copia que sí abre.
+  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email = 'lupe.e2e@example.com'`)[0]!;
+  const otherPrf = crypto.getRandomValues(new Uint8Array(32));
+  await sql`update credenciales set boveda = ${await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'))} where id = ${lupeCode.id}`;
+  await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
+  await giver.getByText(/^Entraste, pero desde acá tu passkey no puede abrir tus regalos guardados/).waitFor({ timeout: 15_000 });
+  await giver.getByLabel('Tus 12 palabras').fill('abandon '.repeat(11) + 'about');
+  await giver.getByRole('button', { name: 'Abrir mis regalos' }).click();
+  await giver.getByText('Esas palabras no son las de esta cuenta.').waitFor();
+  await giver.getByLabel('Tus 12 palabras').fill(lupeWords12.toUpperCase());
+  await giver.getByRole('button', { name: 'Abrir mis regalos' }).click();
+  await giver.getByText('Listo: desde ahora tu passkey abre tus regalos también desde acá.').waitFor({ timeout: 15_000 });
+  await shot2(giver, 'p2-boveda-reparada');
+  await giver.getByRole('button', { name: 'Salir' }).click();
+  // Página nueva: nada de lo abierto antes queda en memoria.
+  await giver.reload();
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+  await giver.getByRole('button', { name: 'Ver link y palabras' }).click();
+  await giver.locator('.regalo-secretos .enlace-regalo').waitFor({ timeout: 15_000 });
+  if ((await giver.locator('.regalo-secretos .enlace-regalo').innerText()) !== lupeLink) fail('con la copia de la bóveda no se reconstruyó el mismo link');
   // Con la sesión abierta, el paso 4 no vuelve a pedir el mail: abre la llave con la passkey de la cuenta.
   await giver.goto(`${BASE}/regalar?ocasion=cumple`);
   await giver.getByLabel('Su nombre').fill('Tomi');
@@ -718,7 +740,7 @@ try {
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
-  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey.');
+  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey; passkey que no abre la bóveda (QR) se repara con las 12 palabras.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');
