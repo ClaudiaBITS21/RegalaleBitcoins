@@ -82,6 +82,10 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.beginPath();
       ctx.roundRect(ax, ay, aw, ah, 28);
       ctx.clip();
+      // Fondo blanco detrás: la ilustración puede venir sin fondo y el JPEG no tiene transparencia
+      // (sin esto se ve el naranja de atrás, Rodolfo 21/10).
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(ax, ay, aw, ah);
       ctx.drawImage(art, ax, ay, aw, ah);
       ctx.restore();
       ctx.lineWidth = 5;
