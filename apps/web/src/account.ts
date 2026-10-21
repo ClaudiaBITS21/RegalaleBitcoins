@@ -80,7 +80,26 @@ function report(paso: 'registro' | 'ingreso') {
  * servidor. «No pudimos conectarnos» queda solo para cuando de verdad no hubo conexión: antes salía
  * para cualquier falla y no dejaba ver la causa (Rodolfo, 21/10).
  */
+/** La causa técnica de la última falla genérica, para mostrarla en chico junto al mensaje. */
+let lastDetail: string | null = null;
+const GENERIC: ReadonlySet<Key> = new Set<Key>(['guardar.errorServidor', 'guardar.errorInterno', 'guardar.errorAcceso']);
+
+function detailOf(e: unknown): string {
+  if (e instanceof ApiFailure) return `${e.status} ${e.code}`;
+  if (e instanceof Error) return `${e.name}: ${e.message}`.slice(0, 80);
+  return String(e).slice(0, 80);
+}
+
+/**
+ * « · código: …» para los mensajes genéricos (Rodolfo, 21/10): sin los registros del servidor, es
+ * lo que permite saber qué falló cuando alguien manda una captura. Nunca lleva datos de la persona.
+ */
+export function accessErrorCode(key: Key): string {
+  return GENERIC.has(key) && lastDetail !== null ? ` · código: ${lastDetail}` : '';
+}
+
 export function accessErrorKey(e: unknown): Key {
+  lastDetail = detailOf(e);
   if (e instanceof PasskeyError) return e.kind === 'cancelada' ? 'guardar.cancelada' : e.kind === 'no_soportada' ? 'guardar.noSoportada' : 'guardar.errorDispositivo';
   if (e instanceof ApiFailure) {
     if (e.status === 0) return 'guardar.errorServidor';
