@@ -633,7 +633,11 @@ try {
   const cobroVpub = accountKeyText(masterRootFromMnemonic(generateMasterMnemonic()), signet);
   await sql`insert into ajustes (clave, valor) values ('llave_cobro', ${cobroVpub}) on conflict (clave) do update set valor = excluded.valor`;
   await giver.goto(`${BASE}/precios`);
-  await giver.locator('a[href="/comprar?producto=pack10"]').click();
+  // En el celular, tarjetas por plan (la tabla ancha queda para la compu).
+  if (await giver.locator('.precios-caja').isVisible()) fail('en el celular se ve la tabla ancha de precios');
+  await giver.locator('.precio-tarjeta').first().getByText('Recuperar un regalo que no se abrió').waitFor();
+  await giver.locator('.precios-tarjetas').screenshot({ path: join(SHOTS, 'c0-precios-celu.png') });
+  await giver.locator('.precios-tarjetas a[href="/comprar?producto=pack10"]').click();
   await giver.getByRole('heading', { name: /^Pagá .+ sats$/ }).waitFor({ timeout: 15_000 });
   const buyAddr = (await giver.locator('.direccion-completa').innerText()).replace(/\s/g, '');
   if (buyAddr !== deriveListAddress(parseAccountKey(cobroVpub, signet), 0).address) fail('la compra no usa la primera dirección de la llave de cobro');

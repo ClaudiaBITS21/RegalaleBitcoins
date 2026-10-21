@@ -3315,18 +3315,91 @@ svg.tarjeta-imagen {
   gap: 8px;
 }
 
+/* Celular: tarjetas por plan en vez de la tabla (Rodolfo, 21/10). */
+.precios-tarjetas {
+  display: none;
+}
+
 @media (max-width: 599px) {
-  .precios-tabla {
-    min-width: 760px;
+  .precios-caja {
+    display: none;
   }
 
-  .precios-tabla tbody th,
-  .precios-tabla thead td:first-child,
-  .precios-tabla tfoot td:first-child {
-    min-width: 0;
-    width: 104px;
-    padding-left: 12px;
-    font-size: 13px;
+  .precios-tarjetas {
+    display: grid;
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .precio-tarjeta {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+    background: var(--blanco);
+    border: 2px solid var(--tinta);
+    border-radius: 20px;
+    box-shadow: 4px 4px 0 var(--tinta);
+  }
+
+  .precio-tarjeta.precios-destacado {
+    background: #fff3e6;
+  }
+
+  .precio-tarjeta-cabeza {
+    display: grid;
+    gap: 2px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--tinta);
+  }
+
+  .precio-tarjeta-cabeza .precio-nombre {
+    font-size: 18px;
+  }
+
+  .precio-tarjeta-cabeza .precio-cupo {
+    justify-self: start;
+  }
+
+  .precio-tarjeta-filas {
+    display: grid;
+    margin: 0;
+  }
+
+  .precio-tarjeta-filas > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid #ece8f2;
+    font-size: 14px;
+  }
+
+  .precio-tarjeta-filas > div:last-child {
+    border-bottom: 0;
+  }
+
+  .precio-tarjeta-filas dt {
+    font-weight: 500;
+  }
+
+  .precio-tarjeta-filas dd {
+    margin: 0;
+    flex: none;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* Lo que el plan no trae, más apagado: se lee de un vistazo qué suma cada uno. */
+  .precio-tarjeta-filas .fila-no {
+    color: var(--suave);
+  }
+
+  .precio-tarjeta .precio-comprar {
+    justify-self: stretch;
+    text-align: center;
   }
 }
 
