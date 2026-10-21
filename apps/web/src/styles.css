@@ -1884,6 +1884,12 @@ textarea {
   padding-top: 6px;
   border-top: 1px dashed var(--borde);
 }
+
+.recordatorio-texto {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 /* Imagen ilustrada de la tarjeta (content/GiftCardArt.tsx) */
 
 .arte-tarjeta {
