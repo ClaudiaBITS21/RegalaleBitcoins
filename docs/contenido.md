@@ -152,4 +152,5 @@ y la 18 la 16.
 4. **SEO.** La web hoy es una SPA; para que el texto de las 21 razones esté en el HTML se
    prerenderizan home y /por-que en el build (Preact a HTML estático, sin servidor nuevo).
 5. **Listas solo BTC en el lanzamiento** cambia la especificación v0.1 (xpub + alias bancario):
-   el alias bancario con conversión por tandas pasa a después del lanzamiento.
+   alias bancario del dueño de la lista; la web informa las tandas y el dueño convierte y
+   deposita por su cuenta (regla 5 de `docs/operacion.md`).

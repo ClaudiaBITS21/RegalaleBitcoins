@@ -3,6 +3,8 @@
 Especificación de producto: "RegalaleBitcoin.com — Especificación v0.1" (documento
 aparte). Acá queda lo técnico.
 
+Reglas de operación (sin custodia, no PSAV): `docs/operacion.md`.
+
 ## Stack
 
 | Capa | Elección | Por qué |
@@ -203,8 +205,9 @@ que se decida otra cosa:
    solo el checkbox. Pedir palabras contradice "Nunca te vamos a pedir las palabras de
    tu billetera". Implementado en la etapa 3.
 4. **Link guardado** (envío programado o reclamo desde el panel) solo si se pide
-   explícitamente: cifrado en la base, borrado al reclamarse o recuperarse, y aviso si
-   el monto supera el techo. Etapa 6.
+   explícitamente y nunca al alcance del servidor (regla 4 de `docs/operacion.md`): la
+   semilla va cifrada con una clave que el servidor no tiene; si no se encuentra cómo, la
+   función no entra. Etapa 6.
 
 ## Etapas
 
