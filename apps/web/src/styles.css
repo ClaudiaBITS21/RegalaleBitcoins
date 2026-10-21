@@ -3693,3 +3693,8 @@ svg.tarjeta-imagen {
 .reportar-lista[open] > summary { margin-bottom: 10px; }
 .lista-pausada { display: flex; flex-direction: column; gap: 8px; }
 .admin-denuncia { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+/* Valor de hoy de un regalo y su variación (Claudia, 21/10): verde si subió, rojo si bajó. */
+.regalo-valor { font-weight: 600; }
+.variacion { font-weight: 700; }
+.variacion.sube { color: #1b7f3b; }
+.variacion.baja { color: var(--error-tinta); }

@@ -20,7 +20,7 @@ import {
   sessionAccount,
   touchCredential,
 } from './accounts.ts';
-import type { ChainClient } from './chain.ts';
+import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { balance, canGive, chargingActive, hasGreetings, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
@@ -53,7 +53,10 @@ export async function currentAccount(sql: Sql, c: Context): Promise<Account | nu
   return sessionAccount(sql, getCookie(c, SESSION_COOKIE));
 }
 
-export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string }): void {
+export function registerAccountRoutes(
+  app: Hono,
+  deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string; price?: PriceClient; arsPrice?: ArsPriceClient | undefined },
+): void {
   const { sql, chain, config } = deps;
   const challengeLimiter = new RateLimiter(60, 60 * 60 * 1000);
   const mailLimiter = new RateLimiter(5, 60 * 60 * 1000);
@@ -336,7 +339,14 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
   app.get('/api/cuenta', async (c) => {
     const account = await currentAccount(sql, c);
     if (account === null) throw new ApiError(401, 'sesion_requerida');
-    const [credentials, gifts, next] = await Promise.all([accountCredentials(sql, account.id), accountGifts(sql, account.id), nextGiftIndex(sql, account.id)]);
+    // La cotización de hoy, para mostrar cuánto vale cada regalo (si no responde, no se muestra).
+    const [credentials, gifts, next, usdNow, arsNow] = await Promise.all([
+      accountCredentials(sql, account.id),
+      accountGifts(sql, account.id),
+      nextGiftIndex(sql, account.id),
+      deps.price?.btcUsd().catch(() => null) ?? null,
+      deps.arsPrice?.btcArs().then((q) => q.price).catch(() => null) ?? null,
+    ]);
     const states = await Promise.all(
       gifts.map(async (g) => {
         try {
@@ -352,6 +362,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
       idioma: account.lang,
       credenciales: credentials,
       proximoIndice: next,
+      cotizacion: { usdPorBtc: usdNow, arsPorBtc: arsNow },
       regalos: gifts.map((g, i) => ({
         id: g.id,
         indice: g.index,
@@ -365,6 +376,7 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
         creado: g.createdAt.toISOString(),
         estilo: g.style,
         abierto: g.claimedAt?.toISOString() ?? null,
+        original: g.currency === null || g.amount === null ? null : { moneda: g.currency, monto: g.amount, usdPorBtc: g.usdPerBtc },
         estado: states[i]?.state ?? null,
         sats: states[i] === null || states[i] === undefined ? null : (states[i].confirmedSats + states[i].unconfirmedSats).toString(),
       })),

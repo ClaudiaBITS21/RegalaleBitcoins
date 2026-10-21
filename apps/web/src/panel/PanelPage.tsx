@@ -14,7 +14,8 @@ import { PrintCard } from '../give/PrintCard.tsx';
 import { usePlanFeatures } from '../give/planFeatures.ts';
 import { VincularCelu } from './VincularCelu.tsx';
 import { filterGifts, GIFT_ORDERS, type GiftOrder, sortGifts } from './orden.ts';
-import { formatSats } from '../format.ts';
+import { formatChange, formatSats, formatValue } from '../format.ts';
+import { giftValue } from './valor.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 
@@ -318,6 +319,16 @@ export function PanelPage() {
                       {new Date(g.creado).toLocaleDateString(lang)}
                       {sats !== null ? ` · ${formatSats(sats, lang)}` : ''}
                     </span>
+                    {(() => {
+                      const v = giftValue(sats, g.original ?? null, view.cotizacion ?? { usdPorBtc: null, arsPorBtc: null });
+                      if (v === null) return null;
+                      return (
+                        <span class="regalo-valor">
+                          {t('panel.hoy', { valor: formatValue(v.hoy, v.moneda, lang) })}
+                          {v.variacion !== null && <span class={v.variacion >= 0 ? 'variacion sube' : 'variacion baja'}> ({formatChange(v.variacion, lang)})</span>}
+                        </span>
+                      );
+                    })()}
                     {g.abierto !== null && <span class="texto-suave">{t('panel.abierto', { dia: new Date(g.abierto).toLocaleDateString(lang) })}</span>}
                   </div>
                   <div class="regalo-acciones">

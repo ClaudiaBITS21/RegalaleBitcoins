@@ -292,6 +292,7 @@ export const es = {
   'panel.cuenta': 'Cuenta: {email}',
   'panel.vacio': 'Todavía no hiciste regalos.',
   'panel.para': 'Para {para}',
+  'panel.hoy': "Hoy: {valor}",
   'panel.buscar': 'Buscar por nombre',
   'panel.ordenar': 'Ordenar por',
   'panel.orden.fecha': 'Fecha',

@@ -146,12 +146,16 @@ export interface AccountGift {
   readonly style: string;
   /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
   readonly claimedAt: Date | null;
+  /** Lo que se puso al armarlo: moneda, monto y la cotización del dólar ese día. */
+  readonly currency: string | null;
+  readonly amount: number | null;
+  readonly usdPerBtc: number | null;
 }
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
@@ -167,6 +171,9 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     createdAt: r.creado,
     style: r.estilo,
     claimedAt: r.reclamado,
+    currency: r.moneda,
+    amount: r.monto === null ? null : Number(r.monto),
+    usdPerBtc: r.usd_por_btc === null ? null : Number(r.usd_por_btc),
   }));
 }
 
