@@ -283,6 +283,8 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
         para: g.to,
         satsEsperados: g.satsExpected,
         creado: g.createdAt.toISOString(),
+        estilo: g.style,
+        abierto: g.claimedAt?.toISOString() ?? null,
         estado: states[i]?.state ?? null,
         sats: states[i] === null || states[i] === undefined ? null : (states[i].confirmedSats + states[i].unconfirmedSats).toString(),
       })),

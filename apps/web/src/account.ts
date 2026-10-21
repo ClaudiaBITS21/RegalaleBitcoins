@@ -34,6 +34,9 @@ export interface AccountGift {
   readonly para: string;
   readonly satsEsperados: string | null;
   readonly creado: string;
+  readonly estilo: string;
+  /** Cuándo se abrió (reclamó o recuperó); null si todavía no. */
+  readonly abierto: string | null;
   readonly estado: string | null;
   readonly sats: string | null;
 }

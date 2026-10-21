@@ -113,6 +113,7 @@ export const tu: Partial<Record<Key, string>> = {
   'panel.mailError': 'No pudimos enviar el mail. Prueba de nuevo en un rato.',
   'panel.sinBoveda': 'Esta cuenta no tiene el regalo guardado con tu cara o huella: usa tu código de recuperación.',
   'panel.recordatorio.texto': 'Cópialo y mándaselo por donde quieras.',
+  'panel.tarjetaError': 'No pudimos cargar la tarjeta. Prueba de nuevo en un rato.',
   'panel.recordatorio.mensaje': 'Te recuerdo que el {dia} te mandé esta tarjeta{motivo}. Sigue esperando tu apertura. Si no anotaste las 4 palabras para abrirlo, te las vuelvo a pasar 😝. Avísame.',
   'porque.edad1.d': 'Antes se regalaba una medallita de oro para que acompañara toda la vida. Esto es lo mismo, pero en digital. Lo guardan los padres hasta que el niño sea grande, y si encima le escribes unas palabras, va a ser de los regalos más especiales que reciba.',
   'porque.edad2.t': 'Niños',

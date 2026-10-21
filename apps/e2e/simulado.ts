@@ -451,6 +451,21 @@ try {
   if ((await giver.locator('.regalo-item').first().getByRole('link', { name: 'WhatsApp' }).count()) > 0) fail('el recordatorio no debería abrir WhatsApp');
   if (!reminder.startsWith('Te recuerdo que el ') || !reminder.trim().endsWith(lupeLink)) fail(`recordatorio sin el formato esperado: ${reminder}`);
   await giver.locator('.regalo-item').first().screenshot({ path: join(SHOTS, 'p1-recordatorio.png') });
+  // Después de enviado, la tarjeta se puede volver a ver y bajar en PDF desde «Mis regalos».
+  if ((await giver.locator('.regalos-tarjetas .regalo-miniatura').count()) !== 1) fail('«Mis regalos» no muestra la miniatura de la tarjeta');
+  await giver.getByRole('button', { name: 'Ver la tarjeta' }).click();
+  await giver.locator('.regalo-item .tarjeta-vista img').waitFor({ timeout: 20_000 });
+  const [cardPdf] = await Promise.all([giver.waitForEvent('download'), giver.locator('.regalo-item .imprimir .boton').click()]);
+  if (!cardPdf.suggestedFilename().endsWith('.pdf')) fail('la tarjeta del panel no baja un PDF');
+  await giver.locator('.regalo-item').first().screenshot({ path: join(SHOTS, 'p1-tarjeta.png') });
+  await giver.getByRole('button', { name: 'Ocultar la tarjeta' }).click();
+  await giver.getByRole('button', { name: 'Lista' }).click();
+  await giver.getByLabel('Ordenar por').selectOption('nombre');
+  await giver.getByPlaceholder('Buscar por nombre').fill('zzz');
+  await giver.getByText('No hay regalos con ese nombre.').waitFor();
+  await giver.getByPlaceholder('Buscar por nombre').fill('lupe');
+  await giver.locator('.regalos-lista .regalo-item').waitFor();
+  await giver.getByRole('button', { name: 'Tarjetas' }).click();
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   await shot2(giver, 'p1-panel');
@@ -678,7 +693,7 @@ try {
   if (problems.length > 0) fail(`problemas en el navegador:\n${problems.join('\n')}`);
   console.log(`OK: reclamo simulado de punta a punta. txid ${tx.txid}, comisión ${fee} sats, ${tx.vsize} vB.`);
   console.log(`OK: regalar en 5 pasos, pago en dos partes, link y palabras en portugués, reclamo. txid ${tx2.txid}.`);
-  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, reingreso con passkey.');
+  console.log('OK: paso 4 con passkey (PRF), bóveda cifrada, panel reconstruye link y palabras, tarjeta en PDF desde «Mis regalos», reingreso con passkey.');
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: transferencia en pesos con alias y código único, anunciada → recibida → convertida en una compra en tanda.');

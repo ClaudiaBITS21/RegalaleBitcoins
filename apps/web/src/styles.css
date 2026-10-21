@@ -3551,3 +3551,30 @@ svg.tarjeta-imagen {
 .realizado { display: grid; gap: 12px; text-align: center; }
 .realizado h3 { margin: 0; font-size: 24px; }
 .realizado-botones { display: grid; gap: 10px; }
+
+/* «Mis regalos» (Rodolfo, 21/10): buscar, ordenar y ver como tarjetas (dos columnas) o lista. */
+.regalos-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.regalos-buscar { flex: 1 1 100%; }
+.regalos-buscar input { width: 100%; }
+.regalos-orden { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; }
+.regalos-orden select { padding: 6px 8px; border: 2px solid var(--borde); border-radius: 10px; background: var(--blanco); font: inherit; color: var(--tinta); }
+.regalos-vista { display: flex; gap: 3px; margin-left: auto; padding: 3px; border: 2px solid var(--borde); border-radius: 12px; background: var(--blanco); }
+.regalos-vista button { border: 0; background: transparent; border-radius: 9px; padding: 5px 10px; font: 700 14px var(--texto); color: var(--tinta); cursor: pointer; }
+.regalos-vista button[aria-pressed='true'] { background: var(--tinta); color: var(--blanco); }
+.regalo-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.regalo-motivo { font-weight: 700; }
+.regalo-acciones { display: flex; flex-direction: column; gap: 6px; }
+.regalo-miniatura { border-radius: 10px; overflow: hidden; }
+.regalos-tarjetas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.regalos-tarjetas .regalo-item { padding: 10px; gap: 8px; }
+.regalos-tarjetas .regalo-item.expandido { grid-column: 1 / -1; }
+.regalos-tarjetas .regalo-cabecera { flex-direction: column; align-items: flex-start; gap: 4px; }
+.regalos-tarjetas .regalo-cabecera strong { overflow-wrap: anywhere; }
+.regalos-tarjetas .regalo-datos .texto-suave { font-size: 13px; }
+.regalos-tarjetas .regalo-acciones .boton { padding: 8px 10px; font-size: 14px; }
+.regalos-tarjetas .regalo-item.expandido .regalo-miniatura { max-width: 220px; }
+.regalos-lista .regalo-item { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: start; column-gap: 12px; }
+.regalos-lista .regalo-miniatura { grid-row: span 2; }
+.regalos-lista .regalo-item > :not(.regalo-miniatura):not(.regalo-datos) { grid-column: 1 / -1; }
+.regalos-lista .regalo-acciones { grid-column: 2 / -1 !important; flex-direction: row; flex-wrap: wrap; }
+.regalos-lista .regalo-acciones .boton { padding: 6px 12px; font-size: 14px; }
