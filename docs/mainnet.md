@@ -67,7 +67,7 @@ Variables de la API de mainnet: `NETWORK=mainnet`, `ALLOW_MAINNET=autorizado`, `
   dominio de la página y el servidor acepta los orígenes de `ALLOWED_ORIGINS`). La web de mainnet
   manda a quien entra por `regalalebitcoins.web.app` al .com, con el # intacto. Las passkeys creadas
   en web.app dejan de servir: esas cuentas entran con el link del mail o las 12 palabras y crean
-  una nueva. `PUBLIC_URL` en Cloud Run pasa a `https://regalalebitcoin.com` (links de los mails).
+  una nueva. `PUBLIC_URL` en Cloud Run es `https://regalalebitcoin.com` desde el 21/10 (links de los mails); los links viejos a web.app siguen andando por la redirección.
 
 ## Revisión de seguridad (17/10/2026)
 
