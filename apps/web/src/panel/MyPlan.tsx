@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api, type Credits } from '../api.ts';
+import { redeemPendingCoupon } from '../cuponPendiente.ts';
 import { couponErrorKey } from '../comprar.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
@@ -24,7 +25,8 @@ export function MyPlan() {
       .then(setCredits)
       .catch(() => setCredits(null));
   useEffect(() => {
-    void load();
+    // Un código de invitación guardado en este navegador se suma antes de mostrar los créditos.
+    void redeemPendingCoupon().then(load);
   }, []);
   const redeem = async () => {
     setBusy(true);

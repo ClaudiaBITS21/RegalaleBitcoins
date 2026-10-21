@@ -3678,3 +3678,8 @@ svg.tarjeta-imagen {
 @media (max-width: 380px) { .cupones-lista.grilla { grid-template-columns: 1fr; } }
 .regalo-copiar { display: flex; flex-wrap: wrap; gap: 8px; }
 .regalo-copiar .boton { flex: 1 1 140px; }
+.cupones-segmento.tres { grid-template-columns: repeat(3, 1fr); }
+.cupones-seccion { margin: 18px 16px 0; font: 800 1.15rem var(--titulos); }
+.ticket-mail { font-weight: 700; color: var(--tinta); overflow-wrap: anywhere; }
+.cupones-hoja input[type='file'] { font: inherit; font-size: 0.9rem; }
+.invitacion-da { margin: 0; font-weight: 700; font-size: 1.1rem; }

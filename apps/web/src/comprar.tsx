@@ -1,5 +1,6 @@
 import type { NetworkName } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { clearPendingCoupon, pendingCoupon } from './cuponPendiente.ts';
 import { ApiFailure, api, type CouponView, type Purchase } from './api.ts';
 import { formatSats, formatUsdExact } from './format.ts';
 import { PayBox } from './give/PayBox.tsx';
@@ -32,6 +33,7 @@ export function couponErrorKey(e: unknown): Key {
     cupon_no_aplica: 'cupon.noAplica',
     cupon_es_de_canje: 'cupon.esDeCanje',
     cupon_es_de_compra: 'cupon.esDeCompra',
+    cupon_de_otra_cuenta: 'cupon.deOtraCuenta',
   };
   return keys[code] ?? 'comprar.error';
 }
@@ -45,7 +47,7 @@ export function BuyPage({ testnet }: { testnet: boolean }) {
   const [error, setError] = useState<'sesion' | Key | null>(null);
   // Antes de pagar: el precio y «¿Tenés un código?».
   const [price, setPrice] = useState<bigint | null>(null);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() => pendingCoupon() ?? '');
   const [coupon, setCoupon] = useState<CouponView | null>(null);
   const [couponError, setCouponError] = useState<Key | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,10 +88,16 @@ export function BuyPage({ testnet }: { testnet: boolean }) {
     }
   };
 
+  // Con el código de una invitación ya escrito, se aplica solo cuando se sabe el precio.
+  useEffect(() => {
+    if (price !== null && code.trim() !== '' && coupon === null && couponError === null) void applyCode();
+  }, [price]);
+
   const pay = async () => {
     setBusy(true);
     try {
       const r = await api.buy(product, coupon?.codigo);
+      if (coupon !== null && coupon.codigo === pendingCoupon()?.trim().toUpperCase()) clearPendingCoupon();
       if ('gratis' in r) setFree(true);
       else setPurchase(r);
     } catch (e) {

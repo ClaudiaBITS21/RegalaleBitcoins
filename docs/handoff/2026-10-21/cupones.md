@@ -22,6 +22,17 @@ Pedido de Rodolfo (Drive, «cupones»), con el prototipo de Cowork para la app d
 - Admins: app instalable en `/cupones` (manifest e ícono propios, noindex), vista de tickets o
   lista, filtros, compartir, copiar, pausar y «Nuevo cupón». Crear o pausar pide sesión con passkey.
 
+## Después (pedido de Claudia, 21/10): cupones para un mail y lotes
+
+- **Para un mail:** solo lo usa la cuenta con ese mail, una vez; si todavía no existe, sirve cuando se cree.
+- **Lote:** N códigos sueltos o uno por cada mail de un CSV (hasta 2000), de un solo uso, con
+  prefijo opcional y 8 caracteres al azar. Al crearlo baja un CSV `email,codigo,link,usado`; se
+  puede volver a bajar y pausar el lote entero. Migración `023_cupones_mail_y_lotes.sql`.
+- **Invitación:** cada código tiene su link `regalalebitcoin.com/invitacion/CODIGO`: muestra qué da
+  (sin decir para qué mail) y lleva a armar el regalo. El código queda en el navegador y se suma
+  solo al entrar o crear la cuenta; si es de descuento, aparece ya escrito al comprar.
+- No se mandan mails a la lista: el CSV es para mandarlo por donde la responsable quiera.
+
 ## ABIERTO
 
 Nada.
