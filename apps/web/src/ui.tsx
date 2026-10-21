@@ -1,6 +1,7 @@
 import { type ComponentChildren, createContext, Fragment } from 'preact';
 import { useContext, useEffect, useRef, useState } from 'preact/hooks';
 import { type Key, LANG_NAMES, translate, type Trato, UI_LANGS, type UiLang } from './i18n/index.ts';
+import { useSignedIn } from './sesion.ts';
 import { installState, installWay, isStandalone, onInstallChange, promptInstall } from './pwa.ts';
 
 export interface I18n {
@@ -251,6 +252,19 @@ function AppBack() {
   );
 }
 
+/** Con la cuenta abierta: una personita que lleva a «Mis regalos» (Rodolfo, 21/10). */
+function AccountIcon() {
+  const { t } = useI18n();
+  return (
+    <a class="icono-cuenta" href="/panel" aria-label={t('menu.misRegalos')} title={t('menu.misRegalos')}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+      </svg>
+    </a>
+  );
+}
+
 export function SiteHeader({ onOrange = false, appBack = true }: { onOrange?: boolean; appBack?: boolean }) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -258,6 +272,7 @@ export function SiteHeader({ onOrange = false, appBack = true }: { onOrange?: bo
   const mobileRef = useDismiss(mobileOpen, () => setMobileOpen(false));
   const navRef = useDismiss(grupoAbierto !== null, () => setGrupoAbierto(null));
   const toggle = (id: string) => setGrupoAbierto((g) => (g === id ? null : id));
+  const signedIn = useSignedIn();
   return (
     <>
       <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
@@ -283,12 +298,14 @@ export function SiteHeader({ onOrange = false, appBack = true }: { onOrange?: bo
           <a class="link-nav" href="/precios">
             {t('menu.precios')}
           </a>
+          {signedIn && <AccountIcon />}
           <LangPill />
         </nav>
         <div class="nav-movil" ref={mobileRef}>
           <a class="boton-nav boton-nav-movil" href="/regalar">
             {t('menu.regalar')}
           </a>
+          {signedIn && <AccountIcon />}
           <button type="button" class="boton-hamburguesa" aria-expanded={mobileOpen} aria-label={t(mobileOpen ? 'menu.cerrar' : 'menu.abrir')} onClick={() => setMobileOpen(!mobileOpen)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
               <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />

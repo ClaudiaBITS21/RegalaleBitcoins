@@ -219,6 +219,23 @@ h3 {
   cursor: pointer;
 }
 
+.icono-cuenta {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 2px solid var(--tinta);
+  border-radius: 50%;
+  background: var(--blanco);
+  color: var(--tinta);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cabecera-naranja .icono-cuenta {
+  border-color: var(--blanco);
+}
+
 .cabecera-naranja .boton-hamburguesa {
   border-color: var(--blanco);
 }
