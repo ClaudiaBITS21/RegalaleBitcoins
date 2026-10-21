@@ -201,20 +201,37 @@ export class RepairError extends Error {
 }
 
 /**
- * Con las 12 palabras: comprueba que son las de esta cuenta (derivando la dirección de un regalo)
- * y guarda otra copia de la bóveda cifrada con la salida PRF que dio la passkey acá. Las palabras
- * no salen del navegador. Devuelve la clave maestra.
+ * Con la clave maestra (de las 12 palabras o del celu): comprueba que es la de esta cuenta
+ * (derivando la dirección de un regalo, si hay) y guarda otra copia de la bóveda cifrada con la
+ * salida PRF que dio la passkey acá. La clave no sale del navegador.
  */
-export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+async function saveVaultCopy(master: string, gifts: readonly AccountGift[], network: Network, requireProbe: boolean): Promise<string> {
   if (repair === null) throw new RepairError('sinRegalos');
-  if (!isValidMasterMnemonic(words)) throw new RepairError('invalidas');
-  const master = normalizeMnemonic(words);
   const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined);
-  if (probe === undefined) throw new RepairError('sinRegalos');
-  if (deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
+  if (probe === undefined && requireProbe) throw new RepairError('sinRegalos');
+  if (probe !== undefined && deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
   const sealed = await sealVault(repair.prf, master, repair.credentialId);
   await call('/api/cuenta/boveda-extra', { boveda: sealed });
   repair.prf.fill(0);
   repair = null;
   return master;
 }
+
+/** Con las 12 palabras escritas: sin regalos con qué comprobarlas, no se guardan (podrían ser otras). */
+export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+  if (!isValidMasterMnemonic(words)) throw new RepairError('invalidas');
+  return saveVaultCopy(normalizeMnemonic(words), gifts, network, true);
+}
+
+/** Con la clave que mandó el celu (que abrió la bóveda de verdad). */
+export async function repairVaultFromPhone(master: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+  if (!isValidMasterMnemonic(master)) throw new RepairError('invalidas');
+  return saveVaultCopy(normalizeMnemonic(master), gifts, network, false);
+}
+
+/** Vínculo compu-celu (vinculo.ts): pedirlo, esperarlo y, desde el celu, completarlo. */
+export const linkApi = {
+  create: () => call<{ id: string; minutos: number }>('/api/cuenta/vinculos', {}),
+  poll: (id: string) => call<{ paquete: string | null }>(`/api/cuenta/vinculos/${encodeURIComponent(id)}`),
+  complete: (id: string, paquete: string) => call<{ ok: true }>(`/api/cuenta/vinculos/${encodeURIComponent(id)}`, { paquete }),
+};

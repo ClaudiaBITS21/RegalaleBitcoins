@@ -12,6 +12,7 @@ import { occasionLabel } from '../content/occasions.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { PrintCard } from '../give/PrintCard.tsx';
 import { usePlanFeatures } from '../give/planFeatures.ts';
+import { VincularCelu } from './VincularCelu.tsx';
 import { filterGifts, GIFT_ORDERS, type GiftOrder, sortGifts } from './orden.ts';
 import { formatSats } from '../format.ts';
 import type { Key } from '../i18n/index.ts';
@@ -226,6 +227,18 @@ export function PanelPage() {
             {accessErrorCode(error)}
           </Notice>}
         {error === 'guardar.bovedaOtroDispositivo' && canRepairVault() && network !== null && (
+          <>
+            <VincularCelu
+              gifts={view.regalos}
+              network={network}
+              onMaster={(m) => {
+                setMaster(m);
+                setError(null);
+                setRepaired(true);
+              }}
+            />
+            <details class="reparar-otra-forma">
+              <summary>{t('panel.reparar.otraForma')}</summary>
           <form
             class="caja formulario reparar-boveda"
             onSubmit={(e) => {
@@ -244,6 +257,8 @@ export function PanelPage() {
               {t('panel.reparar.boton')}
             </Button>
           </form>
+            </details>
+          </>
         )}
         {repaired && <Notice kind="ok">{t('panel.reparar.listo')}</Notice>}
         {view.regalos.length === 0 ? (

@@ -9,3 +9,14 @@ create table bovedas_extra (
   creada         timestamptz not null default now(),
   primary key (credencial_id, boveda)
 );
+
+-- Vincular la compu con el celu (sin escribir las 12 palabras): la compu pide un vínculo y muestra
+-- un QR con su clave pública (en el fragmento: el servidor no la ve); el celu, que abre la bóveda,
+-- sube acá la clave maestra cifrada para esa clave. Vence a los 10 minutos y se usa una vez.
+create table vinculos (
+  id             text primary key check (id ~ '^[A-Za-z0-9_-]{22}$'),
+  usuario_id     uuid not null references usuarios (id) on delete cascade,
+  credencial_id  text not null references credenciales (id) on delete cascade,
+  paquete        text check (length(paquete) <= 1000),
+  creado         timestamptz not null default now()
+);

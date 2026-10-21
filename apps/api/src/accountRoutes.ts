@@ -188,6 +188,61 @@ export function registerAccountRoutes(app: Hono, deps: { sql: Sql; chain: ChainC
     return c.json({ email: row.email, credencial: credential.id, boveda: credential.vault, bovedasExtra: extra.map((r) => r.boveda) });
   });
 
+  // ── Vincular la compu con el celu (docs en la migración 024) ──
+  const VINCULO_MINUTOS = 10;
+  const sessionWithPasskey = async (c: Context) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    if (account.viaPasskey !== true || account.credentialId === null || account.credentialId === undefined) throw new ApiError(403, 'passkey_requerida');
+    c.header('cache-control', 'no-store');
+    return account as Account & { credentialId: string };
+  };
+  const vinculoId = (c: Context) => {
+    const id = c.req.param('id') ?? '';
+    if (!/^[A-Za-z0-9_-]{22}$/.test(id)) throw new ApiError(404, 'vinculo_invalido');
+    return id;
+  };
+
+  /** La compu (entró por QR y la bóveda no abrió) pide un vínculo. */
+  app.post('/api/cuenta/vinculos', async (c) => {
+    const account = await sessionWithPasskey(c);
+    await sql`delete from vinculos where creado < now() - make_interval(mins => ${VINCULO_MINUTOS})`;
+    // Un QR a la vez por passkey: el nuevo reemplaza a los que esperaban.
+    await sql`delete from vinculos where credencial_id = ${account.credentialId} and paquete is null`;
+    const [{ n } = { n: '0' }] = await sql<{ n: string }[]>`select count(*) as n from vinculos where usuario_id = ${account.id}`;
+    if (Number(n) >= 5) throw new ApiError(429, 'demasiados_pedidos');
+    const id = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64url');
+    await sql`insert into vinculos (id, usuario_id, credencial_id) values (${id}, ${account.id}, ${account.credentialId})`;
+    return c.json({ id, minutos: VINCULO_MINUTOS }, 201);
+  });
+
+  /** El celu (misma cuenta, abrió la bóveda con su passkey) sube la clave maestra cifrada para la compu. */
+  app.post('/api/cuenta/vinculos/:id', async (c) => {
+    const account = await sessionWithPasskey(c);
+    const id = vinculoId(c);
+    const { paquete } = await body(c);
+    if (typeof paquete !== 'string' || !/^v1(\.[A-Za-z0-9_-]{16,700}){3}$/.test(paquete)) throw new ApiError(400, 'pedido_invalido');
+    const rows = await sql`
+      update vinculos set paquete = ${paquete}
+      where id = ${id} and usuario_id = ${account.id} and paquete is null and creado > now() - make_interval(mins => ${VINCULO_MINUTOS})
+      returning id`;
+    if (rows.length === 0) throw new ApiError(404, 'vinculo_invalido');
+    return c.json({ ok: true });
+  });
+
+  /** La compu espera el paquete; al entregarlo, el vínculo se borra. */
+  app.get('/api/cuenta/vinculos/:id', async (c) => {
+    const account = await sessionWithPasskey(c);
+    const id = vinculoId(c);
+    const [v] = await sql<{ paquete: string | null; vencido: boolean }[]>`
+      select paquete, creado <= now() - make_interval(mins => ${VINCULO_MINUTOS}) as vencido
+      from vinculos where id = ${id} and usuario_id = ${account.id} and credencial_id = ${account.credentialId}`;
+    if (v === undefined || (v.vencido && v.paquete === null)) throw new ApiError(404, 'vinculo_invalido');
+    if (v.paquete === null) return c.json({ paquete: null });
+    await sql`delete from vinculos where id = ${id}`;
+    return c.json({ paquete: v.paquete });
+  });
+
   /**
    * Otra copia de la bóveda para la passkey de esta sesión: la armó el navegador con las 12
    * palabras y la salida PRF que dio la passkey desde este dispositivo (por QR puede ser otra).

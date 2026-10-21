@@ -211,6 +211,28 @@ describe('Cuentas con passkey', () => {
     assert.equal(mailRes.status, 202);
   });
 
+  it('vincular la compu con el celu: pide la compu, sube el celu (misma cuenta), entrega una vez', async () => {
+    const pk = new FakePasskey();
+    const { cookie: compu } = await signUp('ana@example.com', pk);
+    pk.counter = 1;
+    const celu = cookieOf(await req('/api/cuenta/ingreso', { credencial: pk.assert(await challenge('ingreso')) }));
+    const { cookie: otra } = await signUp('beto@example.com');
+    const pedido = await req('/api/cuenta/vinculos', {}, compu);
+    assert.equal(pedido.status, 201);
+    const { id } = (await pedido.json()) as { id: string };
+    assert.deepEqual(await (await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).json(), { paquete: null });
+    const paquete = `v1.${'P'.repeat(87)}.${'I'.repeat(16)}.${'C'.repeat(60)}`;
+    // Otra cuenta no puede ni subir ni leer.
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, otra)).status, 404);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, undefined, otra)).status, 404);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete: 'x' }, celu)).status, 400);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, celu)).status, 200);
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, { paquete }, celu)).status, 404); // una sola vez
+    assert.deepEqual(await (await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).json(), { paquete });
+    assert.equal((await req(`/api/cuenta/vinculos/${id}`, undefined, compu)).status, 404); // ya se entregó
+    assert.equal((await req('/api/cuenta/vinculos', {})).status, 401);
+  });
+
   it('rechaza firmas falsas, otra passkey, otro sitio, sin verificación de la persona y contador que no avanza', async () => {
     const { pk } = await signUp('ana@example.com');
     const otra = new FakePasskey();
