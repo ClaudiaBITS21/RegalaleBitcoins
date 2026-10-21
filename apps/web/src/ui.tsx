@@ -233,7 +233,25 @@ function Desplegable({ grupo, abierto, onToggle }: { grupo: GrupoMenu; abierto: 
 }
 
 /** Encabezado del sitio: marca, menú agrupado, idioma, «Abrir un regalo» y [Regalar]. */
-export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
+function goBack(): void {
+  if (window.history.length > 1) window.history.back();
+  else window.location.assign('/');
+}
+
+/** «← Atrás» para la app instalada (Rodolfo, 21/10): ahí no hay flecha del navegador. Todas las páginas menos el inicio. */
+function AppBack() {
+  const { t } = useI18n();
+  if (!isStandalone() || window.location.pathname === '/') return null;
+  return (
+    <div class="barra-volver barra-app">
+      <button type="button" class="boton-texto" onClick={goBack}>
+        ← {t('atras')}
+      </button>
+    </div>
+  );
+}
+
+export function SiteHeader({ onOrange = false, appBack = true }: { onOrange?: boolean; appBack?: boolean }) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null);
@@ -241,62 +259,65 @@ export function SiteHeader({ onOrange = false }: { onOrange?: boolean }) {
   const navRef = useDismiss(grupoAbierto !== null, () => setGrupoAbierto(null));
   const toggle = (id: string) => setGrupoAbierto((g) => (g === id ? null : id));
   return (
-    <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
-      <a class="marca" href="/">
-        <Wordmark onOrange={onOrange} />
-      </a>
-      {/* Orden en compu (Rodolfo, 19/10): [Regalar] primero, después los menús y el idioma al final. */}
-      <nav class="nav-compu" aria-label={t('menu.abrir')} ref={navRef}>
-        <a class="boton-nav" href="/regalar">
-          {t('menu.regalar')}
+    <>
+      <header class={`cabecera${onOrange ? ' cabecera-naranja' : ''}`}>
+        <a class="marca" href="/">
+          <Wordmark onOrange={onOrange} />
         </a>
-        {/* Un grupo con una sola opción no es desplegable: va directo (Rodolfo, 20/10). */}
-        {GRUPOS.map((g) => {
-          const solo = g.items.length === 1 ? g.items[0] : undefined;
-          return solo !== undefined ? (
-            <a class="link-nav" href={solo.href} key={g.id}>
-              {t(solo.label)}
-            </a>
-          ) : (
-            <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
-          );
-        })}
-        <a class="link-nav" href="/precios">
-          {t('menu.precios')}
-        </a>
-        <LangPill />
-      </nav>
-      <div class="nav-movil" ref={mobileRef}>
-        <a class="boton-nav boton-nav-movil" href="/regalar">
-          {t('menu.regalar')}
-        </a>
-        <button type="button" class="boton-hamburguesa" aria-expanded={mobileOpen} aria-label={t(mobileOpen ? 'menu.cerrar' : 'menu.abrir')} onClick={() => setMobileOpen(!mobileOpen)}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-            <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />
-          </svg>
-        </button>
-        {mobileOpen && (
-          <div class="panel-menu panel-movil">
-            {GRUPOS.map((g) => (
-              <div class="menu-seccion" key={g.id}>
-                {g.items.length > 1 && <p class="menu-titulo">{t(g.label)}</p>}
-                {g.items.map((i) => (
-                  <ItemDeMenu item={i} key={i.href} onClick={() => setMobileOpen(false)} />
-                ))}
-              </div>
-            ))}
-            <div class="menu-seccion">
-              <a class="menu-link" href="/precios" onClick={() => setMobileOpen(false)}>
-                {t('menu.precios')}
+        {/* Orden en compu (Rodolfo, 19/10): [Regalar] primero, después los menús y el idioma al final. */}
+        <nav class="nav-compu" aria-label={t('menu.abrir')} ref={navRef}>
+          <a class="boton-nav" href="/regalar">
+            {t('menu.regalar')}
+          </a>
+          {/* Un grupo con una sola opción no es desplegable: va directo (Rodolfo, 20/10). */}
+          {GRUPOS.map((g) => {
+            const solo = g.items.length === 1 ? g.items[0] : undefined;
+            return solo !== undefined ? (
+              <a class="link-nav" href={solo.href} key={g.id}>
+                {t(solo.label)}
               </a>
+            ) : (
+              <Desplegable grupo={g} abierto={grupoAbierto === g.id} onToggle={() => toggle(g.id)} key={g.id} />
+            );
+          })}
+          <a class="link-nav" href="/precios">
+            {t('menu.precios')}
+          </a>
+          <LangPill />
+        </nav>
+        <div class="nav-movil" ref={mobileRef}>
+          <a class="boton-nav boton-nav-movil" href="/regalar">
+            {t('menu.regalar')}
+          </a>
+          <button type="button" class="boton-hamburguesa" aria-expanded={mobileOpen} aria-label={t(mobileOpen ? 'menu.cerrar' : 'menu.abrir')} onClick={() => setMobileOpen(!mobileOpen)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />
+            </svg>
+          </button>
+          {mobileOpen && (
+            <div class="panel-menu panel-movil">
+              {GRUPOS.map((g) => (
+                <div class="menu-seccion" key={g.id}>
+                  {g.items.length > 1 && <p class="menu-titulo">{t(g.label)}</p>}
+                  {g.items.map((i) => (
+                    <ItemDeMenu item={i} key={i.href} onClick={() => setMobileOpen(false)} />
+                  ))}
+                </div>
+              ))}
+              <div class="menu-seccion">
+                <a class="menu-link" href="/precios" onClick={() => setMobileOpen(false)}>
+                  {t('menu.precios')}
+                </a>
+              </div>
+              <div class="menu-idioma">
+                <LangPill />
+              </div>
             </div>
-            <div class="menu-idioma">
-              <LangPill />
-            </div>
-          </div>
-        )}
-      </div>
-    </header>
+          )}
+        </div>
+      </header>
+      {appBack && <AppBack />}
+    </>
   );
 }
 
@@ -443,7 +464,8 @@ export function Layout({ children, testnet, onBack }: { children: ComponentChild
           {t('red.prueba')}
         </p>
       )}
-      <SiteHeader />
+      {/* Con su propio «Atrás» (los pasos de regalar), el de la app instalada no se repite. */}
+      <SiteHeader appBack={onBack === undefined} />
       {onBack !== undefined && (
         <div class="barra-volver">
           <button type="button" class="boton-texto" onClick={onBack}>
