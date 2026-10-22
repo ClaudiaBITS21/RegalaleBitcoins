@@ -239,6 +239,22 @@ function goBack(): void {
   else window.location.assign('/');
 }
 
+/**
+ * «Ver planes» en medio de un formulario. En el navegador, en otra pestaña (lo escrito queda en
+ * esta); en la app instalada no hay pestañas: la ventana nueva no tenía a dónde volver y «Atrás»
+ * llevaba al inicio, así que va en la misma y la página de origen guarda su borrador.
+ */
+export function PlanesLink() {
+  const { t } = useI18n();
+  return isStandalone() ? (
+    <a href="/precios">{t('planes.ver')}</a>
+  ) : (
+    <a href="/precios" target="_blank" rel="noopener">
+      {t('planes.ver')}
+    </a>
+  );
+}
+
 /** «← Atrás» para la app instalada (Rodolfo, 21/10): ahí no hay flecha del navegador. Todas las páginas menos el inicio. */
 function AppBack() {
   const { t } = useI18n();

@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { CARD_STYLES, type CardStyle, DRAWN_STYLES, GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
-import { Notice, useI18n } from '../ui.tsx';
+import { Notice, PlanesLink, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
 import { OwnImageError, processOwnImage } from './ownImage.ts';
 
@@ -84,7 +84,7 @@ export function StylePicker({ draft, onChange, conPlan }: { draft: Draft; onChan
       </div>
       {conPlan === false && (
         <small class="texto-suave">
-          {t('regalar.estilo.iaPlanes')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+          {t('regalar.estilo.iaPlanes')} <PlanesLink />
         </small>
       )}
 
