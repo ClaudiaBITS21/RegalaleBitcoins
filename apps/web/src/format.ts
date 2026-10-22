@@ -154,3 +154,9 @@ export function formatMinor(minor: bigint, currency: string, lang: UiLang): stri
 export function formatArsExact(amount: number, lang: UiLang): string {
   return new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, style: 'currency', currency: 'ARS', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
+
+/** BTC para leer, con el separador del idioma ("0,00031 BTC"); exacto: Intl recibe el decimal como texto. */
+export function formatBtc(sats: bigint, lang: UiLang): string {
+  const nf = new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, maximumFractionDigits: 8 });
+  return `${nf.format(satsToBtcString(sats) as Intl.StringNumericLiteral)} BTC`;
+}

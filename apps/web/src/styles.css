@@ -3698,3 +3698,23 @@ svg.tarjeta-imagen {
 .variacion { font-weight: 700; }
 .variacion.sube { color: #1b7f3b; }
 .variacion.baja { color: var(--error-tinta); }
+
+/* «¿No tenés bitcoin?» en el paso de pagar: debajo del QR, plegado. */
+.sin-bitcoin {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sin-bitcoin-opciones {
+  display: grid;
+  gap: 10px;
+}
+
+.sin-bitcoin-pasos {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
