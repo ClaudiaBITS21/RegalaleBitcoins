@@ -5,6 +5,7 @@ import { formatSats } from '../format.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
 import { PayBox } from './PayBox.tsx';
+import { SinBitcoin } from './SinBitcoin.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
 /** «Te quedan…»: qué crédito usa este regalo (solo con el cobro activo). */
@@ -41,6 +42,7 @@ export function PayStep({ gift, network, credits = null, onPaid }: { gift: MadeG
       <p class="texto-suave">{t('regalar.pagar.texto')}</p>
       {note !== null && <p class="texto-suave">{t(note.key, { n: note.n })}</p>}
       <PayBox address={gift.address} sats={gift.sats} network={network.name} />
+      {received === 0n && <SinBitcoin address={gift.address} sats={gift.sats} network={network.name} />}
       {received === 0n && !replaced && (
         <p class="esperando" role="status">
           {t('regalar.pagar.esperando')}

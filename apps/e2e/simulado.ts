@@ -330,6 +330,16 @@ try {
   // La dirección de pago sale del código de recuperación: índice 0, palabras en portugués.
   const expected = deriveGift(masterRootFromMnemonic(code.join(' ')), 0, 'pt', signet);
   if (payAddress !== expected.address) fail('la dirección de pago no corresponde al código de recuperación');
+  // «¿No tenés bitcoin?»: con plata en el banco, los pasos y la dirección en texto, sin espacios.
+  await page.getByText('¿No tenés bitcoin? Seguí estos pasos').click();
+  await page.getByRole('button', { name: 'Plata en el banco o en Mercado Pago' }).click();
+  await page.getByText('Esta web no convierte dinero a bitcoin.', { exact: false }).waitFor();
+  if ((await page.locator('.sin-bitcoin .direccion-completa').innerText()) !== payAddress) fail('«¿No tenés bitcoin?» no muestra la dirección del regalo');
+  await page.getByText('elegí la red Bitcoin (BTC) y poné 0,000305 BTC', { exact: false }).waitFor();
+  await page.getByRole('button', { name: 'Stablecoins (dólares digitales)' }).click();
+  await page.getByText('Convertí tus dólares digitales a bitcoin').waitFor();
+  await shot('r5-sin-bitcoin');
+  await page.getByText('¿No tenés bitcoin? Seguí estos pasos').click();
 
   // Llega menos de lo pedido, en la mempool: avisa y deja seguir.
   chain.pay(payAddress, 20_000n, false);

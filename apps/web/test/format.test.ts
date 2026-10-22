@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { explorerTxUrl, formatFiat, formatSats, formatUsd, parseAmount, paymentUri, satsToBtcString, usdCentsToSats, groupAddress, satsToUsd } from '../src/format.ts';
+import { explorerTxUrl, formatBtc, formatFiat, formatSats, formatUsd, parseAmount, paymentUri, satsToBtcString, usdCentsToSats, groupAddress, satsToUsd } from '../src/format.ts';
 
 describe('Formatos', () => {
   it('sats con separador de miles según idioma', () => {
@@ -24,6 +24,13 @@ describe('Formatos', () => {
     assert.equal(nbsp(formatFiat(1234.5, 'ARS', 'es')), '$ 1.234,50');
     assert.equal(nbsp(formatFiat(1234.5, 'EUR', 'it')), '1.234,50 €');
     assert.equal(formatFiat(1234.5, 'EUR', 'en'), '€1,234.50');
+  });
+
+  it('BTC exactos, con el separador decimal del idioma', () => {
+    assert.equal(formatBtc(31_250n, 'es'), '0,0003125 BTC');
+    assert.equal(formatBtc(31_250n, 'en'), '0.0003125 BTC');
+    assert.equal(formatBtc(123_456_789n, 'it'), '1,23456789 BTC');
+    assert.equal(formatBtc(1n, 'pt'), '0,00000001 BTC');
   });
 
   it('sats a USD', () => {
