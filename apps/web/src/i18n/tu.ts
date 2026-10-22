@@ -283,4 +283,5 @@ export const tu: Partial<Record<Key, string>> = {
   'arrep.texto': 'Tienes {dias} días desde la compra para arrepentirte, si no usaste ningún crédito (y, en una lista, si no recibió aportes). Te devolvemos los mismos sats que pagaste, a la dirección que nos indiques.',
   'arrep.sesion': 'Para arrepentirte de una compra, entra con tu cuenta.',
   'arrep.error': 'No se pudo registrar el pedido. Prueba de nuevo en un rato.',
+  'plan.admin': 'Eres admin: tienes todo activado y libre, y tus regalos no descuentan créditos.',
 };

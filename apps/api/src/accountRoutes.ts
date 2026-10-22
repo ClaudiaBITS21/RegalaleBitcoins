@@ -22,6 +22,7 @@ import {
 } from './accounts.ts';
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
+import { isAdmin } from './admins.ts';
 import { balance, canGive, chargingActive, hasGreetings, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
@@ -55,7 +56,7 @@ export async function currentAccount(sql: Sql, c: Context): Promise<Account | nu
 
 export function registerAccountRoutes(
   app: Hono,
-  deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string; price?: PriceClient; arsPrice?: ArsPriceClient | undefined },
+  deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string; price?: PriceClient; arsPrice?: ArsPriceClient | undefined; adminEmails?: readonly string[] },
 ): void {
   const { sql, chain, config } = deps;
   const challengeLimiter = new RateLimiter(60, 60 * 60 * 1000);
@@ -320,14 +321,16 @@ export function registerAccountRoutes(
   app.get('/api/cuenta/creditos', async (c) => {
     const account = await currentAccount(sql, c);
     if (account === null) throw new ApiError(401, 'sesion_requerida');
-    const [b, charging] = await Promise.all([balance(sql, account.id), chargingActive(sql)]);
+    const [b, charging, admin] = await Promise.all([balance(sql, account.id), chargingActive(sql), isAdmin(sql, deps.adminEmails ?? [], account.email)]);
     const moves = await sql<{ tipo: string; unidad: string; cantidad: number; origen: string; creado: Date }[]>`
       select tipo, unidad, cantidad, origen, creado from movimientos where usuario_id = ${account.id} order by id desc limit 100`;
     return c.json({
       cobroActivo: charging,
-      puedeRegalar: canGive(b, charging),
-      conPlan: hasPlanFeatures(b, charging),
-      conSaludo: await hasGreetings(sql, account.id, b, charging),
+      // Los admins tienen todo activado y libre, para probar (Claudia, 22/10).
+      admin,
+      puedeRegalar: canGive(b, charging, undefined, admin),
+      conPlan: hasPlanFeatures(b, charging, admin),
+      conSaludo: await hasGreetings(sql, account.id, b, charging, admin),
       regalos: { bienvenida: b.welcome, pagos: b.paid, porOcasion: b.giftsByOccasion },
       listas: { cumple: b.birthdayLists, otras: b.otherLists, porOcasion: b.listsByOccasion },
       plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },

@@ -822,6 +822,7 @@ export const en: Dict = {
   'plan.unRegalo': '1 gift',
   'plan.nListas': '{n} lists',
   'plan.unaLista': '1 list',
+  'plan.admin': "You’re an admin: everything is on and free for you, and your gifts don’t use credits.",
   'plan.gratis': 'While we launch, giving is free: no credits are used.',
   'plan.verPrecios': 'See pricing',
   'regalar.creditos.bienvenida': 'You have {n} of your 5 welcome gifts left. This one uses one when the payment arrives.',

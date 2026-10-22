@@ -15,7 +15,7 @@ import { registerReportRoutes } from './reports.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
-import { registerAdminUserRoutes } from './admins.ts';
+import { isAdmin, registerAdminUserRoutes } from './admins.ts';
 import { normalizeCode, registerCouponRoutes } from './coupons.ts';
 import { registerRefundRoutes } from './refunds.ts';
 import { balance, canGive, chargingActive, consumeGiftCredits, hasPlanFeatures, refundCanceledGifts } from './credits.ts';
@@ -143,7 +143,7 @@ export function createApp(deps: AppDeps): Hono {
   app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
-  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice });
+  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice, adminEmails: deps.adminEmails ?? [] });
   registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerReportRoutes(app, { sql, network: network.name, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer, publicUrl: accounts.publicUrl });
@@ -213,7 +213,7 @@ export function createApp(deps: AppDeps): Hono {
     const avisoDeps = { sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl };
     const avisos = await sendReadyNotices(avisoDeps);
     const recordatorios = await sendReminders(avisoDeps);
-    const creditos = await consumeGiftCredits({ sql, chain });
+    const creditos = await consumeGiftCredits({ sql, chain, adminEmails: deps.adminEmails ?? [] });
     const devoluciones = await refundCanceledGifts(sql);
     const pagos = await watchPayments({ sql, chain, price });
     return c.json({ ...broadcasts, avisos, recordatorios, creditos, devoluciones, pagos });
@@ -244,10 +244,10 @@ export function createApp(deps: AppDeps): Hono {
     // la web pide el mail antes (cuenta con solo el mail si no hay passkey).
     if (await chargingActive(sql)) {
       if (account === null) throw new ApiError(401, 'cuenta_requerida');
-      const b = await balance(sql, account.id);
-      if (!canGive(b, true, g.occasion)) throw new ApiError(409, 'sin_creditos');
+      const [b, admin] = await Promise.all([balance(sql, account.id), isAdmin(sql, deps.adminEmails ?? [], account.email)]);
+      if (!canGive(b, true, g.occasion, admin)) throw new ApiError(409, 'sin_creditos');
       // La imagen con IA (imagen propia) viene con los planes; lo gratis no la trae.
-      if (g.style === 'propia' && !hasPlanFeatures(b, true)) throw new ApiError(403, 'plan_requerido');
+      if (g.style === 'propia' && !hasPlanFeatures(b, true, admin)) throw new ApiError(403, 'plan_requerido');
     }
     const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),

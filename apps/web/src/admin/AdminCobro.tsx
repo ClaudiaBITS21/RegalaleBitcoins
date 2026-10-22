@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type AdminCobro, type AdminProduct, ApiFailure, api } from '../api.ts';
+import { type AdminAccount, type AdminCobro, type AdminProduct, ApiFailure, api } from '../api.ts';
 import { formatSats, formatUsdPrice } from '../format.ts';
 import { PRODUCT_NAME } from '../comprar.tsx';
 import { Button, Notice, useI18n } from '../ui.tsx';
@@ -22,6 +22,7 @@ const errorText = (e: unknown): string => {
   if (e.code === 'passkey_requerida') return 'Hace falta entrar con tu passkey (no alcanza el link por mail).';
   if (e.code === 'llave_invalida') return 'La llave no es válida para esta red. Tiene que ser wpkh([huella/84h/0h/0h]xpub…) o una zpub.';
   if (e.code === 'cobro_no_configurado') return 'Primero cargá la llave de cobro.';
+  if (e.code === 'cuenta_inexistente') return 'No hay ninguna cuenta con ese mail: tiene que ser el mail exacto con el que se registró (por ejemplo, nombre@dominio.com).';
   return 'No se pudo completar.';
 };
 
@@ -43,6 +44,10 @@ export function AdminCobroPanel() {
   const [vista, setVista] = useState<{ huella: string; direcciones: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [ajuste, setAjuste] = useState({ email: '', unidad: 'regalo', cantidad: '', motivo: '' });
+  // Ajustes y consulta de cuentas: el resultado (o el error) se muestra al lado del formulario.
+  const [cuenta, setCuenta] = useState<AdminAccount | null>(null);
+  const [buscar, setBuscar] = useState('');
+  const [aviso, setAviso] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [refunds, setRefunds] = useState<Awaited<ReturnType<typeof api.adminRefunds>>['pedidos']>([]);
 
   const load = async () => {
@@ -188,17 +193,47 @@ export function AdminCobroPanel() {
       </table>
       <p class="texto-suave">Quedan {data.fundadoresQuedan} lugares de Genesis.</p>
 
+      <h3>Cuentas: qué tiene cada una</h3>
+      <form
+        class="admin-ajuste"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setAviso(null);
+          setBusy(true);
+          api
+            .adminAccount(buscar.trim())
+            .then(setCuenta)
+            .catch((err: unknown) => (setCuenta(null), setAviso({ kind: 'error', text: errorText(err) })))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <input type="email" required placeholder="mail de la cuenta" value={buscar} onInput={(e) => setBuscar((e.currentTarget as HTMLInputElement).value)} />
+        <Button type="submit" kind="contorno" disabled={busy}>
+          Ver la cuenta
+        </Button>
+      </form>
+
       <h3>Ajuste manual de créditos</h3>
       <form
         class="admin-ajuste"
         onSubmit={(e) => {
           e.preventDefault();
+          setAviso(null);
           const cantidad = Number(ajuste.cantidad);
-          if (!Number.isInteger(cantidad) || cantidad === 0) return setError('La cantidad tiene que ser un número entero (negativo para quitar).');
-          void run(
-            () => api.adminAdjust({ email: ajuste.email.trim(), unidad: ajuste.unidad, cantidad, motivo: ajuste.motivo.trim() }),
-            () => setAjuste({ email: '', unidad: 'regalo', cantidad: '', motivo: '' }),
-          );
+          if (!Number.isInteger(cantidad) || cantidad === 0) return setAviso({ kind: 'error', text: 'La cantidad tiene que ser un número entero (negativo para quitar).' });
+          const email = ajuste.email.trim();
+          const unidad = UNIDADES[ajuste.unidad] ?? ajuste.unidad;
+          setBusy(true);
+          api
+            .adminAdjust({ email, unidad: ajuste.unidad, cantidad, motivo: ajuste.motivo.trim() })
+            .then((r) => {
+              setCuenta(r.cuenta);
+              setBuscar(email);
+              setAviso({ kind: 'ok', text: `Listo: ${cantidad > 0 ? '+' : ''}${cantidad} ${unidad} para ${email}. Abajo, lo que tiene ahora.` });
+              setAjuste({ email: '', unidad: 'regalo', cantidad: '', motivo: '' });
+            })
+            .catch((err: unknown) => setAviso({ kind: 'error', text: errorText(err) }))
+            .finally(() => setBusy(false));
         }}
       >
         <input type="email" required placeholder="mail de la cuenta" value={ajuste.email} onInput={(e) => setAjuste({ ...ajuste, email: (e.currentTarget as HTMLInputElement).value })} />
@@ -213,6 +248,8 @@ export function AdminCobroPanel() {
           Registrar ajuste
         </Button>
       </form>
+      {aviso !== null && <Notice kind={aviso.kind}>{aviso.text}</Notice>}
+      {cuenta !== null && <AccountCard cuenta={cuenta} lang={lang} />}
 
       <h3>Arrepentimientos</h3>
       {refunds.length === 0 ? (
@@ -339,5 +376,56 @@ function ProductRow({ product: p, busy, onError, run }: { product: AdminProduct;
         </button>
       </td>
     </tr>
+  );
+}
+
+const UNIDADES: Readonly<Record<string, string>> = { regalo: 'regalos', lista_cumple: 'listas de cumpleaños', lista_otras: 'listas de otra ocasión' };
+const ORIGENES: Readonly<Record<string, string>> = { bienvenida: 'bienvenida', pago: 'pago', codigo: 'cupón', campana: 'campaña', admin: 'admin', plan: 'plan' };
+
+/** Qué tiene una cuenta: si es admin, qué funciones tiene, saldo por unidad, plan y últimos movimientos. */
+function AccountCard({ cuenta: c, lang }: { cuenta: AdminAccount; lang: string }) {
+  const si = (v: boolean | undefined) => (v === true ? 'sí' : 'no');
+  const porOcasion = (m: Readonly<Record<string, number>> | undefined) =>
+    m === undefined || Object.keys(m).length === 0 ? null : Object.entries(m).map(([k, n]) => `${k}: ${n}`).join(', ');
+  return (
+    <div class="caja admin-cuenta">
+      <p>
+        <strong>{c.email}</strong>
+        {c.admin && <> · Admin: todo activado y libre, sin descontar créditos</>}
+      </p>
+      <ul class="admin-lista">
+        <li>Imagen con IA y tarjeta imprimible: {si(c.conPlan)}</li>
+        <li>Salutación automática (mensajes de ejemplo): {si(c.conSaludo)}</li>
+        <li>
+          Regalos: {c.regalos.bienvenida} de bienvenida, {c.regalos.pagos} pagos o asignados
+          {porOcasion(c.regalos.porOcasion) !== null && <> · por ocasión: {porOcasion(c.regalos.porOcasion)}</>}
+        </li>
+        <li>
+          Listas: {c.listas.cumple} de cumpleaños, {c.listas.otras} de otra ocasión
+          {porOcasion(c.listas.porOcasion) !== null && <> · por ocasión: {porOcasion(c.listas.porOcasion)}</>}
+        </li>
+        <li>
+          Plan:{' '}
+          {c.plan === null
+            ? 'ninguno'
+            : `${c.plan.tipo}, ${c.plan.regalosQuedan === null ? 'regalos libres' : `quedan ${c.plan.regalosQuedan} regalos`}${c.plan.hasta === null ? ', sin vencimiento' : `, hasta ${new Date(c.plan.hasta).toLocaleDateString(lang)}`}`}
+        </li>
+        {!c.cobroActivo && <li>El cobro está apagado: hoy todas las cuentas tienen todo.</li>}
+      </ul>
+      {c.movimientos.length > 0 && (
+        <>
+          <p class="texto-suave">Últimos movimientos</p>
+          <ul class="admin-lista">
+            {c.movimientos.map((m, i) => (
+              <li key={i}>
+                {new Date(m.fecha).toLocaleString(lang)} · {m.tipo} · {m.cantidad > 0 ? '+' : ''}
+                {m.cantidad} {UNIDADES[m.unidad] ?? m.unidad} · {ORIGENES[m.origen] ?? m.origen}
+                {m.motivo !== null && <> · «{m.motivo}»</>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }

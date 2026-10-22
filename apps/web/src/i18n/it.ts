@@ -822,6 +822,7 @@ export const it: Dict = {
   'plan.unRegalo': '1 regalo',
   'plan.nListas': '{n} liste',
   'plan.unaLista': '1 lista',
+  'plan.admin': "Sei admin: hai tutto attivo e libero, e i tuoi regali non scalano crediti.",
   'plan.gratis': 'Mentre lanciamo, regalare è gratis: non si scalano crediti.',
   'plan.verPrecios': 'Vedi i prezzi',
   'regalar.creditos.bienvenida': 'Ti restano {n} dei tuoi 5 regali di benvenuto. Questo ne usa uno quando arriva il pagamento.',

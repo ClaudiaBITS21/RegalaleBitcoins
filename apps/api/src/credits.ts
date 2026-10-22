@@ -101,18 +101,19 @@ export async function balance(sql: Tx, accountId: string): Promise<Balance> {
 /**
  * ¿Tiene lo que traen los planes (imagen con IA, tarjeta imprimible, salutación automática)? Con
  * el cobro apagado, todos; con el cobro activo, quien tiene un plan vigente o créditos comprados.
- * Lo gratis (solo la bienvenida) no lo trae (Rodolfo, 20/10).
+ * Lo gratis (solo la bienvenida) no lo trae (Rodolfo, 20/10). Los admins tienen todo, siempre,
+ * para probar (Claudia, 22/10).
  */
-export function hasPlanFeatures(b: Balance, charging: boolean): boolean {
-  return !charging || planCovers(b.plan) || b.paid > 0;
+export function hasPlanFeatures(b: Balance, charging: boolean, admin = false): boolean {
+  return admin || !charging || planCovers(b.plan) || b.paid > 0;
 }
 
 /**
  * La salutación automática (Rodolfo, 21/10): la trae un plan vigente o haber comprado alguna vez un
  * producto que la incluye (todos menos Satoshi). Con el cobro apagado, todos la tienen.
  */
-export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charging: boolean): Promise<boolean> {
-  if (!charging || planCovers(b.plan)) return true;
+export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charging: boolean, admin = false): Promise<boolean> {
+  if (admin || !charging || planCovers(b.plan)) return true;
   const [row] = await sql`
     select 1 from pagos p join productos pr on pr.codigo = p.producto
     where p.usuario_id = ${accountId} and p.estado = 'confirmado' and pr.saludo limit 1`;
@@ -120,24 +121,28 @@ export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charg
 }
 
 /**
- * ¿Puede crear un regalo más? Con el cobro apagado, siempre. Con una ocasión, cuentan también los
- * créditos de cupón de esa ocasión del catálogo (nunca la ocasión libre).
+ * ¿Puede crear un regalo más? Con el cobro apagado, siempre; un admin, siempre. Con una ocasión,
+ * cuentan también los créditos de cupón de esa ocasión del catálogo (nunca la ocasión libre).
  */
-export function canGive(b: Balance, charging: boolean, occasion?: string): boolean {
-  if (!charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0) return true;
+export function canGive(b: Balance, charging: boolean, occasion?: string, admin = false): boolean {
+  if (admin || !charging || planCovers(b.plan) || b.welcome > 0 || b.paid > 0) return true;
   return occasion !== undefined && occasion !== 'otra' && (b.giftsByOccasion[occasion] ?? 0) > 0;
 }
 
 /**
  * Consume el crédito de los regalos con cuenta que ya recibieron su primer depósito. Lo dispara
- * la tarea programada. Con el cobro apagado, el regalo queda resuelto sin consumir (gratis).
+ * la tarea programada. Con el cobro apagado, el regalo queda resuelto sin consumir (gratis). Los
+ * regalos de un admin quedan registrados sin descontar (cantidad 0, origen «admin»).
  */
-export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient }): Promise<number> {
+export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient; adminEmails?: readonly string[] }): Promise<number> {
   const { sql, chain } = deps;
-  const pending = await sql<{ id: string; direccion: string; usuario_id: string; ocasion: string }[]>`
-    select id, direccion, usuario_id, ocasion from regalos
-    where credito is null and usuario_id is not null and creado > now() - interval '90 days'
-    order by creado limit 100`;
+  const fixed = deps.adminEmails ?? [];
+  const pending = await sql<{ id: string; direccion: string; usuario_id: string; ocasion: string; admin: boolean }[]>`
+    select r.id, r.direccion, r.usuario_id, r.ocasion,
+      (u.email = any(${sql.array(fixed as string[])}::text[]) or exists (select 1 from admins a where a.email = u.email)) as admin
+    from regalos r join usuarios u on u.id = r.usuario_id
+    where r.credito is null and r.usuario_id is not null and r.creado > now() - interval '90 days'
+    order by r.creado limit 100`;
   let consumed = 0;
   for (const g of pending) {
     let stats;
@@ -157,13 +162,15 @@ export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient })
       // dirección), el consumo va a los pagos y el saldo queda en negativo hasta que compre.
       // Orden (21/10): plan vigente → créditos de cupón de la ocasión del regalo → bienvenida → pagos.
       const forOccasion = g.ocasion !== 'otra' && (b.giftsByOccasion[g.ocasion] ?? 0) > 0;
-      const [cantidad, origen, ocasion] = planCovers(b.plan)
-        ? [0, 'plan', null]
-        : forOccasion
-          ? [-1, 'codigo', g.ocasion]
-          : b.welcome > 0
-            ? [-1, 'bienvenida', null]
-            : [-1, 'pago', null];
+      const [cantidad, origen, ocasion] = g.admin
+        ? [0, 'admin', null]
+        : planCovers(b.plan)
+          ? [0, 'plan', null]
+          : forOccasion
+            ? [-1, 'codigo', g.ocasion]
+            : b.welcome > 0
+              ? [-1, 'bienvenida', null]
+              : [-1, 'pago', null];
       await tx`
         insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia, ocasion)
         values (${g.usuario_id}, 'consumo', 'regalo', ${cantidad}, ${origen}, ${g.id}, ${ocasion})

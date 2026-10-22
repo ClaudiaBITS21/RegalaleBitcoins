@@ -822,6 +822,7 @@ export const es = {
   'plan.unRegalo': '1 regalo',
   'plan.nListas': '{n} listas',
   'plan.unaLista': '1 lista',
+  'plan.admin': "Sos admin: tenés todo activado y libre, y tus regalos no descuentan créditos.",
   'plan.gratis': 'Mientras lanzamos, regalar es gratis: no se descuentan créditos.',
   'plan.verPrecios': 'Ver precios',
   'regalar.creditos.bienvenida': 'Te quedan {n} de tus 5 regalos de bienvenida. Este usa uno cuando llegue el pago.',

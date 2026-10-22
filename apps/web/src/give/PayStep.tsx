@@ -10,7 +10,8 @@ import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 
 /** «Te quedan…»: qué crédito usa este regalo (solo con el cobro activo). */
 function creditNote(c: Credits | null): { key: 'regalar.creditos.plan' | 'regalar.creditos.bienvenida' | 'regalar.creditos.pagos'; n: number } | null {
-  if (c === null || !c.cobroActivo) return null;
+  // Los regalos de un admin no descuentan créditos.
+  if (c === null || !c.cobroActivo || c.admin === true) return null;
   if (c.plan !== null) return { key: 'regalar.creditos.plan', n: 0 };
   if (c.regalos.bienvenida > 0) return { key: 'regalar.creditos.bienvenida', n: c.regalos.bienvenida };
   if (c.regalos.pagos > 0) return { key: 'regalar.creditos.pagos', n: c.regalos.pagos };
