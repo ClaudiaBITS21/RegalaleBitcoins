@@ -11,7 +11,9 @@ Prototipos: `docs/prototipos/` (cargan Google Fonts; la web usa tipografías pro
 - Español único: rioplatense con vos. pt/en/it por el i18n.
 - Precios y conversiones nunca fijos en el texto; si se muestran, en vivo y con el formato
   numérico del idioma (ver CLAUDE.md).
-- Sin recomendar grupos, exchanges ni tiendas puntuales.
+- Sin recomendar grupos, exchanges ni tiendas puntuales. **Excepción (responsable, 22/10/2026):**
+  en «¿No tenés bitcoin?» del pago se enlaza el comparador CriptoYa, en la versión del país de
+  quien paga si tiene (`apps/web/src/pais.ts`); sin versión, no hay link.
 - Lo marcado **ABIERTO** se confirma con Rodolfo antes de implementarlo.
 
 ## Especificación de componentes

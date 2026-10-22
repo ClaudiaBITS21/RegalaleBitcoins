@@ -66,6 +66,8 @@ export const tu: Partial<Record<Key, string>> = {
   'regalar.sinBtc.banco1': 'Transfiere tu dinero a esa plataforma.',
   'regalar.sinBtc.banco2': 'Haz una orden de compra de bitcoin.',
   'regalar.sinBtc.banco3': 'Elige «Retirar» y envíalo a la dirección de esta billetera de regalo:',
+  'regalar.sinBtc.comparar': '¿No sabes cuál elegir? En CriptoYa comparas el precio del bitcoin en las plataformas de tu país, también las ofertas P2P.',
+  'regalar.sinBtc.p2p': 'Otra opción es el P2P: le compras bitcoin a otra persona dentro de una plataforma, que lo retiene hasta que confirmas el pago. Pagas con transferencia o billetera virtual y después lo retiras igual. Nunca pagues por fuera de la plataforma.',
   'regalar.sinBtc.red': 'Al retirar, elige la red Bitcoin (BTC) y pon {btc}. Si la plataforma descuenta una comisión del envío, súmala para que llegue completo.',
   'regalar.mandar.titulo': '¡Pago recibido! Manda el regalo',
   'tarjeta.error': 'No pudimos armar la tarjeta. Prueba de nuevo.',

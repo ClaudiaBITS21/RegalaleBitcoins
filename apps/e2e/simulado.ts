@@ -334,6 +334,10 @@ try {
   await page.getByText('¿No tenés bitcoin? Seguí estos pasos').click();
   await page.getByRole('button', { name: 'Plata en el banco o en Mercado Pago' }).click();
   await page.getByText('Esta web no convierte dinero a bitcoin.', { exact: false }).waitFor();
+  // Desde la Argentina (es-AR), el comparador de su país y la alternativa P2P.
+  if ((await page.getByRole('link', { name: 'Ver precios en CriptoYa' }).getAttribute('href')) !== 'https://criptoya.com/') fail('«¿No tenés bitcoin?» no lleva a CriptoYa Argentina');
+  await page.getByText('Otra opción es el P2P', { exact: false }).waitFor();
+  await shot('r5-sin-bitcoin-banco');
   if ((await page.locator('.sin-bitcoin .direccion-completa').innerText()) !== payAddress) fail('«¿No tenés bitcoin?» no muestra la dirección del regalo');
   await page.getByText('elegí la red Bitcoin (BTC) y poné 0,000305 BTC', { exact: false }).waitFor();
   await page.getByRole('button', { name: 'Stablecoins (dólares digitales)' }).click();

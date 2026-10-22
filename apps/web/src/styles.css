@@ -3699,12 +3699,18 @@ svg.tarjeta-imagen {
 .variacion.sube { color: #1b7f3b; }
 .variacion.baja { color: var(--error-tinta); }
 
-/* «¿No tenés bitcoin?» en el paso de pagar: debajo del QR, plegado. */
+/* «¿No tenés bitcoin?» en el paso de pagar: debajo del QR, plegado. Un <details> no reparte
+   el gap de flex entre su contenido: el aire va con margen, como en los otros desplegables. */
 .sin-bitcoin {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   margin-top: 8px;
+}
+
+.sin-bitcoin > * {
+  margin: 0;
+}
+
+.sin-bitcoin > * + * {
+  margin-top: 12px;
 }
 
 .sin-bitcoin-opciones {
@@ -3713,7 +3719,6 @@ svg.tarjeta-imagen {
 }
 
 .sin-bitcoin-pasos {
-  margin: 0;
   padding-left: 22px;
   display: grid;
   gap: 6px;
