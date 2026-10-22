@@ -823,6 +823,7 @@ export const pt: Dict = {
   'plan.unRegalo': '1 presente',
   'plan.nListas': '{n} listas',
   'plan.unaLista': '1 lista',
+  'plan.admin': "Você é admin: tem tudo ativado e liberado, e seus presentes não descontam créditos.",
   'plan.gratis': 'Enquanto lançamos, presentear é grátis: nenhum crédito é descontado.',
   'plan.verPrecios': 'Ver preços',
   'regalar.creditos.bienvenida': 'Restam {n} dos seus 5 presentes de boas-vindas. Este usa um quando o pagamento chegar.',

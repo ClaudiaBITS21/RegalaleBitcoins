@@ -50,6 +50,7 @@ export function MyPlan() {
   return (
     <section class="caja mi-plan" aria-labelledby="mi-plan">
       <strong id="mi-plan">{t('plan.titulo')}</strong>
+      {credits.admin === true && <Notice kind="ok">{t('plan.admin')}</Notice>}
       {!credits.cobroActivo && <p class="texto-suave">{t('plan.gratis')}</p>}
       <ul>
         {plan !== null && (

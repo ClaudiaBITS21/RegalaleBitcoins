@@ -3,7 +3,7 @@ import type { Context, Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
 import { adminEmails as allAdmins, isAdmin } from './admins.ts';
 import type { Account } from './accounts.ts';
-import { chargingActive, setChargingActive } from './credits.ts';
+import { balance, type Balance, chargingActive, hasGreetings, hasPlanFeatures, setChargingActive } from './credits.ts';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
 import type { Mail, Mailer } from './mail.ts';
@@ -201,11 +201,42 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       throw new ApiError(400, 'pedido_invalido');
     }
     const [u] = await sql<{ id: string }[]>`select id from usuarios where email = ${email.trim().toLowerCase()}`;
-    if (u === undefined) throw new ApiError(404, 'no_encontrado');
+    if (u === undefined) throw new ApiError(404, 'cuenta_inexistente');
     await sql`
       insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo)
       values (${u.id}, 'ajuste', ${unidad}, ${cantidad}, 'admin', ${motivo.trim()})`;
     await log(account, 'ajuste', `${email.trim().toLowerCase()}, ${unidad} ${cantidad > 0 ? '+' : ''}${cantidad}: ${motivo.trim()}`);
-    return c.json({ ok: true });
+    // Lo que quedó, para mostrarlo en el momento (antes no se veía nada al registrar).
+    return c.json({ ok: true, cuenta: await accountView(u.id, email.trim().toLowerCase()) });
+  });
+
+  /** Qué tiene una cuenta: saldo por unidad, plan, si es admin y sus últimos movimientos. */
+  const accountView = async (id: string, email: string) => {
+    const [b, charging, esAdmin] = await Promise.all([balance(sql, id), chargingActive(sql), isAdmin(sql, adminEmails, email)]);
+    const moves = await sql<{ tipo: string; unidad: string; cantidad: number; origen: string; motivo: string | null; creado: Date }[]>`
+      select tipo, unidad, cantidad, origen, motivo, creado from movimientos where usuario_id = ${id} order by id desc limit 20`;
+    return {
+      email,
+      admin: esAdmin,
+      cobroActivo: charging,
+      conPlan: hasPlanFeatures(b, charging, esAdmin),
+      conSaludo: await hasGreetings(sql, id, b, charging, esAdmin),
+      ...saldo(b),
+      movimientos: moves.map((m) => ({ tipo: m.tipo, unidad: m.unidad, cantidad: m.cantidad, origen: m.origen, motivo: m.motivo, fecha: m.creado.toISOString() })),
+    };
+  };
+  const saldo = (b: Balance) => ({
+    regalos: { bienvenida: b.welcome, pagos: b.paid, porOcasion: b.giftsByOccasion },
+    listas: { cumple: b.birthdayLists, otras: b.otherLists, porOcasion: b.listsByOccasion },
+    plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },
+  });
+
+  app.get('/api/admin/cuenta', async (c) => {
+    await admin(c);
+    const email = (c.req.query('email') ?? '').trim().toLowerCase();
+    if (email === '' || email.length > 254) throw new ApiError(400, 'pedido_invalido');
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = ${email}`;
+    if (u === undefined) throw new ApiError(404, 'cuenta_inexistente');
+    return c.json(await accountView(u.id, email));
   });
 }

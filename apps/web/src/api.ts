@@ -149,6 +149,8 @@ export interface Products {
 /** Saldo de créditos de la cuenta («Mi plan»). */
 export interface Credits {
   readonly cobroActivo: boolean;
+  /** Los admins tienen todo activado y libre (API desde el 22/10). */
+  readonly admin?: boolean;
   readonly puedeRegalar: boolean;
   /** Si tiene lo que traen los planes (lo gratis no). */
   readonly conPlan: boolean;
@@ -157,6 +159,13 @@ export interface Credits {
   readonly regalos: { readonly bienvenida: number; readonly pagos: number; readonly porOcasion?: Readonly<Record<string, number>> };
   readonly listas: { readonly cumple: number; readonly otras: number; readonly porOcasion?: Readonly<Record<string, number>> };
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
+}
+
+/** Qué tiene una cuenta, visto desde el admin. */
+export interface AdminAccount extends Omit<Credits, 'puedeRegalar'> {
+  readonly email: string;
+  readonly admin: boolean;
+  readonly movimientos: readonly { readonly tipo: string; readonly unidad: string; readonly cantidad: number; readonly origen: string; readonly motivo: string | null; readonly fecha: string }[];
 }
 
 /** Lo que da un cupón (y, con un producto, su precio con el descuento). */
@@ -285,7 +294,8 @@ export const api = {
   adminSetCharging: (activo: boolean) => post<{ cobroActivo: boolean }>('/api/admin/cobro', { activo }),
   adminSetProduct: (p: Omit<AdminProduct, 'codigo' | 'precioSats' | 'activo' | 'plan'> & { producto: string }) => post<{ ok: true }>('/api/admin/producto', p),
   adminSetPrice: (producto: string, precioSats: number) => post<{ precioSats: string }>('/api/admin/precio', { producto, precioSats }),
-  adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true }>('/api/admin/ajuste', a),
+  adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true; cuenta: AdminAccount }>('/api/admin/ajuste', a),
+  adminAccount: (email: string) => call<AdminAccount>(`/api/admin/cuenta?email=${encodeURIComponent(email)}`),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,

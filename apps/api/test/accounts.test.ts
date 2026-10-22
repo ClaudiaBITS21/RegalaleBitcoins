@@ -452,6 +452,25 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/cuenta/registro-mail', { email: 'x9@example.com' })).status, 429);
   });
 
+  it('admin: con el cobro activo regala sin saldo, con imagen propia, y sus regalos no descuentan (Claudia, 22/10)', async () => {
+    await setChargingActive(sql, true);
+    const { cookie } = await signUp('admin@example.com');
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'admin@example.com'`;
+    const id = (u as { id: string }).id;
+    // Sin bienvenida ni pagos: igual puede regalar, con imagen propia (IA).
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -5, 'bienvenida', 'prueba')`;
+    const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
+    const res = await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, estilo: 'propia', imagenPropia: Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 '), Buffer.alloc(200, 7)]).toString('base64'), moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 }, cookie);
+    assert.equal(res.status, 201);
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, adminEmails: ['admin@example.com'], accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    funded.add(g.address);
+    const r = (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { creditos: number };
+    assert.equal(r.creditos, 1);
+    const [uso] = await sql<{ origen: string; cantidad: number }[]>`select origen, cantidad from movimientos where tipo = 'consumo'`;
+    assert.deepEqual(uso, { origen: 'admin', cantidad: 0 });
+  });
+
   it('créditos: con el cobro activo, el primer depósito consume uno (una sola vez) y cancelar lo devuelve', async () => {
     await setChargingActive(sql, true);
     const { cookie } = await signUp('ana@example.com');
@@ -800,9 +819,27 @@ describe('Cuentas con passkey', () => {
     assert.equal(((await get()) as unknown as { fundadoresQuedan: number }).fundadoresQuedan, 5);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'x' }, admin.cookie)).status, 400);
     assert.equal((await req('/api/admin/ajuste', { email: 'ana@example.com', unidad: 'regalo', cantidad: 3, motivo: 'Regalo por ayudar con las pruebas' }, admin.cookie)).status, 200);
-    const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number } };
+    const c = (await (await req('/api/cuenta/creditos', undefined, ana.cookie)).json()) as { regalos: { pagos: number }; admin: boolean; conSaludo: boolean };
     assert.equal(c.regalos.pagos, 3);
-    assert.deepEqual((await get()).registro.map((r) => r.accion).slice(0, 4), ['ajuste', 'producto', 'producto', 'precio']);
+    assert.equal(c.admin, false);
+    assert.equal(c.conSaludo, false);
+    // El ajuste devuelve lo que quedó, y el admin puede ver qué tiene cualquier cuenta.
+    const otro = (await (await req('/api/admin/ajuste', { email: 'ANA@example.com ', unidad: 'lista_otras', cantidad: 2, motivo: 'Pruebas de listas' }, admin.cookie)).json()) as {
+      cuenta: { email: string; regalos: { pagos: number }; listas: { otras: number }; movimientos: Array<{ motivo: string | null }> };
+    };
+    assert.equal(otro.cuenta.email, 'ana@example.com');
+    assert.equal(otro.cuenta.regalos.pagos, 3);
+    assert.equal(otro.cuenta.listas.otras, 2);
+    assert.equal(otro.cuenta.movimientos[0]?.motivo, 'Pruebas de listas');
+    const fichaAna = (await (await req('/api/admin/cuenta?email=ana%40example.com', undefined, viaLink)).json()) as { admin: boolean; conPlan: boolean };
+    assert.deepEqual([fichaAna.admin, fichaAna.conPlan], [false, true]);
+    assert.equal((await req('/api/admin/cuenta?email=nadie%40example.com', undefined, admin.cookie)).status, 404);
+    assert.equal((await req('/api/admin/ajuste', { email: 'nadie@example.com', unidad: 'regalo', cantidad: 1, motivo: 'No existe' }, admin.cookie)).status, 404);
+    assert.equal((await req('/api/admin/cuenta?email=admin%40example.com', undefined, ana.cookie)).status, 404);
+    // El admin tiene todo activado y libre, aunque el cobro esté activo (Claudia, 22/10).
+    const yo = (await (await req('/api/cuenta/creditos', undefined, admin.cookie)).json()) as { admin: boolean; conPlan: boolean; conSaludo: boolean; puedeRegalar: boolean };
+    assert.deepEqual([yo.admin, yo.conPlan, yo.conSaludo, yo.puedeRegalar], [true, true, true, true]);
+    assert.deepEqual((await get()).registro.map((r) => r.accion).slice(0, 5), ['ajuste', 'ajuste', 'producto', 'producto', 'precio']);
   });
 
   it('arrepentimiento: 10 días, sin créditos usados; código de trámite; el admin marca la devolución', async () => {
