@@ -8,7 +8,7 @@ import { type Key, LANG_NAMES } from '../i18n/index.ts';
 import { type OccasionChoice, OccasionPicker } from '../content/OccasionPicker.tsx';
 import { browserCountry } from '../content/temporada.ts';
 import { defaultUnit, presetsFor, type Unit } from './montos.ts';
-import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
+import { Button, Notice, PlanesLink, StepTitle, useI18n } from '../ui.tsx';
 import type { Draft } from './GivePage.tsx';
 import { StylePicker } from './StylePicker.tsx';
 
@@ -115,7 +115,7 @@ export function CardStep({ draft, onChange: change, onNext }: { draft: Draft; on
         {isUntouched(draft) && <small class="texto-suave">{t('regalar.mensaje.empujoncito')}</small>}
         {conSaludo === false && (
           <small class="texto-suave">
-            {t('regalar.mensaje.soloPlanes')} <a href="/precios" target="_blank" rel="noopener">{t('planes.ver')}</a>
+            {t('regalar.mensaje.soloPlanes')} <PlanesLink />
           </small>
         )}
         <small class={left < 0 ? 'error-campo' : left <= LIMITS.message - LIMITS.messageWarn ? 'contador contador-aviso' : 'contador'} aria-live="polite">

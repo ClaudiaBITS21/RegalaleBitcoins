@@ -229,6 +229,25 @@ try {
   if ((await page.getByLabel('Idioma de quien lo recibe').inputValue()) !== 'pt') fail('volver al paso 2 perdió lo elegido');
   await page.getByRole('button', { name: 'Seguir' }).click();
   await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
+  // El «atrás» del celu (o del navegador) vuelve un paso, no sale de Regalar; «adelante» lo retoma.
+  await page.goBack();
+  await page.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
+  if ((await page.getByLabel('Tu mensaje').inputValue()) !== 'Feliz Navidad, Ana. 🎄') fail('el atrás del navegador perdió el mensaje');
+  await page.goForward();
+  await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
+  // En la app instalada «Ver planes» va en la misma ventana: al volver con «Atrás» (o al recargar),
+  // sigue en el mismo paso con lo escrito.
+  await page.goto(`${BASE}/precios`);
+  await page.goBack();
+  await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
+  await page.reload();
+  await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
+  await page.goBack();
+  await page.getByRole('heading', { name: '¿Para quién es?' }).waitFor();
+  if ((await page.getByLabel('Tu mensaje').inputValue()) !== 'Feliz Navidad, Ana. 🎄') fail('al volver de los planes se perdió el mensaje');
+  if ((await page.getByLabel('Idioma de quien lo recibe').inputValue()) !== 'pt') fail('al volver de los planes se perdió el idioma');
+  await page.getByRole('button', { name: 'Seguir' }).click();
+  await page.getByRole('heading', { name: '¿Cuánto querés regalar?' }).waitFor();
   // Desde Argentina arranca en pesos, con sugeridos redondos y los sats en chico abajo.
   if ((await page.getByRole('button', { name: 'En pesos' }).getAttribute('aria-pressed')) !== 'true') fail('en es-AR el monto no arranca en pesos');
   const ars100k = page.locator('.opcion-monto', { hasText: /^\$\s100\.000/ });

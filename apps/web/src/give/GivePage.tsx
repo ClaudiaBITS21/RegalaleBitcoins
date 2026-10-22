@@ -1,11 +1,12 @@
 import { deriveGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network } from '@regalale/core';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
 import type { CardStyle } from '../content/GiftCardArt.tsx';
 import type { OccasionChoice } from '../content/OccasionPicker.tsx';
 import type { ProcessedImage } from './ownImage.ts';
+import { borrarBorrador, guardarBorrador, recuperarBorrador } from './borrador.ts';
 import { DICTS, type Key, translate } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
@@ -135,6 +136,17 @@ async function register(session: Session, draft: Draft, network: Network): Promi
   throw new ApiFailure(0, 'sin_indice');
 }
 
+/** Lo que cada paso deja en el historial: su número y la tanda (cambia al empezar de nuevo). */
+interface EnHistorial {
+  readonly regalarPaso: number;
+  readonly tanda: number;
+}
+
+function enHistorial(state: unknown): EnHistorial | null {
+  const e = state as Partial<EnHistorial> | null;
+  return typeof e?.regalarPaso === 'number' && typeof e.tanda === 'number' ? (e as EnHistorial) : null;
+}
+
 function presetOccasion(): OccasionChoice | null {
   const params = new URLSearchParams(window.location.search);
   const key = params.get('ocasion');
@@ -151,8 +163,14 @@ export function GivePage() {
   const [netError, setNetError] = useState<'mainnet' | 'sin_red' | null>(null);
   // Si viene de la home con la ocasión elegida (/regalar?ocasion=…&libre=…), arranca en "Para quién".
   const [preset] = useState(presetOccasion);
-  const [steps, setSteps] = useState<Step[]>(preset === null ? ['ocasion'] : ['ocasion', 'para']);
-  const [draft, setDraft] = useState<Draft>(() => ({
+  // Si volvió con «Atrás» (o recargó), lo que ya había escrito, en el paso donde estaba.
+  const [restored] = useState(() => {
+    const b = recuperarBorrador<Step>();
+    const paso = enHistorial(window.history.state)?.regalarPaso;
+    return b === null ? null : { ...b, steps: paso !== undefined && paso < b.steps.length ? b.steps.slice(0, Math.max(paso, 1)) : b.steps };
+  });
+  const [steps, setSteps] = useState<Step[]>(restored?.steps ?? (preset === null ? ['ocasion'] : ['ocasion', 'para']));
+  const [draft, setDraft] = useState<Draft>(() => restored?.draft ?? ({
     occasion: preset?.key ?? '',
     occasionFree: preset?.free ?? '',
     to: '',
@@ -202,12 +220,69 @@ export function GivePage() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [gift]);
 
+  // Cada paso entra al historial: el «atrás» del celu (o del navegador) vuelve un paso en vez de
+  // salir de Regalar. La tanda distingue los pasos de esta vuelta de los de un regalo anterior.
+  const tanda = useRef(0);
+  const busyRef = useRef(false);
+  const lockedRef = useRef(false);
+  // Los pasos que dejó el «atrás», para que «adelante» los retome.
+  const undone = useRef<Step[]>([]);
+  busyRef.current = busy;
+  useEffect(() => {
+    const actual = enHistorial(window.history.state);
+    if (restored !== null && actual !== null) {
+      tanda.current = actual.tanda;
+      if (actual.regalarPaso !== steps.length) window.history.replaceState({ regalarPaso: steps.length, tanda: tanda.current }, '');
+    } else {
+      tanda.current = Date.now();
+      window.history.replaceState({ regalarPaso: 1, tanda: tanda.current }, '');
+      for (let n = 2; n <= steps.length; n++) window.history.pushState({ regalarPaso: n, tanda: tanda.current }, '');
+    }
+    const onPop = (e: PopStateEvent) => {
+      const paso = enHistorial(e.state);
+      // Pagando o mandando, el regalo armado vive solo en esta página: el atrás no cambia nada.
+      if (busyRef.current || lockedRef.current) return;
+      // Un paso de un regalo anterior: se saltea hasta el principio de esta vuelta.
+      if (paso !== null && paso.tanda !== tanda.current) return window.history.back();
+      const n = paso?.regalarPaso ?? 1;
+      setSteps((prev) => {
+        if (n === prev.length) return prev;
+        if (n > prev.length) return [...prev, ...undone.current.slice(0, n - prev.length)];
+        undone.current = [...prev.slice(n), ...undone.current];
+        return prev.slice(0, n);
+      });
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // El borrador (sin nada secreto) queda en la pestaña hasta que el regalo se arma.
+  useEffect(() => {
+    if (gift === null) guardarBorrador(steps, draft);
+  }, [steps, draft, gift]);
+
   const go = (s: Step) => {
     setError(null);
+    window.history.pushState({ regalarPaso: steps.length + 1, tanda: tanda.current }, '');
+    undone.current = [];
     setSteps((prev) => [...prev, s]);
   };
+  /** Empieza una vuelta nueva con un solo paso (los anteriores ya no se pueden retomar). */
+  const restart = (s: Step) => {
+    tanda.current = Date.now();
+    window.history.replaceState({ regalarPaso: 1, tanda: tanda.current }, '');
+    undone.current = [];
+    setSteps([s]);
+  };
+  /** Vuelve hasta dejar n pasos: por el historial, así el «adelante» y el «atrás» siguen en orden. */
+  const backTo = (n: number) => {
+    const actual = enHistorial(window.history.state);
+    if (actual?.tanda === tanda.current && actual.regalarPaso === steps.length) window.history.go(n - steps.length);
+    else setSteps((prev) => prev.slice(0, n));
+  };
   const locked = step === 'pagar' || step === 'mandar';
-  const back = steps.length > 1 && !locked && !busy ? () => setSteps((prev) => prev.slice(0, -1)) : undefined;
+  lockedRef.current = locked;
+  const back = steps.length > 1 && !locked && !busy ? () => backTo(steps.length - 1) : undefined;
 
   const create = async (s: Session, d: Draft) => {
     if (network === null) return;
@@ -219,12 +294,13 @@ export function GivePage() {
       setCredits(await api.creditsIfSignedIn().catch(() => null));
       setGift(await register(s, d, network));
       setNewMnemonic(null);
-      setSteps(['pagar']);
+      borrarBorrador();
+      restart('pagar');
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : '';
       if (code === 'sin_creditos') {
         // Sin créditos ni plan: antes de mostrar la dirección del regalo, los packs.
-        setSteps((prev) => [...prev, 'sinCreditos']);
+        go('sinCreditos');
         return;
       }
       setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : 'regalar.error');
@@ -242,7 +318,7 @@ export function GivePage() {
   const another = () => {
     setGift(null);
     setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
-    setSteps(['ocasion']);
+    restart('ocasion');
   };
 
   let body;
@@ -342,7 +418,7 @@ export function GivePage() {
               return (
                 <li key={n}>
                   {back !== undefined && n < PROGRESS[step] && at >= 0 ? (
-                    <button type="button" class={cls} aria-label={t('regalar.volverAlPaso', { n })} onClick={() => setSteps((prev) => prev.slice(0, at + 1))} />
+                    <button type="button" class={cls} aria-label={t('regalar.volverAlPaso', { n })} onClick={() => backTo(at + 1)} />
                   ) : (
                     <span class={cls} aria-current={n === PROGRESS[step] ? 'step' : undefined} />
                   )}
