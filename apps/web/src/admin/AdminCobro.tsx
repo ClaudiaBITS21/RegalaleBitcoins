@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type AdminAccount, type AdminCobro, type AdminProduct, ApiFailure, api } from '../api.ts';
+import { type AdminAccount, type AdminCobro, type AdminProduct, ApiFailure, api, type FreeOffer } from '../api.ts';
 import { formatSats, formatUsdPrice } from '../format.ts';
 import { PRODUCT_NAME } from '../comprar.tsx';
 import { Button, Notice, useI18n } from '../ui.tsx';
@@ -192,6 +192,8 @@ export function AdminCobroPanel() {
         </tbody>
       </table>
       <p class="texto-suave">Quedan {data.fundadoresQuedan} lugares de Genesis.</p>
+
+      {data.gratis !== undefined && <FreeOfferForm key={JSON.stringify(data.gratis)} gratis={data.gratis} busy={busy} setBusy={setBusy} reload={load} />}
 
       <h3>Cuentas: qué tiene cada una</h3>
       <form
@@ -394,7 +396,8 @@ function AccountCard({ cuenta: c, lang }: { cuenta: AdminAccount; lang: string }
         {c.admin && <> · Admin: todo activado y libre, sin descontar créditos</>}
       </p>
       <ul class="admin-lista">
-        <li>Imagen con IA y tarjeta imprimible: {si(c.conPlan)}</li>
+        <li>Imagen con IA: {si(c.conIa ?? c.conPlan)}</li>
+        <li>Tarjeta imprimible: {si(c.conTarjeta ?? c.conPlan)}</li>
         <li>Salutación automática (mensajes de ejemplo): {si(c.conSaludo)}</li>
         <li>
           Regalos: {c.regalos.bienvenida} de bienvenida, {c.regalos.pagos} pagos o asignados
@@ -427,5 +430,61 @@ function AccountCard({ cuenta: c, lang }: { cuenta: AdminAccount; lang: string }
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Qué incluye lo gratis (Claudia, 23/10): regalos, listas y servicios. Al guardar, las cuentas que
+ * nunca compraron reciben (o pierden) la diferencia en lo que les queda; las que compraron, no cambian.
+ */
+function FreeOfferForm({ gratis, busy, setBusy, reload }: { gratis: FreeOffer; busy: boolean; setBusy: (b: boolean) => void; reload: () => Promise<void> }) {
+  const [f, setF] = useState({ regalos: String(gratis.regalos), listas: String(gratis.listas), ia: gratis.ia, tarjeta: gratis.tarjeta, saludo: gratis.saludo });
+  const [aviso, setAviso] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const check = (key: 'ia' | 'tarjeta' | 'saludo', label: string) => (
+    <label class="admin-check">
+      <input type="checkbox" checked={f[key]} onChange={(e) => setF({ ...f, [key]: (e.currentTarget as HTMLInputElement).checked })} /> {label}
+    </label>
+  );
+  return (
+    <>
+      <h3>Lo gratis (bienvenida)</h3>
+      <p class="texto-suave">
+        Al guardar, las cuentas que nunca compraron reciben la diferencia en lo que les queda (si bajás, se les descuenta sin pasar de cero). Las que compraron un
+        plan o un pack conservan lo que tienen. Los servicios que marques los tienen todas las cuentas.
+      </p>
+      <form
+        class="admin-ajuste"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setAviso(null);
+          const regalos = Number(f.regalos);
+          const listas = Number(f.listas);
+          if (!Number.isInteger(regalos) || regalos < 0 || !Number.isInteger(listas) || listas < 0) return setAviso({ kind: 'error', text: 'Regalos y listas: números enteros, cero o más.' });
+          setBusy(true);
+          api
+            .adminFree({ regalos, listas, ia: f.ia, tarjeta: f.tarjeta, saludo: f.saludo })
+            .then(async (r) => {
+              setAviso({ kind: 'ok', text: `Listo. Lo gratis quedó en ${r.gratis.regalos} regalos y ${r.gratis.listas} listas; se ajustaron ${r.cuentas} cuentas.` });
+              await reload();
+            })
+            .catch((err: unknown) => setAviso({ kind: 'error', text: errorText(err) }))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <label>
+          Regalos <input inputMode="numeric" required value={f.regalos} onInput={(e) => setF({ ...f, regalos: (e.currentTarget as HTMLInputElement).value })} />
+        </label>
+        <label>
+          Listas <input inputMode="numeric" required value={f.listas} onInput={(e) => setF({ ...f, listas: (e.currentTarget as HTMLInputElement).value })} />
+        </label>
+        {check('ia', 'Imagen con IA')}
+        {check('tarjeta', 'Tarjeta imprimible')}
+        {check('saludo', 'Salutación automática')}
+        <Button type="submit" disabled={busy}>
+          Guardar lo gratis
+        </Button>
+      </form>
+      {aviso !== null && <Notice kind={aviso.kind}>{aviso.text}</Notice>}
+    </>
   );
 }

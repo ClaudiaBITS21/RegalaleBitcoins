@@ -23,7 +23,7 @@ import {
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { isAdmin } from './admins.ts';
-import { balance, canGive, chargingActive, hasGreetings, hasPlanFeatures } from './credits.ts';
+import { balance, canGive, chargingActive, features, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
@@ -317,6 +317,11 @@ export function registerAccountRoutes(
   /** ¿Hay una sesión iniciada? Para el menú: responde siempre 200, sin datos de la cuenta. */
   app.get('/api/cuenta/sesion', async (c) => c.json({ abierta: (await currentAccount(sql, c)) !== null }));
 
+  const featureFlags = async (id: string, b: Awaited<ReturnType<typeof balance>>, charging: boolean, admin: boolean) => {
+    const f = await features(sql, id, b, charging, admin);
+    return { conIa: f.ia, conTarjeta: f.tarjeta, conSaludo: f.saludo };
+  };
+
   /** «Mi plan»: saldo por tipo, plan vigente y si puede crear un regalo más. */
   app.get('/api/cuenta/creditos', async (c) => {
     const account = await currentAccount(sql, c);
@@ -330,7 +335,8 @@ export function registerAccountRoutes(
       admin,
       puedeRegalar: canGive(b, charging, undefined, admin),
       conPlan: hasPlanFeatures(b, charging, admin),
-      conSaludo: await hasGreetings(sql, account.id, b, charging, admin),
+      // Cada servicio por separado: lo gratis puede incluir algunos (Claudia, 23/10).
+      ...(await featureFlags(account.id, b, charging, admin)),
       regalos: { bienvenida: b.welcome, pagos: b.paid, porOcasion: b.giftsByOccasion },
       listas: { cumple: b.birthdayLists, otras: b.otherLists, porOcasion: b.listsByOccasion },
       plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },

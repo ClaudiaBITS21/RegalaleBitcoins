@@ -3300,6 +3300,23 @@ svg.tarjeta-imagen {
   font: inherit;
 }
 
+.admin-ajuste label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-ajuste label input[inputmode='numeric'] {
+  width: 5em;
+}
+
+.admin-ajuste .admin-check input {
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+}
+
 .mi-plan ul {
   margin: 6px 0;
   padding-left: 20px;

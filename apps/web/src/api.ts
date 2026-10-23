@@ -119,10 +119,21 @@ export interface AdminCobro {
   readonly llave: { readonly huella: string; readonly direcciones: readonly string[] } | null;
   readonly llaveNueva: { readonly huella: string; readonly vigenteDesde: string } | null;
   readonly fundadoresQuedan: number;
+  /** Qué incluye lo gratis (API desde el 23/10). */
+  readonly gratis?: FreeOffer;
   readonly productos: ReadonlyArray<AdminProduct>;
   readonly pagos: ReadonlyArray<{ readonly id: string; readonly producto: string; readonly estado: string; readonly precioUsd: number; readonly sats: string; readonly satsRecibidos: string; readonly creado: string; readonly confirmado: string | null }>;
   readonly totales: { readonly confirmados: number; readonly usd: number; readonly sats: string };
   readonly registro: ReadonlyArray<{ readonly email: string; readonly accion: string; readonly detalle: string; readonly fecha: string }>;
+}
+
+/** Lo gratis (la bienvenida): regalos, listas y qué servicios incluye. Lo cambia el admin. */
+export interface FreeOffer {
+  readonly regalos: number;
+  readonly listas: number;
+  readonly ia: boolean;
+  readonly tarjeta: boolean;
+  readonly saludo: boolean;
 }
 
 /** Productos y precios públicos. */
@@ -142,6 +153,9 @@ export interface Products {
     readonly cupo: number | null;
     /** Si trae la salutación automática (API desde el 21/10). */
     readonly saludo?: boolean;
+    /** Imagen con IA y tarjeta imprimible (API desde el 23/10). */
+    readonly ia?: boolean;
+    readonly tarjeta?: boolean;
     readonly seVendeSuelto: boolean;
   }>;
 }
@@ -156,6 +170,9 @@ export interface Credits {
   readonly conPlan: boolean;
   /** Si tiene la salutación automática (Satoshi no la trae; API desde el 21/10). */
   readonly conSaludo?: boolean;
+  /** Imagen con IA y tarjeta imprimible por separado (API desde el 23/10; antes, conPlan). */
+  readonly conIa?: boolean;
+  readonly conTarjeta?: boolean;
   readonly regalos: { readonly bienvenida: number; readonly pagos: number; readonly porOcasion?: Readonly<Record<string, number>> };
   readonly listas: { readonly cumple: number; readonly otras: number; readonly porOcasion?: Readonly<Record<string, number>> };
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
@@ -295,6 +312,7 @@ export const api = {
   adminSetProduct: (p: Omit<AdminProduct, 'codigo' | 'precioSats' | 'activo' | 'plan'> & { producto: string }) => post<{ ok: true }>('/api/admin/producto', p),
   adminSetPrice: (producto: string, precioSats: number) => post<{ precioSats: string }>('/api/admin/precio', { producto, precioSats }),
   adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true; cuenta: AdminAccount }>('/api/admin/ajuste', a),
+  adminFree: (g: FreeOffer) => post<{ gratis: FreeOffer; cuentas: number }>('/api/admin/gratis', g),
   adminAccount: (email: string) => call<AdminAccount>(`/api/admin/cuenta?email=${encodeURIComponent(email)}`),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),

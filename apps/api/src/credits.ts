@@ -12,6 +12,56 @@ export const WELCOME_GIFTS = 5;
 /** La conexión o una transacción abierta. */
 type Tx = Sql | postgres.TransactionSql;
 
+/**
+ * Lo gratis (la bienvenida), editable desde el admin (Claudia, 23/10): cuántos regalos y listas
+ * trae y qué servicios incluye. Vive en la fila «bienvenida» de productos.
+ */
+export interface FreeOffer {
+  readonly regalos: number;
+  readonly listas: number;
+  readonly ia: boolean;
+  readonly tarjeta: boolean;
+  readonly saludo: boolean;
+}
+
+export async function freeOffer(sql: Tx): Promise<FreeOffer> {
+  const [r] = await sql<{ regalos: number; listas_otras: number; ia: boolean; tarjeta: boolean; saludo: boolean }[]>`
+    select regalos, listas_otras, ia, tarjeta, saludo from productos where codigo = 'bienvenida'`;
+  if (r === undefined) return { regalos: WELCOME_GIFTS, listas: 0, ia: false, tarjeta: false, saludo: false };
+  return { regalos: r.regalos, listas: r.listas_otras, ia: r.ia, tarjeta: r.tarjeta, saludo: r.saludo };
+}
+
+/**
+ * Cambia lo gratis. A las cuentas que todavía están en lo gratis (nunca compraron: sin pagos
+ * confirmados ni planes) les suma o resta la diferencia en lo que les queda de la bienvenida, sin
+ * bajar de cero; las que compraron conservan lo que tienen. Devuelve cuántas cuentas cambiaron.
+ */
+export async function setFreeOffer(sql: Sql, next: FreeOffer): Promise<{ before: FreeOffer; accounts: number }> {
+  return sql.begin(async (tx) => {
+    await tx`select codigo from productos where codigo = 'bienvenida' for update`;
+    const before = await freeOffer(tx);
+    await tx`
+      update productos set regalos = ${next.regalos}, listas_otras = ${next.listas}, ia = ${next.ia}, tarjeta = ${next.tarjeta}, saludo = ${next.saludo}
+      where codigo = 'bienvenida'`;
+    const changed = new Set<string>();
+    for (const [unidad, delta] of [['regalo', next.regalos - before.regalos], ['lista_otras', next.listas - before.listas]] as const) {
+      if (delta === 0) continue;
+      const rows = await tx<{ usuario_id: string }[]>`
+        insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia, motivo)
+        select u.id, 'ajuste', ${unidad}, greatest(${delta}::int, -coalesce(s.saldo, 0))::int, 'bienvenida', 'gratis', 'Cambio de lo gratis'
+        from usuarios u
+        left join (select usuario_id, sum(cantidad) as saldo from movimientos where unidad = ${unidad} and origen = 'bienvenida' group by 1) s on s.usuario_id = u.id
+        where not exists (select 1 from pagos p where p.usuario_id = u.id and p.estado = 'confirmado')
+          and not exists (select 1 from planes pl where pl.usuario_id = u.id)
+          and not exists (select 1 from movimientos m where m.usuario_id = u.id and m.origen = 'pago')
+          and greatest(${delta}::int, -coalesce(s.saldo, 0)) <> 0
+        returning usuario_id`;
+      for (const r of rows) changed.add(r.usuario_id);
+    }
+    return { before, accounts: changed.size };
+  });
+}
+
 /** ¿Está activo el cobro? Mientras no lo esté, regalar es gratis y no se consume nada. */
 export async function chargingActive(sql: Tx): Promise<boolean> {
   const [r] = await sql<{ valor: string }[]>`select valor from ajustes where clave = 'cobro_activo'`;
@@ -24,11 +74,15 @@ export async function setChargingActive(sql: Tx, active: boolean): Promise<void>
     on conflict (clave) do update set valor = excluded.valor, actualizado = now()`;
 }
 
-/** Los 5 regalos de bienvenida, al crear la cuenta (en la misma transacción). */
+/** Lo gratis (regalos y listas de bienvenida, según el admin), al crear la cuenta (en la misma transacción). */
 export async function grantWelcome(tx: Tx, accountId: string): Promise<void> {
-  await tx`
-    insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
-    values (${accountId}, 'otorgamiento', 'regalo', ${WELCOME_GIFTS}, 'bienvenida', 'bienvenida')`;
+  const free = await freeOffer(tx);
+  for (const [unidad, cantidad] of [['regalo', free.regalos], ['lista_otras', free.listas]] as const) {
+    if (cantidad <= 0) continue;
+    await tx`
+      insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia)
+      values (${accountId}, 'otorgamiento', ${unidad}, ${cantidad}, 'bienvenida', 'bienvenida')`;
+  }
 }
 
 export interface Plan {
@@ -118,6 +172,19 @@ export async function hasGreetings(sql: Tx, accountId: string, b: Balance, charg
     select 1 from pagos p join productos pr on pr.codigo = p.producto
     where p.usuario_id = ${accountId} and p.estado = 'confirmado' and pr.saludo limit 1`;
   return row !== undefined;
+}
+
+/** Qué servicios tiene una cuenta: los de un plan o compra, o los que el admin incluyó en lo gratis. */
+export interface Features {
+  readonly ia: boolean;
+  readonly tarjeta: boolean;
+  readonly saludo: boolean;
+}
+
+export async function features(sql: Tx, accountId: string, b: Balance, charging: boolean, admin = false): Promise<Features> {
+  const [free, greetings] = await Promise.all([freeOffer(sql), hasGreetings(sql, accountId, b, charging, admin)]);
+  const paid = hasPlanFeatures(b, charging, admin);
+  return { ia: paid || free.ia, tarjeta: paid || free.tarjeta, saludo: greetings || free.saludo };
 }
 
 /**

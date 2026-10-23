@@ -11,7 +11,7 @@ import { type Channel, readSent } from '../give/envios.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { PrintCard } from '../give/PrintCard.tsx';
-import { usePlanFeatures } from '../give/planFeatures.ts';
+import { useCardFeature } from '../give/planFeatures.ts';
 import { VincularCelu } from './VincularCelu.tsx';
 import { filterGifts, GIFT_ORDERS, type GiftOrder, sortGifts } from './orden.ts';
 import { formatChange, formatSats, formatValue } from '../format.ts';
@@ -108,7 +108,7 @@ export function PanelPage() {
   // La tarjeta imprimible de un regalo: se arma con el link (bóveda) y los datos públicos del regalo.
   const [card, setCard] = useState<GiftView | null>(null);
   const [cardFailed, setCardFailed] = useState<string | null>(null);
-  const conPlan = usePlanFeatures();
+  const conPlan = useCardFeature();
 
   const load = async () => {
     try {

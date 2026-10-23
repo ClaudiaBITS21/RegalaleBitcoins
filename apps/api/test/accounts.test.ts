@@ -130,6 +130,7 @@ describe('Cuentas con passkey', () => {
     await sql`delete from usuarios`;
     await sql`delete from ajustes`;
     await sql`delete from admins`;
+    await sql`update productos set regalos = 5, listas_otras = 0, ia = false, tarjeta = false, saludo = false where codigo = 'bienvenida'`;
     funded.clear();
     spent.clear();
     pays.clear();
@@ -414,6 +415,55 @@ describe('Cuentas con passkey', () => {
     assert.equal((await creditos()).regalos.bienvenida, 5);
   });
 
+  it('lo gratis se edita desde el admin: ajusta a quienes nunca compraron, no a quienes compraron (Claudia, 23/10)', async () => {
+    await setChargingActive(sql, true);
+    const ana = await signUp('ana@example.com');
+    const bob = await signUp('bob@example.com');
+    const admin = await signUp('admin@example.com');
+    const idOf = async (email: string) => ((await sql<{ id: string }[]>`select id from usuarios where email = ${email}`)[0] as { id: string }).id;
+    // Ana ya usó 2 regalos de bienvenida; Bob compró un pack.
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${await idOf('ana@example.com')}, 'ajuste', 'regalo', -2, 'bienvenida', 'prueba')`;
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen) values (${await idOf('bob@example.com')}, 'compra', 'regalo', 10, 'pago')`;
+    type C = { regalos: { bienvenida: number; pagos: number }; listas: { otras: number }; conIa: boolean; conTarjeta: boolean; conSaludo: boolean };
+    const creditos = async (cookie: string) => (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as C;
+    const a0 = await creditos(ana.cookie);
+    assert.deepEqual([a0.regalos.bienvenida, a0.listas.otras, a0.conIa, a0.conTarjeta, a0.conSaludo], [3, 0, false, false, false]);
+    // Sin passkey no se cambia; con datos inválidos, tampoco.
+    mails = [];
+    await req('/api/cuenta/link', { email: 'admin@example.com' });
+    const token = /#acceso=([A-Za-z0-9_-]{43})/.exec(mails[0]?.text ?? '')?.[1] as string;
+    const viaLink = cookieOf(await req('/api/cuenta/link/canje', { token }));
+    const nuevo = { regalos: 6, listas: 1, ia: true, tarjeta: false, saludo: true };
+    assert.equal((await req('/api/admin/gratis', nuevo, viaLink)).status, 403);
+    assert.equal((await req('/api/admin/gratis', { ...nuevo, listas: -1 }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/gratis', nuevo, ana.cookie)).status, 404);
+    const r = (await (await req('/api/admin/gratis', nuevo, admin.cookie)).json()) as { cuentas: number };
+    assert.equal(r.cuentas, 2); // Ana y el admin (nunca compraron); Bob no
+    const a1 = await creditos(ana.cookie);
+    assert.deepEqual([a1.regalos.bienvenida, a1.listas.otras, a1.conIa, a1.conTarjeta, a1.conSaludo], [4, 1, true, false, true]);
+    const b1 = await creditos(bob.cookie);
+    assert.deepEqual([b1.regalos.bienvenida, b1.regalos.pagos, b1.listas.otras], [5, 10, 0]);
+    // Una cuenta nueva ya recibe lo gratis nuevo; la página de precios lo muestra.
+    const cleo = await signUp('cleo@example.com');
+    const c1 = await creditos(cleo.cookie);
+    assert.deepEqual([c1.regalos.bienvenida, c1.listas.otras], [6, 1]);
+    const prods = (await (await req('/api/productos')).json()) as { productos: Array<{ codigo: string; regalos: number; listasOtras: number; ia: boolean; tarjeta: boolean; saludo: boolean }> };
+    const bienvenida = prods.productos.find((p) => p.codigo === 'bienvenida');
+    assert.deepEqual([bienvenida?.regalos, bienvenida?.listasOtras, bienvenida?.ia, bienvenida?.tarjeta, bienvenida?.saludo], [6, 1, true, false, true]);
+    // Bajarlo descuenta lo que queda, sin pasar de cero.
+    await req('/api/admin/gratis', { ...nuevo, regalos: 0, listas: 0 }, admin.cookie);
+    const a2 = await creditos(ana.cookie);
+    assert.deepEqual([a2.regalos.bienvenida, a2.listas.otras], [0, 0]);
+    assert.equal((await creditos(bob.cookie)).regalos.bienvenida, 5);
+    // La imagen con IA sigue incluida en lo gratis: Ana puede crear un regalo con imagen propia... sin regalos de bienvenida no.
+    const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 '), Buffer.alloc(200, 7)]).toString('base64');
+    const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
+    const gift = { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, estilo: 'propia', imagenPropia: webp, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 };
+    assert.equal((await req('/api/gifts', gift, ana.cookie)).status, 409);
+    await req('/api/admin/gratis', { ...nuevo, regalos: 1, listas: 0 }, admin.cookie);
+    assert.equal((await req('/api/gifts', gift, ana.cookie)).status, 201);
+  });
+
   it('cuenta con solo el mail (sin passkey): se confirma antes de regalar; con el cobro activo, sin cuenta no se regala', async () => {
     assert.equal((await req('/api/cuenta/registro-mail', { email: 'no-es-un-mail' })).status, 400);
     const res = await req('/api/cuenta/registro-mail', { email: 'Leo@Example.com', idioma: 'pt' });
@@ -531,7 +581,7 @@ describe('Cuentas con passkey', () => {
     const productos = async () => (await (await req('/api/productos')).json()) as { seVende: boolean; cobroActivo: boolean; fundadoresQuedan: number; productos: Array<{ codigo: string; precioSats: string; seVendeSuelto: boolean }> };
     const p0 = await productos();
     assert.deepEqual([p0.seVende, p0.cobroActivo, p0.fundadoresQuedan], [false, false, 21]);
-    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, regalosLibres: false, dias: null, cupo: null, saludo: false, seVendeSuelto: true });
+    assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, regalosLibres: false, dias: null, cupo: null, saludo: false, ia: true, tarjeta: true, seVendeSuelto: true });
     assert.equal(p0.productos.find((p) => p.codigo === 'lista_otras')?.seVendeSuelto, false);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' })).status, 401);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).status, 409);

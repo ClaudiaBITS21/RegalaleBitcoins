@@ -3,7 +3,7 @@ import type { Context, Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
 import { adminEmails as allAdmins, isAdmin } from './admins.ts';
 import type { Account } from './accounts.ts';
-import { balance, type Balance, chargingActive, hasGreetings, hasPlanFeatures, setChargingActive } from './credits.ts';
+import { balance, type Balance, chargingActive, features, freeOffer, hasPlanFeatures, setChargingActive, setFreeOffer } from './credits.ts';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
 import type { Mail, Mailer } from './mail.ts';
@@ -56,7 +56,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     await admin(c);
     // Primero la llave vigente: si un cambio ya cumplió las 24 h, lo pasa a vigente antes de leer el pendiente.
     const key = await paymentKey(sql, network);
-    const [charging, pending, founders] = await Promise.all([chargingActive(sql), pendingPaymentKey(sql, network), foundersLeft(sql)]);
+    const [charging, pending, founders, gratis] = await Promise.all([chargingActive(sql), pendingPaymentKey(sql, network), foundersLeft(sql), freeOffer(sql)]);
     const productos = await sql<{ codigo: string; precio_sats: string; activo: boolean; regalos: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null }[]>`
       select codigo, precio_sats, activo, regalos, listas_otras, plan, regalos_libres, dias, cupo from productos order by precio_sats, codigo`;
     const pagos = await sql<{ id: string; producto: string; estado: string; sats: string; sats_recibidos: string; precio_cents: number; creado: Date; confirmado: Date | null }[]>`
@@ -70,6 +70,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       llave: key === null ? null : { huella: keyFingerprint(key), direcciones: [0, 1, 2].map((i) => deriveListAddress(key, i).address) },
       llaveNueva: pending === null ? null : { huella: keyFingerprint(pending.key), vigenteDesde: pending.from.toISOString() },
       fundadoresQuedan: founders,
+      gratis,
       productos: productos.map((p) => ({
         codigo: p.codigo,
         precioSats: p.precio_sats,
@@ -182,6 +183,24 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     return c.json({ ok: true });
   });
 
+  /**
+   * Qué incluye lo gratis (Claudia, 23/10): regalos, listas y servicios. Las cuentas que nunca
+   * compraron reciben (o pierden) la diferencia en lo que les queda; las que compraron, no cambian.
+   */
+  app.post('/api/admin/gratis', async (c) => {
+    const account = await admin(c, true);
+    const { regalos, listas, ia, tarjeta, saludo } = await body(c);
+    const count = (v: unknown, max: number) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max;
+    if (!count(regalos, 1000) || !count(listas, 100) || typeof ia !== 'boolean' || typeof tarjeta !== 'boolean' || typeof saludo !== 'boolean') {
+      throw new ApiError(400, 'pedido_invalido');
+    }
+    const next = { regalos: regalos as number, listas: listas as number, ia, tarjeta, saludo };
+    const { before, accounts } = await setFreeOffer(sql, next);
+    const fmt = (f: typeof next) => `regalos ${f.regalos}, listas ${f.listas}, IA ${f.ia ? 'sí' : 'no'}, tarjeta ${f.tarjeta ? 'sí' : 'no'}, salutación ${f.saludo ? 'sí' : 'no'}`;
+    await log(account, 'gratis', `${fmt(before)} → ${fmt(next)}; ${accounts} cuentas ajustadas`);
+    return c.json({ gratis: next, cuentas: accounts });
+  });
+
   /** Otorgar o quitar créditos a una cuenta, con motivo. */
   app.post('/api/admin/ajuste', async (c) => {
     const account = await admin(c, true);
@@ -220,7 +239,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       admin: esAdmin,
       cobroActivo: charging,
       conPlan: hasPlanFeatures(b, charging, esAdmin),
-      conSaludo: await hasGreetings(sql, id, b, charging, esAdmin),
+      ...(await features(sql, id, b, charging, esAdmin).then((f) => ({ conIa: f.ia, conTarjeta: f.tarjeta, conSaludo: f.saludo }))),
       ...saldo(b),
       movimientos: moves.map((m) => ({ tipo: m.tipo, unidad: m.unidad, cantidad: m.cantidad, origen: m.origen, motivo: m.motivo, fecha: m.creado.toISOString() })),
     };
