@@ -17,7 +17,7 @@ const ESTADOS: Readonly<Record<string, string>> = {
   devuelto: 'Devuelto',
 };
 
-const errorText = (e: unknown): string => {
+export const errorText = (e: unknown): string => {
   if (!(e instanceof ApiFailure)) return 'No se pudo completar.';
   if (e.code === 'passkey_requerida') return 'Hace falta entrar con tu passkey (no alcanza el link por mail).';
   if (e.code === 'llave_invalida') return 'La llave no es válida para esta red. Tiene que ser wpkh([huella/84h/0h/0h]xpub…) o una zpub.';
@@ -43,11 +43,6 @@ export function AdminCobroPanel() {
   const [llave, setLlave] = useState('');
   const [vista, setVista] = useState<{ huella: string; direcciones: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [ajuste, setAjuste] = useState({ email: '', unidad: 'regalo', cantidad: '', motivo: '' });
-  // Ajustes y consulta de cuentas: el resultado (o el error) se muestra al lado del formulario.
-  const [cuenta, setCuenta] = useState<AdminAccount | null>(null);
-  const [buscar, setBuscar] = useState('');
-  const [aviso, setAviso] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [refunds, setRefunds] = useState<Awaited<ReturnType<typeof api.adminRefunds>>['pedidos']>([]);
 
   const load = async () => {
@@ -195,92 +190,55 @@ export function AdminCobroPanel() {
 
       {data.gratis !== undefined && <FreeOfferForm key={JSON.stringify(data.gratis)} gratis={data.gratis} busy={busy} setBusy={setBusy} reload={load} />}
 
-      <h3>Cuentas: qué tiene cada una</h3>
-      <form
-        class="admin-ajuste"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setAviso(null);
-          setBusy(true);
-          api
-            .adminAccount(buscar.trim())
-            .then(setCuenta)
-            .catch((err: unknown) => (setCuenta(null), setAviso({ kind: 'error', text: errorText(err) })))
-            .finally(() => setBusy(false));
-        }}
-      >
-        <input type="email" required placeholder="mail de la cuenta" value={buscar} onInput={(e) => setBuscar((e.currentTarget as HTMLInputElement).value)} />
-        <Button type="submit" kind="contorno" disabled={busy}>
-          Ver la cuenta
-        </Button>
-      </form>
-
-      <h3>Ajuste manual de créditos</h3>
-      <form
-        class="admin-ajuste"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setAviso(null);
-          const cantidad = Number(ajuste.cantidad);
-          if (!Number.isInteger(cantidad) || cantidad === 0) return setAviso({ kind: 'error', text: 'La cantidad tiene que ser un número entero (negativo para quitar).' });
-          const email = ajuste.email.trim();
-          const unidad = UNIDADES[ajuste.unidad] ?? ajuste.unidad;
-          setBusy(true);
-          api
-            .adminAdjust({ email, unidad: ajuste.unidad, cantidad, motivo: ajuste.motivo.trim() })
-            .then((r) => {
-              setCuenta(r.cuenta);
-              setBuscar(email);
-              setAviso({ kind: 'ok', text: `Listo: ${cantidad > 0 ? '+' : ''}${cantidad} ${unidad} para ${email}. Abajo, lo que tiene ahora.` });
-              setAjuste({ email: '', unidad: 'regalo', cantidad: '', motivo: '' });
-            })
-            .catch((err: unknown) => setAviso({ kind: 'error', text: errorText(err) }))
-            .finally(() => setBusy(false));
-        }}
-      >
-        <input type="email" required placeholder="mail de la cuenta" value={ajuste.email} onInput={(e) => setAjuste({ ...ajuste, email: (e.currentTarget as HTMLInputElement).value })} />
-        <select value={ajuste.unidad} onChange={(e) => setAjuste({ ...ajuste, unidad: (e.currentTarget as HTMLSelectElement).value })}>
-          <option value="regalo">Regalos</option>
-          <option value="lista_cumple">Listas de cumpleaños</option>
-          <option value="lista_otras">Listas de otra ocasión</option>
-        </select>
-        <input inputMode="numeric" required placeholder="cantidad (+3, -1)" value={ajuste.cantidad} onInput={(e) => setAjuste({ ...ajuste, cantidad: (e.currentTarget as HTMLInputElement).value })} />
-        <input required minLength={3} maxLength={300} placeholder="motivo" value={ajuste.motivo} onInput={(e) => setAjuste({ ...ajuste, motivo: (e.currentTarget as HTMLInputElement).value })} />
-        <Button type="submit" disabled={busy}>
-          Registrar ajuste
-        </Button>
-      </form>
-      {aviso !== null && <Notice kind={aviso.kind}>{aviso.text}</Notice>}
-      {cuenta !== null && <AccountCard cuenta={cuenta} lang={lang} />}
-
       <h3>Arrepentimientos</h3>
       {refunds.length === 0 ? (
         <p class="texto-suave">No hay pedidos.</p>
       ) : (
-        <ul class="admin-lista">
-          {refunds.map((r) => (
-            <li key={r.codigo}>
-              <strong>{r.codigo}</strong> · {productName(r.producto)} · pago <code>{r.pago}</code> · {new Date(r.fecha).toLocaleString(lang)}
-              <br />
-              Devolver {sats(r.sats)} a <code>{r.direccion}</code>
-              <br />
-              {r.estado === 'devuelto' ? (
-                'Devuelto.'
-              ) : (
-                <button
-                  type="button"
-                  class="boton-texto"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`¿Ya mandaste ${sats(r.sats)} a ${r.direccion}? Se quitan los créditos de esa compra.`)) void run(() => api.adminRefunded(r.codigo));
-                  }}
-                >
-                  Ya lo devolví
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div class="admin-tabla-scroll">
+          <table class="admin-tabla">
+            <thead>
+              <tr>
+                <th>Trámite</th>
+                <th>Producto</th>
+                <th>Fecha</th>
+                <th>Devolver</th>
+                <th>A la dirección</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {refunds.map((r) => (
+                <tr key={r.codigo}>
+                  <td>
+                    <strong>{r.codigo}</strong>
+                  </td>
+                  <td>{productName(r.producto)}</td>
+                  <td>{new Date(r.fecha).toLocaleString(lang)}</td>
+                  <td>{sats(r.sats)}</td>
+                  <td class="admin-celda-larga">
+                    <code>{r.direccion}</code>
+                  </td>
+                  <td>
+                    {r.estado === 'devuelto' ? (
+                      'Devuelto'
+                    ) : (
+                      <button
+                        type="button"
+                        class="boton-texto"
+                        disabled={busy}
+                        onClick={() => {
+                          if (window.confirm(`¿Ya mandaste ${sats(r.sats)} a ${r.direccion}? Se quitan los créditos de esa compra.`)) void run(() => api.adminRefunded(r.codigo));
+                        }}
+                      >
+                        Ya lo devolví
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <h3>Pagos</h3>
@@ -322,15 +280,29 @@ export function AdminCobroPanel() {
         </div>
       )}
 
-      <h3>Registro</h3>
-      <ul class="admin-lista">
-        {data.registro.map((r, i) => (
-          <li key={i}>
-            {new Date(r.fecha).toLocaleString(lang)} · {r.email} · {r.accion}
-            {r.detalle !== '' && ` · ${r.detalle}`}
-          </li>
-        ))}
-      </ul>
+      <h3>Registro de cambios del admin</h3>
+      <div class="admin-tabla-scroll">
+        <table class="admin-tabla admin-tabla-izq">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Quién</th>
+              <th>Qué</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.registro.map((r, i) => (
+              <tr key={i}>
+                <td>{new Date(r.fecha).toLocaleString(lang)}</td>
+                <td>{r.email}</td>
+                <td>{r.accion}</td>
+                <td class="admin-celda-larga">{r.detalle}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -381,53 +353,85 @@ function ProductRow({ product: p, busy, onError, run }: { product: AdminProduct;
   );
 }
 
-const UNIDADES: Readonly<Record<string, string>> = { regalo: 'regalos', lista_cumple: 'listas de cumpleaños', lista_otras: 'listas de otra ocasión' };
-const ORIGENES: Readonly<Record<string, string>> = { bienvenida: 'bienvenida', pago: 'pago', codigo: 'cupón', campana: 'campaña', admin: 'admin', plan: 'plan' };
+export const UNIDADES: Readonly<Record<string, string>> = { regalo: 'regalos', lista_cumple: 'listas de cumpleaños', lista_otras: 'listas de otra ocasión' };
+export const ORIGENES: Readonly<Record<string, string>> = { bienvenida: 'bienvenida', pago: 'pago', codigo: 'cupón', campana: 'campaña', admin: 'admin', plan: 'plan' };
 
-/** Qué tiene una cuenta: si es admin, qué funciones tiene, saldo por unidad, plan y últimos movimientos. */
-function AccountCard({ cuenta: c, lang }: { cuenta: AdminAccount; lang: string }) {
-  const si = (v: boolean | undefined) => (v === true ? 'sí' : 'no');
+/** Qué tiene una cuenta: si es admin, qué servicios tiene, saldo por unidad, plan y últimos movimientos. */
+export function AccountCard({ cuenta: c, lang }: { cuenta: AdminAccount; lang: string }) {
+  const si = (v: boolean | undefined) => (v === true ? 'Sí' : 'No');
   const porOcasion = (m: Readonly<Record<string, number>> | undefined) =>
-    m === undefined || Object.keys(m).length === 0 ? null : Object.entries(m).map(([k, n]) => `${k}: ${n}`).join(', ');
+    m === undefined || Object.keys(m).length === 0 ? '' : ` (por ocasión: ${Object.entries(m).map(([k, n]) => `${k} ${n}`).join(', ')})`;
+  const plan =
+    c.plan === null
+      ? 'Ninguno'
+      : `${c.plan.tipo}, ${c.plan.regalosQuedan === null ? 'regalos libres' : `quedan ${c.plan.regalosQuedan} regalos`}${c.plan.hasta === null ? ', sin vencimiento' : `, hasta ${new Date(c.plan.hasta).toLocaleDateString(lang)}`}`;
   return (
-    <div class="caja admin-cuenta">
-      <p>
-        <strong>{c.email}</strong>
-        {c.admin && <> · Admin: todo activado y libre, sin descontar créditos</>}
-      </p>
-      <ul class="admin-lista">
-        <li>Imagen con IA: {si(c.conIa ?? c.conPlan)}</li>
-        <li>Tarjeta imprimible: {si(c.conTarjeta ?? c.conPlan)}</li>
-        <li>Salutación automática (mensajes de ejemplo): {si(c.conSaludo)}</li>
-        <li>
-          Regalos: {c.regalos.bienvenida} de bienvenida, {c.regalos.pagos} pagos o asignados
-          {porOcasion(c.regalos.porOcasion) !== null && <> · por ocasión: {porOcasion(c.regalos.porOcasion)}</>}
-        </li>
-        <li>
-          Listas: {c.listas.cumple} de cumpleaños, {c.listas.otras} de otra ocasión
-          {porOcasion(c.listas.porOcasion) !== null && <> · por ocasión: {porOcasion(c.listas.porOcasion)}</>}
-        </li>
-        <li>
-          Plan:{' '}
-          {c.plan === null
-            ? 'ninguno'
-            : `${c.plan.tipo}, ${c.plan.regalosQuedan === null ? 'regalos libres' : `quedan ${c.plan.regalosQuedan} regalos`}${c.plan.hasta === null ? ', sin vencimiento' : `, hasta ${new Date(c.plan.hasta).toLocaleDateString(lang)}`}`}
-        </li>
-        {!c.cobroActivo && <li>El cobro está apagado: hoy todas las cuentas tienen todo.</li>}
-      </ul>
+    <div class="admin-cuenta">
+      {c.admin && <Notice kind="ok">Admin: todo activado y libre, sin descontar créditos.</Notice>}
+      {!c.cobroActivo && <p class="texto-suave">El cobro está apagado: hoy todas las cuentas tienen todo.</p>}
+      <dl class="admin-datos">
+        <div>
+          <dt>Regalos de bienvenida</dt>
+          <dd>{c.regalos.bienvenida}</dd>
+        </div>
+        <div>
+          <dt>Regalos pagos o asignados</dt>
+          <dd>
+            {c.regalos.pagos}
+            {porOcasion(c.regalos.porOcasion)}
+          </dd>
+        </div>
+        <div>
+          <dt>Listas</dt>
+          <dd>
+            {c.listas.cumple} de cumpleaños · {c.listas.otras} de otra ocasión{porOcasion(c.listas.porOcasion)}
+          </dd>
+        </div>
+        <div>
+          <dt>Plan</dt>
+          <dd>{plan}</dd>
+        </div>
+        <div>
+          <dt>Imagen con IA</dt>
+          <dd>{si(c.conIa ?? c.conPlan)}</dd>
+        </div>
+        <div>
+          <dt>Tarjeta imprimible</dt>
+          <dd>{si(c.conTarjeta ?? c.conPlan)}</dd>
+        </div>
+        <div>
+          <dt>Salutación automática</dt>
+          <dd>{si(c.conSaludo)}</dd>
+        </div>
+      </dl>
       {c.movimientos.length > 0 && (
-        <>
-          <p class="texto-suave">Últimos movimientos</p>
-          <ul class="admin-lista">
-            {c.movimientos.map((m, i) => (
-              <li key={i}>
-                {new Date(m.fecha).toLocaleString(lang)} · {m.tipo} · {m.cantidad > 0 ? '+' : ''}
-                {m.cantidad} {UNIDADES[m.unidad] ?? m.unidad} · {ORIGENES[m.origen] ?? m.origen}
-                {m.motivo !== null && <> · «{m.motivo}»</>}
-              </li>
-            ))}
-          </ul>
-        </>
+        <div class="admin-tabla-scroll">
+          <table class="admin-tabla admin-tabla-izq">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Movimiento</th>
+                <th>Cantidad</th>
+                <th>Origen</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.movimientos.map((m, i) => (
+                <tr key={i}>
+                  <td>{new Date(m.fecha).toLocaleString(lang)}</td>
+                  <td>{m.tipo}</td>
+                  <td>
+                    {m.cantidad > 0 ? '+' : ''}
+                    {m.cantidad} {UNIDADES[m.unidad] ?? m.unidad}
+                  </td>
+                  <td>{ORIGENES[m.origen] ?? m.origen}</td>
+                  <td class="admin-celda-larga">{m.motivo ?? ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

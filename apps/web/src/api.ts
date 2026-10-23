@@ -178,6 +178,36 @@ export interface Credits {
   readonly plan: { readonly tipo: 'anual' | 'fundador'; readonly hasta: string | null; readonly regalosQuedan: number | null; readonly listas: number } | null;
 }
 
+/** Una cuenta en la lista del admin. */
+export interface AdminUser {
+  readonly email: string;
+  readonly alta: string;
+  readonly passkey: boolean;
+  readonly admin: boolean;
+  /** Regalos y listas que armó. */
+  readonly regalos: number;
+  readonly listas: number;
+  /** Compras confirmadas y si tiene un plan vigente. */
+  readonly compras: number;
+  readonly plan: boolean;
+  /** Créditos que le quedan (sin contar el plan). */
+  readonly saldoRegalos: number;
+  readonly saldoListas: number;
+}
+
+/** Algo entregado a mano o con cupón (un movimiento de créditos). */
+export interface AdminDelivery {
+  readonly email: string;
+  readonly tipo: string;
+  readonly unidad: string;
+  readonly cantidad: number;
+  readonly origen: string;
+  readonly motivo: string | null;
+  readonly referencia: string | null;
+  readonly ocasion: string | null;
+  readonly fecha: string;
+}
+
 /** Qué tiene una cuenta, visto desde el admin. */
 export interface AdminAccount extends Omit<Credits, 'puedeRegalar'> {
   readonly email: string;
@@ -313,6 +343,8 @@ export const api = {
   adminSetPrice: (producto: string, precioSats: number) => post<{ precioSats: string }>('/api/admin/precio', { producto, precioSats }),
   adminAdjust: (a: { email: string; unidad: string; cantidad: number; motivo: string }) => post<{ ok: true; cuenta: AdminAccount }>('/api/admin/ajuste', a),
   adminFree: (g: FreeOffer) => post<{ gratis: FreeOffer; cuentas: number }>('/api/admin/gratis', g),
+  adminUsers: (q = '') => call<{ total: number; usuarios: AdminUser[] }>(`/api/admin/usuarios?q=${encodeURIComponent(q)}`),
+  adminDeliveries: () => call<{ entregas: AdminDelivery[] }>('/api/admin/entregas'),
   adminAccount: (email: string) => call<AdminAccount>(`/api/admin/cuenta?email=${encodeURIComponent(email)}`),
   adminSummary: (fresh = false) => call<AdminSummary>(`/api/admin/resumen${fresh ? '?fresco=1' : ''}`),
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),

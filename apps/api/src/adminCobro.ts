@@ -250,6 +250,68 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     plan: b.plan === null ? null : { tipo: b.plan.type, hasta: b.plan.until?.toISOString() ?? null, regalosQuedan: b.plan.giftsLeft, listas: b.plan.lists },
   });
 
+  /** Todas las cuentas, en lista (Claudia, 23/10): alta, passkey, regalos, listas, compras y saldo. */
+  app.get('/api/admin/usuarios', async (c) => {
+    await admin(c);
+    const q = (c.req.query('q') ?? '').trim().toLowerCase().slice(0, 100);
+    const like = `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+    const rows = await sql<{ email: string; creado: Date; passkey: boolean; regalos: string; listas: string; compras: string; plan: boolean; saldo_regalos: string; saldo_listas: string }[]>`
+      select u.email, u.creado,
+        exists (select 1 from credenciales c where c.usuario_id = u.id) as passkey,
+        (select count(*) from regalos r where r.usuario_id = u.id and r.red = ${network.name}) as regalos,
+        (select count(*) from listas l where l.usuario_id = u.id) as listas,
+        (select count(*) from pagos p where p.usuario_id = u.id and p.estado = 'confirmado') as compras,
+        exists (select 1 from planes pl where pl.usuario_id = u.id and pl.desde <= now() and (pl.hasta is null or pl.hasta > now())) as plan,
+        (select coalesce(sum(cantidad), 0) from movimientos m where m.usuario_id = u.id and m.unidad = 'regalo') as saldo_regalos,
+        (select coalesce(sum(cantidad), 0) from movimientos m where m.usuario_id = u.id and m.unidad <> 'regalo') as saldo_listas
+      from usuarios u
+      where ${q} = '' or u.email like ${like}
+      order by u.creado desc limit 500`;
+    const [total] = await sql<{ n: string }[]>`select count(*) as n from usuarios`;
+    const admins = new Set(await allAdmins(sql, adminEmails));
+    return c.json({
+      total: Number(total?.n ?? 0),
+      usuarios: rows.map((r) => ({
+        email: r.email,
+        alta: r.creado.toISOString(),
+        passkey: r.passkey,
+        admin: admins.has(r.email),
+        regalos: Number(r.regalos),
+        listas: Number(r.listas),
+        compras: Number(r.compras),
+        plan: r.plan,
+        saldoRegalos: Number(r.saldo_regalos),
+        saldoListas: Number(r.saldo_listas),
+      })),
+    });
+  });
+
+  /**
+   * Lo entregado a mano o con cupón, en lista (Claudia, 23/10): ajustes del admin y créditos de
+   * cupones y campañas. No incluye lo gratis ni las compras con pago.
+   */
+  app.get('/api/admin/entregas', async (c) => {
+    await admin(c);
+    const rows = await sql<{ email: string; tipo: string; unidad: string; cantidad: number; origen: string; motivo: string | null; referencia: string | null; ocasion: string | null; creado: Date }[]>`
+      select u.email, m.tipo, m.unidad, m.cantidad, m.origen, m.motivo, m.referencia, m.ocasion, m.creado
+      from movimientos m join usuarios u on u.id = m.usuario_id
+      where m.tipo <> 'consumo' and m.tipo <> 'devolucion' and (m.origen = 'admin' or m.origen in ('codigo', 'campana'))
+      order by m.id desc limit 300`;
+    return c.json({
+      entregas: rows.map((r) => ({
+        email: r.email,
+        tipo: r.tipo,
+        unidad: r.unidad,
+        cantidad: r.cantidad,
+        origen: r.origen,
+        motivo: r.motivo,
+        referencia: r.referencia,
+        ocasion: r.ocasion,
+        fecha: r.creado.toISOString(),
+      })),
+    });
+  });
+
   app.get('/api/admin/cuenta', async (c) => {
     await admin(c);
     const email = (c.req.query('email') ?? '').trim().toLowerCase();

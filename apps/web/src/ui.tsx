@@ -489,10 +489,10 @@ function InstallButton() {
   );
 }
 
-export function Layout({ children, testnet, onBack }: { children: ComponentChildren; testnet: boolean; onBack?: (() => void) | undefined }) {
+export function Layout({ children, testnet, onBack, wide = false }: { children: ComponentChildren; testnet: boolean; onBack?: (() => void) | undefined; wide?: boolean }) {
   const { t } = useI18n();
   return (
-    <div class="pagina">
+    <div class={wide ? 'pagina pagina-ancha' : 'pagina'}>
       {testnet && (
         <p class="aviso-red" role="note">
           {t('red.prueba')}

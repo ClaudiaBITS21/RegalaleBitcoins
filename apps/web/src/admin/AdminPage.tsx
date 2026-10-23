@@ -6,11 +6,31 @@ import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AdminAdminsPanel } from './AdminAdmins.tsx';
 import { AdminCobroPanel } from './AdminCobro.tsx';
+import { AdminCuentasPanel } from './AdminCuentas.tsx';
+import { AdminCuponesPanel } from './AdminCupones.tsx';
 import { AdminDenunciasPanel } from './AdminDenuncias.tsx';
+import { AdminEntregasPanel } from './AdminEntregas.tsx';
 
-// Panel interno de administración (/admin). Solo para los mails de ADMIN_EMAILS; muestra
-// números agregados, nunca datos de las personas ni de los regalos. Textos solo en castellano:
-// es una herramienta interna, no parte del sitio público.
+// Panel interno de administración (/admin). Solo para los admins. Textos solo en castellano: es
+// una herramienta interna, no parte del sitio público. Desde el 23/10 (Claudia) va en secciones
+// (resumen, cuentas, entregas, cupones, cobro, denuncias, admins), a lo ancho en la compu y con
+// listas en vez de bloques de texto. El resumen sigue siendo de números agregados; las cuentas y
+// las entregas muestran el mail de cada cuenta.
+
+const SECCIONES = [
+  ['resumen', 'Resumen'],
+  ['cuentas', 'Cuentas'],
+  ['entregas', 'Entregas'],
+  ['cupones', 'Cupones'],
+  ['cobro', 'Cobro y precios'],
+  ['denuncias', 'Denuncias'],
+  ['admins', 'Admins'],
+] as const;
+type Seccion = (typeof SECCIONES)[number][0];
+const seccionDeUrl = (): Seccion => {
+  const h = window.location.hash.slice(1);
+  return SECCIONES.some(([k]) => k === h) ? (h as Seccion) : 'resumen';
+};
 
 const STATE_LABELS: Readonly<Record<string, string>> = {
   esperando: 'Esperando pago',
@@ -133,6 +153,12 @@ function Days({ data }: { data: AdminSummary['porDia'] }) {
 
 export function AdminPage() {
   const { lang } = useI18n();
+  const [seccion, setSeccion] = useState<Seccion>(seccionDeUrl);
+  useEffect(() => {
+    const onHash = () => setSeccion(seccionDeUrl());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [data, setData] = useState<AdminSummary | null>(null);
   const [error, setError] = useState<'sesion' | 'prohibido' | 'red' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -175,9 +201,8 @@ export function AdminPage() {
   } else {
     const paid = data.regalos.muestra - (data.regalos.porEstado.esperando ?? 0) - (data.regalos.porEstado.sin_dato ?? 0);
     const opened = (data.regalos.porEstado.reclamado ?? 0) + (data.regalos.porEstado.reclamo_programado ?? 0);
-    body = (
-      <div class="admin">
-        <StepTitle>Admin · {data.red}</StepTitle>
+    const resumen = (
+      <>
         <p class="texto-suave">
           Actualizado {new Date(data.generado).toLocaleString(lang)}.{' '}
           <button type="button" class="boton-texto" disabled={busy} onClick={() => void load(true)}>
@@ -193,21 +218,23 @@ export function AdminPage() {
           <Tile label="Recibido en regalos" value={sats(data.sats.recibidos)} detail={`Todavía en regalos: ${sats(data.sats.enRegalos)}`} />
         </div>
         {data.regalos.parcial && <Notice>Estados y montos de los {n(data.regalos.muestra)} regalos más recientes.</Notice>}
-        <AdminCobroPanel />
-        <AdminDenunciasPanel />
-        <AdminAdminsPanel />
         <Days data={data.porDia} />
+        <div class="admin-grilla">
         <Bars title="Embudo" data={{ 'Creados': data.regalos.muestra, 'Pagados': paid, 'Abiertos': opened }} />
         <Motives data={data} n={n} pct={pct} usd={(x) => formatUsd(x, lang)} />
         {Object.keys(data.ocasionesLibres).length > 0 && <Bars title="Ocasiones escritas a mano (usadas por 3 o más)" data={data.ocasionesLibres} />}
-        <Bars title="Montos (en dólares al crear el regalo)" data={data.montosUsd.rangos} label={(k) => `US$ ${k}`} />
-        <p class="texto-suave">
-          Promedio {data.montosUsd.promedio === null ? '—' : formatUsd(data.montosUsd.promedio, lang)} · mediana{' '}
-          {data.montosUsd.mediana === null ? '—' : formatUsd(data.montosUsd.mediana, lang)}
-        </p>
+        <div>
+          <Bars title="Montos (en dólares al crear el regalo)" data={data.montosUsd.rangos} label={(k) => `US$ ${k}`} />
+          <p class="texto-suave">
+            Promedio {data.montosUsd.promedio === null ? '—' : formatUsd(data.montosUsd.promedio, lang)} · mediana{' '}
+            {data.montosUsd.mediana === null ? '—' : formatUsd(data.montosUsd.mediana, lang)}
+          </p>
+        </div>
         <Bars title="Estado de los regalos" data={data.regalos.porEstado} label={(k) => STATE_LABELS[k] ?? k} />
-        <Bars title="Tiempo hasta que lo abren" data={data.tiempoHastaAbrir.rangos} />
-        {data.tiempoHastaAbrir.medianaHoras !== null && <p class="texto-suave">Mediana: {n(data.tiempoHastaAbrir.medianaHoras)} h desde que se creó.</p>}
+        <div>
+          <Bars title="Tiempo hasta que lo abren" data={data.tiempoHastaAbrir.rangos} />
+          {data.tiempoHastaAbrir.medianaHoras !== null && <p class="texto-suave">Mediana: {n(data.tiempoHastaAbrir.medianaHoras)} h desde que se creó.</p>}
+        </div>
         <Bars title="Estilo de tarjeta" data={data.porEstilo} label={(k) => STYLE_LABELS[k] ?? k} />
         <Bars title="Día de la semana (hora de Argentina)" data={data.porDiaSemana} label={(k) => WEEKDAYS[Number(k)] ?? k} />
         <Bars title="Hora del día (Argentina)" data={data.porHora} label={(k) => `${k.padStart(2, '0')} h`} />
@@ -223,11 +250,40 @@ export function AdminPage() {
             <li>Reclamos esperando que baje la comisión: {n(data.reclamos.programadosEsperando)}</li>
           </ul>
         </section>
+        </div>
         <p class="texto-suave admin-privacidad">
-          Solo números agregados: este panel no muestra mails, nombres, mensajes ni direcciones. Los textos escritos a mano aparecen solo si los usaron 3 personas o más.
+          El resumen es solo de números agregados: no muestra mails, nombres, mensajes ni direcciones. Los textos escritos a mano aparecen solo si los usaron 3 personas o más.
         </p>
+      </>
+    );
+    body = (
+      <div class="admin">
+        <div class="admin-cabecera">
+          <StepTitle>Admin · {data.red}</StepTitle>
+          <a class="boton boton-primario" href="/cupones">
+            Crear cupones
+          </a>
+        </div>
+        <nav class="admin-secciones" aria-label="Secciones del admin">
+          {SECCIONES.map(([k, label]) => (
+            <a key={k} href={`#${k}`} class={k === seccion ? 'activa' : undefined} aria-current={k === seccion ? 'page' : undefined}>
+              {label}
+            </a>
+          ))}
+        </nav>
+        {seccion === 'resumen' && resumen}
+        {seccion === 'cuentas' && <AdminCuentasPanel />}
+        {seccion === 'entregas' && <AdminEntregasPanel />}
+        {seccion === 'cupones' && <AdminCuponesPanel />}
+        {seccion === 'cobro' && <AdminCobroPanel />}
+        {seccion === 'denuncias' && <AdminDenunciasPanel />}
+        {seccion === 'admins' && <AdminAdminsPanel />}
       </div>
     );
   }
-  return <Layout testnet={data === null ? !ALLOW_MAINNET : data.red !== 'mainnet'}>{body}</Layout>;
+  return (
+    <Layout wide testnet={data === null ? !ALLOW_MAINNET : data.red !== 'mainnet'}>
+      {body}
+    </Layout>
+  );
 }
