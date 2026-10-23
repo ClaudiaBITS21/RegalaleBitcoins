@@ -889,6 +889,18 @@ describe('Cuentas con passkey', () => {
     // El admin tiene todo activado y libre, aunque el cobro esté activo (Claudia, 22/10).
     const yo = (await (await req('/api/cuenta/creditos', undefined, admin.cookie)).json()) as { admin: boolean; conPlan: boolean; conSaludo: boolean; puedeRegalar: boolean };
     assert.deepEqual([yo.admin, yo.conPlan, yo.conSaludo, yo.puedeRegalar], [true, true, true, true]);
+    // La lista de cuentas y la de entregas (Claudia, 23/10): solo admins.
+    const lista = (await (await req('/api/admin/usuarios', undefined, viaLink)).json()) as { total: number; usuarios: Array<{ email: string; admin: boolean; saldoRegalos: number; saldoListas: number }> };
+    assert.equal(lista.total, 2);
+    const fila = lista.usuarios.find((u) => u.email === 'ana@example.com');
+    assert.deepEqual([fila?.admin, fila?.saldoRegalos, fila?.saldoListas], [false, 8, 2]);
+    assert.equal(lista.usuarios.find((u) => u.email === 'admin@example.com')?.admin, true);
+    const buscada = (await (await req('/api/admin/usuarios?q=ANA', undefined, admin.cookie)).json()) as { usuarios: Array<{ email: string }> };
+    assert.deepEqual(buscada.usuarios.map((u) => u.email), ['ana@example.com']);
+    assert.equal((await req('/api/admin/usuarios', undefined, ana.cookie)).status, 404);
+    const entregas = (await (await req('/api/admin/entregas', undefined, admin.cookie)).json()) as { entregas: Array<{ email: string; cantidad: number; motivo: string | null }> };
+    assert.deepEqual(entregas.entregas.map((e) => [e.email, e.cantidad, e.motivo]), [['ana@example.com', 2, 'Pruebas de listas'], ['ana@example.com', 3, 'Regalo por ayudar con las pruebas']]);
+    assert.equal((await req('/api/admin/entregas', undefined, ana.cookie)).status, 404);
     assert.deepEqual((await get()).registro.map((r) => r.accion).slice(0, 5), ['ajuste', 'ajuste', 'producto', 'producto', 'precio']);
   });
 

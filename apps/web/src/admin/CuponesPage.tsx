@@ -22,7 +22,7 @@ const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const VISTA_KEY = 'cupones-vista';
 /** En todo texto, la dirección del sitio es siempre esta (CLAUDE.md). */
 const SITIO = 'https://regalalebitcoin.com';
-const linkInvitacion = (codigo: string) => `${SITIO}/invitacion/${codigo}`;
+export const linkInvitacion = (codigo: string) => `${SITIO}/invitacion/${codigo}`;
 
 /** Celda de CSV: entre comillas si hace falta y sin fórmulas (una celda que empieza con = + - @). */
 const celda = (v: string) => {
@@ -47,7 +47,7 @@ export function mailsDe(texto: string): string[] {
   return [...new Set(encontrados)];
 }
 
-function estadoLote(l: AdminCouponBatch): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
+export function estadoLote(l: AdminCouponBatch): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
   if (l.hasta !== null && new Date(l.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
   if (l.usados >= l.total) return { clave: 'terminados', texto: 'Agotado' };
@@ -56,13 +56,13 @@ function estadoLote(l: AdminCouponBatch): { clave: Exclude<Filtro, 'todos'>; tex
   return { clave: 'vigentes', texto: 'Activo', activo: true };
 }
 
-const nombrePlan = (id: string) => {
+export const nombrePlan = (id: string) => {
   const key = PRODUCT_NAME[id];
   return key === undefined ? id : translate('es', key);
 };
 const nombreOcasion = (id: string) => occasionLabel(id, 'es');
 const listaY = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
-const fechaCorta = (iso: string) => {
+export const fechaCorta = (iso: string) => {
   const d = new Date(iso);
   return `${d.getDate()}/${d.getMonth() + 1}${d.getFullYear() !== new Date().getFullYear() ? `/${String(d.getFullYear()).slice(2)}` : ''}`;
 };
@@ -79,9 +79,9 @@ const finDelDia = (dia: string) => {
   return d;
 };
 /** «Hasta» se guarda exclusivo (el día siguiente a las 0): se muestra el día anterior. */
-const ultimoDia = (iso: string) => new Date(new Date(iso).getTime() - 1).toISOString();
+export const ultimoDia = (iso: string) => new Date(new Date(iso).getTime() - 1).toISOString();
 
-function estado(c: AdminCoupon): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
+export function estado(c: AdminCoupon): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
   if (c.hasta !== null && new Date(c.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
   if (c.usados >= c.maxUsos) return { clave: 'terminados', texto: 'Agotado' };
@@ -96,7 +96,7 @@ interface Borrador {
   readonly da: { readonly unidad: 'regalo' | 'lista_otras'; readonly cantidad: number; readonly ocasion: string | null } | null;
 }
 
-function queDa(c: Borrador): string {
+export function queDa(c: Borrador): string {
   const partes: string[] = [];
   if (c.descuento !== null) {
     const pl = c.productos.length > 0 ? listaY(c.productos.map(nombrePlan)) : 'todos los planes';
