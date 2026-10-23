@@ -18,7 +18,7 @@ import { registerAdminCobroRoutes } from './adminCobro.ts';
 import { isAdmin, registerAdminUserRoutes } from './admins.ts';
 import { normalizeCode, registerCouponRoutes } from './coupons.ts';
 import { registerRefundRoutes } from './refunds.ts';
-import { balance, canGive, chargingActive, consumeGiftCredits, hasPlanFeatures, refundCanceledGifts } from './credits.ts';
+import { balance, canGive, chargingActive, consumeGiftCredits, features, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
 import { sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
@@ -155,8 +155,8 @@ export function createApp(deps: AppDeps): Hono {
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */
   app.get('/api/productos', async (c) => {
-    const rows = await sql<{ codigo: string; precio_sats: string; regalos: number; listas_cumple: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null; saludo: boolean }[]>`
-      select codigo, precio_sats, regalos, listas_cumple, listas_otras, plan, regalos_libres, dias, cupo, saludo from productos where activo order by precio_sats, codigo`;
+    const rows = await sql<{ codigo: string; precio_sats: string; regalos: number; listas_cumple: number; listas_otras: number; plan: string | null; regalos_libres: boolean; dias: number | null; cupo: number | null; saludo: boolean; ia: boolean; tarjeta: boolean }[]>`
+      select codigo, precio_sats, regalos, listas_cumple, listas_otras, plan, regalos_libres, dias, cupo, saludo, ia, tarjeta from productos where activo order by precio_sats, codigo`;
     const [charging, key, founders] = await Promise.all([chargingActive(sql), paymentKey(sql, network).catch(() => null), foundersLeft(sql)]);
     return c.json({
       cobroActivo: charging,
@@ -174,6 +174,8 @@ export function createApp(deps: AppDeps): Hono {
         dias: p.dias,
         cupo: p.cupo,
         saludo: p.saludo,
+        ia: p.ia,
+        tarjeta: p.tarjeta,
         seVendeSuelto: (BUYABLE as readonly string[]).includes(p.codigo),
       })),
     });
@@ -247,7 +249,7 @@ export function createApp(deps: AppDeps): Hono {
       const [b, admin] = await Promise.all([balance(sql, account.id), isAdmin(sql, deps.adminEmails ?? [], account.email)]);
       if (!canGive(b, true, g.occasion, admin)) throw new ApiError(409, 'sin_creditos');
       // La imagen con IA (imagen propia) viene con los planes; lo gratis no la trae.
-      if (g.style === 'propia' && !hasPlanFeatures(b, true, admin)) throw new ApiError(403, 'plan_requerido');
+      if (g.style === 'propia' && !(await features(sql, account.id, b, true, admin)).ia) throw new ApiError(403, 'plan_requerido');
     }
     const [usdPerBtc, fees, arsPerBtc, history] = await Promise.all([
       price.btcUsd(),

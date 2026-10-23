@@ -25,6 +25,9 @@ interface Contenido {
   readonly cupo: number | null;
   /** Si trae la salutación automática (Satoshi no, 21/10). */
   readonly saludo: boolean;
+  /** Imagen con IA y tarjeta imprimible: lo gratis las trae si el admin las incluye (23/10). */
+  readonly ia: boolean;
+  readonly tarjeta: boolean;
 }
 
 interface Producto {
@@ -52,14 +55,15 @@ const FILAS: readonly Key[] = [
 ];
 
 // Una sola tabla comparativa: la bienvenida gratis y los cuatro planes (Satoshi, Node, Hodler y
-// Genesis). Hodler (código «anual») no vence desde el 21/10; Satoshi no trae la salutación. Lo gratis no trae imagen con IA, tarjeta imprimible (solo la vista previa) ni la
-// salutación automática; los planes sí (Rodolfo, 20/10).
+// Genesis). Hodler (código «anual») no vence desde el 21/10; Satoshi no trae la salutación. Lo gratis
+// trae lo que el admin le incluya (23/10); de entrada, sin imagen con IA, tarjeta imprimible (solo
+// la vista previa) ni salutación automática. Los planes sí (Rodolfo, 20/10).
 const PRODUCTOS: readonly Producto[] = [
-  { id: 'bienvenida', codigo: 'bienvenida', base: { sats: 0n, regalos: 5, listas: 0, plan: false, dias: null, cupo: null, saludo: false } },
-  { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null, saludo: false } },
-  { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null, saludo: true } },
-  { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: false, dias: null, cupo: null, saludo: true } },
-  { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21, saludo: true } },
+  { id: 'bienvenida', codigo: 'bienvenida', base: { sats: 0n, regalos: 5, listas: 0, plan: false, dias: null, cupo: null, saludo: false, ia: false, tarjeta: false } },
+  { id: 'pack10', codigo: 'pack10', base: { sats: 10_500n, regalos: 10, listas: 0, plan: false, dias: null, cupo: null, saludo: false, ia: true, tarjeta: true } },
+  { id: 'listaOtras', codigo: 'pack10_lista', base: { sats: 21_000n, regalos: 10, listas: 1, plan: false, dias: null, cupo: null, saludo: true, ia: true, tarjeta: true } },
+  { id: 'anual', codigo: 'anual', base: { sats: 42_000n, regalos: 30, listas: 3, plan: false, dias: null, cupo: null, saludo: true, ia: true, tarjeta: true } },
+  { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21, saludo: true, ia: true, tarjeta: true } },
 ];
 
 function contenido(p: Producto, vivos: Products | null): Contenido {
@@ -75,6 +79,8 @@ function contenido(p: Producto, vivos: Products | null): Contenido {
     cupo: v.cupo,
     // API anterior (sin el dato): el de la tabla.
     saludo: v.saludo ?? p.base.saludo,
+    ia: v.ia ?? p.base.ia,
+    tarjeta: v.tarjeta ?? p.base.tarjeta,
   };
 }
 
@@ -87,7 +93,6 @@ function celdas(c: Contenido): readonly Celda[] {
           ? ['precios.v.unAnio']
           : ['precios.v.anios', { n: c.dias / 365 }]
         : ['precios.v.dias', { n: c.dias }];
-  const gratis = c.sats === 0n;
   return [
     c.regalos === null ? ['precios.v.libres'] : c.regalos,
     c.listas === 0 ? 'no' : c.listas,
@@ -95,8 +100,8 @@ function celdas(c: Contenido): readonly Celda[] {
     'si',
     'si',
     'si',
-    gratis ? 'no' : 'si',
-    gratis ? 'no' : 'si',
+    c.ia ? 'si' : 'no',
+    c.tarjeta ? 'si' : 'no',
     c.saludo ? 'si' : 'no',
     vigencia,
   ];

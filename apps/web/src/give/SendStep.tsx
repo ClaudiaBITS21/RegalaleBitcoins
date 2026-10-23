@@ -5,7 +5,7 @@ import { formatSats, formatUsd, satsToUsd } from '../format.ts';
 import { type Key, translate, type UiLang } from '../i18n/index.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
-import { usePlanFeatures } from './planFeatures.ts';
+import { useCardFeature } from './planFeatures.ts';
 import { type Channel, type Part, readSent, saveSent } from './envios.ts';
 import { PrintCard } from './PrintCard.tsx';
 import { numberedWords, WordsList } from './WordsList.tsx';
@@ -29,7 +29,7 @@ function useSentBy(giftId: string, part: Part): [Channel | null, (c: Channel) =>
 export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceilingUsd: number; onAnother: () => void }) {
   const { t, lang, trato } = useI18n();
   const { view } = useGiftStatus(gift.id);
-  const conPlan = usePlanFeatures();
+  const conPlan = useCardFeature();
   // El link y las palabras nunca por el mismo canal: quien vea los dos se queda con el regalo.
   const [linkBy, setLinkBy] = useSentBy(gift.id, 'link');
   const [wordsBy, setWordsBy] = useSentBy(gift.id, 'palabras');
