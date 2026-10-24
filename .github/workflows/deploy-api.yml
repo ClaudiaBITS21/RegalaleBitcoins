@@ -1,0 +1,48 @@
+name: Deploy API mainnet
+
+# Publica la API de mainnet en Cloud Run (servicio regalalebitcoins-api-mainnet). Solo a mano y
+# solo desde main. Construye la imagen acá, la sube a Artifact Registry con el commit como tag y
+# despliega esa imagen: la configuración del servicio (variables, secretos, Cloud SQL) no cambia.
+# Las migraciones se aplican solas al arrancar. Ver docs/deploy.md.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # para la federación de identidades con Google (sin claves guardadas)
+
+concurrency:
+  group: deploy-api-mainnet
+  cancel-in-progress: false
+
+env:
+  IMAGE: southamerica-east1-docker.pkg.dev/regalalebitcoins/regalalebitcoins/api
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      # Actions fijadas por commit, no por tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # La cuenta deploy-api solo puede usarse desde main (scripts/setup-deploy-api.sh).
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/522829661671/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: deploy-api@regalalebitcoins.iam.gserviceaccount.com
+      - run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev --quiet
+      - name: Imagen
+        run: |
+          TAG="$(git rev-parse --short HEAD)-gh"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          docker build -f apps/api/Dockerfile -t "$IMAGE:$TAG" .
+          docker push "$IMAGE:$TAG"
+      - name: Desplegar
+        run: |
+          gcloud run deploy regalalebitcoins-api-mainnet --project regalalebitcoins --region southamerica-east1 --image "$IMAGE:$TAG" --quiet
+          echo "API mainnet: imagen api:$TAG ($(git rev-parse HEAD))" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Comprobar
+        run: |
+          curl -fsS https://regalalebitcoin.com/api/salud | tee -a "$GITHUB_STEP_SUMMARY"

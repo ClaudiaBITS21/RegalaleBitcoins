@@ -56,6 +56,15 @@ npx firebase deploy --only hosting:signet,hosting:mainnet --project regalalebitc
 Se autentica con federación de identidades (pool `github`, proveedor `github-oidc`) como la cuenta
 de servicio `deploy-hosting@regalalebitcoins.iam.gserviceaccount.com`: no hay claves guardadas.
 
+**API de mainnet desde GitHub Actions (desde el 24/10/2026):** workflow «Deploy API mainnet»
+(`.github/workflows/deploy-api.yml`), solo a mano y solo desde `main`. Construye la imagen en el
+runner, la sube a Artifact Registry (`api:<commit>-gh`) y despliega esa imagen en
+`regalalebitcoins-api-mainnet`; la configuración del servicio no cambia y las migraciones se
+aplican al arrancar. Se autentica como `deploy-api@regalalebitcoins.iam.gserviceaccount.com`
+(federación de identidades, sin claves), que solo puede desplegar ese servicio, subir imágenes al
+repositorio de la API y solo se puede usar desde `main`. Se crea una vez con
+`scripts/setup-deploy-api.sh`. Orden: primero la API, después la web.
+
 ## Dominio
 
 `regalalebitcoin.com` y `www` (redirige a la raíz) están dados de alta en Firebase Hosting.
