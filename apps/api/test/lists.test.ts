@@ -223,6 +223,70 @@ describe('listas de regalos', () => {
     assert.deepEqual(l?.transferencias.map((x) => [x.codigo, x.monto, x.estado]), [[t1.codigo, '25000000', 'convertida'], [t2.codigo, '1500050', 'convertida']]);
   });
 
+  it('panel del dueño (handoff 21/10): «No me llegó», volver a avisar, corregir y deshacer una compra, totales separados', async () => {
+    const { id } = (await (await newList({ pais: 'AR', convertir: true })).json()) as { id: string };
+    await req(`/api/cuenta/listas/${id}/cobro`, { pais: 'AR', cobro: `v1.${'I'.repeat(16)}.${'C'.repeat(80)}` });
+    const announce = async (monto: string) => (await (await req(`/api/listas/${id}/transferencias`, { monto }, false)).json()) as { codigo: string; token: string };
+    const [a, b, c] = [await announce('3000000'), await announce('1000000'), await announce('500000')];
+    const mark = (codigo: string, estado: string) => req(`/api/cuenta/listas/${id}/transferencias/${codigo}`, { estado });
+    type Mine = { estado: string; satsConvertidos: string | null; noLlego: string | null; avisosQuedan: number; nota: string | null; compra: { id: string; corregida: string | null } | null };
+    const mine = async (token: string) => (await (await req('/api/aportes/consulta', { token }, false)).json()) as Mine;
+    type Panel = { totales: { bitcoin: string; satsComprados: string; anunciado: string; sinConvertir: string }; compras: Array<{ id: string; sats: string; corregida: string | null; transferencias: string[]; historial: Array<{ accion: string; satsAntes: string | null; sats: string | null }> }> };
+    const panel = async () => ((await (await req('/api/cuenta/listas')).json()) as { listas: Array<Panel & { id: string }> }).listas.find((l) => l.id === id) as Panel;
+
+    // «No me llegó»: no suma en ningún total; el invitado lo ve y puede volver a avisar con una nota.
+    assert.equal((await mark(c.codigo, 'no_llego')).status, 200);
+    assert.deepEqual((await panel()).totales, { bitcoin: '0', satsComprados: '0', anunciado: '4000000', sinConvertir: '0' });
+    const m0 = await mine(c.token);
+    assert.equal(m0.estado, 'no_llego');
+    assert.ok(m0.noLlego !== null);
+    assert.equal(m0.avisosQuedan, 3);
+    assert.equal((await req('/api/aportes/reaviso', { token: c.token, nota: 'x'.repeat(141) }, false)).status, 400);
+    assert.equal((await req('/api/aportes/reaviso', { token: c.token, nota: 'Salió el 12/11 a las 18:40' }, false)).status, 200);
+    assert.deepEqual(await mine(c.token).then((m) => [m.estado, m.nota, m.avisosQuedan]), ['anunciada', 'Salió el 12/11 a las 18:40', 2]);
+    assert.equal((await req('/api/aportes/reaviso', { token: c.token }, false)).status, 409, 'solo después de un «No me llegó»');
+    for (let i = 0; i < 2; i++) {
+      await mark(c.codigo, 'no_llego');
+      assert.equal((await req('/api/aportes/reaviso', { token: c.token }, false)).status, 200);
+    }
+    await mark(c.codigo, 'no_llego');
+    assert.equal((await req('/api/aportes/reaviso', { token: c.token }, false)).status, 409, 'hasta 3 veces');
+    // Si la plata aparece tarde, pasa de «no llegó» a recibida directamente.
+    assert.equal((await mark(c.codigo, 'recibida')).status, 200);
+
+    // La compra queda como registro; los totales no mezclan cadena con lo declarado.
+    await mark(a.codigo, 'recibida');
+    await mark(b.codigo, 'recibida');
+    assert.equal((await req(`/api/cuenta/listas/${id}/tanda`, { codigos: [a.codigo, b.codigo], sats: '40000' })).status, 200);
+    let p = await panel();
+    assert.deepEqual(p.totales, { bitcoin: '0', satsComprados: '40000', anunciado: '0', sinConvertir: '500000' });
+    const compra = p.compras[0] as Panel['compras'][number];
+    assert.deepEqual(compra.transferencias.sort(), [a.codigo, b.codigo].sort());
+    assert.deepEqual(await mine(a.token).then((m) => [m.satsConvertidos, m.compra?.corregida]), ['30000', null]);
+
+    // Corregir: se vuelve a repartir, deja historial y el invitado ve la fecha de corrección.
+    const fix = (sats: string, cid = compra.id) => req(`/api/cuenta/listas/${id}/compras/${cid}/corregir`, { sats });
+    assert.equal((await fix('1')).status, 400, 'al menos un sat por transferencia');
+    assert.equal((await fix('48000')).status, 200);
+    assert.deepEqual(await mine(a.token).then((m) => m.satsConvertidos), '36000');
+    assert.ok((await mine(b.token)).compra?.corregida !== null);
+    p = await panel();
+    assert.equal(p.totales.satsComprados, '48000');
+    assert.deepEqual((p.compras[0] as Panel['compras'][number]).historial.map((h) => [h.accion, h.satsAntes, h.sats]), [['creada', null, '40000'], ['corregida', '40000', '48000']]);
+
+    // Deshacer: las transferencias vuelven a recibida y la compra deja de contar.
+    assert.equal((await req(`/api/cuenta/listas/${id}/compras/${compra.id}/deshacer`, {})).status, 200);
+    assert.deepEqual(await mine(a.token).then((m) => [m.estado, m.satsConvertidos, m.compra]), ['recibida', null, null]);
+    p = await panel();
+    assert.deepEqual(p.totales, { bitcoin: '0', satsComprados: '0', anunciado: '0', sinConvertir: '4500000' });
+    assert.equal(p.compras.length, 0);
+    assert.equal((await fix('1000')).status, 404, 'una compra deshecha no se corrige');
+    const [h] = await sql<{ n: string }[]>`select count(*) as n from compras_historial where accion = 'deshecha'`;
+    assert.equal(h?.n, '1');
+    // Otra cuenta no puede tocar la compra.
+    assert.equal((await req(`/api/cuenta/listas/${id}/compras/abc/corregir`, { sats: '10' })).status, 404);
+  });
+
   it('denuncias: la primera pausa y oculta los datos; el dueño reactiva una vez; la siguiente la deja en revisión; el admin decide', async () => {
     const { id } = (await (await newList({ pais: 'AR', convertir: true })).json()) as { id: string };
     await req(`/api/cuenta/listas/${id}/cobro`, { pais: 'AR', cobro: `v1.${'I'.repeat(16)}.${'C'.repeat(80)}` });

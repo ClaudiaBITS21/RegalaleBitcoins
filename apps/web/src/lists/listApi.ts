@@ -51,11 +51,26 @@ export interface Transfer {
   readonly mensaje: string;
   /** En la unidad menor de la moneda de la lista. */
   readonly monto: string;
-  readonly estado: 'anunciada' | 'recibida' | 'convertida';
+  readonly estado: 'anunciada' | 'recibida' | 'convertida' | 'no_llego';
   readonly satsConvertidos: string | null;
   /** La compra de la que salió (total y cuántas transferencias entraron). */
   readonly tanda: { readonly sats: string; readonly aportes: number } | null;
   readonly creada: string;
+  /** Panel del dueño (API desde el 24/10): «No me llegó», volver a avisar y compras corregidas. */
+  readonly noLlego?: string | null;
+  readonly avisosQuedan?: number;
+  readonly nota?: string | null;
+  readonly compra?: { readonly id: string; readonly corregida: string | null } | null;
+}
+
+/** Una compra en tanda, como registro propio con su historial. */
+export interface Purchase {
+  readonly id: string;
+  readonly sats: string;
+  readonly creada: string;
+  readonly corregida: string | null;
+  readonly transferencias: readonly string[];
+  readonly historial: ReadonlyArray<{ readonly accion: 'creada' | 'corregida' | 'deshecha'; readonly satsAntes: string | null; readonly sats: string | null; readonly fecha: string }>;
 }
 
 export interface ListContribution {
@@ -82,6 +97,9 @@ export interface OwnedList extends PublicList {
   readonly denuncias: ReadonlyArray<{ readonly motivo: string; readonly creada: string }>;
   readonly aportes: readonly ListContribution[];
   readonly transferencias: readonly Transfer[];
+  /** Totales separados: nunca un número que mezcle la cadena con lo que declara el dueño. */
+  readonly totales?: { readonly bitcoin: string; readonly satsComprados: string; readonly anunciado: string; readonly sinConvertir: string };
+  readonly compras?: readonly Purchase[];
 }
 
 type ListRef = { id: string; titulo: string; ocasion: string; ocasionLibre: string | null; idioma: string };
@@ -149,10 +167,14 @@ export const listApi = {
   mine: (token: string) => call<MyGift>('/api/aportes/consulta', { token }),
   announce: (id: string, t: { nombre?: string; mensaje?: string; monto: string }) => call<Announced>(`/api/listas/${encodeURIComponent(id)}/transferencias`, t),
   setCobro: (id: string, c: { pais: string; moneda: string; cobro: string; clave: string | null }) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cobro`, c),
-  mark: (id: string, codigo: string, estado: 'recibida') =>
+  mark: (id: string, codigo: string, estado: 'recibida' | 'no_llego') =>
     call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/transferencias/${encodeURIComponent(codigo)}`, { estado }),
   tanda: (id: string, codigos: readonly string[], sats: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/tanda`, { codigos, sats }),
   owned: () => call<{ listas: OwnedList[] }>('/api/cuenta/listas'),
+  fixPurchase: (id: string, compra: string, sats: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/compras/${encodeURIComponent(compra)}/corregir`, { sats }),
+  undoPurchase: (id: string, compra: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/compras/${encodeURIComponent(compra)}/deshacer`, {}),
+  /** El invitado vuelve a avisar una transferencia que el dueño no encontró. */
+  remind: (token: string, nota: string) => call<{ ok: boolean }>('/api/aportes/reaviso', { token, nota }),
   report: (id: string, r: { email: string; motivo: string }) => call<{ estado: string }>(`/api/listas/${encodeURIComponent(id)}/denuncias`, r),
   reactivate: (id: string) => call<{ estado: string }>(`/api/cuenta/listas/${encodeURIComponent(id)}/reactivar`, {}),
   close: (id: string) => call<{ ok: boolean }>(`/api/cuenta/listas/${encodeURIComponent(id)}/cerrar`, {}),

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { deriveListAddress, isCoreError, isLang, type Lang, type Network, parseAccountKey } from '@regalale/core';
 import type { Context, Hono } from 'hono';
+import type postgres from 'postgres';
 import { currentAccount } from './accountRoutes.ts';
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
@@ -83,12 +84,25 @@ interface TransferRow {
   mensaje: string;
   /** En la unidad menor de la moneda de la lista. */
   monto: string;
-  estado: 'anunciada' | 'recibida' | 'convertida';
+  estado: 'anunciada' | 'recibida' | 'convertida' | 'no_llego';
   sats_convertidos: string | null;
   tanda_sats: string | null;
   tanda_aportes: number | null;
   creada: Date;
+  /** Veces que el invitado volvió a avisar después de un «No me llegó» (hasta 3) y su nota. */
+  avisos: number;
+  nota: string | null;
+  no_llego: Date | null;
+  compra_id: string | null;
+  /** De la compra (left join): cuándo se corrigió por última vez. */
+  compra_corregida?: Date | null;
 }
+
+/** Lo que leen las vistas de una transferencia, con la fecha de corrección de su compra. */
+const TRANSFER_SELECT = 't.*, c.corregida as compra_corregida';
+/** Veces que el invitado puede volver a avisar una transferencia que no llegó. */
+const MAX_REAVISOS = 3;
+const NOTE_MAX = 140;
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest();
 /**
@@ -177,6 +191,12 @@ const transferView = (r: TransferRow) => ({
   satsConvertidos: r.sats_convertidos === null ? null : r.sats_convertidos.toString(),
   tanda: r.tanda_sats === null ? null : { sats: r.tanda_sats.toString(), aportes: r.tanda_aportes as number },
   creada: r.creada.toISOString(),
+  // Panel del dueño (handoff 21/10): «No me llegó», volver a avisar y compras corregidas.
+  noLlego: r.no_llego?.toISOString() ?? null,
+  avisos: r.avisos,
+  avisosQuedan: Math.max(0, MAX_REAVISOS - r.avisos),
+  nota: r.nota,
+  compra: r.compra_id === null ? null : { id: r.compra_id.toString(), corregida: r.compra_corregida?.toISOString() ?? null },
 });
 
 /**
@@ -414,7 +434,8 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       where a.token_hash = ${hashToken(b.token)} and l.red = ${network.name} and not a.externa`;
     if (r === undefined) {
       const [tr] = await sql<(TransferRow & { titulo: string; ocasion: string; ocasion_libre: string | null; idioma: string } & Pick<ListRow, 'alias' | 'alias_titular' | 'cobro' | 'moneda'> & { lista_estado: ListRow['estado'] })[]>`
-        select t.*, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular, l.cobro, l.moneda, l.estado as lista_estado from transferencias t join listas l on l.id = t.lista_id
+        select ${sql.unsafe(TRANSFER_SELECT)}, l.titulo, l.ocasion, l.ocasion_libre, l.idioma, l.alias, l.alias_titular, l.cobro, l.moneda, l.estado as lista_estado
+        from transferencias t join listas l on l.id = t.lista_id left join compras c on c.id = t.compra_id
         where t.token_hash = ${hashToken(b.token)} and l.red = ${network.name}`;
       if (tr === undefined) throw new ApiError(404, 'no_encontrado');
       return c.json({
@@ -465,7 +486,16 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
             creado: r.creado.toISOString(),
           };
         });
-        const transfers = await sql<TransferRow[]>`select * from transferencias where lista_id = ${l.id} order by creada`;
+        const transfers = await sql<TransferRow[]>`
+          select ${sql.unsafe(TRANSFER_SELECT)} from transferencias t left join compras c on c.id = t.compra_id where t.lista_id = ${l.id} order by t.creada`;
+        const purchases = await sql<{ id: string; sats: string; creada: Date; corregida: Date | null; deshecha: Date | null }[]>`
+          select id, sats, creada, corregida, deshecha from compras where lista_id = ${l.id} order by creada`;
+        const history = purchases.length === 0 ? [] : await sql<{ compra_id: string; accion: string; sats_antes: string | null; sats: string | null; creada: Date }[]>`
+          select compra_id, accion, sats_antes, sats, creada from compras_historial where compra_id in ${sql(purchases.map((p) => p.id))} order by id`;
+        // Totales separados (handoff 21/10): nunca un número que mezcle lo que vimos en la cadena
+        // con lo que declara el dueño. «No me llegó» no suma en ninguno.
+        const sum = (rows: readonly TransferRow[]) => rows.reduce((a, r) => a + BigInt(r.monto), 0n);
+        const bought = purchases.filter((p) => p.deshecha === null).reduce((a, p) => a + BigInt(p.sats), 0n);
         // Los motivos de las denuncias, sin el mail de quien denunció.
         const reports = await sql<{ motivo: string; creada: Date }[]>`select motivo, creada from denuncias where lista_id = ${l.id} order by creada`;
         return {
@@ -476,6 +506,24 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
           alias: l.alias,
           aliasTitular: l.alias_titular,
           totalRecibido: total.toString(),
+          totales: {
+            bitcoin: total.toString(),
+            satsComprados: bought.toString(),
+            anunciado: sum(transfers.filter((r) => r.estado === 'anunciada')).toString(),
+            sinConvertir: sum(transfers.filter((r) => r.estado === 'recibida')).toString(),
+          },
+          compras: purchases
+            .filter((p) => p.deshecha === null)
+            .map((p) => ({
+              id: p.id.toString(),
+              sats: p.sats.toString(),
+              creada: p.creada.toISOString(),
+              corregida: p.corregida?.toISOString() ?? null,
+              transferencias: transfers.filter((r) => r.compra_id?.toString() === p.id.toString()).map((r) => r.codigo),
+              historial: history
+                .filter((h) => h.compra_id.toString() === p.id.toString())
+                .map((h) => ({ accion: h.accion, satsAntes: h.sats_antes?.toString() ?? null, sats: h.sats?.toString() ?? null, fecha: h.creada.toISOString() })),
+            })),
           puedeReactivar: l.estado === 'pausada' && l.reactivada === null,
           denuncias: reports.map((r) => ({ motivo: r.motivo, creada: r.creada.toISOString() })),
           aportes,
@@ -487,20 +535,40 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
   });
 
   /**
-   * Quien armó la lista marca que una transferencia le llegó. Es lo único que no se verifica en
-   * la cadena. La conversión a bitcoin se marca con una compra (abajo), de una o de varias juntas.
+   * Quien armó la lista marca que una transferencia le llegó, o que no le llegó (handoff 21/10:
+   * «No me llegó», que no suma en ningún total). Es lo único que no se verifica en la cadena. Si
+   * la plata aparece tarde, pasa de «no llegó» a recibida directamente. La conversión a bitcoin
+   * se marca con una compra (abajo), de una o de varias juntas.
    */
   app.post('/api/cuenta/listas/:id/transferencias/:codigo', async (c) => {
     const account = await owner(c);
     const b = ((await c.req.json().catch(() => null)) ?? {}) as { estado?: unknown };
-    if (b.estado !== 'recibida') throw new ApiError(400, 'pedido_invalido');
+    if (b.estado !== 'recibida' && b.estado !== 'no_llego') throw new ApiError(400, 'pedido_invalido');
+    const from = b.estado === 'recibida' ? ['anunciada', 'no_llego'] : ['anunciada'];
     const rows = await sql`
-      update transferencias t set estado = 'recibida', actualizada = now()
+      update transferencias t set estado = ${b.estado}, no_llego = ${b.estado === 'no_llego' ? sql`now()` : sql`t.no_llego`}, actualizada = now()
       from listas l
       where t.lista_id = l.id and l.id = ${c.req.param('id')} and l.usuario_id = ${account.id} and t.codigo = ${c.req.param('codigo')}
-        and t.estado = 'anunciada'
+        and t.estado in ${sql(from)}
       returning t.id`;
     if (rows.length === 0) throw new ApiError(404, 'no_encontrado');
+    return c.json({ ok: true });
+  });
+
+  /**
+   * El invitado vuelve a avisar una transferencia que el dueño no encontró: vuelve a anunciada,
+   * con una nota opcional («salió el 12/11 a las 18:40»). Hasta 3 veces por transferencia.
+   */
+  app.post('/api/aportes/reaviso', async (c) => {
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as { token?: unknown; nota?: unknown };
+    if (typeof b.token !== 'string' || !TOKEN.test(b.token)) throw new ApiError(404, 'no_encontrado');
+    const note = b.nota === undefined || b.nota === null || b.nota === '' ? null : text(b.nota, NOTE_MAX, false);
+    const rows = await sql`
+      update transferencias t set estado = 'anunciada', avisos = t.avisos + 1, nota = ${note}, actualizada = now()
+      from listas l
+      where t.lista_id = l.id and l.red = ${network.name} and t.token_hash = ${hashToken(b.token)} and t.estado = 'no_llego' and t.avisos < ${MAX_REAVISOS}
+      returning t.id`;
+    if (rows.length === 0) throw new ApiError(409, 'pedido_invalido', 'no_se_puede_avisar');
     return c.json({ ok: true });
   });
 
@@ -527,12 +595,66 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       const cents = rows.map((r) => BigInt(r.monto));
       if (sats < BigInt(rows.length)) throw new ApiError(400, 'monto_invalido');
       const shares = splitPurchase(sats, cents);
+      // La compra queda como registro propio, con su historial (handoff 21/10).
+      const [purchase] = await tx<{ id: string }[]>`insert into compras (lista_id, sats) values (${c.req.param('id')}, ${sats.toString()}) returning id`;
+      const purchaseId = (purchase as { id: string }).id;
+      await tx`insert into compras_historial (compra_id, accion, sats) values (${purchaseId}, 'creada', ${sats.toString()})`;
       for (const [i, r] of rows.entries()) {
         await tx`
           update transferencias set estado = 'convertida', sats_convertidos = ${(shares[i] as bigint).toString()},
-            tanda_sats = ${sats.toString()}, tanda_aportes = ${rows.length}, actualizada = now()
+            tanda_sats = ${sats.toString()}, tanda_aportes = ${rows.length}, compra_id = ${purchaseId}, actualizada = now()
           where id = ${r.id}`;
       }
+    });
+    return c.json({ ok: true });
+  });
+
+  /** Una compra de la lista del dueño, bloqueada para cambiarla; null si no es suya o ya se deshizo. */
+  const ownPurchase = async (tx: postgres.TransactionSql, listId: string, accountId: string, purchaseId: string) => {
+    if (!/^\d{1,18}$/.test(purchaseId)) return null;
+    const [p] = await tx<{ id: string; sats: string }[]>`
+      select p.id, p.sats from compras p join listas l on l.id = p.lista_id
+      where p.id = ${purchaseId} and l.id = ${listId} and l.usuario_id = ${accountId} and p.deshecha is null
+      for update of p`;
+    return p ?? null;
+  };
+
+  /**
+   * Corregir una compra: cambia los sats y se vuelven a repartir en proporción. Siempre se puede,
+   * pero nunca en silencio: queda en el historial y el invitado ve «corregido el dd/mm».
+   */
+  app.post('/api/cuenta/listas/:id/compras/:compra/corregir', async (c) => {
+    const account = await owner(c);
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as { sats?: unknown };
+    if (typeof b.sats !== 'string' || !/^[1-9]\d{0,15}$/.test(b.sats)) throw new ApiError(400, 'monto_invalido');
+    const sats = BigInt(b.sats);
+    await sql.begin(async (tx) => {
+      const p = await ownPurchase(tx, c.req.param('id'), account.id, c.req.param('compra'));
+      if (p === null) throw new ApiError(404, 'no_encontrado');
+      const rows = await tx<{ id: string; monto: string }[]>`select id, monto from transferencias where compra_id = ${p.id} order by id for update`;
+      if (sats < BigInt(rows.length)) throw new ApiError(400, 'monto_invalido');
+      if (sats === BigInt(p.sats)) return;
+      const shares = splitPurchase(sats, rows.map((r) => BigInt(r.monto)));
+      for (const [i, r] of rows.entries()) {
+        await tx`update transferencias set sats_convertidos = ${(shares[i] as bigint).toString()}, tanda_sats = ${sats.toString()}, actualizada = now() where id = ${r.id}`;
+      }
+      await tx`update compras set sats = ${sats.toString()}, corregida = now() where id = ${p.id}`;
+      await tx`insert into compras_historial (compra_id, accion, sats_antes, sats) values (${p.id}, 'corregida', ${p.sats}, ${sats.toString()})`;
+    });
+    return c.json({ ok: true });
+  });
+
+  /** Deshacer una compra: sus transferencias vuelven a «recibida» (y se pueden armar de nuevo). */
+  app.post('/api/cuenta/listas/:id/compras/:compra/deshacer', async (c) => {
+    const account = await owner(c);
+    await sql.begin(async (tx) => {
+      const p = await ownPurchase(tx, c.req.param('id'), account.id, c.req.param('compra'));
+      if (p === null) throw new ApiError(404, 'no_encontrado');
+      await tx`
+        update transferencias set estado = 'recibida', sats_convertidos = null, tanda_sats = null, tanda_aportes = null, compra_id = null, actualizada = now()
+        where compra_id = ${p.id}`;
+      await tx`update compras set deshecha = now() where id = ${p.id}`;
+      await tx`insert into compras_historial (compra_id, accion, sats_antes) values (${p.id}, 'deshecha', ${p.sats})`;
     });
     return c.json({ ok: true });
   });
