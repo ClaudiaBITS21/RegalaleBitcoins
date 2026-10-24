@@ -32,7 +32,7 @@ jobs:
       - name: Identidad
         run: |
           tok=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://iam.googleapis.com/projects/522829661671/locations/global/workloadIdentityPools/github/providers/github-oidc" | jq -r .value)
-          echo "$tok" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -r '"Identidad (sub): " + .sub' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "$tok" | python3 -c 'import sys,json,base64; p=sys.stdin.read().split(".")[1]; print("Identidad (sub): " + json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))["sub"])' | tee -a "$GITHUB_STEP_SUMMARY"
       # La cuenta deploy-api solo puede usarse desde main (scripts/setup-deploy-api.sh).
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
