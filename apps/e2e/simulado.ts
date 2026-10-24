@@ -511,6 +511,12 @@ try {
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   const lupeWords12 = (await giver.locator('.codigo li').allInnerTexts()).map((x) => x.replace(/^\d+\s*/, '').trim()).join(' ');
+  // Salir y esperar a que la sesión se cierre: si se recarga antes de que termine el pedido, la
+  // página vuelve con la sesión abierta y no aparece «Entrar con mi cara o huella».
+  const salir = async () => {
+    await giver.getByRole('button', { name: 'Salir' }).click();
+    await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).waitFor({ timeout: 15_000 });
+  };
   await shot2(giver, 'p1-panel');
   // Con la cuenta abierta, la personita de la cabecera lleva a «Mis regalos»; al salir, desaparece.
   if ((await giver.locator('.nav-movil .icono-cuenta').getAttribute('href')) !== '/panel') fail('falta el ícono de la cuenta en la cabecera');
@@ -533,7 +539,7 @@ try {
   await giver.getByRole('button', { name: 'Abrir mis regalos' }).click();
   await giver.getByText('Listo: desde ahora tu passkey abre tus regalos también desde acá.').waitFor({ timeout: 15_000 });
   await shot2(giver, 'p2-boveda-reparada');
-  await giver.getByRole('button', { name: 'Salir' }).click();
+  await salir();
   // Página nueva: nada de lo abierto antes queda en memoria.
   await giver.reload();
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
@@ -546,7 +552,7 @@ try {
   await sql`delete from bovedas_extra where credencial_id = ${lupeCode.id}`;
   const brokenVault = await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'));
   await sql`update credenciales set boveda = ${brokenVault} where id = ${lupeCode.id}`;
-  await giver.getByRole('button', { name: 'Salir' }).click();
+  await salir();
   await giver.reload();
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.locator('.vincular-qr svg').waitFor({ timeout: 15_000 });
@@ -564,7 +570,7 @@ try {
   await giver.getByText('Listo: desde ahora tu passkey abre tus regalos también desde acá.').waitFor({ timeout: 20_000 });
   // La copia que guardó la compu abre aunque la bóveda original no abra.
   await sql`update credenciales set boveda = ${brokenVault} where id = ${lupeCode.id}`;
-  await giver.getByRole('button', { name: 'Salir' }).click();
+  await salir();
   await giver.reload();
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
   await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
