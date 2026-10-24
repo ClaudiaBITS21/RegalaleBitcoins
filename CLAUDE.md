@@ -60,6 +60,12 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`. Antes de cambiar flujos
 
 ## Handoffs
 
+**Siempre buscar también en el Drive (pedido de la responsable, 24/10/2026):** al arrancar cada
+sesión, y cada vez que se hable de un handoff, buscá en la carpeta de Drive «RegalaleBitcoin -
+handoffs» (id `13voDsuOyWGzeVS-1is-vjq75fZ_VUSZ2`) los archivos nuevos o modificados, y pasá al
+repo (`docs/handoff/AAAA-MM-DD/`) los que todavía no estén. Si el conector de Drive no está
+disponible, avisale a la responsable en vez de dar por hecho que no hay handoffs nuevos.
+
 Al arrancar cada sesión, revisá docs/handoff/. Integrá los handoffs con "Estado: PENDIENTE" y cuando termines cambialos a "Estado: INTEGRADO (commit xxxx)". Si algo está marcado ABIERTO, no lo implementes: preguntale a Rodolfo.
 
 ## Comandos
