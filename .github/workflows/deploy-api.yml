@@ -32,7 +32,9 @@ jobs:
         with:
           workload_identity_provider: projects/522829661671/locations/global/workloadIdentityPools/github/providers/github-oidc
           service_account: deploy-api@regalalebitcoins.iam.gserviceaccount.com
-      - run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev --quiet
+      # El ayudante de Docker de gcloud no toma la sesión federada: login con un token de esa sesión.
+      - name: Login en Artifact Registry
+        run: gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://southamerica-east1-docker.pkg.dev
       - name: Imagen
         run: |
           TAG="$(git rev-parse --short HEAD)-gh"
