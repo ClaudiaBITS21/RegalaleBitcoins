@@ -286,4 +286,10 @@ export const tu: Partial<Record<Key, string>> = {
   'arrep.sesion': 'Para arrepentirte de una compra, entra con tu cuenta.',
   'arrep.error': 'No se pudo registrar el pedido. Prueba de nuevo en un rato.',
   'plan.admin': 'Eres admin: tienes todo activado y libre, y tus regalos no descuentan créditos.',
+  'lista.totales.compradosNota': "Lo declaras tú, con cada compra.",
+  'lista.compras.deshacerConfirma': "¿Deshacer esta compra? Sus transferencias vuelven a «Recibida» y las puedes usar en otra compra. Queda en el historial.",
+  'lista.mio.noLlego': "Quien armó la lista no encontró esta transferencia. Revisa con tu banco que haya salido a la cuenta correcta y con el código {codigo} en el concepto.",
+  'lista.mio.reavisoQuedan': "Puedes volver a avisar {n} veces más.",
+  'lista.mio.reavisoQuedan1': "Puedes volver a avisar 1 vez más.",
+  'lista.mio.reavisoSinMas': "Ya avisaste 3 veces. Si sigue sin aparecer, habla con quien armó la lista.",
 };

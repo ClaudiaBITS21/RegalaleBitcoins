@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { ALLOW_MAINNET } from '../config.ts';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatMinor, formatSats } from '../format.ts';
-import { Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
+import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { type Cobro, LIST_KEY, openCobro } from './cobro.ts';
 import { listApi, type MyGift } from './listApi.ts';
 import { mostrarDato } from './medios.ts';
@@ -17,9 +17,11 @@ export function ContributionPage() {
   const [data, setData] = useState<MyGift | null>(null);
   const [missing, setMissing] = useState(false);
   const [cobro, setCobro] = useState<Cobro | null>(null);
+  const [token, setToken] = useState('');
 
   useEffect(() => {
     const [token = '', key = ''] = window.location.hash.slice(1).split('.');
+    setToken(token);
     if (window.location.hash !== '') history.replaceState(null, '', window.location.pathname);
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
       setMissing(true);
@@ -61,9 +63,16 @@ export function ContributionPage() {
           {data.mensaje !== '' && <p class="texto-suave">“{data.mensaje}”</p>}
         </div>
         {data.listaPausada && <Notice>{t('lista.revision')}</Notice>}
-        <Notice kind={data.estado === 'anunciada' ? 'info' : 'ok'}>{t(stateKey, { sats: data.satsConvertidos === null ? '' : formatSats(BigInt(data.satsConvertidos), lang) })}</Notice>
+        {data.estado === 'no_llego' ? (
+          <NotArrived codigo={data.codigo} quedan={data.avisosQuedan ?? 0} token={token} onDone={() => void listApi.mine(token).then(setData)} />
+        ) : (
+          <Notice kind={data.estado === 'anunciada' ? 'info' : 'ok'}>{t(stateKey, { sats: data.satsConvertidos === null ? '' : formatSats(BigInt(data.satsConvertidos), lang) })}</Notice>
+        )}
         {data.estado === 'convertida' && data.tanda !== null && data.tanda.aportes > 1 && (
           <small class="texto-suave">{t('lista.mio.tanda', { total: formatSats(BigInt(data.tanda.sats), lang), n: String(data.tanda.aportes) })}</small>
+        )}
+        {data.estado === 'convertida' && data.compra?.corregida != null && (
+          <small class="texto-suave">{t('lista.mio.corregida', { fecha: new Date(data.compra.corregida).toLocaleDateString(lang, { day: 'numeric', month: 'numeric' }) })}</small>
         )}
         <small class="texto-suave">{t('lista.mio.pesosAviso')}</small>
       </div>
@@ -87,4 +96,46 @@ export function ContributionPage() {
     );
   }
   return <Layout testnet={!ALLOW_MAINNET}>{body}</Layout>;
+}
+
+/**
+ * Quien armó la lista no encontró la transferencia (handoff 21/10): el invitado revisa con su banco
+ * y puede volver a avisar, con una nota, hasta 3 veces.
+ */
+function NotArrived({ codigo, quedan, token, onDone }: { codigo: string; quedan: number; token: string; onDone: () => void }) {
+  const { t } = useI18n();
+  const [nota, setNota] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <div class="caja">
+      <Notice kind="error">{t('lista.mio.noLlego', { codigo })}</Notice>
+      {quedan > 0 ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBusy(true);
+            setFailed(false);
+            listApi
+              .remind(token, nota.trim())
+              .then(onDone)
+              .catch(() => setFailed(true))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <label class="campo">
+            <span>{t('lista.mio.reavisoNota')}</span>
+            <input type="text" maxLength={140} placeholder={t('lista.mio.reavisoEjemplo')} value={nota} onInput={(e) => setNota((e.currentTarget as HTMLInputElement).value)} />
+          </label>
+          <Button type="submit" disabled={busy}>
+            {t('lista.mio.reaviso')}
+          </Button>
+          <small class="texto-suave">{t(quedan === 1 ? 'lista.mio.reavisoQuedan1' : 'lista.mio.reavisoQuedan', { n: String(quedan) })}</small>
+          {failed && <small class="error-campo">{t('regalar.error')}</small>}
+        </form>
+      ) : (
+        <p class="texto-suave">{t('lista.mio.reavisoSinMas')}</p>
+      )}
+    </div>
+  );
 }

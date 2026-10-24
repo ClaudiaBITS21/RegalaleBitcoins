@@ -6,7 +6,7 @@ import type { Key } from '../i18n/index.ts';
 import { Button, Notice, useI18n } from '../ui.tsx';
 import { type Cobro, LIST_KEY, localListKey, newListKey, openCobro, sealCobro, wrapKeyFor } from './cobro.ts';
 import { checkCobro, CobroFields, type CobroDraft, emptyCobro } from './CobroFields.tsx';
-import { listApi, listUrl, type OwnedList, type Transfer } from './listApi.ts';
+import { listApi, listUrl, type OwnedList, type Purchase, type Transfer } from './listApi.ts';
 import { mostrarDato, type Pais } from './medios.ts';
 
 // "Mis listas" en el panel: cada lista con su link, lo que llegó y quién regaló qué. El
@@ -38,12 +38,20 @@ function split(sats: bigint, cents: readonly bigint[]): bigint[] {
 
 
 /**
- * Una transferencia en pesos. Anunciada → "Ya me llegó"; recibida → se puede elegir para una
- * compra; convertida → muestra su parte de la compra.
+ * Una transferencia en pesos. Anunciada → "Ya me llegó" o "No me llegó" (handoff 21/10, no suma en
+ * ningún total; el invitado puede volver a avisar); no llegó → si aparece tarde, "Ya me llegó";
+ * recibida → se puede elegir para una compra; convertida → muestra su parte de la compra.
  */
 function TransferRow({ listId, currency, tr, picked, onPick, onDone }: { listId: string; currency: string; tr: Transfer; picked: boolean; onPick: (on: boolean) => void; onDone: () => void }) {
   const { t, lang } = useI18n();
   const [failed, setFailed] = useState(false);
+  const mark = (estado: 'recibida' | 'no_llego') => {
+    setFailed(false);
+    listApi
+      .mark(listId, tr.codigo, estado)
+      .then(onDone)
+      .catch(() => setFailed(true));
+  };
   return (
     <li>
       <span class="lista-aporte-quien">
@@ -58,21 +66,17 @@ function TransferRow({ listId, currency, tr, picked, onPick, onDone }: { listId:
       </span>
       <span class={`etiqueta-estado estado-${tr.estado}`}>{t(`lista.transf.${tr.estado}`)}</span>
       {tr.mensaje !== '' && <span class="lista-aporte-mensaje">“{tr.mensaje}”</span>}
-      {tr.estado === 'anunciada' && (
+      {tr.nota != null && tr.nota !== '' && <span class="lista-aporte-mensaje">{t('lista.transf.nota', { nota: tr.nota })}</span>}
+      {(tr.estado === 'anunciada' || tr.estado === 'no_llego') && (
         <span class="lista-aporte-acciones">
-          <button
-            type="button"
-            class="boton boton-contorno boton-chico"
-            onClick={() => {
-              setFailed(false);
-              listApi
-                .mark(listId, tr.codigo, 'recibida')
-                .then(onDone)
-                .catch(() => setFailed(true));
-            }}
-          >
+          <button type="button" class="boton boton-contorno boton-chico" onClick={() => mark('recibida')}>
             {t('lista.transf.marcarRecibida')}
           </button>
+          {tr.estado === 'anunciada' && (
+            <button type="button" class="boton-texto" onClick={() => mark('no_llego')}>
+              {t('lista.transf.marcarNoLlego')}
+            </button>
+          )}
         </span>
       )}
       {failed && <small class="error-campo">{t('regalar.error')}</small>}
@@ -138,6 +142,7 @@ function Transfers({ list, cobro, onDone }: { list: OwnedList; cobro: Cobro | nu
           ))}
         </ul>
       )}
+      {(list.compras?.length ?? 0) > 0 && <Purchases list={list} onDone={onDone} />}
       {received && (
         <form
           class="caja tanda"
@@ -173,6 +178,117 @@ function Transfers({ list, cobro, onDone }: { list: OwnedList; cobro: Cobro | nu
       )}
       <small class="texto-suave">{t('lista.transf.compromiso')}</small>
     </div>
+  );
+}
+
+const fecha = (iso: string, lang: string) => new Date(iso).toLocaleDateString(lang, { day: 'numeric', month: 'numeric' });
+
+/**
+ * Totales separados (handoff 21/10): lo que vimos en la cadena y lo que declara el dueño nunca se
+ * suman en un mismo número. «No me llegó» no entra en ninguno.
+ */
+function Totals({ list }: { list: OwnedList }) {
+  const { t, lang } = useI18n();
+  const tot = list.totales;
+  if (tot === undefined) return null;
+  const currency = list.moneda ?? 'ARS';
+  const cards: ReadonlyArray<[Key, Key, string]> = [
+    ['lista.totales.bitcoin', 'lista.totales.bitcoinNota', formatSats(BigInt(tot.bitcoin), lang)],
+    ['lista.totales.comprados', 'lista.totales.compradosNota', formatSats(BigInt(tot.satsComprados), lang)],
+    ['lista.totales.anunciado', 'lista.totales.anunciadoNota', formatMinor(BigInt(tot.anunciado), currency, lang)],
+    ['lista.totales.sinConvertir', 'lista.totales.sinConvertirNota', formatMinor(BigInt(tot.sinConvertir), currency, lang)],
+  ];
+  return (
+    <div class="lista-totales">
+      {cards.map(([titulo, nota, valor]) => (
+        <div class="lista-total" key={titulo}>
+          <span class="texto-suave">{t(titulo)}</span>
+          <strong>{valor}</strong>
+          <small class="texto-suave">{t(nota)}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Las compras en tanda: cada una con «Corregir», «Deshacer» y su historial (nunca en silencio). */
+function Purchases({ list, onDone }: { list: OwnedList; onDone: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div class="lista-compras">
+      <h4>{t('lista.compras.titulo')}</h4>
+      <ul class="lista-aportes">
+        {(list.compras ?? []).map((p) => (
+          <PurchaseRow key={`${p.id}-${p.sats}`} listId={list.id} p={p} onDone={onDone} />
+        ))}
+      </ul>
+      <small class="texto-suave">{t('lista.compras.aviso')}</small>
+    </div>
+  );
+}
+
+function PurchaseRow({ listId, p, onDone }: { listId: string; p: Purchase; onDone: () => void }) {
+  const { t, lang } = useI18n();
+  const [fixing, setFixing] = useState(false);
+  const [sats, setSats] = useState('');
+  const [failed, setFailed] = useState(false);
+  const parsed = parseAmount(sats, lang, 0);
+  const value = parsed.ok && parsed.value >= BigInt(Math.max(1, p.transferencias.length)) ? parsed.value : null;
+  const run = (fn: () => Promise<unknown>) => {
+    setFailed(false);
+    fn()
+      .then(onDone)
+      .catch(() => setFailed(true));
+  };
+  const n = p.transferencias.length;
+  return (
+    <li>
+      <span class="lista-aporte-quien">{t(n === 1 ? 'lista.compras.item1' : 'lista.compras.item', { fecha: fecha(p.creada, lang), sats: formatSats(BigInt(p.sats), lang), n: String(n) })}</span>
+      <span class="lista-aporte-mensaje mono">{p.transferencias.join(' · ')}</span>
+      {p.corregida !== null && <span class="etiqueta-estado">{t('lista.compras.corregida', { fecha: fecha(p.corregida, lang) })}</span>}
+      <span class="lista-aporte-acciones">
+        <button type="button" class="boton boton-contorno boton-chico" onClick={() => setFixing(!fixing)}>
+          {t('lista.compras.corregir')}
+        </button>
+        <button type="button" class="boton-texto" onClick={() => window.confirm(t('lista.compras.deshacerConfirma')) && run(() => listApi.undoPurchase(listId, p.id))}>
+          {t('lista.compras.deshacer')}
+        </button>
+      </span>
+      {fixing && (
+        <form
+          class="lista-compra-corregir"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (value !== null) run(() => listApi.fixPurchase(listId, p.id, value.toString()));
+          }}
+        >
+          <label class="campo">
+            <span>{t('lista.compras.satsNuevos')}</span>
+            <input type="text" inputMode="numeric" autocomplete="off" value={sats} onInput={(e) => setSats((e.currentTarget as HTMLInputElement).value)} />
+          </label>
+          <Button type="submit" disabled={value === null}>
+            {t('lista.compras.guardar')}
+          </Button>
+        </form>
+      )}
+      {p.historial.length > 1 && (
+        <details class="lista-compra-historial">
+          <summary>{t('lista.compras.historial')}</summary>
+          <ul>
+            {p.historial.map((h, i) => (
+              <li key={i}>
+                {h.accion === 'creada'
+                  ? t('lista.compras.h.creada', { fecha: fecha(h.fecha, lang), sats: formatSats(BigInt(h.sats ?? '0'), lang) })
+                  : h.accion === 'corregida'
+                    ? t('lista.compras.h.corregida', { fecha: fecha(h.fecha, lang), antes: formatSats(BigInt(h.satsAntes ?? '0'), lang), sats: formatSats(BigInt(h.sats ?? '0'), lang) })
+                    : t('lista.compras.h.deshecha', { fecha: fecha(h.fecha, lang) })}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {failed && <small class="error-campo">{t('regalar.error')}</small>}
+    </li>
   );
 }
 
@@ -329,6 +445,7 @@ function ListMoney({ list, master, onUnlock, onDone }: { list: OwnedList; master
   return (
     <>
       <ListCobro list={list} master={master} onUnlock={onUnlock} onCobro={setCobro} onDone={onDone} />
+      <Totals list={list} />
       <Transfers list={list} cobro={cobro} onDone={onDone} />
     </>
   );
