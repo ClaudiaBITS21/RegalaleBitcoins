@@ -6,7 +6,7 @@ import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // en castellano y escrita sin vos ni tú, para que valga con los dos tratos. Si cambia lo que se
 // guarda o con quién se comparte, esta página cambia con el mismo PR.
 
-const VERSION = '21 de octubre de 2026';
+const VERSION = '24 de octubre de 2026';
 const CONTACTO = 'hola@regalalebitcoin.com';
 
 export function PrivacyPage() {
@@ -32,8 +32,8 @@ export function PrivacyPage() {
         <section class="seccion">
           <h2>Quién es responsable</h2>
           <p>
-            Regalale Bitcoin (regalalebitcoin.com) es un servicio de Apptivalo S.R.L., CUIT 30-71671196-6, con domicilio en Marcelo T. de Alvear 405, Ciudad Autónoma de Buenos Aires
-            (C1058AAC), responsable de los datos que se describen acá. Para cualquier consulta o pedido sobre datos personales:{' '}
+            Regalale Bitcoin (regalalebitcoin.com) es un servicio de Bull &amp; Bear LLC, una sociedad constituida en el Estado de Delaware, Estados Unidos, responsable de
+            los datos que se describen acá. Para cualquier consulta o pedido sobre datos personales:{' '}
             <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>.
           </p>
         </section>
