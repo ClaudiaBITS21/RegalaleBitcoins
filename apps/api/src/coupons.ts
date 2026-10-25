@@ -5,6 +5,7 @@ import type { Account } from './accounts.ts';
 import type postgres from 'postgres';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
+import { parsePreview } from './share.ts';
 
 // Cupones (handoff 2026-10-21, «cupones»). Un cupón da un descuento en planes, regalos o listas
 // gratis, o las dos cosas. Una vez por cuenta y uno por compra. El descuento se usa al comprar; los
@@ -39,6 +40,8 @@ export interface Coupon {
   /** Solo lo usa la cuenta con este mail (en minúsculas); null = cualquiera. */
   readonly email: string | null;
   readonly lote: string | null;
+  /** El link corto: regalalebitcoin.com/c/K7M2P (5 caracteres, migración 030). */
+  readonly corto: string;
 }
 
 /** Letras y números, 4 a 24 (los de lote llevan prefijo y 8 al azar), sin distinguir mayúsculas. */
@@ -46,6 +49,13 @@ export function normalizeCode(input: unknown): string | null {
   if (typeof input !== 'string') return null;
   const code = input.trim().toUpperCase();
   return /^[A-Z0-9]{4,24}$/.test(code) ? code : null;
+}
+
+/** El código del link corto, en mayúsculas; null si no tiene la forma (5 del alfabeto sin 0/O/1/I/L). */
+export function normalizeShortCode(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  const code = input.trim().toUpperCase();
+  return /^[A-HJKMNP-Z2-9]{5}$/.test(code) ? code : null;
 }
 
 /** Un mail razonable, en minúsculas; null si no parece un mail. */
@@ -138,15 +148,33 @@ export async function confirmCouponUse(tx: Tx, paymentId: string): Promise<void>
   if (c !== undefined) await grantCouponCredits(tx, c, u.usuario_id);
 }
 
-const couponView = (c: Coupon) => ({
+/**
+ * Un cupón que se puede mostrar en público ahora (activo, en fecha, con usos), por su código o su
+ * link corto. El error dice por qué no.
+ */
+export async function shownCoupon(sql: Sql, by: { codigo: string } | { corto: string }): Promise<Coupon> {
+  const [k] = 'codigo' in by ? await sql<Coupon[]>`select * from cupones where codigo = ${by.codigo}` : await sql<Coupon[]>`select * from cupones where corto = ${by.corto}`;
+  const now = Date.now();
+  if (k === undefined || !k.activo || k.desde.getTime() > now || (k.hasta !== null && k.hasta.getTime() <= now)) throw new ApiError(404, 'cupon_invalido');
+  if ((await usesTaken(sql, k.codigo)) >= k.max_usos) throw new ApiError(409, 'cupon_agotado');
+  return k;
+}
+
+/** La imagen del cupón para la vista previa del link, si el admin ya la subió. */
+export async function findCouponPreview(sql: Sql, code: string): Promise<Uint8Array | null> {
+  const [r] = await sql<{ datos: Buffer }[]>`select datos from cupones_vistas where codigo = ${code}`;
+  return r === undefined ? null : new Uint8Array(r.datos);
+}
+
+export const couponView = (c: Coupon) => ({
   codigo: c.codigo,
   descuento: c.descuento,
   productos: c.productos,
   da: c.da_unidad === null ? null : { unidad: c.da_unidad, cantidad: c.da_cantidad, ocasion: c.ocasion },
 });
 
-export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: readonly string[] }): void {
-  const { sql, adminEmails } = deps;
+export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: readonly string[]; publicUrl: string }): void {
+  const { sql, adminEmails, publicUrl } = deps;
 
   const signedIn = async (c: Context): Promise<Account> => {
     const account = await currentAccount(sql, c);
@@ -172,13 +200,35 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
    * No dice para qué mail es.
    */
   app.get('/api/invitacion/:codigo', async (c) => {
-    const code = codeOf(c.req.param('codigo'));
-    const [k] = await sql<Coupon[]>`select * from cupones where codigo = ${code}`;
-    const now = Date.now();
-    if (k === undefined || !k.activo || k.desde.getTime() > now || (k.hasta !== null && k.hasta.getTime() <= now)) throw new ApiError(404, 'cupon_invalido');
-    if ((await usesTaken(sql, code)) >= k.max_usos) throw new ApiError(409, 'cupon_agotado');
+    const k = await shownCoupon(sql, { codigo: codeOf(c.req.param('codigo')) });
     c.header('cache-control', 'no-store');
     return c.json({ ...couponView(k), paraUnMail: k.email !== null });
+  });
+
+  /**
+   * El link corto (/c/K7M2P): el cupón con su código (para dejarlo cargado en la compra) y hasta
+   * cuándo vale. Tampoco dice para qué mail es.
+   */
+  app.get('/api/c/:corto', async (c) => {
+    const corto = normalizeShortCode(c.req.param('corto'));
+    if (corto === null) throw new ApiError(404, 'cupon_invalido');
+    const k = await shownCoupon(sql, { corto });
+    c.header('cache-control', 'no-store');
+    return c.json({ ...couponView(k), corto: k.corto, hasta: k.hasta?.toISOString() ?? null, paraUnMail: k.email !== null });
+  });
+
+  app.get('/api/c/:corto/vista.jpg', async (c) => {
+    const corto = normalizeShortCode(c.req.param('corto'));
+    const [k] = corto === null ? [] : await sql<{ codigo: string }[]>`select codigo from cupones where corto = ${corto}`;
+    const data = k === undefined ? null : await findCouponPreview(sql, k.codigo);
+    if (data === null) return c.redirect(`${publicUrl}/og.jpg`, 302);
+    // Se puede volver a subir (si cambian las condiciones): sin immutable.
+    return c.body(data as Uint8Array<ArrayBuffer>, 200, {
+      'content-type': 'image/jpeg',
+      'cache-control': 'public, max-age=3600',
+      'content-security-policy': "default-src 'none'; sandbox",
+      'content-disposition': 'inline',
+    });
   });
 
   /** Ver qué da un cupón antes de usarlo (con un producto: el precio con el descuento). */
@@ -239,6 +289,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
         const mine = uses.filter((u) => u.cupon === r.codigo);
         return {
           ...couponView(r),
+          corto: r.corto,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,
           maxUsos: r.max_usos,
@@ -399,6 +450,22 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
   });
 
   /** Pausar o reactivar (lo que da un cupón usado no se edita: se pausa y se crea otro). */
+  /**
+   * La imagen del cupón para la vista previa de su link corto. La arma el navegador del admin al
+   * copiar o compartir el cupón; no exige passkey (no cambia qué da el cupón).
+   */
+  app.post('/api/admin/cupones/:codigo/vista', async (c) => {
+    await admin(c, false);
+    const code = codeOf(c.req.param('codigo'));
+    const data = parsePreview((await body(c)).imagen);
+    const rows = await sql`
+      insert into cupones_vistas (codigo, datos) select codigo, ${Buffer.from(data)} from cupones where codigo = ${code}
+      on conflict (codigo) do update set datos = excluded.datos, creada = now()
+      returning codigo`;
+    if (rows.length === 0) throw new ApiError(404, 'cupon_invalido');
+    return c.body(null, 204);
+  });
+
   app.post('/api/admin/cupones/:codigo/activo', async (c) => {
     const account = await admin(c, true);
     const code = codeOf(c.req.param('codigo'));

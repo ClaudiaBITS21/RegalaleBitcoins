@@ -11,6 +11,7 @@ import { connect, migrate, type Sql } from '../src/db.ts';
 
 const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
 const ORIGIN = 'https://regalale.test';
+const INDEX_HTML = '<!doctype html><html><head><title>Regalale Bitcoin</title><meta property="og:title" content="Regalale Bitcoin" /><meta property="og:image" content="x" /></head><body></body></html>';
 const signet = getNetwork('signet');
 const MASTER = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const VAULT = `v1.${'A'.repeat(16)}.${'B'.repeat(64)}`;
@@ -144,6 +145,7 @@ describe('Cuentas con passkey', () => {
       accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true },
       adminEmails: ['admin@example.com'],
       advancedRecovery: true,
+      indexHtml: async () => INDEX_HTML,
     });
   });
 
@@ -791,6 +793,42 @@ describe('Cuentas con passkey', () => {
     // Pausar el lote entero.
     assert.equal((await req(`/api/admin/cupones/lotes/${id}/activo`, { activo: false }, admin.cookie)).status, 200);
     assert.equal((await req(`/api/invitacion/${zoeCode}`)).status, 404);
+  });
+
+  it('link corto de un cupón: /c/K7M2P muestra el cupón, con su imagen en la vista previa', async () => {
+    const admin = await signUp('admin@example.com');
+    assert.equal((await req('/api/admin/cupones', { codigo: 'LABC2026HODL21', descuento: 21, hasta: '2026-12-01T03:00:00.000Z', maxUsos: 50 }, admin.cookie)).status, 201);
+    assert.equal((await req('/api/admin/cupones', { codigo: 'PARAZOE', email: 'zoe@example.com', da: { unidad: 'regalo', cantidad: 2 }, maxUsos: 1 }, admin.cookie)).status, 201);
+    const lista = (await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; corto: string }> };
+    const corto = lista.cupones.find((c) => c.codigo === 'LABC2026HODL21')!.corto;
+    assert.match(corto, /^[A-HJKMNP-Z2-9]{5}$/);
+    assert.equal(new Set(lista.cupones.map((c) => c.corto)).size, 2);
+    // En minúsculas también; dice el código (para dejarlo puesto en la compra) y hasta cuándo.
+    const vista = (await (await req(`/api/c/${corto.toLowerCase()}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([vista.codigo, vista.descuento, vista.hasta, vista.paraUnMail], ['LABC2026HODL21', 21, '2026-12-01T03:00:00.000Z', false]);
+    const zoe = (await (await req(`/api/c/${lista.cupones.find((c) => c.codigo === 'PARAZOE')!.corto}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([zoe.paraUnMail, JSON.stringify(zoe).includes('zoe@')], [true, false]);
+    assert.equal((await req('/api/c/AAAAA')).status, 404);
+    assert.equal((await req('/api/c/A0O1I')).status, 404);
+    // Sin imagen, la del sitio; el admin sube la del cupón (solo JPEG) y la vista previa la usa.
+    assert.equal((await req(`/api/c/${corto}/vista.jpg`)).headers.get('location'), `${ORIGIN}/og.jpg`);
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(3000, 7)]);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/vista', { imagen: 'no' }, admin.cookie)).status, 400);
+    const ana = await signUp('ana@example.com');
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/vista', { imagen: jpeg.toString('base64') }, ana.cookie)).status, 404);
+    assert.equal((await req('/api/admin/cupones/NOEXISTE/vista', { imagen: jpeg.toString('base64') }, admin.cookie)).status, 404);
+    assert.equal((await req('/api/admin/cupones/labc2026hodl21/vista', { imagen: jpeg.toString('base64') }, admin.cookie)).status, 204);
+    const img = await req(`/api/c/${corto}/vista.jpg`);
+    assert.equal(img.headers.get('content-type'), 'image/jpeg');
+    assert.ok(Buffer.from(await img.arrayBuffer()).equals(jpeg));
+    const html = await (await req(`/c/${corto}`)).text();
+    assert.ok(html.includes('<title>Un cupón para Regalale Bitcoin</title>'), html);
+    assert.ok(html.includes(`content="${ORIGIN}/api/c/${corto}/vista.jpg"`), html);
+    assert.ok(html.includes('21 % de descuento en los packs'), html);
+    // Pausado: la página es la de siempre (la web dice que ya no está vigente).
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/activo', { activo: false }, admin.cookie)).status, 200);
+    assert.equal((await req(`/api/c/${corto}`)).status, 404);
+    assert.equal(await (await req(`/c/${corto}`)).text(), INDEX_HTML);
   });
 
   it('admins desde el panel: con passkey se suma y se quita; los fijos no se quitan; todos reciben aviso', async () => {

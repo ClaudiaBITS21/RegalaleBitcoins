@@ -10,19 +10,28 @@ import { Button, Layout, Notice, StepTitle, useI18n } from './ui.tsx';
 // Invitación con un cupón (/invitacion/CODIGO, pedido de Claudia, 21/10): cada código de un lote
 // trae su link. Muestra qué da el código y lleva a armar el regalo; el código queda guardado en
 // este navegador y se suma solo al entrar o crear la cuenta (cuponPendiente.ts).
+//
+// El link corto de un cupón (/c/K7M2P, Claudia 25/10) usa la misma página: «Acá tenés un cupón»,
+// el cupón dibujado como un ticket y el código ya puesto para cuando compre.
 
-export function InvitationPage({ testnet, code }: { testnet: boolean; code: string }) {
+type Shown = CouponView & { paraUnMail: boolean; hasta?: string | null };
+
+/** El último día en que vale (hasta es exclusivo), en el formato del idioma. */
+function lastDay(iso: string, lang: string): string {
+  return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(new Date(iso).getTime() - 1));
+}
+
+export function InvitationPage({ testnet, code, short = false }: { testnet: boolean; code: string; short?: boolean }) {
   const { t, lang } = useI18n();
   const signedIn = useSignedIn();
-  const [coupon, setCoupon] = useState<(CouponView & { paraUnMail: boolean }) | null>(null);
+  const [coupon, setCoupon] = useState<Shown | null>(null);
   const [problem, setProblem] = useState<Key | null>(null);
   const [redeemed, setRedeemed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    document.title = `${t('invitacion.titulo')} · Regalale Bitcoin`;
-    api
-      .invitation(code)
+    document.title = `${t(short ? 'cupon.titulo' : 'invitacion.titulo')} · Regalale Bitcoin`;
+    (short ? api.shortCoupon(code) : api.invitation(code))
       .then((c) => {
         setCoupon(c);
         savePendingCoupon(c.codigo);
@@ -58,13 +67,28 @@ export function InvitationPage({ testnet, code }: { testnet: boolean; code: stri
   return (
     <Layout testnet={testnet}>
       <div class="paso invitacion">
-        <StepTitle>{t('invitacion.titulo')}</StepTitle>
+        <StepTitle>{t(short ? 'cupon.titulo' : 'invitacion.titulo')}</StepTitle>
+        {coupon !== null && short && (
+          <div class="cupon-ticket" role="group" aria-label={t('cupon.etiqueta')}>
+            <div class="cupon-ticket-cuerpo">
+              <span class="cupon-ticket-etiqueta">{t('cupon.etiqueta')}</span>
+              <p class="cupon-ticket-da">{what(coupon).replace(/^./, (x) => x.toUpperCase())}</p>
+              {coupon.hasta != null && <p class="cupon-ticket-hasta">{t('cupon.hasta', { fecha: lastDay(coupon.hasta, lang) })}</p>}
+              <span class="cupon-ticket-sitio">regalalebitcoin.com</span>
+            </div>
+            <div class="cupon-ticket-talon">
+              <span class="cupon-ticket-codigo-label">{t('cupon.codigo')}</span>
+              <strong class="cupon-ticket-codigo">{coupon.codigo}</strong>
+            </div>
+          </div>
+        )}
         <p>{t('invitacion.texto')}</p>
         {coupon !== null && (
           <div class="caja">
-            <p class="invitacion-da">{t('invitacion.da', { codigo: coupon.codigo, que: what(coupon) })}</p>
+            {!short && <p class="invitacion-da">{t('invitacion.da', { codigo: coupon.codigo, que: what(coupon) })}</p>}
             {coupon.paraUnMail && <p class="texto-suave">{t('invitacion.paraUnMail')}</p>}
-            {!signedIn && <p class="texto-suave">{t('invitacion.guardado')}</p>}
+            {short && coupon.descuento !== null && <p class="texto-suave">{t('cupon.cargado')}</p>}
+            {!signedIn && (!short || coupon.da !== null) && <p class="texto-suave">{t('invitacion.guardado')}</p>}
           </div>
         )}
         {problem !== null && (
