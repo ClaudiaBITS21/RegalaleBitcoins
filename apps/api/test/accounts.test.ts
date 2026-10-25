@@ -301,7 +301,10 @@ describe('Cuentas con passkey', () => {
     assert.equal(sin.status, 200);
     assert.deepEqual(await sin.json(), { abierta: false });
     const { cookie } = await signUp('ana@example.com');
-    assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, cookie)).json(), { abierta: true });
+    assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, cookie)).json(), { abierta: true, admin: false });
+    // A un admin el ícono de la cuenta le ofrece ir al admin.
+    const admin = await signUp('admin@example.com');
+    assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, admin.cookie)).json(), { abierta: true, admin: true });
     await req('/api/cuenta/salir', {}, cookie);
     assert.deepEqual(await (await req('/api/cuenta/sesion', undefined, cookie)).json(), { abierta: false });
   });

@@ -219,6 +219,22 @@ h3 {
   justify-content: center;
 }
 
+.cuenta-menu {
+  position: relative;
+  flex: none;
+}
+
+button.icono-cuenta {
+  padding: 0;
+  cursor: pointer;
+}
+
+.panel-cuenta {
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 190px;
+}
+
 .cabecera-naranja .icono-cuenta {
   border-color: var(--blanco);
 }
