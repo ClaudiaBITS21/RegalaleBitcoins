@@ -80,7 +80,7 @@ export const pt: Dict = {
   'confirmar.enviando': 'Enviando seu presente…',
   'confirmar.polvo': 'Com a taxa de hoje não sobra nada para enviar. Tente mais tarde, quando baixar.',
   'confirmar.soloEsperar': 'Com a taxa de hoje não dá para enviar já. Deixamos assinado e sai sozinho quando baixar.',
-  'confirmar.aceptoComision': 'Entendo que a taxa leva {parte} do presente e quero continuar mesmo assim.',
+  'confirmar.aceptoComision': "Entendo que a taxa da rede Bitcoin (nós não cobramos taxa) vai levar {parte} do presente.",
   'confirmar.cambio': 'Algo mudou no presente enquanto você confirmava. Confira de novo.',
   'confirmar.error': 'Não conseguimos enviar seu presente. Tente de novo daqui a pouco.',
 

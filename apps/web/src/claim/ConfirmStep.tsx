@@ -15,7 +15,7 @@ const FEE_WARNING_USD = 1;
  */
 export const CLIENT_MAX_FEE_RATE = 500;
 /** Si la comisión se lleva más que esta parte del regalo, se pide una confirmación aparte. */
-const FEE_SHARE_CONFIRM = 0.25;
+const FEE_SHARE_CONFIRM = 0.1;
 
 /** Arma el plan o null si a esa tasa no queda nada para enviar (polvo). */
 function tryPlan(make: (rate: number) => SweepPlan, rate: number): SweepPlan | null {

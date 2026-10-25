@@ -79,7 +79,7 @@ export const it: Dict = {
   'confirmar.enviando': 'Invio del tuo regalo…',
   'confirmar.polvo': 'Con la commissione di oggi non resta nulla da inviare. Riprova più tardi, quando scende.',
   'confirmar.soloEsperar': 'Con la commissione di oggi non si può inviare subito. Lo lasciamo firmato e parte da solo quando scende.',
-  'confirmar.aceptoComision': 'Capisco che la commissione si prende {parte} del regalo e voglio continuare lo stesso.',
+  'confirmar.aceptoComision': "Capisco che la commissione della rete Bitcoin (noi non applichiamo commissioni) si prenderà il {parte} del regalo.",
   'confirmar.cambio': 'Qualcosa è cambiato nel regalo mentre confermavi. Controllalo di nuovo.',
   'confirmar.error': 'Non siamo riusciti a inviare il tuo regalo. Riprova tra poco.',
 
