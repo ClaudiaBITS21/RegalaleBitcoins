@@ -1,4 +1,5 @@
 import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openVault, sealVault } from '@regalale/core';
+import { signupStats } from './origen.ts';
 import { ApiFailure } from './api.ts';
 import type { Key } from './i18n/index.ts';
 import { setSignedIn } from './sesion.ts';
@@ -65,7 +66,7 @@ export const accountApi = {
   },
   sendLink: (email: string) => call<{ ok: boolean }>('/api/cuenta/link', { email }),
   /** Cuenta con solo el mail (quien regala con el código, sin passkey): manda el link para confirmarlo. */
-  registerMail: (email: string, idioma: string) => call<{ ok: boolean }>('/api/cuenta/registro-mail', { email, idioma }),
+  registerMail: (email: string, idioma: string) => call<{ ok: boolean }>('/api/cuenta/registro-mail', { email, idioma, ...signupStats() }),
   /** ¿Hay una sesión iniciada? (por ejemplo, abrió el link del mail en otra pestaña). */
   signedIn: async () => (await call<{ abierta: boolean }>('/api/cuenta/sesion')).abierta,
   redeemLink: async (token: string) => {
@@ -154,7 +155,7 @@ export async function createAccess(email: string, lang: string): Promise<Unlocke
     vault = await sealVault(created.prf, master, created.credentialId);
     created.prf.fill(0);
   }
-  const res = await call<{ email: string }>('/api/cuenta/registro', { email, idioma: lang, boveda: vault, credencial: created.registration });
+  const res = await call<{ email: string }>('/api/cuenta/registro', { email, idioma: lang, boveda: vault, credencial: created.registration, ...signupStats() });
   setSignedIn(true);
   return { email: res.email, master };
 }

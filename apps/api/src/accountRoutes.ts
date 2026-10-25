@@ -22,6 +22,7 @@ import {
   setAccountRecoveryKey,
   touchCredential,
 } from './accounts.ts';
+import { parseSignupStats } from './altas.ts';
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { isAdmin } from './admins.ts';
@@ -128,6 +129,7 @@ export function registerAccountRoutes(
       email,
       lang,
       credential: { id: reg.credentialId, publicKey: reg.publicKey, alg: reg.alg, signCount: reg.signCount, vault: vault as string | null },
+      stats: parseSignupStats(b),
     }).catch((e: { code?: string }) => {
       if (e.code === '23505') throw new ApiError(409, 'cuenta_existente');
       throw e;
@@ -163,7 +165,7 @@ export function registerAccountRoutes(
     if (account === null) {
       if (!mailAccountLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
       mailAccountLimiter.record(ip);
-      account = await createAccount(sql, { email, lang, credential: null }).catch(async (e: { code?: string }) => {
+      account = await createAccount(sql, { email, lang, credential: null, stats: parseSignupStats(b) }).catch(async (e: { code?: string }) => {
         if (e.code === '23505') return (await findAccountByEmail(sql, email)) as Account;
         throw e;
       });

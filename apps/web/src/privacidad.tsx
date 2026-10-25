@@ -81,6 +81,11 @@ export function PrivacyPage() {
               <strong>Datos técnicos:</strong> una cookie de sesión (<code>__session</code>) solo para mantener la cuenta abierta; el idioma elegido, en el propio navegador. La dirección IP se usa en
               memoria para frenar abusos y no se guarda en la base. Nuestro proveedor de nube lleva registros técnicos de los pedidos al servidor.
             </li>
+            <li>
+              <strong>Estadística de altas:</strong> al crear una cuenta sumamos uno a un contador por semana, con el país aproximado (según la zona horaria del
+              dispositivo, no la dirección IP) y de dónde llegaste (solo el nombre del sitio, la etiqueta de campaña del link o si entraste por un cupón). Ese
+              contador no se guarda en tu cuenta ni se puede relacionar con ella.
+            </li>
           </ul>
         </section>
 

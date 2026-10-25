@@ -296,6 +296,19 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/cuenta', undefined, cookie)).status, 401);
   });
 
+  it('estadística de altas: solo un contador por semana, país y origen; nada en la cuenta', async () => {
+    await sql`delete from altas_semana`;
+    for (const [email, extra] of [['uno@example.com', { pais: 'AR', origen: 'instagram.com' }], ['dos@example.com', { pais: 'AR', origen: 'instagram.com' }], ['tres@example.com', { pais: '<x>', origen: 'Ojo Raro!' }]] as const) {
+      assert.equal((await req('/api/cuenta/registro-mail', { email, idioma: 'es', ...extra })).status, 202);
+    }
+    // El mismo mail otra vez no es una cuenta nueva: no suma.
+    await req('/api/cuenta/registro-mail', { email: 'uno@example.com', idioma: 'es', pais: 'AR', origen: 'instagram.com' });
+    const filas = await sql<{ pais: string; origen: string; cuentas: number }[]>`select pais, origen, cuentas from altas_semana order by cuentas desc`;
+    assert.deepEqual(filas.map((f) => [f.pais, f.origen, f.cuentas]), [['AR', 'instagram.com', 2], ['INT', 'directo', 1]]);
+    const columnas = await sql<{ column_name: string }[]>`select column_name from information_schema.columns where table_name = 'usuarios'`;
+    assert.ok(!columnas.some((c) => /pais|origen/.test(c.column_name)), 'la cuenta no guarda país ni origen');
+  });
+
   it('el menú pregunta si hay sesión sin errores ni datos de la cuenta', async () => {
     const sin = await req('/api/cuenta/sesion');
     assert.equal(sin.status, 200);

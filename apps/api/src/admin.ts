@@ -1,4 +1,5 @@
 import type { Hono } from 'hono';
+import { signupStats } from './altas.ts';
 import { currentAccount } from './accountRoutes.ts';
 import { isAdmin } from './admins.ts';
 import type { ChainClient, PriceClient } from './chain.ts';
@@ -150,9 +151,13 @@ export async function adminSummary(deps: AdminDeps): Promise<Record<string, unkn
       from regalos where red = ${network}`,
   ]);
   const usdPerBtc = await price.btcUsd().catch(() => null);
+  // Altas de las últimas 12 semanas por país y por origen: solo contadores (altas.ts).
+  const signups = await signupStats(sql, 12);
+  const sumBy = (k: 'pais' | 'origen') => signups.reduce<Record<string, number>>((acc, r) => ({ ...acc, [r[k]]: (acc[r[k]] ?? 0) + r.cuentas }), {});
 
   return {
     red: network,
+    altas: { porPais: sumBy('pais'), porOrigen: sumBy('origen') },
     generado: new Date((deps.now ?? Date.now)()).toISOString(),
     usuarios: {
       total: Number(users?.total ?? 0),
