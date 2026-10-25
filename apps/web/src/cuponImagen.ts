@@ -3,6 +3,8 @@
 // admin al copiar o compartir el cupón y se sube una vez; si algo falla, el link usa la imagen
 // general del sitio. Sin vos ni tú: vale para los dos tratos.
 
+import { dataUrl, svgCompacto } from './content/logo.ts';
+
 const W = 1200;
 const H = 630;
 const TINTA = '#1a1530';
@@ -117,21 +119,33 @@ export async function couponImage(c: CouponImageInput): Promise<string | null> {
     ctx.fillStyle = TINTA;
     let size = 64;
     ctx.font = `800 ${size}px ${TITULOS}`;
+    // Lo que da, lo más grande que entre (hasta 3 renglones) sin pisar la fecha de abajo.
+    const bottom = ty + th - 190;
+    const last = (n: number) => ty + 120 + size + (n - 1) * size * 1.1;
     let que = lines(ctx, c.que, width, 4);
-    while (size > 40 && que.length > 3) {
+    while (size > 36 && (que.length > 3 || last(que.length) > bottom)) {
       ctx.font = `800 ${--size}px ${TITULOS}`;
       que = lines(ctx, c.que, width, 4);
     }
     que = lines(ctx, c.que, width, 3);
-    let y = ty + 130 + size;
+    let y = ty + 120 + size;
     for (const l of que) {
       ctx.fillText(l, x, y, width);
       y += size * 1.1;
     }
     ctx.font = `400 30px ${TEXTO}`;
-    if (c.hasta !== null) ctx.fillText(c.hasta, x, ty + th - 104, width);
-    ctx.font = `700 28px ${TEXTO}`;
-    ctx.fillText('regalalebitcoin.com', x, ty + th - 50);
+    if (c.hasta !== null) ctx.fillText(c.hasta, x, ty + th - 140, width);
+    // Abajo, el logotipo en dos líneas y la dirección del sitio.
+    const logo = new Image();
+    logo.src = dataUrl(svgCompacto('claro'));
+    await logo.decode();
+    const lh = 76;
+    const lw = (logo.naturalWidth / logo.naturalHeight) * lh;
+    ctx.drawImage(logo, x, ty + th - 40 - lh, lw, lh);
+    ctx.font = `700 26px ${TEXTO}`;
+    ctx.textAlign = 'right';
+    ctx.fillText('regalalebitcoin.com', tx + cut - 44, ty + th - 48);
+    ctx.textAlign = 'left';
 
     // A la derecha, de costado, el código.
     ctx.save();

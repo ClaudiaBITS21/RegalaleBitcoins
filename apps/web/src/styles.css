@@ -3705,7 +3705,7 @@ svg.tarjeta-imagen {
 .cupon-ticket-etiqueta { padding: 4px 14px; border-radius: 999px; background: var(--tinta); color: var(--amarillo); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .cupon-ticket-da { margin: 0; font: 800 1.45rem/1.15 var(--titulos); overflow-wrap: anywhere; }
 .cupon-ticket-hasta { margin: 0; color: var(--suave); }
-.cupon-ticket-sitio { font-weight: 700; font-size: 0.9rem; }
+.cupon-ticket-logo { display: block; height: 44px; width: auto; margin-top: 6px; }
 .cupon-ticket-talon { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 16px 16px 18px; border-left: 3px dashed var(--tinta); background: var(--naranja); border-radius: 0 calc(var(--radio) - 3px) calc(var(--radio) - 3px) 0; }
 .cupon-ticket-talon::before, .cupon-ticket-talon::after { content: ''; position: absolute; left: -12px; width: 18px; height: 18px; border-radius: 50%; background: var(--fondo); border: 3px solid var(--tinta); }
 .cupon-ticket-talon::before { top: -12px; }
