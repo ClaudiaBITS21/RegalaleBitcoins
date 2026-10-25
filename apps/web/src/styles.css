@@ -3699,13 +3699,21 @@ svg.tarjeta-imagen {
 .cupones-seccion { margin: 18px 16px 0; font: 800 1.15rem var(--titulos); }
 .ticket-mail { font-weight: 700; color: var(--tinta); overflow-wrap: anywhere; }
 .cupones-hoja input[type='file'] { font: inherit; font-size: 0.9rem; }
+.cupones-check { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.cupones-logo-vista { display: block; width: 100%; height: auto; margin: 4px 0 12px; border-radius: 12px; border: 2px solid var(--c-borde); }
 .invitacion-da { margin: 0; font-weight: 700; font-size: 1.1rem; }
 .cupon-ticket { position: relative; display: grid; grid-template-columns: 1fr auto; margin: 4px 6px 18px 0; background: var(--crema); color: var(--tinta); border: 3px solid var(--tinta); border-radius: var(--radio); box-shadow: 6px 6px 0 var(--tinta); }
 .cupon-ticket-cuerpo { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px 16px 16px 18px; min-width: 0; }
 .cupon-ticket-etiqueta { padding: 4px 14px; border-radius: 999px; background: var(--tinta); color: var(--amarillo); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .cupon-ticket-da { margin: 0; font: 800 1.45rem/1.15 var(--titulos); overflow-wrap: anywhere; }
 .cupon-ticket-hasta { margin: 0; color: var(--suave); }
-.cupon-ticket-logo { display: block; height: 44px; width: auto; margin-top: 6px; }
+.cupon-ticket-marcas { display: flex; align-items: center; gap: 12px; margin-top: 6px; min-width: 0; max-width: 100%; }
+.cupon-ticket-logo { display: block; height: 44px; width: auto; flex: none; }
+.cupon-ticket-socio { display: block; max-height: 48px; max-width: 140px; width: auto; height: auto; min-width: 0; padding-left: 12px; border-left: 2px solid var(--tinta); object-fit: contain; }
+@media (max-width: 520px) {
+  .cupon-ticket-marcas { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .cupon-ticket-socio { max-width: 100%; max-height: 44px; padding: 8px 0 0; border-left: 0; border-top: 2px solid var(--tinta); }
+}
 .cupon-ticket-talon { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 16px 16px 18px; border-left: 3px dashed var(--tinta); background: var(--naranja); border-radius: 0 calc(var(--radio) - 3px) calc(var(--radio) - 3px) 0; }
 .cupon-ticket-talon::before, .cupon-ticket-talon::after { content: ''; position: absolute; left: -12px; width: 18px; height: 18px; border-radius: 50%; background: var(--fondo); border: 3px solid var(--tinta); }
 .cupon-ticket-talon::before { top: -12px; }

@@ -834,6 +834,20 @@ describe('Cuentas con passkey', () => {
     assert.deepEqual([futuro.codigo, futuro.desde], ['EVENTO', '2099-11-01T03:00:00.000Z']);
     assert.ok((await (await req(`/c/${ev.corto}`)).text()).includes('10 % de descuento'));
     assert.equal(((await (await req('/api/cuenta/cupon/ver', { codigo: 'EVENTO' }, ana.cookie)).json()) as { error: string }).error, 'cupon_no_empezo');
+    // Logo de quien lo promueve: solo PNG, solo admins; cambia la vista previa (hay que volver a armarla).
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(500, 3)]);
+    assert.equal((await req(`/api/c/${corto}/logo.png`)).status, 404);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/logo', { imagen: jpeg.toString('base64') }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/logo', { imagen: png.toString('base64') }, ana.cookie)).status, 404);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/logo', { imagen: png.toString('base64') }, admin.cookie)).status, 204);
+    const logo = await req(`/api/c/${corto.toLowerCase()}/logo.png`);
+    assert.equal(logo.headers.get('content-type'), 'image/png');
+    assert.ok(Buffer.from(await logo.arrayBuffer()).equals(png));
+    assert.equal(((await (await req(`/api/c/${corto}`)).json()) as { conLogo: boolean }).conLogo, true);
+    const conLogo = ((await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; conLogo: boolean; conVista: boolean }> }).cupones.find((c) => c.codigo === 'LABC2026HODL21')!;
+    assert.deepEqual([conLogo.conLogo, conLogo.conVista], [true, false]);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/logo', { imagen: null }, admin.cookie)).status, 204);
+    assert.equal((await req(`/api/c/${corto}/logo.png`)).status, 404);
     // Pausado: la página es la de siempre (la web dice que ya no está vigente).
     assert.equal((await req('/api/admin/cupones/LABC2026HODL21/activo', { activo: false }, admin.cookie)).status, 200);
     assert.equal((await req(`/api/c/${corto}`)).status, 404);

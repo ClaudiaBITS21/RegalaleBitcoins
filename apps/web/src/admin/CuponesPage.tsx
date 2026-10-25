@@ -7,6 +7,7 @@ import { formatSats } from '../format.ts';
 import { translate } from '../i18n/index.ts';
 import { browserTrato, type Trato } from '../i18n/trato.ts';
 import { couponImage } from '../cuponImagen.ts';
+import { type PreparedLogo, prepareLogo } from '../cuponLogo.ts';
 
 // Cupones (handoff 2026-10-21, «cupones»): página aparte, instalable en el celular como «Cupones»
 // (cupones.html con su propio manifest). Solo admins. Herramienta interna: solo en castellano. El
@@ -147,14 +148,19 @@ export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html:
   return { plano: `${frase}: ${link}`, html: `<p>${esc(frase)}: <a href="${link}">${esc(link)}</a></p>` };
 }
 
-/** Lo que dice la imagen del cupón (la vista previa del link). */
-export function imagenCupon(c: AdminCoupon) {
+/** Lo que dice la imagen del cupón (la vista previa del link). `logo`: el de quien lo promueve, si cambió recién. */
+export function imagenCupon(c: AdminCoupon, logo?: string | null) {
   const que = beneficio(c).replace(/^un /, '');
   // Si todavía no empezó (el de un evento se comparte antes), las dos fechas.
   const empieza = new Date(c.desde).getTime() > Date.now() ? fechaLarga(c.desde) : null;
   const hasta = c.hasta === null ? null : fechaLarga(ultimoDia(c.hasta));
   const fechas = empieza !== null ? (hasta === null ? `Válido desde el ${empieza}` : `Válido del ${empieza} al ${hasta}`) : hasta === null ? null : `Válido hasta el ${hasta}`;
-  return { codigo: c.codigo, que: que.charAt(0).toUpperCase() + que.slice(1), hasta: fechas };
+  return {
+    codigo: c.codigo,
+    que: que.charAt(0).toUpperCase() + que.slice(1),
+    hasta: fechas,
+    logo: logo !== undefined ? logo : c.conLogo ? `/api/c/${c.corto}/logo.png?v=${Date.now()}` : null,
+  };
 }
 
 const claseTipo = (c: AdminCoupon) => (c.descuento !== null && c.da !== null ? 't-combo' : c.descuento !== null ? 't-plan' : c.da?.unidad === 'regalo' ? 't-regalo' : 't-lista');
@@ -201,6 +207,7 @@ export function CuponesPage() {
   });
   const [conImagen] = useState(() => new Set<string>());
   const [hoja, setHoja] = useState(false);
+  const [logoDe, setLogoDe] = useState<AdminCoupon | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -388,9 +395,9 @@ export function CuponesPage() {
           <div class={`cupones-lista ${vista === 'lista' ? 'renglones' : 'grilla'}`}>
             {visibles.map((c) =>
               vista === 'lista' ? (
-                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} />
+                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} />
               ) : (
-                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} />
+                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} />
               ),
             )}
           </div>
@@ -406,6 +413,17 @@ export function CuponesPage() {
           </>
         )}
       </main>
+      {logoDe !== null && (
+        <LogoHoja
+          c={logoDe}
+          onCerrar={() => setLogoDe(null)}
+          onListo={async (m) => {
+            setLogoDe(null);
+            await cargar();
+            avisar(m);
+          }}
+        />
+      )}
       {hoja && (
         <Hoja
           existentes={(cupones ?? []).map((c) => c.codigo)}
@@ -454,9 +472,10 @@ interface Acciones {
   readonly onCompartir: (c: AdminCoupon) => void;
   readonly onCopiar: (codigo: string) => void;
   readonly onPausar: (c: AdminCoupon) => void;
+  readonly onLogo: (c: AdminCoupon) => void;
 }
 
-function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, corto }: Acciones & { corto: boolean }) {
+function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, corto }: Acciones & { corto: boolean }) {
   const e = estado(c);
   return (
     <div class="cupones-acciones">
@@ -465,6 +484,9 @@ function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, corto }: Acciones
       </button>
       <button type="button" class="cupones-accion" onClick={() => onCopiar(c.codigo)}>
         {corto ? 'Copiar' : 'Copiar mensaje'}
+      </button>
+      <button type="button" class="cupones-accion" onClick={() => onLogo(c)}>
+        {c.conLogo ? 'Logo ✓' : 'Logo'}
       </button>
       {e.clave !== 'terminados' && (
         <button type="button" class="cupones-accion" onClick={() => onPausar(c)}>
@@ -617,6 +639,88 @@ function Lote({ l, onCsv, onPausar }: { l: AdminCouponBatch; onCsv: (l: AdminCou
 }
 
 type Para = 'todos' | 'mail' | 'lote';
+
+/**
+ * El logo de quien promueve el cupón (Claudia, 25/10): se sube como venga, se le saca el fondo,
+ * se recorta, y se ve cómo queda en la imagen del link antes de guardarlo. Guardar pide passkey.
+ */
+function LogoHoja({ c, onCerrar, onListo }: { c: AdminCoupon; onCerrar: () => void; onListo: (aviso: string) => Promise<void> }) {
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [quitarFondo, setQuitarFondo] = useState(true);
+  const [logo, setLogo] = useState<PreparedLogo | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cada vez que cambia el archivo o «Quitar el fondo»: el logo listo y la imagen del link con él.
+  useEffect(() => {
+    let vale = true;
+    setError(null);
+    void (async () => {
+      const listo = archivo === null ? null : await prepareLogo(archivo, quitarFondo);
+      if (!vale) return;
+      if (archivo !== null && listo === null) setError('No se pudo leer esa imagen. Probá con un PNG, JPG, WebP o SVG.');
+      setLogo(listo);
+      const img = await couponImage(imagenCupon(c, listo?.url ?? (archivo === null ? undefined : null)));
+      if (vale) setVista(img === null ? null : `data:image/jpeg;base64,${img}`);
+    })();
+    return () => {
+      vale = false;
+    };
+  }, [archivo, quitarFondo]);
+
+  const guardar = async (imagen: PreparedLogo | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await conPasskey(() => api.adminCouponLogo(c.codigo, imagen?.png ?? null));
+      // La imagen del link, ya con el logo nuevo (el servidor borró la anterior).
+      const img = await couponImage(imagenCupon(c, imagen?.url ?? null));
+      if (img !== null) await api.adminCouponPreview(c.codigo, img).catch(() => undefined);
+      await onListo(imagen === null ? 'Logo quitado' : 'Logo guardado');
+    } catch (e) {
+      setError(errorTexto(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div class="cupones-velo" onClick={onCerrar} />
+      <section class="cupones-hoja" role="dialog" aria-modal="true" aria-labelledby="logo-titulo">
+        <h2 id="logo-titulo">Logo de {c.codigo}</h2>
+        <p class="cupones-ayuda">El de quien promueve el cupón (una empresa, un evento). Va en el cupón, al lado del de Regalale Bitcoin.</p>
+        <div class="cupones-grupo">
+          <label for="logo-archivo">Imagen (PNG, JPG, WebP o SVG)</label>
+          <input id="logo-archivo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => setArchivo((e.currentTarget as HTMLInputElement).files?.[0] ?? null)} />
+          <label class="cupones-check">
+            <input type="checkbox" checked={quitarFondo} onChange={(e) => setQuitarFondo((e.currentTarget as HTMLInputElement).checked)} />
+            Quitar el fondo
+          </label>
+          {logo !== null && (
+            <span class="cupones-ayuda">
+              {logo.sinFondo ? 'Le saqué el fondo y lo recorté.' : quitarFondo ? 'No tenía un fondo liso: lo recorté.' : 'Lo recorté.'}
+              {logo.placa && ' Es claro: va sobre una plaquita oscura para que se vea.'}
+            </span>
+          )}
+        </div>
+        {vista !== null && <img class="cupones-logo-vista" src={vista} alt="Cómo se ve el cupón al compartirlo" />}
+        <div class="cupones-error" role="alert">
+          {error}
+        </div>
+        <button type="button" class="cupones-principal" disabled={busy || logo === null} onClick={() => void guardar(logo)}>
+          {busy ? 'Confirmá con tu passkey…' : 'Guardar logo'}
+        </button>
+        {c.conLogo && (
+          <button type="button" class="cupones-accion" disabled={busy} onClick={() => void guardar(null)}>
+            Sacar el logo
+          </button>
+        )}
+      </section>
+    </>
+  );
+}
 
 function Hoja({
   existentes,

@@ -30,6 +30,8 @@ export interface CouponImageInput {
   readonly que: string;
   /** «Válido hasta el 31/12/2026», o null si no vence. */
   readonly hasta: string | null;
+  /** El logo de quien lo promueve (una URL del sitio o data:), o null. */
+  readonly logo?: string | null;
 }
 
 /** Corta un texto en renglones que entren en `width` con la fuente actual (como mucho `max`). */
@@ -135,17 +137,33 @@ export async function couponImage(c: CouponImageInput): Promise<string | null> {
     }
     ctx.font = `400 30px ${TEXTO}`;
     if (c.hasta !== null) ctx.fillText(c.hasta, x, ty + th - 140, width);
-    // Abajo, el logotipo en dos líneas y la dirección del sitio.
+    // Abajo, el logotipo en dos líneas y, con el logo de quien lo promueve, ese logo del otro lado
+    // de una línea; sin él, la dirección del sitio.
     const logo = new Image();
     logo.src = dataUrl(svgCompacto('claro'));
     await logo.decode();
     const lh = 76;
     const lw = (logo.naturalWidth / logo.naturalHeight) * lh;
-    ctx.drawImage(logo, x, ty + th - 40 - lh, lw, lh);
-    ctx.font = `700 26px ${TEXTO}`;
-    ctx.textAlign = 'right';
-    ctx.fillText('regalalebitcoin.com', tx + cut - 44, ty + th - 48);
-    ctx.textAlign = 'left';
+    const ly = ty + th - 40 - lh;
+    ctx.drawImage(logo, x, ly, lw, lh);
+    const partner = c.logo == null ? null : new Image();
+    if (partner !== null) {
+      partner.src = c.logo as string;
+      await partner.decode();
+      const sx = x + lw + 30;
+      ctx.fillRect(sx, ly + 4, 3, lh - 8);
+      const boxW = tx + cut - 44 - (sx + 33);
+      const boxH = lh + 8;
+      const k = Math.min(boxW / partner.naturalWidth, boxH / partner.naturalHeight);
+      const pw = partner.naturalWidth * k;
+      const ph = partner.naturalHeight * k;
+      ctx.drawImage(partner, sx + 33, ly + lh / 2 - ph / 2, pw, ph);
+    } else {
+      ctx.font = `700 26px ${TEXTO}`;
+      ctx.textAlign = 'right';
+      ctx.fillText('regalalebitcoin.com', tx + cut - 44, ty + th - 48);
+      ctx.textAlign = 'left';
+    }
 
     // A la derecha, de costado, el código.
     ctx.save();
