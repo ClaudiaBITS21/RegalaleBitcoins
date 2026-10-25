@@ -109,6 +109,8 @@ function App() {
         <RefundPage testnet={!ALLOW_MAINNET} />
       ) : /^\/vincular\/?$/.test(path) ? (
         <LinkPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/c\/[A-HJKMNP-Za-hjkmnp-z2-9]{5}\/?$/.test(path) ? (
+        <InvitationPage testnet={!ALLOW_MAINNET} code={(path.split('/')[2] as string).toUpperCase()} short />
       ) : /^\/invitacion\/[A-Za-z0-9]{4,24}\/?$/.test(path) ? (
         <InvitationPage testnet={!ALLOW_MAINNET} code={path.split('/')[2] as string} />
       ) : /^\/comprar\/?$/.test(path) ? (

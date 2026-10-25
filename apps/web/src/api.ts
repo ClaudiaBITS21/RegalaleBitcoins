@@ -232,6 +232,8 @@ export interface CouponView {
 
 /** Un cupón en el admin, con sus usos. */
 export interface AdminCoupon extends CouponView {
+  /** El link corto: regalalebitcoin.com/c/<corto>. */
+  readonly corto: string;
   readonly desde: string;
   /** Exclusivo: vence en ese instante. null = sin fecha de fin. */
   readonly hasta: string | null;
@@ -312,6 +314,8 @@ export const api = {
   adminBatch: (id: string) => call<{ nombre: string; cupones: Array<{ codigo: string; email: string | null; usado: boolean }> }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}`),
   adminBatchActive: (id: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}/activo`, { activo }),
   invitation: (codigo: string) => call<CouponView & { paraUnMail: boolean }>(`/api/invitacion/${encodeURIComponent(codigo)}`),
+  shortCoupon: (corto: string) => call<CouponView & { corto: string; hasta: string | null; paraUnMail: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
+  adminCouponPreview: (codigo: string, imagen: string) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/vista`, { imagen }),
   adminCreateCoupon: (c: {
     codigo: string;
     descuento: number | null;

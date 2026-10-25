@@ -5,6 +5,8 @@ import { PRODUCT_NAME } from '../comprar.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
 import { translate } from '../i18n/index.ts';
+import { browserTrato, type Trato } from '../i18n/trato.ts';
+import { couponImage } from '../cuponImagen.ts';
 
 // Cupones (handoff 2026-10-21, «cupones»): página aparte, instalable en el celular como «Cupones»
 // (cupones.html con su propio manifest). Solo admins. Herramienta interna: solo en castellano. El
@@ -20,9 +22,11 @@ const PLANES = ['pack10', 'pack10_lista', 'anual', 'fundador'] as const;
 const OCASIONES = ['', 'navidad', 'reyes', 'dianino', 'cumple', 'bautismo', 'casamiento', 'babyshower', 'diamadre', 'diapadre'] as const;
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const VISTA_KEY = 'cupones-vista';
+const TRATO_KEY = 'cupones-trato';
 /** En todo texto, la dirección del sitio es siempre esta (CLAUDE.md). */
 const SITIO = 'https://regalalebitcoin.com';
 export const linkInvitacion = (codigo: string) => `${SITIO}/invitacion/${codigo}`;
+export const linkCorto = (corto: string) => `${SITIO}/c/${corto}`;
 
 /** Celda de CSV: entre comillas si hace falta y sin fórmulas (una celda que empieza con = + - @). */
 const celda = (v: string) => {
@@ -132,18 +136,21 @@ const fechaLarga = (iso: string) => {
 };
 
 /**
- * El texto para copiar o compartir (Claudia, 25/10): el código en negrita, qué da y hasta cuándo.
- * La negrita va como *código* (WhatsApp) en el texto plano y como <strong> al pegarlo con formato.
+ * El texto para copiar o compartir (Claudia, 25/10): una línea y el link corto, que muestra el
+ * cupón (con su imagen en la vista previa) y lo deja puesto para la compra. Con vos o con tú,
+ * según el trato elegido arriba (con tú la marca lleva acento, como en el sitio).
  */
-export function textoCupon(c: AdminCoupon): { plano: string; html: string } {
-  const lineas = [`Con este código obtené ${beneficio(c)} de regalalebitcoin.com.`];
-  if (c.email !== null) lineas.push(`Usalo desde este link: ${linkInvitacion(c.codigo)}`);
-  if (c.hasta !== null) lineas.push(`Válido hasta el ${fechaLarga(ultimoDia(c.hasta))}.`);
+export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html: string } {
+  const frase = trato === 'tu' ? 'Aquí tienes un cupón para Regálale Bitcoin' : 'Acá tenés un cupón para Regalale Bitcoin';
+  const link = linkCorto(c.corto);
   const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return {
-    plano: [`*${c.codigo}*`, ...lineas].join('\n\n'),
-    html: [`<p><strong>${esc(c.codigo)}</strong></p>`, ...lineas.map((l) => `<p>${esc(l)}</p>`)].join(''),
-  };
+  return { plano: `${frase}: ${link}`, html: `<p>${esc(frase)}: <a href="${link}">${esc(link)}</a></p>` };
+}
+
+/** Lo que dice la imagen del cupón (la vista previa del link). */
+export function imagenCupon(c: AdminCoupon) {
+  const que = beneficio(c).replace(/^un /, '');
+  return { codigo: c.codigo, que: que.charAt(0).toUpperCase() + que.slice(1), hasta: c.hasta === null ? null : `Válido hasta el ${fechaLarga(ultimoDia(c.hasta))}` };
 }
 
 const claseTipo = (c: AdminCoupon) => (c.descuento !== null && c.da !== null ? 't-combo' : c.descuento !== null ? 't-plan' : c.da?.unidad === 'regalo' ? 't-regalo' : 't-lista');
@@ -180,6 +187,15 @@ export function CuponesPage() {
       return 'cupones';
     }
   });
+  const [trato, setTrato] = useState<Trato>(() => {
+    try {
+      const t = localStorage.getItem(TRATO_KEY);
+      return t === 'vos' || t === 'tu' ? t : browserTrato();
+    } catch {
+      return browserTrato();
+    }
+  });
+  const [conImagen] = useState(() => new Set<string>());
   const [hoja, setHoja] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -208,9 +224,21 @@ export function CuponesPage() {
     window.setTimeout(() => setAviso((a) => (a === m ? null : a)), 2200);
   };
   const copiar = (t: string, m: string) => navigator.clipboard.writeText(t).then(() => avisar(m), () => avisar('No se pudo copiar'));
-  /** Copia el mensaje del cupón: con formato (negrita) donde se pueda, y si no, el texto plano. */
+  /**
+   * Sube una vez por sesión la imagen del cupón para la vista previa del link. Va después de
+   * copiar o compartir (el portapapeles pide que sea enseguida del toque) y, si falla, el link
+   * muestra la imagen general del sitio.
+   */
+  const subirImagen = (c: AdminCoupon) => {
+    if (conImagen.has(c.codigo)) return;
+    conImagen.add(c.codigo);
+    void couponImage(imagenCupon(c))
+      .then((img) => (img === null ? undefined : api.adminCouponPreview(c.codigo, img)))
+      .catch(() => conImagen.delete(c.codigo));
+  };
+  /** Copia el mensaje del cupón: con el link como link donde se pueda, y si no, el texto plano. */
   const copiarCupon = async (c: AdminCoupon) => {
-    const { plano, html } = textoCupon(c);
+    const { plano, html } = textoCupon(c, trato);
     try {
       if (typeof ClipboardItem === 'function' && typeof navigator.clipboard.write === 'function') {
         await navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([plano], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]);
@@ -221,11 +249,21 @@ export function CuponesPage() {
     } catch {
       avisar('No se pudo copiar');
     }
+    subirImagen(c);
   };
   const compartir = (c: AdminCoupon) => {
-    const text = textoCupon(c).plano;
+    const text = textoCupon(c, trato).plano;
     if (typeof navigator.share === 'function') navigator.share({ text }).catch(() => undefined);
     else void copiar(text, 'Texto copiado para compartir');
+    subirImagen(c);
+  };
+  const cambiarTrato = (t: Trato) => {
+    setTrato(t);
+    try {
+      localStorage.setItem(TRATO_KEY, t);
+    } catch {
+      // Sin almacenamiento: vale para esta visita.
+    }
   };
   const pausar = async (c: AdminCoupon) => {
     try {
@@ -312,6 +350,14 @@ export function CuponesPage() {
             {visibles.length === 1 ? '1 cupón' : `${visibles.length} cupones`}
             {lotesVisibles.length > 0 && (lotesVisibles.length === 1 ? ' · 1 lote' : ` · ${lotesVisibles.length} lotes`)}
           </span>
+          <div class="cupones-vista" role="group" aria-label="Mensaje al copiar">
+            <button type="button" aria-pressed={trato === 'vos'} title="Acá tenés un cupón…" onClick={() => cambiarTrato('vos')}>
+              Vos
+            </button>
+            <button type="button" aria-pressed={trato === 'tu'} title="Aquí tienes un cupón…" onClick={() => cambiarTrato('tu')}>
+              Tú
+            </button>
+          </div>
           <div class="cupones-vista" role="group" aria-label="Ver como">
             <button type="button" aria-pressed={vista === 'cupones'} onClick={() => cambiarVista('cupones')}>
               Cupones

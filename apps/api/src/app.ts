@@ -167,7 +167,7 @@ export function createApp(deps: AppDeps): Hono {
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerAdminUserRoutes(app, { sql, fixed: deps.adminEmails ?? [], mailer: accounts.mailer });
-  registerCouponRoutes(app, { sql, adminEmails: deps.adminEmails ?? [] });
+  registerCouponRoutes(app, { sql, adminEmails: deps.adminEmails ?? [], publicUrl: accounts.publicUrl });
   if (deps.indexHtml !== undefined) registerShareRoutes(app, { sql, publicUrl: accounts.publicUrl, indexHtml: deps.indexHtml });
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */

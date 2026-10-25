@@ -102,6 +102,7 @@ export const tu: Partial<Record<Key, string>> = {
   'cupon.deOtraCuenta': "Ese código es para otra cuenta: entra con el mail al que te llegó.",
   'invitacion.texto': "Arma un regalo en bitcoin para quien quieras, con su tarjeta y su mensaje. Los bitcoins son de quien lo recibe: nadie más los puede mover, ni siquiera nosotros.",
   'invitacion.igual': "Igual puedes regalar: empiezas con regalos sin costo.",
+  'cupon.titulo': "Aquí tienes un cupón para Regálale Bitcoin",
   'guardar.tituloSesion': 'Sigue con tu cuenta',
   'guardar.textoSesion': 'Ya entraste como {email}. Para guardar este regalo, abre tu llave con tu cara o tu huella.',
   'guardar.tituloEntrar': 'Entra a tu cuenta',

@@ -13,8 +13,10 @@ Todo vive en el proyecto de Google Cloud `regalalebitcoins`, región `southameri
 | Mails | Resend (`RESEND_API_KEY`, remitente `MAIL_FROM`). Sin dominio verificado solo llega a la dueña de la cuenta de Resend |
 | Difusiones programadas | Cloud Scheduler `difusiones-programadas`, cada 5 min, POST `/api/tareas/difusiones` con OIDC (`tareas-scheduler@`) y header `x-tarea-token` |
 
-Firebase Hosting reenvía `/api/**` y `/r/**` a Cloud Run; el resto cae en `index.html`. `/r/<id>` lo
-sirve la API (share.ts): la misma web, con la vista previa del regalo para WhatsApp y las redes.
+Firebase Hosting reenvía `/api/**`, `/r/**` y `/c/**` a Cloud Run; el resto cae en `index.html`.
+`/r/<id>` y `/c/<corto>` los sirve la API (share.ts): la misma web, con la vista previa del regalo
+o del cupón (link corto, migración 030) para WhatsApp y las redes. Al sumar una de estas reglas,
+primero la API y después la web: si no, el link llega a una API que todavía no lo conoce.
 
 ## API
 

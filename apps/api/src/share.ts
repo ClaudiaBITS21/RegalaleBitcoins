@@ -2,6 +2,7 @@ import { isLang, type Lang } from '@regalale/core';
 import type { Hono } from 'hono';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
+import { type Coupon, findCouponPreview, normalizeShortCode, shownCoupon } from './coupons.ts';
 import { findGift } from './gifts.ts';
 import { securityHeaders } from './security.ts';
 
@@ -102,6 +103,45 @@ export function registerShareRoutes(app: Hono, deps: { sql: Sql; publicUrl: stri
       }),
     );
   });
+
+  // El link corto de un cupón (/c/K7M2P): la web, con la imagen del cupón y lo que da.
+  app.use('/c/*', securityHeaders());
+  app.get('/c/:corto', async (c) => {
+    let html: string;
+    try {
+      html = await indexHtml();
+    } catch (e) {
+      console.error(`Vista previa: sin la web (${(e as Error).message})`);
+      throw new ApiError(502, 'cadena_no_disponible', 'Sin la web para la vista previa.');
+    }
+    const corto = normalizeShortCode(c.req.param('corto'));
+    const k = corto === null ? null : await shownCoupon(sql, { corto }).catch(() => null);
+    c.header('cache-control', 'no-cache');
+    if (k === null) return c.html(html);
+    const title = 'Un cupón para Regalale Bitcoin';
+    const hasPreview = (await findCouponPreview(sql, k.codigo)) !== null;
+    return c.html(
+      withGiftMeta(html, {
+        title,
+        description: couponPreviewText(k),
+        image: hasPreview ? `${publicUrl}/api/c/${k.corto}/vista.jpg` : `${publicUrl}/og.jpg`,
+        url: `${publicUrl}/c/${k.corto}`,
+        alt: title,
+      }),
+    );
+  });
+}
+
+/** Qué da un cupón, en una línea para la vista previa (sin vos ni tú). */
+export function couponPreviewText(k: Coupon): string {
+  const parts: string[] = [];
+  if (k.descuento !== null) parts.push(`${k.descuento} % de descuento en los packs`);
+  if (k.da_unidad !== null && k.da_cantidad !== null) {
+    const n = k.da_cantidad;
+    parts.push(k.da_unidad === 'regalo' ? (n === 1 ? '1 regalo gratis' : `${n} regalos gratis`) : n === 1 ? '1 lista gratis' : `${n} listas gratis`);
+  }
+  const what = parts.length === 0 ? 'Un cupón' : parts.join(' y ').replace(/^./, (x) => x.toUpperCase());
+  return `${what} para regalar bitcoin en regalalebitcoin.com.`;
 }
 
 /** El index.html de la web: del disco (WEB_DIST) o de Firebase Hosting, guardado un minuto. */
