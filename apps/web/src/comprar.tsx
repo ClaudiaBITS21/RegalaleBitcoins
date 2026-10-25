@@ -18,6 +18,8 @@ export const PRODUCT_NAME: Readonly<Record<string, Key>> = {
   lista_cumple: 'precios.listaCumple.n',
   anual: 'precios.anual.n',
   fundador: 'precios.fundador.n',
+  regalo: 'precios.regalo.n',
+  lista_otras: 'precios.listaSuelta.n',
 };
 
 const POLL_MS = 10_000;
