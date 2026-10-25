@@ -122,8 +122,10 @@ try {
 
   await page.getByRole('heading', { name: 'Rodo te hizo un regalo' }).waitFor();
   if (page.url().includes('#')) fail('la semilla quedó en la barra de direcciones');
-  await page.getByText('120.000 sats', { exact: true }).waitFor();
+  // Un regalo de antes (muestra el valor): en plata, sin sats (Claudia, 25/10).
+  await page.getByText('Un regalo de US$ 25,00 en bitcoin').waitFor();
   await page.getByText('Valía US$ 25,00 cuando te lo regalaron. Hoy vale US$ 120.').waitFor();
+  if ((await page.getByText(/\bsats\b/).count()) > 0) fail('quien recibe ve sats');
   await page.getByText('Red de prueba (signet)').waitFor();
   await shot('1-regalo');
   await page.getByRole('button', { name: 'Recibir mi regalo' }).click();
@@ -164,7 +166,7 @@ try {
   await page.getByRole('button', { name: 'Seguir' }).click();
 
   await page.getByRole('heading', { name: 'Confirmá' }).waitFor();
-  await page.getByText(/Vas a recibir 119\.\d{3} sats/).waitFor();
+  await page.getByText(/Vas a recibir ≈\sUS\$\s\d+/).waitFor();
   await shot('7-confirmar');
   await page.getByRole('button', { name: 'Recibir', exact: true }).click();
 
@@ -408,7 +410,8 @@ try {
   receiver.on('pageerror', (e) => problems.push(`error de página (recibe): ${e.message}`));
   await receiver.goto(giftLink);
   await receiver.getByRole('heading', { name: 'Rodo te deu um presente' }).waitFor();
-  await receiver.getByText('30.500 sats', { exact: true }).waitFor();
+  // Sin el tilde de mostrar el valor: ni sats ni plata.
+  if ((await receiver.getByText(/\bsats\b|US\$/).count()) > 0) fail('quien recibe ve un monto sin que quien regala lo eligiera');
   await receiver.getByRole('button', { name: 'Receber meu presente' }).click();
   for (let i = 0; i < 4; i++) await receiver.getByLabel(`Palavra ${i + 1}`).fill(giftWords[i] as string);
   await receiver.getByRole('button', { name: 'Continuar' }).click();

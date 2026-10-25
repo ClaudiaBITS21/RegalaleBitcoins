@@ -57,6 +57,8 @@ export interface Draft {
   /** En la moneda elegida: dólares, pesos o sats. */
   amount: number;
   sats: bigint;
+  /** Si quien recibe ve cuánto vale en plata (Claudia, 25/10). Apagado de entrada. */
+  showValue: boolean;
 }
 
 /** Un regalo ya registrado y esperando (o con) su pago. */
@@ -123,6 +125,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         moneda: draft.currency,
         monto: draft.amount,
         sats: draft.sats.toString(),
+        mostrarValor: draft.showValue === true,
         indice: index,
         ...(multisig === null || session.recovery === null || testigo === null ? {} : { testigo, rutaRecupero: recoveryPathText(session.recovery, index) }),
       });
@@ -206,6 +209,7 @@ export function GivePage() {
     currency: 'USD',
     amount: 0,
     sats: 0n,
+    showValue: false,
   }));
   const [session, setSession] = useState<Session | null>(null);
   const [newMnemonic, setNewMnemonic] = useState<string | null>(null);
@@ -352,7 +356,7 @@ export function GivePage() {
 
   const another = () => {
     setGift(null);
-    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n }));
+    setDraft((d) => ({ ...d, occasion: '', occasionFree: '', to: '', message: '', example: null, undo: null, style: 'ilustracion', ownImage: null, amount: 0, sats: 0n, showValue: false }));
     restart('ocasion');
   };
 
@@ -392,6 +396,7 @@ export function GivePage() {
         draft={draft}
         error={error}
         ceilingUsd={ceilingUsd}
+        showValueOption
         onNext={(a) => {
           const next = { ...draft, ...a };
           setDraft(next);

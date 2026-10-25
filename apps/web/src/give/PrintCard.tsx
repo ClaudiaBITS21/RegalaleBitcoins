@@ -6,6 +6,7 @@ import { examplesFor, looksLikeLink, pickExample, REMATE_MAX, useExamples } from
 import { occasionLabel } from '../content/occasions.ts';
 import { type Key, translate } from '../i18n/index.ts';
 import { Button, useI18n } from '../ui.tsx';
+import { giftValueText } from '../valorRegalo.ts';
 import { artImage, type CardTexts, canvasJpeg, drawCard, jpegToPdf, previewUrl } from './tarjetaPdf.ts';
 
 // Tarjeta para entregar en mano (docs/handoff/2026-10-17/INDICE-chat.txt, sección 3): una hoja
@@ -50,11 +51,13 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
   const isLink = looksLikeLink(remate);
   const ok = !tooLong && !isLink;
 
+  const valor = giftValueText(view, lang);
   const texts: CardTexts = {
     ocasion: occasionLabel(view.ocasion, lang, view.ocasionLibre),
     para: r('tarjeta.para'),
     nombre: view.para,
-    adentro: r('tarjeta.adentro'),
+    // Con el valor, si quien regala eligió mostrarlo (25/10).
+    adentro: valor === null ? r('tarjeta.adentro') : r('tarjeta.adentroValor', { valor }),
     remate: ok ? remate.trim() : '',
     hecho: r('tarjeta.hecho'),
     mensaje: view.mensaje,

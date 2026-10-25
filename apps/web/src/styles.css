@@ -3872,6 +3872,11 @@ svg.tarjeta-imagen {
 .recupero-ajuste { display: flex; flex-direction: column; gap: 10px; }
 .recupero-ajuste h3 { margin: 0; }
 
+/* Regalar: el tilde de si quien recibe ve cuánto vale (25/10). */
+.casilla-valor > span { display: flex; flex-direction: column; gap: 2px; }
+.casilla-valor small { font-weight: 400; }
+.tarjeta-valor { margin: 6px 0 0; font: 800 1.15rem var(--titulos); color: var(--tinta); }
+
 /* Precios: también por unidad (Claudia, 25/10). */
 .precios-unidad { margin: 28px 0 8px; padding: 18px; border: 2px solid var(--tinta); border-radius: var(--radio); background: var(--crema); }
 .precios-unidad h3 { margin: 0 0 4px; font: 800 1.25rem var(--titulos); }

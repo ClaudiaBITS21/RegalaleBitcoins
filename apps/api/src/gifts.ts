@@ -39,6 +39,8 @@ export interface Gift {
   readonly witnessScript: Uint8Array | null;
   /** Huella y ruta de la clave del que regala en esos regalos. */
   readonly recoveryPath: string | null;
+  /** Si quien recibe ve cuánto vale en plata (lo elige quien regala, 25/10). */
+  readonly showValue: boolean;
 }
 
 export interface NewGift {
@@ -65,6 +67,8 @@ export interface NewGift {
   readonly index?: number | null;
   readonly witnessScript?: Uint8Array | null;
   readonly recoveryPath?: string | null;
+  /** Por defecto, sí (como los regalos de antes). */
+  readonly showValue?: boolean;
 }
 
 export const GIFT_ID = /^[A-Za-z0-9_-]{22}$/;
@@ -97,6 +101,7 @@ interface Row {
   reclamado: Date | null;
   testigo: Buffer | null;
   recupero_ruta: string | null;
+  mostrar_valor: boolean;
 }
 
 function fromRow(r: Row): Gift {
@@ -123,6 +128,7 @@ function fromRow(r: Row): Gift {
     claimedAt: r.reclamado,
     witnessScript: r.testigo === null || r.testigo === undefined ? null : new Uint8Array(r.testigo),
     recoveryPath: r.recupero_ruta ?? null,
+    showValue: r.mostrar_valor ?? true,
   };
 }
 
@@ -131,12 +137,12 @@ export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   if ((style === 'propia') !== (g.ownImage != null)) throw new Error('La imagen propia va solo con el estilo "propia".');
   return sql.begin(async (tx) => {
     const [row] = await tx<Row[]>`
-      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta)
+      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta, mostrar_valor)
       values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
               ${g.message ?? ''}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
               ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
               ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null},
-              ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null})
+              ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null}, ${g.showValue ?? true})
       returning *`;
     const gift = fromRow(row as Row);
     if (g.ownImage != null) {

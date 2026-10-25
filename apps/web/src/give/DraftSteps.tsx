@@ -160,6 +160,7 @@ export function AmountStep({
   error,
   ceilingUsd,
   presets,
+  showValueOption = false,
   onNext,
 }: {
   draft: Draft;
@@ -168,13 +169,16 @@ export function AmountStep({
   ceilingUsd: number | null;
   /** Montos sugeridos en dólares; si no, salen del techo. */
   presets?: readonly number[];
-  onNext: (a: Picked) => void;
+  /** En un regalo (no en una lista): el tilde de si quien recibe ve cuánto vale en plata. */
+  showValueOption?: boolean;
+  onNext: (a: Picked & { showValue: boolean }) => void;
 }) {
   const { t, lang } = useI18n();
   const [market, setMarket] = useState<Market | null>(null);
   const [failed, setFailed] = useState(false);
   const [unit, setUnit] = useState<Unit | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
+  const [showValue, setShowValue] = useState(draft.showValue === true);
 
   const load = async () => {
     setFailed(false);
@@ -245,7 +249,7 @@ export function AmountStep({
       class="paso"
       onSubmit={(e) => {
         e.preventDefault();
-        if (valid && picked !== null) onNext(picked);
+        if (valid && picked !== null) onNext({ ...picked, showValue: showValueOption && showValue });
       }}
     >
       <StepTitle>{t('regalar.cuanto.titulo')}</StepTitle>
@@ -306,6 +310,16 @@ export function AmountStep({
         </div>
       )}
       {problem !== null && <Notice kind="error">{problem}</Notice>}
+      {/* Quien regala elige si quien recibe ve cuánto vale en plata (Claudia, 25/10): de entrada, no. */}
+      {showValueOption && picked !== null && problem === null && (
+        <label class="casilla casilla-valor">
+          <input type="checkbox" checked={showValue} onChange={(e) => setShowValue((e.currentTarget as HTMLInputElement).checked)} />
+          <span>
+            {t('regalar.cuanto.mostrar', { moneda: t(picked.currency === 'ARS' ? 'regalar.cuanto.pesos' : 'regalar.cuanto.dolares') })}
+            <small class="texto-suave">{t(showValue ? 'regalar.cuanto.mostrarSi' : 'regalar.cuanto.mostrarNo', { valor: money(picked) })}</small>
+          </span>
+        </label>
+      )}
       {error !== null && <Notice kind="error">{t(error)}</Notice>}
       <Button type="submit" disabled={!valid}>
         {t('seguir')}

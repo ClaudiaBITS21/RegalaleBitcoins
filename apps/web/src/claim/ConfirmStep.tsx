@@ -101,8 +101,10 @@ export function ConfirmStep({
     }
   };
 
-  const usd = gift.usdPorBtcHoy;
-  const withUsd = (sats: bigint) => (usd === null ? formatSats(sats, lang) : `${formatSats(sats, lang)} (≈ ${formatUsd(satsToUsd(sats, usd), lang)})`);
+  // Sin el valor en plata si quien regala no lo quiso mostrar (25/10).
+  const usd = gift.mostrarValor === false ? null : gift.usdPorBtcHoy;
+  // Sin sats (25/10): en plata si se puede mostrar; si no, ningún monto (lo que le llega es lo que le llega).
+  const inMoney = (sats: bigint) => (usd === null ? formatSats(sats, lang) : `≈ ${formatUsd(satsToUsd(sats, usd), lang)}`);
   const selected = mode === 'esperar' ? plans?.esperar : plans?.ahora;
   const choices = (['ahora', 'esperar'] as const).filter((m) => plans?.[m] != null);
 
@@ -112,10 +114,12 @@ export function ConfirmStep({
       {plans === null && error === null && <p class="texto-suave">{t('confirmar.calculando')}</p>}
       {selected !== undefined && selected !== null && (
         <>
-          <div class="caja montos">
-            <p>{t('confirmar.recibis', { monto: withUsd(selected.amount) })}</p>
-            <p>{t('confirmar.comision', { comision: withUsd(selected.fee) })}</p>
-          </div>
+          {usd !== null && (
+            <div class="caja montos">
+              <p>{t('confirmar.recibis', { monto: inMoney(selected.amount) })}</p>
+              <p>{t('confirmar.comision', { comision: inMoney(selected.fee) })}</p>
+            </div>
+          )}
           {usd !== null && satsToUsd(selected.fee, usd) > FEE_WARNING_USD && <Notice>{t('confirmar.comisionAlta')}</Notice>}
           {choices.length > 1 && (
             <div class="opciones" role="radiogroup" aria-label={t('confirmar.titulo')}>

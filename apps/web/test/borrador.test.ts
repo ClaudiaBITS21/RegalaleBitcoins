@@ -17,6 +17,7 @@ const draft: Draft = {
   currency: 'USD',
   amount: 20,
   sats: 21_000n,
+  showValue: false,
 };
 
 describe('Borrador de Regalar', () => {

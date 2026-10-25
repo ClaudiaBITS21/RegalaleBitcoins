@@ -2,7 +2,8 @@ import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCo
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
-import { explorerTxUrl, formatFiat, formatSats, formatUsd, formatUsdExact, satsToUsd } from '../format.ts';
+import { explorerTxUrl, formatUsd, satsToUsd } from '../format.ts';
+import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key } from '../i18n/index.ts';
@@ -214,8 +215,10 @@ export function ClaimPage({ id }: { id: string }) {
 function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: () => void; onReload: () => void }) {
   const { t, lang } = useI18n();
   const sats = BigInt(gift.sats.confirmados) + BigInt(gift.sats.sinConfirmar);
-  const now = gift.usdPorBtcHoy === null ? null : formatUsd(satsToUsd(sats, gift.usdPorBtcHoy), lang);
-  const before = gift.original?.moneda ? formatFiat(gift.original.monto, gift.original.moneda, lang) : null;
+  // Cuánto vale en plata, solo si quien regala eligió mostrarlo (25/10); si no, solo los sats.
+  const showValue = gift.mostrarValor !== false;
+  const now = !showValue || gift.usdPorBtcHoy === null ? null : formatUsd(satsToUsd(sats, gift.usdPorBtcHoy), lang);
+  const before = showValue ? giftValueText(gift, lang) : null;
   const claimUrl = gift.reclamo !== null ? explorerTxUrl(gift.red, gift.reclamo.txid) : null;
   const stateText: Partial<Record<GiftView['estado'], Key>> = {
     esperando: 'reclamo.estado.esperando',
@@ -235,23 +238,13 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
           <p class="kicker tarjeta-ocasion">{occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}</p>
           <StepTitle>{gift.de ? t('reclamo.de', { de: gift.de }) : t('reclamo.anonimo')}</StepTitle>
           {gift.mensaje !== '' && <p class="texto-suave">{gift.mensaje}</p>}
+          {before !== null && <p class="tarjeta-valor">{t('reclamo.valor', { valor: before })}</p>}
         </div>
       </article>
-      {sats > 0n && (
+      {/* Sin sats ni cuentas (Claudia, 25/10): lo que le llegó es lo que le llegó. En plata, solo si quien regala quiso. */}
+      {sats > 0n && now !== null && (
         <div class="caja monto">
-          <strong class="monto-sats">{formatSats(sats, lang)}</strong>
-          {now !== null && <span class="texto-suave">{before !== null ? t('reclamo.valia', { antes: before, hoy: now }) : t('reclamo.vale', { hoy: now })}</span>}
-          {now !== null && gift.usdPorBtcHoy !== null && (
-            <small class="letra-chica">
-              {t('regalar.cuanto.calculoSats', {
-                precio: formatUsdExact(gift.usdPorBtcHoy, lang),
-                fuente: 'mempool.space',
-                sats: formatSats(sats, lang),
-                unBtc: formatSats(100_000_000n, lang).replace(' sats', ''),
-                monto: formatUsdExact(satsToUsd(sats, gift.usdPorBtcHoy), lang),
-              })}
-            </small>
-          )}
+          <span class="texto-suave">{before !== null ? t('reclamo.valia', { antes: before, hoy: now }) : t('reclamo.vale', { hoy: now })}</span>
         </div>
       )}
       {notice !== undefined && <Notice kind={gift.estado === 'reclamado' ? 'ok' : 'info'}>{t(notice)}</Notice>}
