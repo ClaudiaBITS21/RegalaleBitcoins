@@ -11,7 +11,9 @@ observaciones son cosas con las que estoy de acuerdo. Que quede claro que así o
 reglas son de cumplimiento obligatorio. Cambiar cualquiera requiere una decisión explícita de la
 responsable, anotada acá con su fecha.
 
-Operador del servicio: **Bull & Bear LLC** (Delaware, EE.UU.), desde el 24/10/2026; antes
+Operador del servicio: **Bull&Bear International, LLC** (Delaware, EE.UU., registro n.º 6687084;
+domicilio registrado: 1013 Centre Road, Suite 403-B, Wilmington, DE 19805, agente registrado
+Vcorp Services, LLC; certificado de constitución del 29/12/2017), desde el 24/10/2026; antes
 Apptivalo S.R.L. (`docs/handoff/2026-10-24/empresa-bull-and-bear.md`).
 
 ## Reglas
@@ -86,9 +88,8 @@ Apptivalo S.R.L. (`docs/handoff/2026-10-24/empresa-bull-and-bear.md`).
 ## Pendiente fuera del código
 
 - Opinión de abogado especializado sobre la RG 1172/2026 (criterio de "control o influencia
-  suficiente") antes de la etapa 6, con Bull & Bear LLC como operador; y Ley 25.326 (responsable
+  suficiente") antes de la etapa 6, con Bull&Bear International, LLC como operador; y Ley 25.326 (responsable
   extranjero, transferencia internacional de datos).
 - Facturación del costo por servicio desde la LLC: contador.
-- Domicilio de Bull & Bear LLC para la política de privacidad (ABIERTO: lo define Rodolfo).
 - Términos y condiciones con el texto legal de las listas (transferencias de persona a persona,
   sin responsabilidad de la plataforma): revisión del abogado.

@@ -6,7 +6,7 @@ import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // en castellano y escrita sin vos ni tú, para que valga con los dos tratos. Si cambia lo que se
 // guarda o con quién se comparte, esta página cambia con el mismo PR.
 
-const VERSION = '24 de octubre de 2026';
+const VERSION = '25 de octubre de 2026';
 const CONTACTO = 'hola@regalalebitcoin.com';
 
 export function PrivacyPage() {
@@ -32,7 +32,8 @@ export function PrivacyPage() {
         <section class="seccion">
           <h2>Quién es responsable</h2>
           <p>
-            Regalale Bitcoin (regalalebitcoin.com) es un servicio de Bull &amp; Bear LLC, una sociedad constituida en el Estado de Delaware, Estados Unidos, responsable de
+            Regalale Bitcoin (regalalebitcoin.com) es un servicio de Bull&amp;Bear International, LLC, una sociedad constituida en el Estado de Delaware, Estados Unidos
+            (registro n.º 6687084), con domicilio registrado en 1013 Centre Road, Suite 403-B, Wilmington, Delaware 19805, Estados Unidos, responsable de
             los datos que se describen acá. Para cualquier consulta o pedido sobre datos personales:{' '}
             <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>.
           </p>
