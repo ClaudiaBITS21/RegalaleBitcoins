@@ -181,3 +181,45 @@ export function verifyP2WPKHInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ sc
     return secp256k1.verify(sig.slice(0, -1), sighash, pubkey, { prehash: false, format: 'der', lowS: true });
   });
 }
+
+/** Preimagen BIP143 de una entrada P2WSH con SIGHASH_ALL: el scriptCode es el script de testigo. */
+function bip143SighashP2WSH(tx: ParsedTx, index: number, witnessScript: Uint8Array, amount: bigint): Uint8Array {
+  const input = tx.inputs[index];
+  assert.ok(input);
+  const hashPrevouts = dsha256(concat(...tx.inputs.map((i) => concat(i.txid, le32(i.vout)))));
+  const hashSequence = dsha256(concat(...tx.inputs.map((i) => le32(i.sequence))));
+  const hashOutputs = dsha256(concat(...tx.outputs.map((o) => concat(le64(o.amount), varintBytes(o.script.length), o.script))));
+  return dsha256(
+    concat(
+      le32(tx.version),
+      hashPrevouts,
+      hashSequence,
+      input.txid,
+      le32(input.vout),
+      varintBytes(witnessScript.length),
+      witnessScript,
+      le64(amount),
+      le32(input.sequence),
+      hashOutputs,
+      le32(tx.lockTime),
+      le32(1),
+    ),
+  );
+}
+
+/**
+ * Verifica de forma independiente cada entrada multifirma 1-de-2 P2WSH: witness [vacío, firma,
+ * script], sha256(script) = el script gastado, y firma BIP143 válida de `signer`.
+ */
+export function verifyP2WSHMultisigInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>, signer: Uint8Array): boolean {
+  const tx = parseTx(raw);
+  if (tx.inputs.length !== prevouts.length) return false;
+  return tx.inputs.every((_, i) => {
+    const [dummy, sig, ws] = tx.witnesses[i] ?? [];
+    const prev = prevouts[i];
+    if (dummy === undefined || dummy.length !== 0 || sig === undefined || ws === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
+    if (hex.encode(concat(Uint8Array.of(0x00, 0x20), sha256(ws))) !== hex.encode(prev.script)) return false;
+    const sighash = bip143SighashP2WSH(tx, i, ws, prev.amount);
+    return secp256k1.verify(sig.slice(0, -1), sighash, signer, { prehash: false, format: 'der', lowS: true });
+  });
+}

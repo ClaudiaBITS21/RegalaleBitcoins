@@ -35,6 +35,10 @@ export interface Gift {
   readonly claimTxid: string | null;
   readonly claimKind: ClaimKind | null;
   readonly claimedAt: Date | null;
+  /** Solo en regalos multifirma (recupero avanzado): script de testigo de la 1-de-2. */
+  readonly witnessScript: Uint8Array | null;
+  /** Huella y ruta de la clave del que regala en esos regalos. */
+  readonly recoveryPath: string | null;
 }
 
 export interface NewGift {
@@ -59,6 +63,8 @@ export interface NewGift {
   /** Cuenta de quien regala e índice del regalo en su clave maestra. */
   readonly accountId?: string | null;
   readonly index?: number | null;
+  readonly witnessScript?: Uint8Array | null;
+  readonly recoveryPath?: string | null;
 }
 
 export const GIFT_ID = /^[A-Za-z0-9_-]{22}$/;
@@ -89,6 +95,8 @@ interface Row {
   reclamo_txid: string | null;
   reclamo_tipo: ClaimKind | null;
   reclamado: Date | null;
+  testigo: Buffer | null;
+  recupero_ruta: string | null;
 }
 
 function fromRow(r: Row): Gift {
@@ -113,6 +121,8 @@ function fromRow(r: Row): Gift {
     claimTxid: r.reclamo_txid,
     claimKind: r.reclamo_tipo,
     claimedAt: r.reclamado,
+    witnessScript: r.testigo === null || r.testigo === undefined ? null : new Uint8Array(r.testigo),
+    recoveryPath: r.recupero_ruta ?? null,
   };
 }
 
@@ -121,11 +131,12 @@ export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   if ((style === 'propia') !== (g.ownImage != null)) throw new Error('La imagen propia va solo con el estilo "propia".');
   return sql.begin(async (tx) => {
     const [row] = await tx<Row[]>`
-      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice)
+      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta)
       values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
               ${g.message ?? ''}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
               ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
-              ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null})
+              ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null},
+              ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null})
       returning *`;
     const gift = fromRow(row as Row);
     if (g.ownImage != null) {

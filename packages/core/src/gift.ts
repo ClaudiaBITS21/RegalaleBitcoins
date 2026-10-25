@@ -87,6 +87,15 @@ export function deriveBip84Key(root: HDKey, network: Network, change: 0 | 1, ind
   return result;
 }
 
+/** Clave extendida de la cuenta BIP84 del regalo (m/84'/coin'/0'), para describirlo con dos xpub. */
+export interface GiftAccountKey {
+  readonly fingerprint: number;
+  readonly fingerprintHex: string;
+  readonly coinType: 0 | 1;
+  /** xpub/tpub de m/84'/coin'/0'. La clave del regalo es su hija /0/0. */
+  readonly xpub: string;
+}
+
 /** La billetera de un solo uso del regalo. Contiene la clave privada: llamar a wipe() al terminar. */
 export interface GiftWallet {
   readonly network: Network;
@@ -95,7 +104,28 @@ export interface GiftWallet {
   readonly script: Uint8Array;
   readonly publicKey: Uint8Array;
   readonly privateKey: Uint8Array;
+  /** Origen de la clave del regalo (solo datos públicos). */
+  readonly account: GiftAccountKey;
+  /** Solo en regalos multifirma (recupero avanzado): el script de testigo de la 1-de-2. */
+  readonly witnessScript?: Uint8Array;
   wipe(): void;
+}
+
+const XPUB_VERSIONS = { public: 0x0488b21e, private: 0x0488ade4 } as const;
+const TPUB_VERSIONS = { public: 0x043587cf, private: 0x04358394 } as const;
+
+function giftAccountKey(root: HDKey, network: Network): GiftAccountKey {
+  const node = root.derive(`m/84'/${network.coinType}'/0'`);
+  const xpub = new HDKey({
+    versions: network.name === 'mainnet' ? XPUB_VERSIONS : TPUB_VERSIONS,
+    depth: node.depth,
+    index: node.index,
+    parentFingerprint: node.parentFingerprint,
+    chainCode: node.chainCode as Uint8Array,
+    publicKey: node.publicKey as Uint8Array,
+  }).publicExtendedKey;
+  node.wipePrivateData();
+  return Object.freeze({ fingerprint: root.fingerprint, fingerprintHex: root.fingerprint.toString(16).padStart(8, '0'), coinType: network.coinType, xpub });
 }
 
 /**
@@ -114,7 +144,9 @@ export function openGiftWallet(entropy: Uint8Array, passphraseWords: readonly st
   seed.fill(0);
   try {
     const key = deriveBip84Key(root, network, 0, 0);
+    const account = giftAccountKey(root, network);
     return {
+      account,
       network,
       path: key.path,
       address: key.address,
@@ -133,6 +165,9 @@ export function openGiftWallet(entropy: Uint8Array, passphraseWords: readonly st
 /** Lo que el que regala necesita de un regalo: sus secretos y la dirección donde pagarlo. */
 export interface DerivedGift extends GiftSecrets {
   readonly address: string;
+  /** Clave pública del regalo (m/84'/coin'/0'/0/0 de su billetera) y su origen. */
+  readonly publicKey: Uint8Array;
+  readonly account: GiftAccountKey;
 }
 
 /**
@@ -143,5 +178,5 @@ export function deriveGift(root: HDKey, index: number, lang: Lang, network: Netw
   const secrets = deriveGiftSecrets(root, index, lang);
   const wallet = openGiftWallet(secrets.entropy, secrets.passphraseWords, lang, network);
   wallet.wipe();
-  return Object.freeze({ ...secrets, address: wallet.address });
+  return Object.freeze({ ...secrets, address: wallet.address, publicKey: wallet.publicKey, account: wallet.account });
 }

@@ -36,6 +36,7 @@ export type ErrorCode =
   | 'link_invalido'
   | 'no_encontrado'
   | 'cuenta_inexistente'
+  | 'avanzado_no_habilitado'
   | 'producto_invalido'
   | 'cobro_no_configurado'
   | 'fundadores_agotados'

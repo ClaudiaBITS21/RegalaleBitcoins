@@ -42,6 +42,7 @@ export {
   giftMnemonicFromEntropy,
   giftMnemonicPath,
   giftPassphrasePath,
+  type GiftAccountKey,
   type GiftSecrets,
   type GiftWallet,
   openGiftWallet,
@@ -68,3 +69,25 @@ export {
 export { type InspectedTx, inspectTransaction } from './inspect.ts';
 export { openVault, PRF_SALT, sealVault, VAULT_VERSION } from './vault.ts';
 export { type AccountKey, type AccountKeyProblem, accountKeyText, deriveListAddress, descriptorChecksum, type ListAddress, parseAccountKey, parsePaymentKey } from './xpub.ts';
+export {
+  buildRecoveryPsbt,
+  type DerivedMultisigGift,
+  deriveMultisigGift,
+  deriveRecoveryChild,
+  finalizeRecoveryPsbt,
+  giftMultisig,
+  type GiftMultisig,
+  giftRecoveryDescriptor,
+  multisigGiftWallet,
+  openRecoveryKey,
+  parseGiftWitnessScript,
+  parseRecoveryKey,
+  psbtToBase64,
+  readPsbt,
+  type RecoveryChild,
+  type RecoveryKey,
+  type RecoveryKeyProblem,
+  recoveryKeyText,
+  type RecoveryPsbtOptions,
+  sealRecoveryKey,
+} from './recovery.ts';

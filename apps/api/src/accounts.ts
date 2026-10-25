@@ -150,12 +150,14 @@ export interface AccountGift {
   readonly currency: string | null;
   readonly amount: number | null;
   readonly usdPerBtc: number | null;
+  /** Solo en regalos multifirma: huella y ruta de la clave de la billetera del que regala. */
+  readonly recoveryPath: string | null;
 }
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
@@ -174,7 +176,18 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     currency: r.moneda,
     amount: r.monto === null ? null : Number(r.monto),
     usdPerBtc: r.usd_por_btc === null ? null : Number(r.usd_por_btc),
+    recoveryPath: r.recupero_ruta,
   }));
+}
+
+/** La clave de recupero cifrada de la cuenta (null si usa el modo común). */
+export async function accountRecoveryKey(sql: Sql, accountId: string): Promise<string | null> {
+  const [r] = await sql<{ recupero: string | null }[]>`select recupero from usuarios where id = ${accountId}`;
+  return r?.recupero ?? null;
+}
+
+export async function setAccountRecoveryKey(sql: Sql, accountId: string, sealed: string | null): Promise<void> {
+  await sql`update usuarios set recupero = ${sealed} where id = ${accountId}`;
 }
 
 export async function nextGiftIndex(sql: Sql, accountId: string): Promise<number> {

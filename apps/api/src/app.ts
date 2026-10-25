@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
-import { addressFromScript, isCoreError, isLang, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination } from '@regalale/core';
+import { createHash } from 'node:crypto';
+import { addressFromScript, isCoreError, isLang, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination, parseGiftWitnessScript } from '@regalale/core';
 import { Hono } from 'hono';
 import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
@@ -53,6 +54,17 @@ export const CEILING_USD = 100;
  * requiere una nueva autorización explícita, no solo cambiar la variable de entorno.
  */
 export const MAINNET_CEILING_USD = 100;
+
+/**
+ * Recupero avanzado (multifirma con la billetera del que regala) en mainnet. Está apagado hasta
+ * que la responsable lo autorice: es un cambio de alcance en mainnet (CLAUDE.md). En las redes de
+ * prueba está siempre habilitado.
+ */
+export const ADVANCED_RECOVERY_MAINNET = false;
+
+export function advancedRecoveryEnabled(network: Network): boolean {
+  return network.name !== 'mainnet' || ADVANCED_RECOVERY_MAINNET;
+}
 
 /** Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. */
 export function effectiveCeilingUsd(network: Network, configured: number | undefined): number {
@@ -140,10 +152,11 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   const ceilingUsd = effectiveCeilingUsd(network, deps.ceilingUsd);
-  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd }));
+  const advancedRecovery = advancedRecoveryEnabled(network);
+  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd, recuperoAvanzado: advancedRecovery }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
-  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice, adminEmails: deps.adminEmails ?? [] });
+  registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice, adminEmails: deps.adminEmails ?? [], advancedRecovery });
   registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerReportRoutes(app, { sql, network: network.name, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer, publicUrl: accounts.publicUrl });
@@ -238,6 +251,7 @@ export function createApp(deps: AppDeps): Hono {
     const ip = clientIp(c.req.header('x-forwarded-for'));
     if (!createLimiter.allowed(ip)) throw new ApiError(429, 'demasiados_pedidos');
     const g = parseNewGift(await c.req.json().catch(() => null), network);
+    if (g.witnessScript != null && !advancedRecovery) throw new ApiError(403, 'avanzado_no_habilitado');
     // Con sesión, el regalo queda en la cuenta (con su índice, para volver a derivarlo desde la bóveda).
     const account = await currentAccount(sql, c);
     // Con el cobro activo, una cuenta sin créditos ni plan no puede crear otro regalo: la web le
@@ -304,6 +318,8 @@ export function createApp(deps: AppDeps): Hono {
       imagen: gift.image,
       estilo: gift.style,
       direccion: gift.address,
+      // Regalo multifirma (recupero avanzado): el script con las dos claves públicas, para firmar.
+      testigo: gift.witnessScript === null ? null : Buffer.from(gift.witnessScript).toString('hex'),
       estado: funds.state,
       sats: {
         confirmados: funds.confirmedSats.toString(),
@@ -428,9 +444,22 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
   if (body === null || typeof body !== 'object') throw new ApiError(400, 'pedido_invalido');
   const b = body as Record<string, unknown>;
   let address: string;
+  // Recupero avanzado: dirección P2WSH de una multifirma 1-de-2, con su script de testigo y la
+  // ruta de la clave del que regala. Si no, la dirección P2WPKH de siempre.
+  let witnessScript: Uint8Array | null = null;
+  let recoveryPath: string | null = null;
   try {
     const d = parseDestination(String(b.direccion ?? ''), network);
-    if (d.type !== 'p2wpkh') throw new ApiError(400, 'pedido_invalido');
+    if (b.testigo === undefined || b.testigo === null) {
+      if (d.type !== 'p2wpkh') throw new ApiError(400, 'pedido_invalido');
+    } else {
+      if (d.type !== 'p2wsh' || typeof b.testigo !== 'string' || !/^[0-9a-f]{142}$/.test(b.testigo)) throw new ApiError(400, 'pedido_invalido');
+      if (typeof b.rutaRecupero !== 'string' || !/^[0-9a-f]{8}(\/[0-9]{1,10}h?){6}$/.test(b.rutaRecupero)) throw new ApiError(400, 'pedido_invalido');
+      witnessScript = new Uint8Array(Buffer.from(b.testigo, 'hex'));
+      parseGiftWitnessScript(witnessScript);
+      if (giftScriptHash(witnessScript) !== Buffer.from(d.script).toString('hex')) throw new ApiError(400, 'pedido_invalido');
+      recoveryPath = b.rutaRecupero;
+    }
     address = d.address;
   } catch (error) {
     if (error instanceof ApiError || isCoreError(error)) throw new ApiError(400, 'pedido_invalido');
@@ -461,7 +490,14 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     amount: b.monto,
     satsExpected: BigInt(b.sats),
     index: typeof b.indice === 'number' && Number.isInteger(b.indice) && b.indice >= 0 && b.indice < 2 ** 31 ? b.indice : null,
+    witnessScript,
+    recoveryPath,
   };
+}
+
+/** Script P2WSH (OP_0 <sha256>) de un script de testigo, en hex. */
+function giftScriptHash(witnessScript: Uint8Array): string {
+  return `0020${createHash('sha256').update(witnessScript).digest('hex')}`;
 }
 
 

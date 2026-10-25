@@ -1,3 +1,4 @@
+import { sha256 } from '@noble/hashes/sha2.js';
 import { hex } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
 import type { Destination } from './address.ts';
@@ -44,6 +45,8 @@ export interface SweepPlan {
   readonly network: Network;
   readonly inputs: readonly SweepInput[];
   readonly giftScript: Uint8Array;
+  /** Solo en regalos multifirma 1-de-2 (recupero avanzado): el script de testigo. */
+  readonly witnessScript?: Uint8Array;
   readonly destination: Destination;
   /** sat/vB pedidos. */
   readonly feeRate: number;
@@ -61,8 +64,15 @@ function compactSizeLength(n: number): number {
   return n < 0xfd ? 1 : n <= 0xffff ? 3 : 5;
 }
 
-/** Peso de un barrido de `inputs` entradas P2WPKH a una salida con script de `scriptLength` bytes. */
-export function sweepWeight(inputs: number, scriptLength: number): number {
+/** Testigo de una entrada multifirma 1-de-2: vacío (CHECKMULTISIG), una firma y el script de 71 bytes. */
+const MULTISIG_1OF2_WITNESS = 1 + 1 + (1 + 72) + (1 + 71);
+const P2WPKH_WITNESS = 1 + 1 + 72 + 1 + 33;
+
+/**
+ * Peso de un barrido de `inputs` entradas a una salida con script de `scriptLength` bytes. Las
+ * entradas son P2WPKH, o multifirma 1-de-2 P2WSH si `multisig` (recupero avanzado).
+ */
+export function sweepWeight(inputs: number, scriptLength: number, multisig = false): number {
   const nonWitness =
     4 + // version
     compactSizeLength(inputs) +
@@ -72,7 +82,8 @@ export function sweepWeight(inputs: number, scriptLength: number): number {
     4; // locktime
   const witness =
     2 + // marker y flag
-    inputs * (1 + 1 + 72 + 1 + 33); // 2 ítems: firma DER + sighash (máx. 72), clave pública comprimida
+    // P2WPKH: 2 ítems, firma DER + sighash (máx. 72) y clave pública comprimida.
+    inputs * (multisig ? MULTISIG_1OF2_WITNESS : P2WPKH_WITNESS);
   return nonWitness * 4 + witness;
 }
 
@@ -135,13 +146,20 @@ export interface PlanSweepOptions {
   readonly giftScript: Uint8Array;
   readonly destination: Destination;
   readonly feeRate: number;
+  /** Script de testigo, si el regalo es multifirma 1-de-2 (GiftWallet.witnessScript). */
+  readonly witnessScript?: Uint8Array;
 }
 
-export function planSweep({ network, utxos, giftScript, destination, feeRate }: PlanSweepOptions): SweepPlan {
+export function planSweep({ network, utxos, giftScript, destination, feeRate, witnessScript }: PlanSweepOptions): SweepPlan {
   assertNetwork(network);
   assertFeeRate(feeRate);
   if (destination.network !== network) throw new CoreError('WRONG_NETWORK', 'La dirección de destino se validó para otra red.');
   if (utxos.length === 0) throw new CoreError('NO_UTXOS', 'El regalo no tiene fondos.');
+  if (witnessScript !== undefined) {
+    // P2WSH: OP_0 <sha256 del script de testigo>.
+    const expected = new Uint8Array([0x00, 0x20, ...sha256(witnessScript)]);
+    if (!equalBytes(expected, giftScript)) throw new CoreError('SIGNING_FAILED', 'El script de testigo no es el de la dirección del regalo.');
+  }
   const seen = new Set<string>();
   const inputs = utxos.map((u) => {
     const input = readFundingUtxo(u, giftScript);
@@ -152,7 +170,7 @@ export function planSweep({ network, utxos, giftScript, destination, feeRate }: 
   });
   const total = inputs.reduce((sum, i) => sum + i.amount, 0n);
   if (total <= 0n || total > MAX_MONEY) throw new CoreError('INVALID_UTXO', 'Monto total inválido.');
-  const weight = sweepWeight(inputs.length, destination.script.length);
+  const weight = sweepWeight(inputs.length, destination.script.length, witnessScript !== undefined);
   if (weight > MAX_STANDARD_WEIGHT) throw new CoreError('INVALID_UTXO', 'Demasiados UTXO para una sola transacción.', { inputs: inputs.length });
   const vsize = Math.ceil(weight / 4);
   const fee = feeFor(vsize, feeRate);
@@ -161,7 +179,19 @@ export function planSweep({ network, utxos, giftScript, destination, feeRate }: 
   if (amount < dust) {
     throw new CoreError('AMOUNT_BELOW_DUST', 'Después de la comisión no queda un monto que la red acepte.', { total, fee, dust });
   }
-  return Object.freeze({ network, inputs: Object.freeze(inputs), giftScript, destination, feeRate, total, fee, amount, weight, vsize });
+  return Object.freeze({
+    network,
+    inputs: Object.freeze(inputs),
+    giftScript,
+    ...(witnessScript === undefined ? {} : { witnessScript }),
+    destination,
+    feeRate,
+    total,
+    fee,
+    amount,
+    weight,
+    vsize,
+  });
 }
 
 /** Comisión de barrer un regalo de una entrada a una dirección P2WPKH. */
@@ -194,6 +224,7 @@ export function signSweep(plan: SweepPlan, wallet: GiftWallet): SignedSweep {
       index: input.vout,
       sequence: RBF_SEQUENCE,
       witnessUtxo: { script: plan.giftScript, amount: input.amount },
+      ...(plan.witnessScript === undefined ? {} : { witnessScript: plan.witnessScript }),
     });
   }
   tx.addOutput({ script: plan.destination.script, amount: plan.amount });
