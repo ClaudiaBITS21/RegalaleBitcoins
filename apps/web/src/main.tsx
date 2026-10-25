@@ -7,6 +7,7 @@ import '@fontsource/caveat/latin-700.css';
 import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { captureOrigin } from './origen.ts';
 import { ComparisonPage } from './comparativa.tsx';
 import { MediakitPage } from './mediakit.tsx';
 import { PricingPage } from './precios.tsx';
@@ -131,5 +132,6 @@ listenForInstall();
 if (ALLOW_MAINNET && window.location.hostname === 'regalalebitcoins.web.app') {
   window.location.replace(`https://regalalebitcoin.com${window.location.pathname}${window.location.search}${window.location.hash}`);
 } else {
+  captureOrigin();
   render(<App />, document.getElementById('app') as HTMLElement);
 }

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Lang } from '@regalale/core';
+import { countSignup, type SignupStats } from './altas.ts';
 import type { Sql } from './db.ts';
 import { grantWelcome } from './credits.ts';
 
@@ -59,7 +60,7 @@ export async function findAccountByEmail(sql: Sql, email: string): Promise<Accou
 
 export async function createAccount(
   sql: Sql,
-  a: { email: string; lang: Lang; credential: Omit<Credential, 'accountId'> | null },
+  a: { email: string; lang: Lang; credential: Omit<Credential, 'accountId'> | null; stats?: SignupStats },
 ): Promise<Account> {
   return sql.begin(async (tx) => {
     const [u] = await tx<{ id: string }[]>`insert into usuarios (email, idioma) values (${a.email}, ${a.lang}) returning id`;
@@ -72,6 +73,8 @@ export async function createAccount(
         values (${c.id}, ${id}, ${c.publicKey}, ${c.alg}, ${c.signCount}, ${c.vault})`;
     }
     await grantWelcome(tx, id);
+    // Solo el contador estadístico (altas.ts): nada queda en la cuenta.
+    if (a.stats !== undefined) await countSignup(tx, a.stats);
     return { id, email: a.email, lang: a.lang };
   });
 }

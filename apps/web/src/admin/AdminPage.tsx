@@ -221,6 +221,13 @@ export function AdminPage() {
         <Days data={data.porDia} />
         <div class="admin-grilla">
         <Bars title="Embudo" data={{ 'Creados': data.regalos.muestra, 'Pagados': paid, 'Abiertos': opened }} />
+        {/* De dónde llegan las cuentas nuevas (12 semanas): solo contadores, sin relación con ninguna cuenta. */}
+        {data.altas !== undefined && Object.keys(data.altas.porPais).length > 0 && (
+          <Bars title="Cuentas nuevas por país (aprox., 12 semanas)" data={data.altas.porPais} label={(k) => (k === 'INT' ? 'Otro país' : k)} />
+        )}
+        {data.altas !== undefined && Object.keys(data.altas.porOrigen).length > 0 && (
+          <Bars title="Cuentas nuevas por origen (12 semanas)" data={data.altas.porOrigen} label={(k) => (k === 'directo' ? 'Directo / sin dato' : k === 'cupon' ? 'Link de cupón o invitación' : k.startsWith('utm:') ? `Campaña «${k.slice(4)}»` : k)} />
+        )}
         <Motives data={data} n={n} pct={pct} usd={(x) => formatUsd(x, lang)} />
         {Object.keys(data.ocasionesLibres).length > 0 && <Bars title="Ocasiones escritas a mano (usadas por 3 o más)" data={data.ocasionesLibres} />}
         <div>
