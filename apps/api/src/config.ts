@@ -28,6 +28,8 @@ export interface Config {
   readonly ceilingUsd: number | undefined;
   /** Mails con acceso al panel de administración (ADMIN_EMAILS, separados por coma). */
   readonly adminEmails: readonly string[];
+  /** Recupero avanzado (guardado y apagado): solo en redes de prueba con RECUPERO_AVANZADO=prueba. */
+  readonly advancedRecovery: boolean;
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
 }
@@ -81,6 +83,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
     adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e !== ''),
     ceilingUsd: env.TOPE_USD === undefined ? undefined : Number(env.TOPE_USD),
+    advancedRecovery: env.RECUPERO_AVANZADO === 'prueba',
     webDist: env.WEB_DIST ?? null,
   });
 }

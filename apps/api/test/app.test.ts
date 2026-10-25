@@ -305,7 +305,7 @@ describe('API para regalar', () => {
     await sql`delete from difusiones`;
     await sql`delete from regalos`;
     chain = new FakeChain();
-    app = createApp({ sql, chain, price, arsPrice: { btcArs: async () => ({ price: 160_000_000, source: 'criptoya' as const }) }, network: signet, createLimitPerHour: 8 });
+    app = createApp({ sql, chain, price, arsPrice: { btcArs: async () => ({ price: 160_000_000, source: 'criptoya' as const }) }, network: signet, createLimitPerHour: 8, advancedRecovery: true });
   });
 
   it('crea el regalo con la cotización del servidor y lo muestra esperando el pago', async () => {
@@ -343,9 +343,18 @@ describe('API para regalar', () => {
     assert.equal(((await (await app.request('/api/salud')).json()) as { recuperoAvanzado: boolean }).recuperoAvanzado, true);
   });
 
-  it('recupero avanzado en mainnet: apagado hasta que la responsable lo autorice', async () => {
-    assert.equal(advancedRecoveryEnabled(getNetwork('mainnet', { allowMainnet: true })), false);
-    assert.equal(advancedRecoveryEnabled(signet), true);
+  it('recupero avanzado guardado: apagado salvo pedido en redes de prueba; en mainnet, apagado siempre', async () => {
+    const mainnet = getNetwork('mainnet', { allowMainnet: true });
+    assert.equal(advancedRecoveryEnabled(mainnet, true), false);
+    assert.equal(advancedRecoveryEnabled(signet), false);
+    assert.equal(advancedRecoveryEnabled(signet, true), true);
+    const off = createApp({ sql, chain, price, network: signet });
+    assert.equal(((await (await off.request('/api/salud')).json()) as { recuperoAvanzado: boolean }).recuperoAvanzado, false);
+    const walletRoot = masterRootFromMnemonic('legal winner thank year wave sausage worth useful legal winner thank yellow');
+    const key = parseRecoveryKey(recoveryKeyText(walletRoot, signet), signet);
+    const ms = deriveMultisigGift(root, 5, 'pt', signet, key);
+    const res = await off.request('/api/gifts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(nuevo(5, { direccion: ms.address, testigo: Buffer.from(ms.witnessScript).toString('hex'), rutaRecupero: `${key.fingerprintHex}/48h/1h/0h/2h/0/5` })) });
+    assert.equal(res.status, 403);
   });
 
   it('la misma dirección no se registra dos veces: el navegador prueba el índice siguiente', async () => {

@@ -43,6 +43,8 @@ export interface AppDeps {
   readonly listContributionsPerHour?: number;
   /** Mails con acceso al panel de administración (ADMIN_EMAILS). */
   readonly adminEmails?: readonly string[];
+  /** Recupero avanzado en redes de prueba (RECUPERO_AVANZADO=prueba). Apagado si no se pide. */
+  readonly advancedRecovery?: boolean;
   /** El index.html de la web, para servir /r/<id> con la vista previa del regalo (share.ts). */
   readonly indexHtml?: () => Promise<string>;
 }
@@ -56,14 +58,16 @@ export const CEILING_USD = 100;
 export const MAINNET_CEILING_USD = 100;
 
 /**
- * Recupero avanzado (multifirma con la billetera del que regala) en mainnet. Está apagado hasta
- * que la responsable lo autorice: es un cambio de alcance en mainnet (CLAUDE.md). En las redes de
- * prueba está siempre habilitado.
+ * Recupero avanzado (multifirma con la billetera del que regala). Guardado y apagado por decisión
+ * de Claudia (25/10/2026): las billeteras de hardware lo hacen engorroso al firmar. El código y sus
+ * pruebas quedan; en las redes de prueba se prende solo a pedido (RECUPERO_AVANZADO=prueba, lo usa
+ * la prueba e2e avanzado.ts). En mainnet, además, hace falta una autorización explícita de la
+ * responsable: es un cambio de alcance (CLAUDE.md).
  */
 export const ADVANCED_RECOVERY_MAINNET = false;
 
-export function advancedRecoveryEnabled(network: Network): boolean {
-  return network.name !== 'mainnet' || ADVANCED_RECOVERY_MAINNET;
+export function advancedRecoveryEnabled(network: Network, requested = false): boolean {
+  return network.name === 'mainnet' ? ADVANCED_RECOVERY_MAINNET : requested;
 }
 
 /** Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. */
@@ -152,7 +156,7 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   const ceilingUsd = effectiveCeilingUsd(network, deps.ceilingUsd);
-  const advancedRecovery = advancedRecoveryEnabled(network);
+  const advancedRecovery = advancedRecoveryEnabled(network, deps.advancedRecovery === true);
   app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd, recuperoAvanzado: advancedRecovery }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };

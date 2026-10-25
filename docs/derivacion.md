@@ -149,6 +149,9 @@ credencial falla el AAD. Si se pierde la passkey, queda el código de recuperaci
 
 ## 10. Recupero avanzado: multifirma 1-de-2 con la billetera del que regala
 
+**Guardado y apagado (Claudia, 25/10/2026):** no se ofrece en ninguna red. El esquema queda
+fijado por si se retoma.
+
 Opcional (handoffs del 17/10 y del 21/10/2026, `docs/handoff/2026-10-17/recupero-avanzado.txt`).
 El que regala usa como segunda llave la de su propia billetera. La web nunca ve ni genera esa
 clave privada: solo recibe la clave pública de la cuenta. El código está en

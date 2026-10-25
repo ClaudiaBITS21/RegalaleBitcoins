@@ -143,6 +143,7 @@ describe('Cuentas con passkey', () => {
       network: signet,
       accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true },
       adminEmails: ['admin@example.com'],
+      advancedRecovery: true,
     });
   });
 
