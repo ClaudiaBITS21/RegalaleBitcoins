@@ -111,12 +111,39 @@ export function queDa(c: Borrador): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function textoCompartir(c: AdminCoupon): string {
-  if (c.email !== null) return `Te regalo un código para Regalale Bitcoin: ${queDa(c).charAt(0).toLowerCase()}${queDa(c).slice(1)}. Entrá acá para usarlo: ${linkInvitacion(c.codigo)}`;
-  const donde = c.descuento !== null ? 'al comprar un plan en regalalebitcoin.com/precios' : 'en regalalebitcoin.com, en «Mi plan», opción «Tengo un código»';
-  const que = queDa(c);
-  const vale = c.hasta === null ? '' : ` Vale hasta el ${fechaCorta(ultimoDia(c.hasta))}.`;
-  return `Usá el código ${c.codigo} ${donde}: ${que.charAt(0).toLowerCase()}${que.slice(1)}.${vale}`;
+/** Qué da el cupón, dicho para quien lo recibe: «un 21 % de descuento en los packs». */
+function beneficio(c: Borrador): string {
+  const partes: string[] = [];
+  if (c.descuento !== null) {
+    const packs = c.productos.length === 0 ? 'los packs' : c.productos.length === 1 ? `el pack ${nombrePlan(c.productos[0] as string)}` : `los packs ${listaY(c.productos.map(nombrePlan))}`;
+    partes.push(c.descuento === 100 ? `gratis ${packs}` : `un ${c.descuento} % de descuento en ${packs}`);
+  }
+  if (c.da !== null) {
+    const n = c.da.cantidad;
+    const base = c.da.unidad === 'regalo' ? (n === 1 ? '1 regalo gratis' : `${n} regalos gratis`) : n === 1 ? '1 lista gratis' : `${n} listas gratis`;
+    partes.push(c.da.ocasion === null ? base : `${base} para ${nombreOcasion(c.da.ocasion)}`);
+  }
+  return partes.join(' y ');
+}
+
+const fechaLarga = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+};
+
+/**
+ * El texto para copiar o compartir (Claudia, 25/10): el código en negrita, qué da y hasta cuándo.
+ * La negrita va como *código* (WhatsApp) en el texto plano y como <strong> al pegarlo con formato.
+ */
+export function textoCupon(c: AdminCoupon): { plano: string; html: string } {
+  const lineas = [`Con este código obtené ${beneficio(c)} de regalalebitcoin.com.`];
+  if (c.email !== null) lineas.push(`Usalo desde este link: ${linkInvitacion(c.codigo)}`);
+  if (c.hasta !== null) lineas.push(`Válido hasta el ${fechaLarga(ultimoDia(c.hasta))}.`);
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return {
+    plano: [`*${c.codigo}*`, ...lineas].join('\n\n'),
+    html: [`<p><strong>${esc(c.codigo)}</strong></p>`, ...lineas.map((l) => `<p>${esc(l)}</p>`)].join(''),
+  };
 }
 
 const claseTipo = (c: AdminCoupon) => (c.descuento !== null && c.da !== null ? 't-combo' : c.descuento !== null ? 't-plan' : c.da?.unidad === 'regalo' ? 't-regalo' : 't-lista');
@@ -181,8 +208,22 @@ export function CuponesPage() {
     window.setTimeout(() => setAviso((a) => (a === m ? null : a)), 2200);
   };
   const copiar = (t: string, m: string) => navigator.clipboard.writeText(t).then(() => avisar(m), () => avisar('No se pudo copiar'));
+  /** Copia el mensaje del cupón: con formato (negrita) donde se pueda, y si no, el texto plano. */
+  const copiarCupon = async (c: AdminCoupon) => {
+    const { plano, html } = textoCupon(c);
+    try {
+      if (typeof ClipboardItem === 'function' && typeof navigator.clipboard.write === 'function') {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([plano], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]);
+      } else {
+        await navigator.clipboard.writeText(plano);
+      }
+      avisar('Cupón copiado');
+    } catch {
+      avisar('No se pudo copiar');
+    }
+  };
   const compartir = (c: AdminCoupon) => {
-    const text = textoCompartir(c);
+    const text = textoCupon(c).plano;
     if (typeof navigator.share === 'function') navigator.share({ text }).catch(() => undefined);
     else void copiar(text, 'Texto copiado para compartir');
   };
@@ -286,9 +327,9 @@ export function CuponesPage() {
           <div class={`cupones-lista ${vista === 'lista' ? 'renglones' : 'grilla'}`}>
             {visibles.map((c) =>
               vista === 'lista' ? (
-                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={(t) => copiar(t, 'Código copiado')} onPausar={pausar} />
+                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} />
               ) : (
-                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={(t) => copiar(t, 'Código copiado')} onPausar={pausar} />
+                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} />
               ),
             )}
           </div>
@@ -362,7 +403,7 @@ function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, corto }: Acciones
         Compartir
       </button>
       <button type="button" class="cupones-accion" onClick={() => onCopiar(c.codigo)}>
-        {corto ? 'Copiar' : 'Copiar código'}
+        {corto ? 'Copiar' : 'Copiar mensaje'}
       </button>
       {e.clave !== 'terminados' && (
         <button type="button" class="cupones-accion" onClick={() => onPausar(c)}>
