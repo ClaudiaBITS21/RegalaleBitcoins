@@ -1,7 +1,7 @@
 import { type ComponentChildren, createContext, Fragment } from 'preact';
 import { useContext, useEffect, useRef, useState } from 'preact/hooks';
 import { type Key, LANG_NAMES, translate, type Trato, UI_LANGS, type UiLang } from './i18n/index.ts';
-import { useSignedIn } from './sesion.ts';
+import { useIsAdmin, useSignedIn } from './sesion.ts';
 import { installState, installWay, isStandalone, onInstallChange, promptInstall } from './pwa.ts';
 
 export interface I18n {
@@ -268,16 +268,49 @@ function AppBack() {
   );
 }
 
-/** Con la cuenta abierta: una personita que lleva a «Mis regalos» (Rodolfo, 21/10). */
+const PERSONITA = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+  </svg>
+);
+
+/**
+ * Con la cuenta abierta: una personita que lleva a «Mis regalos» (Rodolfo, 21/10). A un admin le
+ * abre un menú chico con «Mis regalos», el admin y los cupones (Claudia, 25/10). El admin es una
+ * herramienta interna en castellano: esas dos opciones no se traducen.
+ */
 function AccountIcon() {
   const { t } = useI18n();
+  const admin = useIsAdmin();
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  if (!admin) {
+    return (
+      <a class="icono-cuenta" href="/panel" aria-label={t('menu.misRegalos')} title={t('menu.misRegalos')}>
+        {PERSONITA}
+      </a>
+    );
+  }
   return (
-    <a class="icono-cuenta" href="/panel" aria-label={t('menu.misRegalos')} title={t('menu.misRegalos')}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-      </svg>
-    </a>
+    <div class="cuenta-menu" ref={ref}>
+      <button type="button" class="icono-cuenta" aria-expanded={open} aria-haspopup="true" aria-label={t('menu.misRegalos')} onClick={() => setOpen(!open)}>
+        {PERSONITA}
+      </button>
+      {open && (
+        <div class="panel-menu panel-cuenta">
+          <a class="menu-link" href="/panel">
+            {t('menu.misRegalos')}
+          </a>
+          <a class="menu-link" href="/admin">
+            Admin
+          </a>
+          <a class="menu-link" href="/cupones">
+            Cupones
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 

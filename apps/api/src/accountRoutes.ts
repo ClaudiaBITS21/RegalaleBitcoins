@@ -316,8 +316,16 @@ export function registerAccountRoutes(
     return c.json({ email: account.email });
   });
 
-  /** ¿Hay una sesión iniciada? Para el menú: responde siempre 200, sin datos de la cuenta. */
-  app.get('/api/cuenta/sesion', async (c) => c.json({ abierta: (await currentAccount(sql, c)) !== null }));
+  /**
+   * ¿Hay una sesión iniciada? Para el menú: responde siempre 200, sin datos de la cuenta. Si es de
+   * un admin, lo dice: el ícono de la cuenta le ofrece ir al admin (Claudia, 25/10).
+   */
+  app.get('/api/cuenta/sesion', async (c) => {
+    const account = await currentAccount(sql, c);
+    c.header('cache-control', 'no-store');
+    if (account === null) return c.json({ abierta: false });
+    return c.json({ abierta: true, admin: await isAdmin(sql, deps.adminEmails ?? [], account.email) });
+  });
 
   const featureFlags = async (id: string, b: Awaited<ReturnType<typeof balance>>, charging: boolean, admin: boolean) => {
     const f = await features(sql, id, b, charging, admin);
