@@ -3721,7 +3721,7 @@ svg.tarjeta-imagen {
 .cupon-ticket-da { margin: 0; font: 800 1.45rem/1.15 var(--titulos); overflow-wrap: anywhere; }
 .cupon-ticket-hasta { margin: 0; color: var(--suave); }
 .cupon-ticket-marcas { display: flex; align-items: center; gap: 12px; margin-top: 6px; min-width: 0; max-width: 100%; }
-.cupon-ticket-logo { display: block; height: 36px; width: auto; flex: none; }
+.cupon-ticket-logo { display: block; height: 44px; width: auto; flex: none; }
 .cupon-ticket-socio { display: block; max-height: 48px; max-width: 140px; width: auto; height: auto; min-width: 0; padding-left: 12px; border-left: 2px solid var(--tinta); object-fit: contain; }
 @media (max-width: 520px) {
   .cupon-ticket-marcas { flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -3891,3 +3891,6 @@ svg.tarjeta-imagen {
   .precios-unidad li { grid-template-columns: 1fr auto; }
   .precios-unidad .precio-comprar { grid-column: 1 / -1; }
 }
+.ticket-diseno { display: block; width: 100%; aspect-ratio: 1200 / 630; height: auto; border-radius: 16px 16px 0 0; background: var(--naranja); }
+.cupones-ticket .ticket-diseno + .ticket-talon { display: none; }
+.ticket-codigo-solo-estado { justify-content: flex-start; }

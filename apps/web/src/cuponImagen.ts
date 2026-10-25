@@ -3,7 +3,7 @@
 // admin al copiar o compartir el cupón y se sube una vez; si algo falla, el link usa la imagen
 // general del sitio. Sin vos ni tú: vale para los dos tratos.
 
-import { dataUrl, svgNombre } from './content/logo.ts';
+import { dataUrl, svgCompacto } from './content/logo.ts';
 
 const W = 1200;
 const H = 630;
@@ -137,13 +137,13 @@ export async function couponImage(c: CouponImageInput): Promise<string | null> {
     }
     ctx.font = `400 30px ${TEXTO}`;
     if (c.hasta !== null) ctx.fillText(c.hasta, x, ty + th - 140, width);
-    // Abajo, el nombre en dos líneas y, con el logo de quien lo promueve, ese logo del otro lado
+    // Abajo, el logotipo en dos líneas (caja y nombre) y, con el logo de quien lo promueve, ese logo del otro lado
     // de una línea; sin él, la dirección del sitio.
     const logo = new Image();
-    logo.src = dataUrl(svgNombre('claro'));
+    logo.src = dataUrl(svgCompacto('claro'));
     await logo.decode();
     const lh = 76;
-    const nh = 62;
+    const nh = lh;
     const lw = (logo.naturalWidth / logo.naturalHeight) * nh;
     const ly = ty + th - 40 - lh;
     ctx.drawImage(logo, x, ly + (lh - nh) / 2, lw, nh);

@@ -854,6 +854,13 @@ describe('Cuentas con passkey', () => {
     assert.deepEqual([conLogo.conLogo, conLogo.conVista], [true, false]);
     assert.equal((await req('/api/admin/cupones/LABC2026HODL21/logo', { imagen: null }, admin.cookie)).status, 204);
     assert.equal((await req(`/api/c/${corto}/logo.png`)).status, 404);
+    // Ampliar (o bajar) el tope de usos: solo admins, nunca por debajo de los usados; los de un mail, no.
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/usos', { maxUsos: 500 }, ana.cookie)).status, 404);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/usos', { maxUsos: 0 }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/cupones/PARAZOE/usos', { maxUsos: 5 }, admin.cookie)).status, 409);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/usos', { maxUsos: 500 }, admin.cookie)).status, 200);
+    const tope = ((await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; maxUsos: number }> }).cupones.find((c) => c.codigo === 'LABC2026HODL21');
+    assert.equal(tope?.maxUsos, 500);
     // Pausado: la página es la de siempre (la web dice que ya no está vigente).
     assert.equal((await req('/api/admin/cupones/LABC2026HODL21/activo', { activo: false }, admin.cookie)).status, 200);
     assert.equal((await req(`/api/c/${corto}`)).status, 404);

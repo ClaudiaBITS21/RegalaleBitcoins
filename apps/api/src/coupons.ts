@@ -295,8 +295,9 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<(Coupon & { con_vista: boolean; con_logo: boolean })[]>`
+    const rows = await sql<(Coupon & { con_vista: boolean; vista_creada: Date | null; con_logo: boolean })[]>`
       select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista,
+             (select v.creada from cupones_vistas v where v.codigo = k.codigo) as vista_creada,
              exists (select 1 from cupones_logos l where l.codigo = k.codigo) as con_logo
       from cupones k where k.lote is null order by k.creado desc limit 500`;
     const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
@@ -323,6 +324,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           ...couponView(r),
           corto: r.corto,
           conVista: r.con_vista,
+          vistaCreada: r.vista_creada?.toISOString() ?? null,
           conLogo: r.con_logo,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,
@@ -519,6 +521,28 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
       await tx`insert into registro_admin (email, accion, detalle) values (${account.email}, ${data === null ? 'cupon_logo_quitado' : 'cupon_logo'}, ${code})`;
     });
     return c.body(null, 204);
+  });
+
+  /**
+   * Cambiar el tope de usos de un cupón (Claudia, 25/10): para ampliarlo, o bajarlo sin quedar por
+   * debajo de los que ya se usaron o están reservados. Pide passkey y queda en registro_admin. Uno
+   * para un mail sigue siendo de un uso.
+   */
+  app.post('/api/admin/cupones/:codigo/usos', async (c) => {
+    const account = await admin(c, true);
+    const code = codeOf(c.req.param('codigo'));
+    const { maxUsos } = await body(c);
+    if (typeof maxUsos !== 'number' || !Number.isInteger(maxUsos) || maxUsos < 1 || maxUsos > 1_000_000) throw new ApiError(400, 'pedido_invalido');
+    await sql.begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(hashtext(${`cupon:${code}`}))`;
+      const [k] = await tx<Coupon[]>`select * from cupones where codigo = ${code}`;
+      if (k === undefined) throw new ApiError(404, 'no_encontrado');
+      if (k.email !== null) throw new ApiError(409, 'cupon_de_un_uso');
+      if (maxUsos < (await usesTaken(tx, code))) throw new ApiError(409, 'usos_menos_que_usados');
+      await tx`update cupones set max_usos = ${maxUsos} where codigo = ${code}`;
+      await tx`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_usos', ${`${code}: ${k.max_usos} → ${maxUsos}`})`;
+    });
+    return c.json({ codigo: code, maxUsos });
   });
 
   app.post('/api/admin/cupones/:codigo/activo', async (c) => {
