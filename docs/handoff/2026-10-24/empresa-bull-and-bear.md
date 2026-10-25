@@ -1,6 +1,9 @@
 # Handoff 24/10/2026: la empresa detrás de Regalale Bitcoin es Bull & Bear LLC
 
-Estado: INTEGRADO (PR «Empresa: Bull & Bear LLC en el pie y en privacidad»), salvo lo ABIERTO.
+Estado: INTEGRADO (PR «Empresa: Bull & Bear LLC en el pie y en privacidad»). Lo ABIERTO del
+domicilio se resolvió el 25/10/2026 con el certificado de constitución que pasó la responsable: el
+nombre legal es **Bull&Bear International, LLC** (Delaware, registro n.º 6687084) y la política de
+privacidad muestra el domicilio registrado (1013 Centre Road, Suite 403-B, Wilmington, DE 19805).
 
 Decisión de Rodolfo, 24/10/2026: el sitio deja de figurar a nombre de Apptivalo S.R.L.
 (CUIT 30-71671196-6) y pasa a **Bull & Bear LLC**, sociedad constituida en Delaware, EE.UU.
