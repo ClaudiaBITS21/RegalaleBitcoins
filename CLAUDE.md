@@ -52,6 +52,9 @@ Técnico: `docs/arquitectura.md` y `docs/derivacion.md`. Antes de cambiar flujos
   selector ofrece «ES (vos)» y «ES (tú)». Todo texto nuevo en castellano va en las dos
   versiones; un test controla que con tú no quede voseo. El idioma del regalo (`lang` en
   `docs/derivacion.md`) sigue siendo `es`: el trato no entra en la derivación.
+- **LABITCONF** (pedido de la responsable, 25/10/2026): siempre así, todo junto y en mayúsculas,
+  en código, textos, commits y conversación. «LA» no es un artículo: es Latin American (Latin
+  American Bitcoin Conference). Nunca «la Bitconf», «BitConf» ni «Labitconf».
 - Números según el idioma de quien lee: es/pt/it `1.234,56`, en `1,234.56`. Mostrar siempre con
   `Intl.NumberFormat` (ver `apps/web/src/format.ts`), nunca concatenando. Los montos que escribe
   la persona se leen con el separador de su idioma (en es, `1.234` son mil doscientos treinta y

@@ -236,6 +236,8 @@ export interface AdminCoupon extends CouponView {
   readonly corto: string;
   /** Si ya se subió la imagen del cupón para la vista previa de su link. */
   readonly conVista: boolean;
+  /** Si tiene el logo de quien lo promueve. */
+  readonly conLogo: boolean;
   readonly desde: string;
   /** Exclusivo: vence en ese instante. null = sin fecha de fin. */
   readonly hasta: string | null;
@@ -316,7 +318,9 @@ export const api = {
   adminBatch: (id: string) => call<{ nombre: string; cupones: Array<{ codigo: string; email: string | null; usado: boolean }> }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}`),
   adminBatchActive: (id: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}/activo`, { activo }),
   invitation: (codigo: string) => call<CouponView & { desde: string; paraUnMail: boolean }>(`/api/invitacion/${encodeURIComponent(codigo)}`),
-  shortCoupon: (corto: string) => call<CouponView & { corto: string; desde: string; hasta: string | null; paraUnMail: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
+  shortCoupon: (corto: string) => call<CouponView & { corto: string; desde: string; hasta: string | null; paraUnMail: boolean; conLogo: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
+  /** Pone o cambia (PNG en base64) o saca (null) el logo de quien promueve el cupón. Pide passkey. */
+  adminCouponLogo: (codigo: string, imagen: string | null) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/logo`, { imagen }),
   adminCouponPreview: (codigo: string, imagen: string) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/vista`, { imagen }),
   adminCreateCoupon: (c: {
     codigo: string;

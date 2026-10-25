@@ -162,6 +162,19 @@ export async function shownCoupon(sql: Sql, by: { codigo: string } | { corto: st
   return k;
 }
 
+export const LOGO_MAX_BYTES = 300_000;
+
+/** El logo de quien promueve un cupón: solo PNG (lo arma el navegador del admin), hasta 300 KB. */
+export function parseLogo(value: unknown): Uint8Array {
+  if (typeof value !== 'string' || value.length > Math.ceil(LOGO_MAX_BYTES / 3) * 4 + 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    throw new ApiError(400, 'pedido_invalido');
+  }
+  const data = new Uint8Array(Buffer.from(value, 'base64'));
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (data.length < 100 || data.length > LOGO_MAX_BYTES || png.some((b, i) => data[i] !== b)) throw new ApiError(400, 'pedido_invalido');
+  return data;
+}
+
 /** La imagen del cupón para la vista previa del link, si el admin ya la subió. */
 export async function findCouponPreview(sql: Sql, code: string): Promise<Uint8Array | null> {
   const [r] = await sql<{ datos: Buffer }[]>`select datos from cupones_vistas where codigo = ${code}`;
@@ -216,7 +229,21 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     if (corto === null) throw new ApiError(404, 'cupon_invalido');
     const k = await shownCoupon(sql, { corto });
     c.header('cache-control', 'no-store');
-    return c.json({ ...couponView(k), corto: k.corto, desde: k.desde.toISOString(), hasta: k.hasta?.toISOString() ?? null, paraUnMail: k.email !== null });
+    const [logo] = await sql`select 1 from cupones_logos where codigo = ${k.codigo}`;
+    return c.json({ ...couponView(k), corto: k.corto, desde: k.desde.toISOString(), hasta: k.hasta?.toISOString() ?? null, paraUnMail: k.email !== null, conLogo: logo !== undefined });
+  });
+
+  /** El logo de quien promueve el cupón (PNG con transparencia). */
+  app.get('/api/c/:corto/logo.png', async (c) => {
+    const corto = normalizeShortCode(c.req.param('corto'));
+    const [r] = corto === null ? [] : await sql<{ datos: Buffer }[]>`select l.datos from cupones_logos l join cupones k on k.codigo = l.codigo where k.corto = ${corto}`;
+    if (r === undefined) throw new ApiError(404, 'no_encontrado');
+    return c.body(new Uint8Array(r.datos) as Uint8Array<ArrayBuffer>, 200, {
+      'content-type': 'image/png',
+      'cache-control': 'public, max-age=300',
+      'content-security-policy': "default-src 'none'; sandbox",
+      'content-disposition': 'inline',
+    });
   });
 
   app.get('/api/c/:corto/vista.jpg', async (c) => {
@@ -268,8 +295,9 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<(Coupon & { con_vista: boolean })[]>`
-      select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista
+    const rows = await sql<(Coupon & { con_vista: boolean; con_logo: boolean })[]>`
+      select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista,
+             exists (select 1 from cupones_logos l where l.codigo = k.codigo) as con_logo
       from cupones k where k.lote is null order by k.creado desc limit 500`;
     const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
       select l.id, l.nombre, l.creado_por, l.creado,
@@ -295,6 +323,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           ...couponView(r),
           corto: r.corto,
           conVista: r.con_vista,
+          conLogo: r.con_logo,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,
           maxUsos: r.max_usos,
@@ -468,6 +497,27 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
       on conflict (codigo) do update set datos = excluded.datos, creada = now()
       returning codigo`;
     if (rows.length === 0) throw new ApiError(404, 'cupon_invalido');
+    return c.body(null, 204);
+  });
+
+  /**
+   * Poner, cambiar o sacar (imagen: null) el logo de quien promueve el cupón. Cambia lo que ve el
+   * público: pide passkey y queda en registro_admin. La imagen de la vista previa se borra para que
+   * el admin la vuelva a armar con el logo.
+   */
+  app.post('/api/admin/cupones/:codigo/logo', async (c) => {
+    const account = await admin(c, true);
+    const code = codeOf(c.req.param('codigo'));
+    const b = await body(c);
+    const data = b.imagen === null ? null : parseLogo(b.imagen);
+    await sql.begin(async (tx) => {
+      const [k] = await tx`select 1 from cupones where codigo = ${code}`;
+      if (k === undefined) throw new ApiError(404, 'cupon_invalido');
+      if (data === null) await tx`delete from cupones_logos where codigo = ${code}`;
+      else await tx`insert into cupones_logos (codigo, datos) values (${code}, ${Buffer.from(data)}) on conflict (codigo) do update set datos = excluded.datos, creado = now()`;
+      await tx`delete from cupones_vistas where codigo = ${code}`;
+      await tx`insert into registro_admin (email, accion, detalle) values (${account.email}, ${data === null ? 'cupon_logo_quitado' : 'cupon_logo'}, ${code})`;
+    });
     return c.body(null, 204);
   });
 

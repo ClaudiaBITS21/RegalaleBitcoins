@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { ApiFailure, api, type CouponView } from './api.ts';
 import { couponErrorKey } from './comprar.tsx';
-import { dataUrl, svgCompacto } from './content/logo.ts';
+import { dataUrl, svgNombre } from './content/logo.ts';
 import { occasionLabel } from './content/occasions.ts';
 import { clearPendingCoupon, savePendingCoupon } from './cuponPendiente.ts';
 import type { Key } from './i18n/index.ts';
@@ -15,11 +15,13 @@ import { Button, Layout, Notice, StepTitle, useI18n } from './ui.tsx';
 // El link corto de un cupón (/c/K7M2P, Claudia 25/10) usa la misma página: «Acá tenés un cupón»,
 // el cupón dibujado como un ticket y el código ya puesto para cuando compre.
 
-const LOGO_COMPACTO = dataUrl(svgCompacto('claro'));
+const LOGO_NOMBRE = dataUrl(svgNombre('claro'));
 
-type Shown = CouponView & { paraUnMail: boolean; desde?: string; hasta?: string | null };
+type Shown = CouponView & { paraUnMail: boolean; desde?: string; hasta?: string | null; corto?: string; conLogo?: boolean };
 
-const longDate = (d: Date, lang: string) => new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+// Las fechas de un cupón son días de la Argentina (se crean a la medianoche de acá): se muestran
+// en esa hora, para que en otro país no se corran un día.
+const longDate = (d: Date, lang: string) => new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }).format(d);
 
 /** El último día en que vale (hasta es exclusivo), en el formato del idioma. */
 const lastDay = (iso: string, lang: string) => longDate(new Date(new Date(iso).getTime() - 1), lang);
@@ -84,7 +86,11 @@ export function InvitationPage({ testnet, code, short = false }: { testnet: bool
               <span class="cupon-ticket-etiqueta">{t('cupon.etiqueta')}</span>
               <p class="cupon-ticket-da">{what(coupon).replace(/^./, (x) => x.toUpperCase())}</p>
               {validity(coupon, t, lang) !== null && <p class="cupon-ticket-hasta">{validity(coupon, t, lang)}</p>}
-              <img class="cupon-ticket-logo" src={LOGO_COMPACTO} alt="Regalale Bitcoin" />
+              <div class="cupon-ticket-marcas">
+                <img class="cupon-ticket-logo" src={LOGO_NOMBRE} alt="Regalale Bitcoin" />
+                {/* El de quien promueve el cupón (una empresa, un evento), del otro lado de una línea. */}
+                {coupon.conLogo === true && coupon.corto !== undefined && <img class="cupon-ticket-socio" src={`/api/c/${coupon.corto}/logo.png`} alt="" />}
+              </div>
             </div>
             <div class="cupon-ticket-talon">
               <span class="cupon-ticket-codigo-label">{t('cupon.codigo')}</span>
