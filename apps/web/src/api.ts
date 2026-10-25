@@ -240,6 +240,8 @@ export interface AdminCoupon extends CouponView {
   readonly corto: string;
   /** Si ya se subió la imagen del cupón para la vista previa de su link. */
   readonly conVista: boolean;
+  /** Cuándo se subió esa imagen (para rehacer las de un diseño viejo). */
+  readonly vistaCreada?: string | null;
   /** Si tiene el logo de quien lo promueve. */
   readonly conLogo: boolean;
   readonly desde: string;

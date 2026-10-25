@@ -295,8 +295,9 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<(Coupon & { con_vista: boolean; con_logo: boolean })[]>`
+    const rows = await sql<(Coupon & { con_vista: boolean; vista_creada: Date | null; con_logo: boolean })[]>`
       select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista,
+             (select v.creada from cupones_vistas v where v.codigo = k.codigo) as vista_creada,
              exists (select 1 from cupones_logos l where l.codigo = k.codigo) as con_logo
       from cupones k where k.lote is null order by k.creado desc limit 500`;
     const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
@@ -323,6 +324,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           ...couponView(r),
           corto: r.corto,
           conVista: r.con_vista,
+          vistaCreada: r.vista_creada?.toISOString() ?? null,
           conLogo: r.con_logo,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,

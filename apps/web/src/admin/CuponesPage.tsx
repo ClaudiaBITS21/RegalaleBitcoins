@@ -148,6 +148,13 @@ export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html:
   return { plano: `${frase}: ${link}`, html: `<p>${esc(frase)}: <a href="${link}">${esc(link)}</a></p>` };
 }
 
+/**
+ * Las imágenes subidas antes de esto tienen un diseño viejo (sin la caja del logotipo, 25/10): se
+ * rehacen solas al abrir la página.
+ */
+const VISTA_DESDE = Date.parse('2026-10-25T16:00:00Z');
+const vistaAlDia = (c: AdminCoupon) => c.conVista && c.vistaCreada != null && Date.parse(c.vistaCreada) >= VISTA_DESDE;
+
 /** Lo que dice la imagen del cupón (la vista previa del link). `logo`: el de quien lo promueve, si cambió recién. */
 export function imagenCupon(c: AdminCoupon, logo?: string | null) {
   const que = beneficio(c).replace(/^un /, '');
@@ -234,7 +241,7 @@ export function CuponesPage() {
   useEffect(() => {
     if (cupones === null) return;
     void (async () => {
-      for (const c of cupones) if (!c.conVista && estado(c).clave === 'vigentes') await subirImagen(c);
+      for (const c of cupones) if (!vistaAlDia(c) && estado(c).clave === 'vigentes') await subirImagen(c);
     })();
   }, [cupones]);
 
@@ -249,7 +256,7 @@ export function CuponesPage() {
    * muestra la imagen general del sitio.
    */
   const subirImagen = async (c: AdminCoupon) => {
-    if (c.conVista || conImagen.has(c.codigo)) return;
+    if (vistaAlDia(c) || conImagen.has(c.codigo)) return;
     conImagen.add(c.codigo);
     try {
       const img = await couponImage(imagenCupon(c));
@@ -516,6 +523,24 @@ function Usos({ c }: { c: AdminCoupon }) {
   );
 }
 
+/** La imagen del cupón, armada acá mismo (igual a la que se sube para la vista previa del link). */
+function DisenoCupon({ c }: { c: AdminCoupon }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const clave = JSON.stringify([c.codigo, c.descuento, c.productos, c.da, c.desde, c.hasta, c.conLogo]);
+  useEffect(() => {
+    let vale = true;
+    // Si el logo no se pudo bajar, el cupón igual, sin él.
+    void (async () => {
+      const img = (await couponImage(imagenCupon(c))) ?? (c.conLogo ? await couponImage(imagenCupon(c, null)) : null);
+      if (vale && img !== null) setSrc(`data:image/jpeg;base64,${img}`);
+    })();
+    return () => {
+      vale = false;
+    };
+  }, [clave]);
+  return src === null ? <div class="ticket-diseno ticket-diseno-cargando" aria-hidden="true" /> : <img class="ticket-diseno" src={src} alt={`Cupón ${c.codigo}`} />;
+}
+
 function Ticket(props: Acciones) {
   const { c } = props;
   const e = estado(c);
@@ -525,6 +550,8 @@ function Ticket(props: Acciones) {
   const sub = c.descuento !== null ? (c.descuento === 100 ? 'plan' : 'off') : nombreU;
   return (
     <article class={`cupones-ticket ${claseTipo(c)}${e.activo ? '' : ' apagado'}`}>
+      {/* El diseño del cupón, como se ve al compartirlo (Claudia, 25/10); en la lista no va. */}
+      <DisenoCupon c={c} />
       <div class="ticket-talon">
         <div class="ticket-valor">
           <span>{valor}</span>

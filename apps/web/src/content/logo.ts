@@ -56,16 +56,3 @@ export function svgCompacto(v: Version, guias = false): string {
 }
 
 export const dataUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-
-/** Solo el nombre en dos líneas (REGALALE / BITCOIN), sin la caja: el del cupón (Claudia, 25/10). */
-export function svgNombre(v: Version): string {
-  const [a, b] = LOGO[v];
-  const g = COMPACTO;
-  const w = Math.round(Math.max(WM.wa, WM.wb) * 10) / 10;
-  const top = Math.round((g.b1 - WM.cap) * 10) / 10;
-  const h = Math.round((g.b2 - top) * 10) / 10;
-  return (
-    `<svg ${NS} viewBox="0 ${top} ${w} ${h}" width="${w}" height="${h}">` +
-    `<path transform="translate(0 ${g.b1})" d="${WM.b1}" fill="${a}"/><path transform="translate(0 ${g.b2})" d="${WM.b2}" fill="${b}"/></svg>`
-  );
-}
