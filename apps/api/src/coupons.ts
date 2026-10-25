@@ -111,7 +111,8 @@ export async function usableCoupon(tx: Tx, code: string, accountId: string): Pro
     if (me?.email !== c.email) throw new ApiError(403, 'cupon_de_otra_cuenta');
   }
   const now = Date.now();
-  if (c.desde.getTime() > now || (c.hasta !== null && c.hasta.getTime() <= now)) throw new ApiError(409, 'cupon_vencido');
+  if (c.desde.getTime() > now) throw new ApiError(409, 'cupon_no_empezo');
+  if (c.hasta !== null && c.hasta.getTime() <= now) throw new ApiError(409, 'cupon_vencido');
   const [own] = await tx`select 1 from cupon_usos where cupon = ${code} and usuario_id = ${accountId} and estado <> 'liberado'`;
   if (own !== undefined) throw new ApiError(409, 'cupon_usado');
   if ((await usesTaken(tx, code)) >= c.max_usos) throw new ApiError(409, 'cupon_agotado');
@@ -149,13 +150,14 @@ export async function confirmCouponUse(tx: Tx, paymentId: string): Promise<void>
 }
 
 /**
- * Un cupón que se puede mostrar en público ahora (activo, en fecha, con usos), por su código o su
- * link corto. El error dice por qué no.
+ * Un cupón que se puede mostrar en público (activo, sin vencer, con usos), por su código o su link
+ * corto. Uno que todavía no empezó también se muestra, con su fecha de inicio (el de un evento se
+ * comparte antes, Claudia 25/10); usarlo antes de esa fecha no se puede. El error dice por qué no.
  */
 export async function shownCoupon(sql: Sql, by: { codigo: string } | { corto: string }): Promise<Coupon> {
   const [k] = 'codigo' in by ? await sql<Coupon[]>`select * from cupones where codigo = ${by.codigo}` : await sql<Coupon[]>`select * from cupones where corto = ${by.corto}`;
   const now = Date.now();
-  if (k === undefined || !k.activo || k.desde.getTime() > now || (k.hasta !== null && k.hasta.getTime() <= now)) throw new ApiError(404, 'cupon_invalido');
+  if (k === undefined || !k.activo || (k.hasta !== null && k.hasta.getTime() <= now)) throw new ApiError(404, 'cupon_invalido');
   if ((await usesTaken(sql, k.codigo)) >= k.max_usos) throw new ApiError(409, 'cupon_agotado');
   return k;
 }
@@ -202,7 +204,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
   app.get('/api/invitacion/:codigo', async (c) => {
     const k = await shownCoupon(sql, { codigo: codeOf(c.req.param('codigo')) });
     c.header('cache-control', 'no-store');
-    return c.json({ ...couponView(k), paraUnMail: k.email !== null });
+    return c.json({ ...couponView(k), desde: k.desde.toISOString(), paraUnMail: k.email !== null });
   });
 
   /**
@@ -214,7 +216,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     if (corto === null) throw new ApiError(404, 'cupon_invalido');
     const k = await shownCoupon(sql, { corto });
     c.header('cache-control', 'no-store');
-    return c.json({ ...couponView(k), corto: k.corto, hasta: k.hasta?.toISOString() ?? null, paraUnMail: k.email !== null });
+    return c.json({ ...couponView(k), corto: k.corto, desde: k.desde.toISOString(), hasta: k.hasta?.toISOString() ?? null, paraUnMail: k.email !== null });
   });
 
   app.get('/api/c/:corto/vista.jpg', async (c) => {
@@ -266,7 +268,9 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<Coupon[]>`select * from cupones where lote is null order by creado desc limit 500`;
+    const rows = await sql<(Coupon & { con_vista: boolean })[]>`
+      select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista
+      from cupones k where k.lote is null order by k.creado desc limit 500`;
     const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
       select l.id, l.nombre, l.creado_por, l.creado,
              count(k.*) as total, count(k.*) filter (where k.activo) as activos, count(k.email) as con_mail,
@@ -290,6 +294,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
         return {
           ...couponView(r),
           corto: r.corto,
+          conVista: r.con_vista,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,
           maxUsos: r.max_usos,

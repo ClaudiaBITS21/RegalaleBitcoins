@@ -28,6 +28,7 @@ export function couponErrorKey(e: unknown): Key {
   const keys: Record<string, Key> = {
     cupon_invalido: 'cupon.invalido',
     cupon_vencido: 'cupon.vencido',
+    cupon_no_empezo: 'cupon.noEmpezo',
     cupon_usado: 'cupon.usado',
     cupon_agotado: 'cupon.agotado',
     cupon_no_aplica: 'cupon.noAplica',
