@@ -67,12 +67,12 @@ const browser = await chromium.launch({ executablePath: CHROMIUM });
 const problems: string[] = [];
 try {
   api = spawn(process.execPath, [join(ROOT, 'apps', 'api', 'src', 'main.ts')], {
-    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, PUBLIC_URL: BASE, COOKIE_SECURE: 'no', DATABASE_URL, WEB_DIST },
+    env: { ...process.env, PORT: String(API_PORT), ESPLORA_URL: chain.url, PRICE_URL: `${chain.url}/v1/prices`, ARS_PRICE_URL: `${chain.url}/ars/criptoya`, ARS_CHECK_URL: `${chain.url}/ars/bitso`, PUBLIC_URL: BASE, COOKIE_SECURE: 'no', DATABASE_URL, WEB_DIST, RECUPERO_AVANZADO: 'prueba' },
     stdio: ['ignore', 'inherit', 'inherit'],
   });
   await waitFor(`${BASE}/api/salud`);
   const health = (await (await fetch(`${BASE}/api/salud`)).json()) as { recuperoAvanzado?: boolean };
-  if (health.recuperoAvanzado !== true) fail('en signet el recupero avanzado tiene que estar habilitado');
+  if (health.recuperoAvanzado !== true) fail('con RECUPERO_AVANZADO=prueba el recupero avanzado tiene que estar prendido');
 
   const giver = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-AR', acceptDownloads: true });
   giver.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));

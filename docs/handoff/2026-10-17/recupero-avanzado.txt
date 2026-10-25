@@ -141,8 +141,12 @@ Decisiones de Rodolfo, 21/10/2026
   llave, no la de recibir. Falta saber qué billeteras probar (Trezor, Ledger, Coldcard, Sparrow).
 - Siguen ABIERTO: cuándo entra; versiones EN / PT / IT del texto; mención en «Sin custodia».
 
-Estado (25/10/2026): IMPLEMENTADO EN SIGNET, mainnet apagado hasta autorización de la
-responsable (ADVANCED_RECOVERY_MAINNET en apps/api/src/app.ts). Pedido de Claudia, 25/10: la
+Estado (25/10/2026): IMPLEMENTADO Y GUARDADO, APAGADO. Decisión de Claudia, 25/10: la
+complejidad de firmar una multifirma en las billeteras de hardware (Ledger pide registrar cada
+regalo, Trezor solo vía Sparrow, Coldcard con «Trust PSBT») no justifica ofrecerlo por ahora.
+El código y sus pruebas quedan; no se ve en ninguna red. Se prende solo en pruebas con
+RECUPERO_AVANZADO=prueba; en mainnet necesita además autorización explícita
+(ADVANCED_RECOVERY_MAINNET en apps/api/src/app.ts). Pedido de Claudia, 25/10: la
 opción va discreta en el paso 4 de Regalar (enlace chico) y en «Mis regalos»; la explicación
 aparece recién al tocarla, con «Volver». Detalle técnico en docs/derivacion.md, sección 10.
 Diferencias con lo de arriba, a revisar con la responsable:
