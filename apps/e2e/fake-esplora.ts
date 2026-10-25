@@ -4,7 +4,7 @@
 
 import { createServer, type Server } from 'node:http';
 import { getNetwork, inspectTransaction, parseDestination } from '@regalale/core';
-import { makeFundingTx, verifyP2WPKHInputs } from '../../packages/core/test/helpers.ts';
+import { makeFundingTx, verifyWitnessInputs } from '../../packages/core/test/helpers.ts';
 
 export interface FakeChain {
   readonly url: string;
@@ -107,7 +107,7 @@ export async function startFakeEsplora(port: number, fund: ReadonlyArray<{ addre
           const tx = inspectTransaction(body.trim());
           const prevouts = tx.inputs.map((i) => outputs.find((o) => o.txid === i.txid && o.vout === i.vout && !o.spent));
           if (prevouts.some((p) => p === undefined)) return send(400, 'bad-txns-inputs-missingorspent', 'text/plain');
-          const ok = verifyP2WPKHInputs(
+          const ok = verifyWitnessInputs(
             Buffer.from(body.trim(), 'hex'),
             prevouts.map((p) => ({ script: (p as Output).script, amount: (p as Output).value })),
           );

@@ -18,6 +18,7 @@ import { formatChange, formatSats, formatValue } from '../format.ts';
 import { giftValue } from './valor.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
+import { RecoverWithWallet, RecoverySettings } from '../recupero/Recuperar.tsx';
 
 // Panel de quien regala: sus regalos con el estado que calcula el servidor desde la
 // cadena. Para volver a ver un link y sus palabras, o el código de recuperación, se abre la
@@ -68,6 +69,9 @@ export function PanelPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [reminder, setReminder] = useState<string | null>(null);
+  // Recupero avanzado: el regalo que se está recuperando con la billetera propia (PSBT).
+  const [recovering, setRecovering] = useState<string | null>(null);
+  const [advancedAvailable, setAdvancedAvailable] = useState(false);
   const [copied, setCopied] = useState(false);
   // Link y palabras se copian por separado: nunca van en el mismo mensaje.
   const [copiedSecret, setCopiedSecret] = useState<'link' | 'palabras' | null>(null);
@@ -123,8 +127,9 @@ export function PanelPage() {
     const token = readAccessToken();
     void (async () => {
       try {
-        const { red } = await api.health();
+        const { red, recuperoAvanzado } = await api.health();
         setNetwork(getNetwork(red, { allowMainnet: ALLOW_MAINNET }));
+        setAdvancedAvailable(recuperoAvanzado === true);
       } catch {
         // Sin red no se pueden armar links; el resto del panel funciona igual.
       }
@@ -305,7 +310,7 @@ export function PanelPage() {
               const link = derived === null ? null : `${window.location.origin}/r/${g.id}#${encodeGiftFragment(derived.entropy)}`;
               const pending = g.estado === 'esperando' || g.estado === 'en_la_red' || g.estado === 'activo';
               const sats = g.sats !== null && g.sats !== '0' ? BigInt(g.sats) : g.satsEsperados !== null ? BigInt(g.satsEsperados) : null;
-              const expanded = open === g.id || reminder === g.id || card?.id === g.id || cardFailed === g.id;
+              const expanded = open === g.id || reminder === g.id || card?.id === g.id || cardFailed === g.id || recovering === g.id;
               return (
                 <li class={`regalo-item${expanded ? ' expandido' : ''}`} key={g.id}>
                   <GiftCardArt class="regalo-miniatura" occasion={g.ocasion} estilo={g.estilo} src={g.estilo === 'propia' ? `/api/gifts/${g.id}/imagen` : null} />
@@ -363,6 +368,18 @@ export function PanelPage() {
                       {t(open === g.id ? 'panel.ocultar' : 'panel.verLink')}
                     </Button>
                   )}
+                  {g.rutaRecupero != null && g.indice !== null && g.estado === 'activo' && network !== null && (
+                    <Button
+                      kind="contorno"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (recovering === g.id) return setRecovering(null);
+                        if ((await unlock()) !== null) setRecovering(g.id);
+                      }}
+                    >
+                      {t(recovering === g.id ? 'panel.ocultar' : 'avanzado.recuperar.boton')}
+                    </Button>
+                  )}
                   {pending && (
                     <Button
                       kind="contorno"
@@ -401,6 +418,9 @@ export function PanelPage() {
                       <small class="texto-suave">{t('regalar.mandar.palabrasTexto')}</small>
                     </div>
                   )}
+                  {recovering === g.id && master !== null && network !== null && (
+                    <RecoverWithWallet gift={g} root={masterRoot(master)} network={network} onDone={() => void load()} />
+                  )}
                   {cardFailed === g.id && <small class="error-campo">{t('panel.tarjetaError')}</small>}
                   {card?.id === g.id && link !== null && <PrintCard link={link} view={card} conPlan={conPlan} />}
                   {reminder === g.id && (
@@ -432,6 +452,7 @@ export function PanelPage() {
         )}
         <MyPlan />
         <MyLists network={network} master={master} onUnlock={unlock} />
+        {network !== null && (advancedAvailable || view.regalos.some((g) => g.rutaRecupero != null)) && <RecoverySettings network={network} unlock={unlock} />}
         <div class="caja">
           <strong>{t('regalar.codigo.titulo')}</strong>
           <p class="texto-suave">{t('regalar.codigo.texto1')}</p>

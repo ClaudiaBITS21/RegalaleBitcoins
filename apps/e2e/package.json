@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "simulado": "node simulado.ts",
+    "avanzado": "node avanzado.ts",
     "typecheck": "tsc -p tsconfig.json",
     "signet": "node signet.ts",
     "sin-conexion": "node sin-conexion.ts"

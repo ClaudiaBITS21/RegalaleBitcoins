@@ -170,16 +170,17 @@ export function bip143SighashP2WPKH(tx: ParsedTx, index: number, pubkeyHash: Uin
 export function verifyP2WPKHInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>): boolean {
   const tx = parseTx(raw);
   if (tx.inputs.length !== prevouts.length) return false;
-  return tx.inputs.every((_, i) => {
-    const [sig, pubkey] = tx.witnesses[i] ?? [];
-    const prev = prevouts[i];
-    if (sig === undefined || pubkey === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
-    const pubkeyHash = ripemd160(sha256(pubkey));
-    const expected = concat(Uint8Array.of(0x00, 0x14), pubkeyHash);
-    if (hex.encode(expected) !== hex.encode(prev.script)) return false;
-    const sighash = bip143SighashP2WPKH(tx, i, pubkeyHash, prev.amount);
-    return secp256k1.verify(sig.slice(0, -1), sighash, pubkey, { prehash: false, format: 'der', lowS: true });
-  });
+  return tx.inputs.every((_, i) => verifyP2WPKHInput(tx, i, prevouts[i]));
+}
+
+function verifyP2WPKHInput(tx: ParsedTx, i: number, prev: { script: Uint8Array; amount: bigint } | undefined): boolean {
+  const [sig, pubkey] = tx.witnesses[i] ?? [];
+  if (sig === undefined || pubkey === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
+  const pubkeyHash = ripemd160(sha256(pubkey));
+  const expected = concat(Uint8Array.of(0x00, 0x14), pubkeyHash);
+  if (hex.encode(expected) !== hex.encode(prev.script)) return false;
+  const sighash = bip143SighashP2WPKH(tx, i, pubkeyHash, prev.amount);
+  return secp256k1.verify(sig.slice(0, -1), sighash, pubkey, { prehash: false, format: 'der', lowS: true });
 }
 
 /** Preimagen BIP143 de una entrada P2WSH con SIGHASH_ALL: el scriptCode es el script de testigo. */
@@ -211,15 +212,31 @@ function bip143SighashP2WSH(tx: ParsedTx, index: number, witnessScript: Uint8Arr
  * Verifica de forma independiente cada entrada multifirma 1-de-2 P2WSH: witness [vacío, firma,
  * script], sha256(script) = el script gastado, y firma BIP143 válida de `signer`.
  */
-export function verifyP2WSHMultisigInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>, signer: Uint8Array): boolean {
+export function verifyP2WSHMultisigInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>, signer?: Uint8Array): boolean {
   const tx = parseTx(raw);
   if (tx.inputs.length !== prevouts.length) return false;
-  return tx.inputs.every((_, i) => {
-    const [dummy, sig, ws] = tx.witnesses[i] ?? [];
-    const prev = prevouts[i];
-    if (dummy === undefined || dummy.length !== 0 || sig === undefined || ws === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
-    if (hex.encode(concat(Uint8Array.of(0x00, 0x20), sha256(ws))) !== hex.encode(prev.script)) return false;
-    const sighash = bip143SighashP2WSH(tx, i, ws, prev.amount);
-    return secp256k1.verify(sig.slice(0, -1), sighash, signer, { prehash: false, format: 'der', lowS: true });
-  });
+  return tx.inputs.every((_, i) => verifyP2WSHMultisigInput(tx, i, prevouts[i], signer));
+}
+
+/**
+ * Una entrada 1-de-2: el script de testigo tiene que ser OP_1 <33> <33> OP_2 OP_CHECKMULTISIG. Sin
+ * `signer`, la firma vale con cualquiera de las dos claves (como CHECKMULTISIG 1-de-2).
+ */
+function verifyP2WSHMultisigInput(tx: ParsedTx, i: number, prev: { script: Uint8Array; amount: bigint } | undefined, signer?: Uint8Array): boolean {
+  const [dummy, sig, ws] = tx.witnesses[i] ?? [];
+  if (dummy === undefined || dummy.length !== 0 || sig === undefined || ws === undefined || prev === undefined || sig[sig.length - 1] !== 0x01) return false;
+  if (hex.encode(concat(Uint8Array.of(0x00, 0x20), sha256(ws))) !== hex.encode(prev.script)) return false;
+  if (ws.length !== 71 || ws[0] !== 0x51 || ws[1] !== 0x21 || ws[35] !== 0x21 || ws[69] !== 0x52 || ws[70] !== 0xae) return false;
+  const keys = signer === undefined ? [ws.slice(2, 35), ws.slice(36, 69)] : [signer];
+  const sighash = bip143SighashP2WSH(tx, i, ws, prev.amount);
+  return keys.some((k) => secp256k1.verify(sig.slice(0, -1), sighash, k, { prehash: false, format: 'der', lowS: true }));
+}
+
+/** Cada entrada, P2WPKH o multifirma 1-de-2 P2WSH según el script que gasta. */
+export function verifyWitnessInputs(raw: Uint8Array, prevouts: ReadonlyArray<{ script: Uint8Array; amount: bigint }>): boolean {
+  const tx = parseTx(raw);
+  if (tx.inputs.length !== prevouts.length) return false;
+  return prevouts.every((p, i) =>
+    p.script.length === 34 && p.script[0] === 0x00 && p.script[1] === 0x20 ? verifyP2WSHMultisigInput(tx, i, p) : verifyP2WPKHInput(tx, i, p),
+  );
 }

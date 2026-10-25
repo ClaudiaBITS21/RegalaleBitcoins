@@ -47,3 +47,7 @@ jobs:
       - run: pnpm --filter @regalale/e2e simulado
         env:
           CHROMIUM_PATH: /usr/bin/google-chrome
+      # Recupero avanzado: regalo multifirma con la billetera propia, reclamo y recupero con PSBT.
+      - run: pnpm --filter @regalale/e2e avanzado
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome

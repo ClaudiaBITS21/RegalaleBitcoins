@@ -10,6 +10,7 @@ import { type Channel, type Part, readSent, saveSent } from './envios.ts';
 import { PrintCard } from './PrintCard.tsx';
 import { numberedWords, WordsList } from './WordsList.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
+import { downloadText } from '../recupero/recupero.ts';
 
 /** Por qué canal salió cada parte, recordado en este navegador (give/envios.ts). */
 function useSentBy(giftId: string, part: Part): [Channel | null, (c: Channel) => void] {
@@ -135,6 +136,16 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
         {linkBy !== null && linkBy !== 'copiar' && <small class="texto-suave">{t('regalar.mandar.mismoCanal')}</small>}
         {wordsBy !== null && <small class="texto-suave">{t('regalar.mandar.hecho', { canal: t(`regalar.mandar.${wordsBy}` as Key) })}</small>}
       </section>
+
+      {gift.recovery !== null && (
+        <section class="caja envio">
+          <h3>{t('avanzado.activo', { huella: gift.recovery.fingerprint })}</h3>
+          <p class="texto-suave">{t('avanzado.archivoTexto')}</p>
+          <Button kind="contorno" onClick={() => downloadText(`recupero-${gift.id}.txt`, gift.recovery?.file ?? '')}>
+            {t('avanzado.archivo')}
+          </Button>
+        </section>
+      )}
 
       {view !== null && <PrintCard link={gift.link} view={view} conPlan={conPlan} />}
 
