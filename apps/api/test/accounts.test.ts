@@ -598,20 +598,23 @@ describe('Cuentas con passkey', () => {
     const p0 = await productos();
     assert.deepEqual([p0.seVende, p0.cobroActivo, p0.fundadoresQuedan], [false, false, 21]);
     assert.deepEqual(p0.productos.find((p) => p.codigo === 'pack10'), { codigo: 'pack10', precioSats: '10500', regalos: 10, listasCumple: 0, listasOtras: 0, plan: null, regalosLibres: false, dias: null, cupo: null, saludo: false, ia: true, tarjeta: true, seVendeSuelto: true });
-    assert.equal(p0.productos.find((p) => p.codigo === 'lista_otras')?.seVendeSuelto, false);
+    // Por unidad (Claudia, 25/10): un regalo a 2.100 sats y una lista a 10.500.
+    assert.deepEqual(['regalo', 'lista_otras'].map((c) => { const p = p0.productos.find((x) => x.codigo === c); return [p?.precioSats, p?.seVendeSuelto]; }), [['2100', true], ['10500', true]]);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' })).status, 401);
     assert.equal((await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).status, 409);
     const llave = accountKeyText(masterRootFromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'), signet);
     await setPaymentKey(sql, signet, llave);
     assert.equal((await productos()).seVende, true);
-    for (const producto of ['bienvenida', 'lista_otras', 'nada']) assert.equal((await req('/api/cuenta/pagos', { producto }, cookie)).status, 422);
+    for (const producto of ['bienvenida', 'nada']) assert.equal((await req('/api/cuenta/pagos', { producto }, cookie)).status, 422);
+    assert.equal(((await (await req('/api/cuenta/pagos', { producto: 'regalo' }, cookie)).json()) as { sats: string }).sats, '2100');
+    assert.equal(((await (await req('/api/cuenta/pagos', { producto: 'lista_otras' }, cookie)).json()) as { sats: string }).sats, '10500');
     const r1 = await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie);
     assert.equal(r1.status, 201);
     const p1 = (await r1.json()) as { id: string; sats: string; direccion: string; estado: string; precioUsd: number };
     const key = parsePaymentKey(llave, signet);
-    assert.deepEqual([p1.sats, p1.precioUsd, p1.estado, p1.direccion], ['10500', 10.5, 'pendiente', deriveListAddress(key, 0).address]);
+    assert.deepEqual([p1.sats, p1.precioUsd, p1.estado, p1.direccion], ['10500', 10.5, 'pendiente', deriveListAddress(key, 2).address]);
     const p2 = (await (await req('/api/cuenta/pagos', { producto: 'pack10' }, cookie)).json()) as { direccion: string };
-    assert.equal(p2.direccion, deriveListAddress(key, 1).address);
+    assert.equal(p2.direccion, deriveListAddress(key, 3).address);
     assert.ok(!JSON.stringify(p1).includes('pub'), 'nunca muestra la llave');
     // El pago de otra cuenta no se ve.
     const otra = await signUp('beto@example.com');

@@ -17,8 +17,8 @@ type Tx = Sql | postgres.TransactionSql;
 
 /** Se acepta hasta un 2 % menos de lo cotizado. */
 const TOLERANCE = 0.98;
-/** Lo que se vende suelto; «lista_otras» va como pack con 10 regalos (existe para upgrades y códigos). */
-export const BUYABLE = ['pack10', 'pack10_lista', 'lista_cumple', 'anual', 'fundador'] as const;
+/** Lo que se vende: los packs y, por unidad (Claudia, 25/10), un regalo o una lista sueltos. */
+export const BUYABLE = ['pack10', 'pack10_lista', 'lista_cumple', 'anual', 'fundador', 'regalo', 'lista_otras'] as const;
 /** Pagos que se siguen mirando: dos semanas desde que se crearon. */
 const WATCH_DAYS = 14;
 
