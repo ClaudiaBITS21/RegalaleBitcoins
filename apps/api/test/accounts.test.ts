@@ -825,6 +825,15 @@ describe('Cuentas con passkey', () => {
     assert.ok(html.includes('<title>Un cupón para Regalale Bitcoin</title>'), html);
     assert.ok(html.includes(`content="${ORIGIN}/api/c/${corto}/vista.jpg"`), html);
     assert.ok(html.includes('21 % de descuento en los packs'), html);
+    // Uno que todavía no empezó (el de un evento): el link ya lo muestra, con su fecha; usarlo, todavía no.
+    assert.equal((await req('/api/admin/cupones', { codigo: 'EVENTO', descuento: 10, desde: '2099-11-01T03:00:00.000Z', hasta: '2099-12-01T03:00:00.000Z', maxUsos: 5 }, admin.cookie)).status, 201);
+    const evento = ((await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; corto: string; conVista: boolean }> }).cupones;
+    const ev = evento.find((c) => c.codigo === 'EVENTO')!;
+    assert.deepEqual([ev.conVista, evento.find((c) => c.codigo === 'LABC2026HODL21')!.conVista], [false, true]);
+    const futuro = (await (await req(`/api/c/${ev.corto}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([futuro.codigo, futuro.desde], ['EVENTO', '2099-11-01T03:00:00.000Z']);
+    assert.ok((await (await req(`/c/${ev.corto}`)).text()).includes('10 % de descuento'));
+    assert.equal(((await (await req('/api/cuenta/cupon/ver', { codigo: 'EVENTO' }, ana.cookie)).json()) as { error: string }).error, 'cupon_no_empezo');
     // Pausado: la página es la de siempre (la web dice que ya no está vigente).
     assert.equal((await req('/api/admin/cupones/LABC2026HODL21/activo', { activo: false }, admin.cookie)).status, 200);
     assert.equal((await req(`/api/c/${corto}`)).status, 404);

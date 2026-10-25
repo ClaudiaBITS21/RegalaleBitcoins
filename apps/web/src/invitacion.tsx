@@ -17,11 +17,18 @@ import { Button, Layout, Notice, StepTitle, useI18n } from './ui.tsx';
 
 const LOGO_COMPACTO = dataUrl(svgCompacto('claro'));
 
-type Shown = CouponView & { paraUnMail: boolean; hasta?: string | null };
+type Shown = CouponView & { paraUnMail: boolean; desde?: string; hasta?: string | null };
+
+const longDate = (d: Date, lang: string) => new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
 
 /** El último día en que vale (hasta es exclusivo), en el formato del idioma. */
-function lastDay(iso: string, lang: string): string {
-  return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(new Date(iso).getTime() - 1));
+const lastDay = (iso: string, lang: string) => longDate(new Date(new Date(iso).getTime() - 1), lang);
+
+/** Desde y hasta cuándo vale: si todavía no empezó, las dos fechas (el de un evento se comparte antes). */
+function validity(c: Shown, t: ReturnType<typeof useI18n>['t'], lang: string): string | null {
+  const starts = c.desde !== undefined && new Date(c.desde).getTime() > Date.now() ? longDate(new Date(c.desde), lang) : null;
+  if (starts !== null) return c.hasta == null ? t('cupon.desde', { fecha: starts }) : t('cupon.del', { desde: starts, hasta: lastDay(c.hasta, lang) });
+  return c.hasta == null ? null : t('cupon.hasta', { fecha: lastDay(c.hasta, lang) });
 }
 
 export function InvitationPage({ testnet, code, short = false }: { testnet: boolean; code: string; short?: boolean }) {
@@ -76,7 +83,7 @@ export function InvitationPage({ testnet, code, short = false }: { testnet: bool
             <div class="cupon-ticket-cuerpo">
               <span class="cupon-ticket-etiqueta">{t('cupon.etiqueta')}</span>
               <p class="cupon-ticket-da">{what(coupon).replace(/^./, (x) => x.toUpperCase())}</p>
-              {coupon.hasta != null && <p class="cupon-ticket-hasta">{t('cupon.hasta', { fecha: lastDay(coupon.hasta, lang) })}</p>}
+              {validity(coupon, t, lang) !== null && <p class="cupon-ticket-hasta">{validity(coupon, t, lang)}</p>}
               <img class="cupon-ticket-logo" src={LOGO_COMPACTO} alt="Regalale Bitcoin" />
             </div>
             <div class="cupon-ticket-talon">

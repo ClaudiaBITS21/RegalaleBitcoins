@@ -234,6 +234,8 @@ export interface CouponView {
 export interface AdminCoupon extends CouponView {
   /** El link corto: regalalebitcoin.com/c/<corto>. */
   readonly corto: string;
+  /** Si ya se subió la imagen del cupón para la vista previa de su link. */
+  readonly conVista: boolean;
   readonly desde: string;
   /** Exclusivo: vence en ese instante. null = sin fecha de fin. */
   readonly hasta: string | null;
@@ -313,8 +315,8 @@ export const api = {
     post<{ lote: string; cupones: Array<{ codigo: string; email: string | null }> }>('/api/admin/cupones/lotes', b),
   adminBatch: (id: string) => call<{ nombre: string; cupones: Array<{ codigo: string; email: string | null; usado: boolean }> }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}`),
   adminBatchActive: (id: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/lotes/${encodeURIComponent(id)}/activo`, { activo }),
-  invitation: (codigo: string) => call<CouponView & { paraUnMail: boolean }>(`/api/invitacion/${encodeURIComponent(codigo)}`),
-  shortCoupon: (corto: string) => call<CouponView & { corto: string; hasta: string | null; paraUnMail: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
+  invitation: (codigo: string) => call<CouponView & { desde: string; paraUnMail: boolean }>(`/api/invitacion/${encodeURIComponent(codigo)}`),
+  shortCoupon: (corto: string) => call<CouponView & { corto: string; desde: string; hasta: string | null; paraUnMail: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
   adminCouponPreview: (codigo: string, imagen: string) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/vista`, { imagen }),
   adminCreateCoupon: (c: {
     codigo: string;

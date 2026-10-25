@@ -6,6 +6,7 @@ export type ErrorCode =
   | 'pedido_invalido'
   | 'cupon_invalido'
   | 'cupon_vencido'
+  | 'cupon_no_empezo'
   | 'cupon_usado'
   | 'cupon_agotado'
   | 'cupon_no_aplica'

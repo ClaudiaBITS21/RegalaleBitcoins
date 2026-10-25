@@ -150,7 +150,11 @@ export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html:
 /** Lo que dice la imagen del cupón (la vista previa del link). */
 export function imagenCupon(c: AdminCoupon) {
   const que = beneficio(c).replace(/^un /, '');
-  return { codigo: c.codigo, que: que.charAt(0).toUpperCase() + que.slice(1), hasta: c.hasta === null ? null : `Válido hasta el ${fechaLarga(ultimoDia(c.hasta))}` };
+  // Si todavía no empezó (el de un evento se comparte antes), las dos fechas.
+  const empieza = new Date(c.desde).getTime() > Date.now() ? fechaLarga(c.desde) : null;
+  const hasta = c.hasta === null ? null : fechaLarga(ultimoDia(c.hasta));
+  const fechas = empieza !== null ? (hasta === null ? `Válido desde el ${empieza}` : `Válido del ${empieza} al ${hasta}`) : hasta === null ? null : `Válido hasta el ${hasta}`;
+  return { codigo: c.codigo, que: que.charAt(0).toUpperCase() + que.slice(1), hasta: fechas };
 }
 
 const claseTipo = (c: AdminCoupon) => (c.descuento !== null && c.da !== null ? 't-combo' : c.descuento !== null ? 't-plan' : c.da?.unidad === 'regalo' ? 't-regalo' : 't-lista');
@@ -218,6 +222,14 @@ export function CuponesPage() {
   useEffect(() => {
     void cargar();
   }, []);
+  // Las imágenes que faltan se arman y se suben solas, de a una: así el link ya tiene la vista
+  // previa del cupón la primera vez que se comparte (WhatsApp la guarda y no la vuelve a pedir).
+  useEffect(() => {
+    if (cupones === null) return;
+    void (async () => {
+      for (const c of cupones) if (!c.conVista && estado(c).clave === 'vigentes') await subirImagen(c);
+    })();
+  }, [cupones]);
 
   const avisar = (m: string) => {
     setAviso(m);
@@ -229,12 +241,15 @@ export function CuponesPage() {
    * copiar o compartir (el portapapeles pide que sea enseguida del toque) y, si falla, el link
    * muestra la imagen general del sitio.
    */
-  const subirImagen = (c: AdminCoupon) => {
-    if (conImagen.has(c.codigo)) return;
+  const subirImagen = async (c: AdminCoupon) => {
+    if (c.conVista || conImagen.has(c.codigo)) return;
     conImagen.add(c.codigo);
-    void couponImage(imagenCupon(c))
-      .then((img) => (img === null ? undefined : api.adminCouponPreview(c.codigo, img)))
-      .catch(() => conImagen.delete(c.codigo));
+    try {
+      const img = await couponImage(imagenCupon(c));
+      if (img !== null) await api.adminCouponPreview(c.codigo, img);
+    } catch {
+      conImagen.delete(c.codigo);
+    }
   };
   /** Copia el mensaje del cupón: con el link como link donde se pueda, y si no, el texto plano. */
   const copiarCupon = async (c: AdminCoupon) => {
@@ -249,13 +264,13 @@ export function CuponesPage() {
     } catch {
       avisar('No se pudo copiar');
     }
-    subirImagen(c);
+    void subirImagen(c);
   };
   const compartir = (c: AdminCoupon) => {
     const text = textoCupon(c, trato).plano;
     if (typeof navigator.share === 'function') navigator.share({ text }).catch(() => undefined);
     else void copiar(text, 'Texto copiado para compartir');
-    subirImagen(c);
+    void subirImagen(c);
   };
   const cambiarTrato = (t: Trato) => {
     setTrato(t);
