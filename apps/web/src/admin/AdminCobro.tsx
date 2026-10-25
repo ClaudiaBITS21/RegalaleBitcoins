@@ -179,8 +179,9 @@ export function AdminCobroPanel() {
           </tr>
         </thead>
         <tbody>
+          {/* «lista_otras» no se vende suelta (solo existe para dar listas como crédito): no va acá. */}
           {data.productos
-            .filter((p) => p.codigo !== 'bienvenida' && p.activo)
+            .filter((p) => p.codigo !== 'bienvenida' && p.codigo !== 'lista_otras' && p.activo)
             .map((p) => (
               <ProductRow key={`${p.codigo}-${p.precioSats}-${p.regalos}-${p.listas}-${p.dias}-${p.cupo}`} product={p} busy={busy} onError={setError} run={run} />
             ))}

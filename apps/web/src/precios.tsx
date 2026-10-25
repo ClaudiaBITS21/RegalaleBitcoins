@@ -107,6 +107,19 @@ function celdas(c: Contenido): readonly Celda[] {
   ];
 }
 
+/**
+ * Lo que suma un pack, en una frase (Claudia, 25/10): con lo gratis completo, la tarjeta del
+ * celular dice esto en grande en vez de una lista larga que solo cambia en una fila.
+ */
+function suma(c: Contenido, lang: string): readonly [Key, Record<string, string>?] | null {
+  const f = (x: number) => new Intl.NumberFormat(lang).format(x);
+  const l = { l: f(c.listas) };
+  if (c.regalos === null) return c.listas === 0 ? ['precios.suma.libres'] : c.listas === 1 ? ['precios.suma.libresLista'] : ['precios.suma.libresListas', l];
+  if (c.regalos === 0) return c.listas === 0 ? null : c.listas === 1 ? ['precios.suma.lista'] : ['precios.suma.listas', l];
+  const n = { n: f(c.regalos), ...l };
+  return c.listas === 0 ? ['precios.suma.regalos', n] : c.listas === 1 ? ['precios.suma.regalosLista', n] : ['precios.suma.regalosListas', n];
+}
+
 function Valor({ c }: { c: Celda }) {
   const { t, lang } = useI18n();
   if (c === 'si')
@@ -240,6 +253,12 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
               const gratis = PRODUCTOS[0] as Producto;
               const prevCs = n === 0 ? null : celdas(contenido(gratis, vivos));
               const filas = FILAS.map((fila, i) => ({ fila, c: cs[i] as Celda })).filter(({ c }, i) => prevCs === null || JSON.stringify(c) !== JSON.stringify(prevCs[i]));
+              // En los packs, regalos y listas van en la frase de arriba; abajo, solo lo que agrega aparte.
+              const frase = n === 0 ? null : suma(ct, lang);
+              const resto = frase === null ? filas : filas.filter(({ fila }) => fila !== 'precios.fila.regalos' && fila !== 'precios.fila.listas');
+              // Lo que trae lo gratis y este pack no (Satoshi, sin salutación) no es un «además»: va aparte.
+              const extras = frase === null ? resto : resto.filter(({ c }) => c !== 'no');
+              const falta = frase === null ? [] : resto.filter(({ c }) => c === 'no').map(({ fila }) => t(fila).replace(/^./, (x) => x.toLowerCase()));
               return (
                 <li key={p.id} class={`precio-tarjeta${p.id === 'listaOtras' ? ' precios-destacado' : ''}`}>
                   <div class="precio-tarjeta-cabeza">
@@ -247,9 +266,10 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                     <span class="precio-monto">{ct.sats === 0n ? t('precios.gratis') : formatSatsShort(ct.sats, lang)}</span>
                     {ct.sats > 0n && usdPorBtc !== null && <span class="precio-sats">{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(ct.sats, usdPorBtc), lang) })}</span>}
                   </div>
-                  {n > 0 && <p class="precio-tarjeta-base">{t('precios.todoLoGratis')}</p>}
+                  {frase !== null && <p class="precio-tarjeta-suma">{t(frase[0], frase[1])}</p>}
+                  {n > 0 && extras.length > 0 && <p class="precio-tarjeta-base">{t(frase === null ? 'precios.todoLoGratis' : 'precios.suma.ademas')}</p>}
                   <dl class="precio-tarjeta-filas">
-                    {filas.map(({ fila, c }) => (
+                    {extras.map(({ fila, c }) => (
                       <div key={fila} class={c === 'no' ? 'fila-no' : undefined}>
                         <dt>{t(fila)}</dt>
                         <dd>
@@ -258,6 +278,7 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
                       </div>
                     ))}
                   </dl>
+                  {falta.length > 0 && <p class="precio-tarjeta-falta">{t('precios.suma.noIncluye', { que: falta.join(', ') })}</p>}
                   {ct.sats > 0n && vivos?.seVende === true && !agotado && (
                     <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${p.codigo}`}>
                       {t('precios.comprar')}
