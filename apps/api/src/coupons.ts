@@ -523,6 +523,28 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     return c.body(null, 204);
   });
 
+  /**
+   * Cambiar el tope de usos de un cupón (Claudia, 25/10): para ampliarlo, o bajarlo sin quedar por
+   * debajo de los que ya se usaron o están reservados. Pide passkey y queda en registro_admin. Uno
+   * para un mail sigue siendo de un uso.
+   */
+  app.post('/api/admin/cupones/:codigo/usos', async (c) => {
+    const account = await admin(c, true);
+    const code = codeOf(c.req.param('codigo'));
+    const { maxUsos } = await body(c);
+    if (typeof maxUsos !== 'number' || !Number.isInteger(maxUsos) || maxUsos < 1 || maxUsos > 1_000_000) throw new ApiError(400, 'pedido_invalido');
+    await sql.begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(hashtext(${`cupon:${code}`}))`;
+      const [k] = await tx<Coupon[]>`select * from cupones where codigo = ${code}`;
+      if (k === undefined) throw new ApiError(404, 'no_encontrado');
+      if (k.email !== null) throw new ApiError(409, 'cupon_de_un_uso');
+      if (maxUsos < (await usesTaken(tx, code))) throw new ApiError(409, 'usos_menos_que_usados');
+      await tx`update cupones set max_usos = ${maxUsos} where codigo = ${code}`;
+      await tx`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_usos', ${`${code}: ${k.max_usos} → ${maxUsos}`})`;
+    });
+    return c.json({ codigo: code, maxUsos });
+  });
+
   app.post('/api/admin/cupones/:codigo/activo', async (c) => {
     const account = await admin(c, true);
     const code = codeOf(c.req.param('codigo'));

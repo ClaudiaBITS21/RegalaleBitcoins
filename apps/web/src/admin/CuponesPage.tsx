@@ -176,6 +176,8 @@ const errorTexto = (e: unknown): string => {
   if (!(e instanceof ApiFailure)) return 'No se pudo completar.';
   if (e.code === 'cupon_existente') return 'Ya existe un cupón con ese código. Elegí otro.';
   if (e.code === 'passkey_requerida') return 'Hace falta confirmar con tu passkey.';
+  if (e.code === 'usos_menos_que_usados') return 'No puede ser menos que las personas que ya lo usaron.';
+  if (e.code === 'cupon_de_un_uso') return 'Un cupón para un mail es de un solo uso.';
   if (e.code === 'pedido_invalido') return 'Revisá los datos del cupón.';
   if (e.code === 'lote_invalido') return 'Revisá el lote: nombre, prefijo (hasta 12 letras o números) y de 1 a 2000 cupones.';
   return 'No se pudo completar.';
@@ -294,6 +296,23 @@ export function CuponesPage() {
       // Sin almacenamiento: vale para esta visita.
     }
   };
+  /** Ampliar (o bajar) cuántas personas pueden usar el cupón. Pide passkey. */
+  const cambiarUsos = async (c: AdminCoupon) => {
+    const texto = window.prompt(`¿Hasta cuántas personas pueden usar ${c.codigo}? Ya lo usaron ${c.usados}.`, String(c.maxUsos));
+    if (texto === null) return;
+    const n = Number(texto.trim().replace(/\./g, ''));
+    if (!Number.isInteger(n) || n < 1) {
+      setError('Escribí un número entero, de 1 en adelante.');
+      return;
+    }
+    try {
+      await conPasskey(() => api.adminCouponUses(c.codigo, n));
+      await cargar();
+      avisar(`Ahora ${n === 1 ? 'lo puede usar 1 persona' : `lo pueden usar ${n} personas`}`);
+    } catch (e) {
+      setError(errorTexto(e));
+    }
+  };
   const pausar = async (c: AdminCoupon) => {
     try {
       await conPasskey(() => api.adminCouponActive(c.codigo, !c.activo));
@@ -402,9 +421,9 @@ export function CuponesPage() {
           <div class={`cupones-lista ${vista === 'lista' ? 'renglones' : 'grilla'}`}>
             {visibles.map((c) =>
               vista === 'lista' ? (
-                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} />
+                <Renglon key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} onUsos={cambiarUsos} />
               ) : (
-                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} />
+                <Ticket key={c.codigo} c={c} onCompartir={compartir} onCopiar={() => void copiarCupon(c)} onPausar={pausar} onLogo={setLogoDe} onUsos={cambiarUsos} />
               ),
             )}
           </div>
@@ -480,9 +499,10 @@ interface Acciones {
   readonly onCopiar: (codigo: string) => void;
   readonly onPausar: (c: AdminCoupon) => void;
   readonly onLogo: (c: AdminCoupon) => void;
+  readonly onUsos: (c: AdminCoupon) => void;
 }
 
-function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, corto }: Acciones & { corto: boolean }) {
+function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, onUsos, corto }: Acciones & { corto: boolean }) {
   const e = estado(c);
   return (
     <div class="cupones-acciones">
@@ -492,6 +512,11 @@ function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, corto }: 
       <button type="button" class="cupones-accion" onClick={() => onCopiar(c.codigo)}>
         {corto ? 'Copiar' : 'Copiar mensaje'}
       </button>
+      {c.email === null && (
+        <button type="button" class="cupones-accion" onClick={() => onUsos(c)}>
+          Usos
+        </button>
+      )}
       <button type="button" class="cupones-accion" onClick={() => onLogo(c)}>
         {c.conLogo ? 'Logo ✓' : 'Logo'}
       </button>
@@ -559,15 +584,13 @@ function Ticket(props: Acciones) {
         </div>
         {c.descuento !== null && c.da !== null && <span class="ticket-extra">{`+${c.da.cantidad} ${nombreU}`}</span>}
       </div>
+      {/* Lo que ya dice el diseño no se repite: quedan el estado, para quién y cuántos lo usaron (Claudia, 25/10). */}
       <div class="ticket-cuerpo">
-        <div class="ticket-codigo">
-          {c.codigo}
+        <div class="ticket-codigo ticket-codigo-solo-estado">
           <span class={`cupones-estado${e.activo ? ' activo' : ''}`}>{e.texto}</span>
         </div>
-        <div class="ticket-que">{queDa(c)}</div>
         <div class="ticket-meta">
           {c.email !== null && <span class="ticket-mail">Para {c.email}</span>}
-          <span>{c.hasta === null ? `Desde el ${fechaCorta(c.desde)}` : `Del ${fechaCorta(c.desde)} al ${fechaCorta(ultimoDia(c.hasta))}`}</span>
           <Usos c={c} />
         </div>
         <div class="cupones-barra" aria-hidden="true">

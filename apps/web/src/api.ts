@@ -339,6 +339,7 @@ export const api = {
     nota: string;
     email?: string;
   }) => post<{ codigo: string }>('/api/admin/cupones', c),
+  adminCouponUses: (codigo: string, maxUsos: number) => post<{ maxUsos: number }>(`/api/admin/cupones/${encodeURIComponent(codigo)}/usos`, { maxUsos }),
   adminCouponActive: (codigo: string, activo: boolean) => post<{ activo: boolean }>(`/api/admin/cupones/${encodeURIComponent(codigo)}/activo`, { activo }),
   adminReports: () =>
     call<{

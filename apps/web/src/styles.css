@@ -3893,3 +3893,4 @@ svg.tarjeta-imagen {
 }
 .ticket-diseno { display: block; width: 100%; aspect-ratio: 1200 / 630; height: auto; border-radius: 16px 16px 0 0; background: var(--naranja); }
 .cupones-ticket .ticket-diseno + .ticket-talon { display: none; }
+.ticket-codigo-solo-estado { justify-content: flex-start; }
