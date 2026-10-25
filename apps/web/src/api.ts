@@ -23,6 +23,8 @@ export interface GiftView {
   readonly estado: GiftState;
   readonly sats: { readonly confirmados: string; readonly sinConfirmar: string; readonly esperados: string | null };
   readonly pagoTrabado: boolean;
+  /** Si quien regala eligió mostrar cuánto vale en plata (sin el dato, API anterior: sí). Si no, original viene null. */
+  readonly mostrarValor?: boolean;
   readonly original: { readonly moneda: string | null; readonly monto: number; readonly usdPorBtc: number | null } | null;
   readonly usdPorBtcHoy: number | null;
   readonly reclamo: { readonly txid: string; readonly tipo: string } | null;
@@ -53,6 +55,8 @@ export interface NewGift {
   readonly moneda: 'USD' | 'ARS' | 'SAT';
   readonly monto: number;
   readonly sats: string;
+  /** Si quien recibe ve cuánto vale en plata. */
+  readonly mostrarValor?: boolean;
   /** Índice del regalo en la clave maestra: el servidor lo guarda solo si hay sesión. */
   readonly indice: number;
   /** Recupero avanzado: script de testigo (hex) y huella/ruta de la clave de la billetera. */

@@ -323,6 +323,19 @@ describe('API para regalar', () => {
     assert.equal(view.sats.esperados, '25000');
   });
 
+  it('quien regala elige si quien recibe ve cuánto vale en plata; sin el dato, como antes, sí', async () => {
+    const ver = async (extra: Record<string, unknown>, i: number) => {
+      const { id } = (await (await post('/api/gifts', nuevo(i, extra))).json()) as { id: string };
+      return (await (await app.request(`/api/gifts/${id}`)).json()) as { mostrarValor: boolean; original: { monto: number } | null };
+    };
+    const oculto = await ver({ mostrarValor: false }, 21);
+    assert.deepEqual([oculto.mostrarValor, oculto.original], [false, null]);
+    const visible = await ver({ mostrarValor: true }, 22);
+    assert.deepEqual([visible.mostrarValor, visible.original?.monto], [true, 25]);
+    assert.equal((await ver({}, 23)).mostrarValor, true);
+    assert.equal((await post('/api/gifts', nuevo(24, { mostrarValor: 'no' }))).status, 400);
+  });
+
   it('recupero avanzado: regalo multifirma 1-de-2 con su script de testigo; el servidor lo valida', async () => {
     const walletRoot = masterRootFromMnemonic('legal winner thank year wave sausage worth useful legal winner thank yellow');
     const key = parseRecoveryKey(recoveryKeyText(walletRoot, signet), signet);

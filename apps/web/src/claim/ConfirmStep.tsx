@@ -101,7 +101,8 @@ export function ConfirmStep({
     }
   };
 
-  const usd = gift.usdPorBtcHoy;
+  // Sin el valor en plata si quien regala no lo quiso mostrar (25/10).
+  const usd = gift.mostrarValor === false ? null : gift.usdPorBtcHoy;
   const withUsd = (sats: bigint) => (usd === null ? formatSats(sats, lang) : `${formatSats(sats, lang)} (≈ ${formatUsd(satsToUsd(sats, usd), lang)})`);
   const selected = mode === 'esperar' ? plans?.esperar : plans?.ahora;
   const choices = (['ahora', 'esperar'] as const).filter((m) => plans?.[m] != null);

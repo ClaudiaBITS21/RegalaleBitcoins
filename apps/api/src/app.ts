@@ -331,7 +331,9 @@ export function createApp(deps: AppDeps): Hono {
         esperados: gift.satsExpected === null ? null : gift.satsExpected.toString(),
       },
       pagoTrabado: stuck,
-      original: gift.amount === null ? null : { moneda: gift.currency, monto: gift.amount, usdPorBtc: gift.usdPerBtc },
+      // Cuánto valía en plata, solo si quien regala eligió mostrarlo (25/10); si no, ni se manda.
+      mostrarValor: gift.showValue,
+      original: gift.amount === null || !gift.showValue ? null : { moneda: gift.currency, monto: gift.amount, usdPorBtc: gift.usdPerBtc },
       usdPorBtcHoy: usdNow,
       reclamo: gift.claimTxid === null ? (pending === null ? null : { txid: pending.txid, tipo: 'programado' }) : { txid: gift.claimTxid, tipo: gift.claimKind },
     });
@@ -496,6 +498,8 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     index: typeof b.indice === 'number' && Number.isInteger(b.indice) && b.indice >= 0 && b.indice < 2 ** 31 ? b.indice : null,
     witnessScript,
     recoveryPath,
+    // Sin el dato (web anterior), como antes: se muestra.
+    showValue: b.mostrarValor === undefined ? true : b.mostrarValor === true ? true : b.mostrarValor === false ? false : badRequest(),
   };
 }
 

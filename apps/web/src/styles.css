@@ -3871,3 +3871,8 @@ svg.tarjeta-imagen {
 .recupero-psbt .qr { width: 180px; height: 180px; margin: 0 auto; display: block; }
 .recupero-ajuste { display: flex; flex-direction: column; gap: 10px; }
 .recupero-ajuste h3 { margin: 0; }
+
+/* Regalar: el tilde de si quien recibe ve cuánto vale (25/10). */
+.casilla-valor > span { display: flex; flex-direction: column; gap: 2px; }
+.casilla-valor small { font-weight: 400; }
+.tarjeta-valor { margin: 6px 0 0; font: 800 1.15rem var(--titulos); color: var(--tinta); }
