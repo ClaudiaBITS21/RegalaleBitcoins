@@ -35,9 +35,6 @@ import { I18nContext } from './ui.tsx';
 
 const LANG_KEY = 'idioma';
 
-/** Franja «en desarrollo» arriba de todo (pedido de Rodolfo, 19/10). Se saca cuando ella lo diga. */
-const EN_DESARROLLO = true;
-
 function savedLang(): string | null {
   try {
     return localStorage.getItem(LANG_KEY);
@@ -80,11 +77,6 @@ function App() {
   const list = /^\/l\/([A-Za-z0-9_-]{22})\/?$/.exec(path);
   return (
     <I18nContext.Provider value={i18n}>
-      {EN_DESARROLLO && (
-        <p class="aviso-desarrollo" role="note">
-          {i18n.t('aviso.desarrollo')}
-        </p>
-      )}
       {claim?.[1] !== undefined ? (
         <ClaimPage id={claim[1]} />
       ) : list?.[1] !== undefined ? (
