@@ -3781,3 +3781,59 @@ svg.tarjeta-imagen {
 .lista-compra-historial { width: 100%; font-size: 0.9rem; }
 .lista-compra-historial ul { margin: 6px 0 0; padding-left: 1.2em; }
 .etiqueta-estado.estado-no_llego { background: #ffe1e1; }
+
+/* Recupero avanzado (boceto v2, 25/10): el enlace va discreto, en gris y chico. */
+.avanzado-enlace {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--tinta-suave, #6b6880);
+  text-align: center;
+}
+.avanzado-enlace .boton-texto {
+  min-height: 32px;
+  padding: 0;
+  font: 400 13.5px var(--texto);
+  color: inherit;
+  text-decoration: underline;
+}
+.texto-chico { font-size: 13px; }
+.avanzado-preguntas details + details { margin-top: 10px; }
+.avanzado-preguntas summary { font-weight: 700; cursor: pointer; }
+.avanzado-preguntas details p { margin: 6px 0 0; }
+.avanzado-paso { display: flex; gap: 10px; align-items: flex-start; }
+.avanzado-paso p { margin: 0; }
+.avanzado-numero {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--tinta);
+  color: var(--blanco);
+  font: 700 13px/24px var(--texto);
+  text-align: center;
+}
+.avanzado-clave {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 2px solid var(--borde);
+  padding: 10px;
+  font: 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+.avanzado-fila { display: flex; gap: 10px; flex-wrap: wrap; }
+.avanzado-fila > * { flex: 1 1 140px; }
+.avanzado-archivo { position: relative; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.avanzado-archivo input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.avanzado-huella {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--papel);
+  font: 700 22px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+.recupero-psbt .qr { width: 180px; height: 180px; margin: 0 auto; display: block; }
+.recupero-ajuste { display: flex; flex-direction: column; gap: 10px; }
+.recupero-ajuste h3 { margin: 0; }

@@ -18,6 +18,8 @@ export interface GiftView {
   /** Estilo de la tarjeta (ilustracion, mano, elegante, propia). Falta en regalos viejos. */
   readonly estilo?: string;
   readonly direccion: string;
+  /** Regalo multifirma (recupero avanzado): script de testigo en hex. null o ausente en los comunes. */
+  readonly testigo?: string | null;
   readonly estado: GiftState;
   readonly sats: { readonly confirmados: string; readonly sinConfirmar: string; readonly esperados: string | null };
   readonly pagoTrabado: boolean;
@@ -53,6 +55,9 @@ export interface NewGift {
   readonly sats: string;
   /** Índice del regalo en la clave maestra: el servidor lo guarda solo si hay sesión. */
   readonly indice: number;
+  /** Recupero avanzado: script de testigo (hex) y huella/ruta de la clave de la billetera. */
+  readonly testigo?: string;
+  readonly rutaRecupero?: string;
 }
 
 export class ApiFailure extends Error {
@@ -350,7 +355,7 @@ export const api = {
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,
   fees: () => call<FeeRates>('/api/fees'),
-  health: () => call<{ ok: boolean; red: NetworkName; topeUsd: number }>('/api/salud'),
+  health: () => call<{ ok: boolean; red: NetworkName; topeUsd: number; recuperoAvanzado?: boolean }>('/api/salud'),
   price: () => call<{ usdPorBtc: number; fuenteUsd: string; arsPorBtc: number | null; fuenteArs: 'criptoya' | 'bitso' | null }>('/api/precio'),
   /** Registra un regalo antes de pagarlo. Solo datos públicos: nunca la semilla ni las palabras. */
   createGift: async (gift: NewGift) =>

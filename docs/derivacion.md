@@ -146,3 +146,37 @@ el navegador, con la passkey, la puede abrir.
 El servidor guarda el texto por credencial. Sin la passkey no puede abrirlo; con otra
 credencial falla el AAD. Si se pierde la passkey, queda el código de recuperación del panel.
 
+
+## 10. Recupero avanzado: multifirma 1-de-2 con la billetera del que regala
+
+Opcional (handoffs del 17/10 y del 21/10/2026, `docs/handoff/2026-10-17/recupero-avanzado.txt`).
+El que regala usa como segunda llave la de su propia billetera. La web nunca ve ni genera esa
+clave privada: solo recibe la clave pública de la cuenta. El código está en
+`packages/core/src/recovery.ts` y los vectores en `packages/core/test/recovery.test.ts`.
+
+- **Clave del que regala:** cuenta multifirma P2WSH de BIP48, `[huella/48'/coin'/cuenta'/2']xpub`
+  (también tpub, Zpub o Vpub, o el JSON de exportación multifirma de Coldcard). Hace falta el
+  origen: sin la huella y la ruta, la billetera no reconoce su clave al firmar. Para el regalo
+  `i` se usa la hija `/0/i`. Cada regalo usa otra clave: en la cadena no se pueden vincular.
+- **Clave del regalo:** la de siempre, `m/84'/coin'/0'/0/0` sobre semilla y passphrase. Quien
+  recibe abre el regalo con el link y las 4 palabras, sin cambios.
+- **Dirección:** `wsh(sortedmulti(1, clave del que regala /0/i, clave del regalo))`, P2WSH, sin
+  timelock (Rodolfo, 21/10: sin Taproot). Las claves van ordenadas como en BIP67.
+- **Lo que guarda el servidor por regalo:** el script de testigo (las dos claves públicas). Es
+  lo que necesita quien recibe para firmar. Nunca la xpub.
+- **La xpub del que regala:** se guarda cifrada en su cuenta, con una clave que sale de la clave
+  maestra: BIP85 HEX de 32 bytes, índice 0 (`m/83696968'/128169'/32'/0'`), y luego
+  `HKDF-SHA256(salt vacío, info "regalalebitcoins/recupero/v1/aes-gcm")`. AES-256-GCM, IV de
+  12 bytes al azar, AAD `"regalalebitcoins/recupero/v1"`. Formato: `r1.<iv>.<cifrado>`.
+- **Archivo de recupero (uno por regalo):** el descriptor con las dos claves como xpub y su
+  origen, `wsh(sortedmulti(1,[huella/48h/coin h/cuenta h/2h]xpub/0/i,[huella del regalo/84h/coin h/0h]xpub del regalo/0/0))#checksum`.
+  Se importa en Bitcoin Core (`importdescriptors`) o en una billetera que acepte descriptores.
+- **Recupero con la web:** la web arma una PSBT (BIP174) que gasta todos los UTXO del regalo
+  hacia una dirección del que regala. Lleva `witnessUtxo`, `nonWitnessUtxo`, `witnessScript` y
+  `bip32Derivation` de las dos claves. La firma la pone la billetera; la web verifica que la
+  PSBT firmada sea exactamente el plan (mismas entradas, una salida, mismo monto) y la difunde.
+  El barrido sigue las reglas de la sección 5; el testigo de cada entrada es
+  `[vacío, firma, script]` (147 bytes como máximo).
+
+Con la clave maestra se puede derivar la clave del regalo, igual que hoy: el modo avanzado
+agrega una llave independiente de la web, no saca la de siempre.

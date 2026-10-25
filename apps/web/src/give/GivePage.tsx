@@ -1,4 +1,4 @@
-import { deriveGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network } from '@regalale/core';
+import { deriveGift, deriveMultisigGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
@@ -15,17 +15,21 @@ import { AmountStep, CardStep, isUntouched, OccasionStep } from './DraftSteps.ts
 import { PayStep } from './PayStep.tsx';
 import { SendStep } from './SendStep.tsx';
 import { sharePreview } from './vistaCompartir.ts';
+import { AdvancedIntro, AdvancedLink, ConnectWallet } from '../recupero/Avanzado.tsx';
+import { loadRecoveryKey, recoveryFileText, recoveryPathText, saveRecoveryKey } from '../recupero/recupero.ts';
 
 // Regalar en 5 pasos: ocasión, para quién, cuánto, pagá y mandalo. Todo lo secreto
 // (clave maestra, semilla del regalo, palabras) vive solo en la memoria de esta página.
 
-type Step = 'ocasion' | 'para' | 'cuanto' | 'guardar' | 'codigo' | 'verificar' | 'tengoCodigo' | 'sinCreditos' | 'pagar' | 'mandar';
+type Step = 'ocasion' | 'para' | 'cuanto' | 'guardar' | 'avanzado' | 'conectar' | 'codigo' | 'verificar' | 'tengoCodigo' | 'sinCreditos' | 'pagar' | 'mandar';
 
 const PROGRESS: Readonly<Record<Step, number>> = {
   ocasion: 1,
   para: 2,
   cuanto: 3,
   guardar: 4,
+  avanzado: 4,
+  conectar: 4,
   codigo: 4,
   verificar: 4,
   tengoCodigo: 4,
@@ -68,6 +72,8 @@ export interface MadeGift {
   /** Ocasión (y la libre), para el mensaje que se manda con el link. */
   readonly occasion: string;
   readonly occasionFree: string;
+  /** Recupero avanzado: el archivo de recupero (texto) y la huella de la billetera. */
+  readonly recovery: { readonly file: string; readonly fingerprint: string } | null;
 }
 
 type Root = ReturnType<typeof masterRootFromMnemonic>;
@@ -77,6 +83,8 @@ interface Session {
   readonly root: Root;
   /** Próximo índice a probar: los anteriores ya se usaron en esta visita. */
   next: number;
+  /** Recupero avanzado: la clave pública de la billetera del que regala (null = modo común). */
+  readonly recovery: RecoveryKey | null;
 }
 
 const MAX_INDEX_TRIES = 500;
@@ -96,7 +104,9 @@ async function register(session: Session, draft: Draft, network: Network): Promi
     to: draft.to,
   });
   for (let index = session.next; index < session.next + MAX_INDEX_TRIES; index++) {
-    const gift = deriveGift(session.root, index, draft.lang, network);
+    const multisig = session.recovery === null ? null : deriveMultisigGift(session.root, index, draft.lang, network, session.recovery);
+    const gift = multisig ?? deriveGift(session.root, index, draft.lang, network);
+    const testigo = multisig === null ? null : Array.from(multisig.witnessScript, (b) => b.toString(16).padStart(2, '0')).join('');
     try {
       const id = await api.createGift({
         direccion: gift.address,
@@ -114,6 +124,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         monto: draft.amount,
         sats: draft.sats.toString(),
         indice: index,
+        ...(multisig === null || session.recovery === null || testigo === null ? {} : { testigo, rutaRecupero: recoveryPathText(session.recovery, index) }),
       });
       session.next = index + 1;
       return {
@@ -127,6 +138,13 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         sats: draft.sats,
         occasion: draft.occasion,
         occasionFree: draft.occasionFree,
+        recovery:
+          multisig === null || session.recovery === null || testigo === null
+            ? null
+            : {
+                fingerprint: session.recovery.fingerprintHex,
+                file: recoveryFileText({ id, address: gift.address, key: session.recovery, index, gift: multisig.account, witnessScript: testigo, site: window.location.origin }),
+              },
       };
     } catch (error) {
       if (error instanceof ApiFailure && error.code === 'regalo_existente') continue;
@@ -160,6 +178,10 @@ export function GivePage() {
   const { t, lang } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
   const [ceilingUsd, setCeilingUsd] = useState(100);
+  // Recupero avanzado: si el servidor lo ofrece en esta red, y la billetera elegida en este paso 4.
+  const [advancedAvailable, setAdvancedAvailable] = useState(false);
+  const [pendingKey, setPendingKey] = useState<RecoveryKey | null>(null);
+  const [recoveryNotSaved, setRecoveryNotSaved] = useState(false);
   const [netError, setNetError] = useState<'mainnet' | 'sin_red' | null>(null);
   // Si viene de la home con la ocasión elegida (/regalar?ocasion=…&libre=…), arranca en "Para quién".
   const [preset] = useState(presetOccasion);
@@ -197,8 +219,9 @@ export function GivePage() {
   const loadNetwork = async () => {
     setNetError(null);
     try {
-      const { red, topeUsd } = await api.health();
+      const { red, topeUsd, recuperoAvanzado } = await api.health();
       if (typeof topeUsd === 'number' && topeUsd > 0) setCeilingUsd(topeUsd);
+      setAdvancedAvailable(recuperoAvanzado === true);
       try {
         setNetwork(getNetwork(red, { allowMainnet: ALLOW_MAINNET }));
       } catch {
@@ -309,8 +332,20 @@ export function GivePage() {
     }
   };
 
-  const startSession = (mnemonic: string, next = 0) => {
-    const s: Session = { mnemonic, root: masterRootFromMnemonic(mnemonic), next };
+  const startSession = async (mnemonic: string, next = 0) => {
+    const root = masterRootFromMnemonic(mnemonic);
+    // Recupero avanzado: la billetera elegida en este paso 4 (se guarda cifrada en la cuenta), o
+    // la que la cuenta ya tenía. Sin ninguna, el modo común.
+    let recovery: RecoveryKey | null = null;
+    if (network !== null && advancedAvailable) {
+      if (pendingKey !== null) {
+        recovery = pendingKey;
+        await saveRecoveryKey(root, pendingKey).catch(() => setRecoveryNotSaved(true));
+      } else {
+        recovery = await loadRecoveryKey(root, network);
+      }
+    }
+    const s: Session = { mnemonic, root, next, recovery };
     setSession(s);
     void create(s, draft);
   };
@@ -370,23 +405,47 @@ export function GivePage() {
     );
   } else if (step === 'guardar') {
     body = (
-      <SaveStep
-        onReady={(master, next) => startSession(master, next)}
-        onNeedCode={(hasCodeAlready) => {
-          if (hasCodeAlready) go('tengoCodigo');
-          else {
-            setNewMnemonic((m) => m ?? generateMasterMnemonic());
-            go('codigo');
-          }
+      <>
+        <SaveStep
+          onReady={(master, next) => void startSession(master, next)}
+          onNeedCode={(hasCodeAlready) => {
+            if (hasCodeAlready) go('tengoCodigo');
+            else {
+              setNewMnemonic((m) => m ?? generateMasterMnemonic());
+              go('codigo');
+            }
+          }}
+        />
+        {/* Discreto, debajo de todo (Claudia, 25/10): quien no lo necesita ni lo nota. */}
+        {advancedAvailable && <AdvancedLink chosen={pendingKey} onOpen={() => go('avanzado')} />}
+      </>
+    );
+  } else if (step === 'avanzado') {
+    body = (
+      <AdvancedIntro
+        onUse={() => go('conectar')}
+        onCommon={() => {
+          setPendingKey(null);
+          backTo(steps.length - 1);
+        }}
+      />
+    );
+  } else if (step === 'conectar') {
+    body = (
+      <ConnectWallet
+        network={network}
+        onConnected={(key) => {
+          setPendingKey(key);
+          backTo(steps.length - 2);
         }}
       />
     );
   } else if (step === 'codigo' && newMnemonic !== null) {
     body = <ShowCode mnemonic={newMnemonic} onNext={() => go('verificar')} onHaveCode={() => go('tengoCodigo')} />;
   } else if (step === 'verificar' && newMnemonic !== null) {
-    body = <VerifyCode mnemonic={newMnemonic} onOk={() => startSession(newMnemonic)} error={error} />;
+    body = <VerifyCode mnemonic={newMnemonic} onOk={() => void startSession(newMnemonic)} error={error} />;
   } else if (step === 'tengoCodigo') {
-    body = <EnterCode onOk={startSession} error={error} />;
+    body = <EnterCode onOk={(m) => void startSession(m)} error={error} />;
   } else if (step === 'sinCreditos') {
     body = (
       <div class="paso">
@@ -429,6 +488,7 @@ export function GivePage() {
         </nav>
       )}
       {error !== null && step !== 'cuanto' && step !== 'verificar' && step !== 'tengoCodigo' && <Notice kind="error">{t(error)}</Notice>}
+      {recoveryNotSaved && step === 'pagar' && <Notice kind="info">{t('avanzado.error.guardar')}</Notice>}
       {body}
     </Layout>
   );

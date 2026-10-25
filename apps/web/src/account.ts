@@ -43,6 +43,8 @@ export interface AccountGift {
   readonly original?: { readonly moneda: string; readonly monto: number; readonly usdPorBtc: number | null } | null;
   readonly estado: string | null;
   readonly sats: string | null;
+  /** Recupero avanzado: huella y ruta de la clave de la billetera con que se armó. */
+  readonly rutaRecupero?: string | null;
 }
 
 export interface AccountView {
@@ -71,6 +73,9 @@ export const accountApi = {
     setSignedIn(true);
     return res;
   },
+  /** Recupero avanzado: la clave de la billetera, cifrada en el navegador (recupero/recupero.ts). */
+  recoveryKey: async () => (await call<{ recupero: string | null }>('/api/cuenta/recupero')).recupero,
+  setRecoveryKey: (recupero: string | null) => call<{ ok: true }>('/api/cuenta/recupero', { recupero }),
 };
 
 const challenge = async (tipo: 'registro' | 'ingreso', email?: string) =>
@@ -211,7 +216,8 @@ export class RepairError extends Error {
  */
 async function saveVaultCopy(master: string, gifts: readonly AccountGift[], network: Network, requireProbe: boolean): Promise<string> {
   if (repair === null) throw new RepairError('sinRegalos');
-  const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined);
+  // Los regalos multifirma no sirven para comprobar: su dirección depende además de la billetera.
+  const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined && (g.rutaRecupero ?? null) === null);
   if (probe === undefined && requireProbe) throw new RepairError('sinRegalos');
   if (probe !== undefined && deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
   const sealed = await sealVault(repair.prf, master, repair.credentialId);

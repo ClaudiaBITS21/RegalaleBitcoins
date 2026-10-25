@@ -140,3 +140,18 @@ Decisiones de Rodolfo, 21/10/2026
   al recuperar; probalo primero con un regalo chico»). Con BIP84 se usa una rama propia de la
   llave, no la de recibir. Falta saber qué billeteras probar (Trezor, Ledger, Coldcard, Sparrow).
 - Siguen ABIERTO: cuándo entra; versiones EN / PT / IT del texto; mención en «Sin custodia».
+
+Estado (25/10/2026): IMPLEMENTADO EN SIGNET, mainnet apagado hasta autorización de la
+responsable (ADVANCED_RECOVERY_MAINNET en apps/api/src/app.ts). Pedido de Claudia, 25/10: la
+opción va discreta en el paso 4 de Regalar (enlace chico) y en «Mis regalos»; la explicación
+aparece recién al tocarla, con «Volver». Detalle técnico en docs/derivacion.md, sección 10.
+Diferencias con lo de arriba, a revisar con la responsable:
+- Confirmación de la clave: se confirma la huella (fingerprint) de la billetera, no una dirección
+  de prueba. Una billetera de hardware solo muestra direcciones multifirma de una billetera
+  registrada, y cada regalo es una multifirma distinta.
+- Solo BIP48 (P2WSH). BIP84 queda afuera hasta decidirlo (propuesta del 21/10 sin confirmar).
+- Quien recibe necesita el script del regalo (las dos claves públicas), que guarda el servidor.
+  Sin el servidor, lo tiene el archivo de recupero del que regala. ABIERTO: ¿se agrega al link?
+- Falta probarlo con billeteras reales (Trezor, Ledger, Coldcard, Sparrow): ABIERTO.
+- La herramienta sin conexión todavía no abre regalos multifirma.
+

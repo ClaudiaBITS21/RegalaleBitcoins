@@ -10,7 +10,8 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm --filter @regalale/web build",
     "build:mainnet": "pnpm --filter @regalale/web build:mainnet",
-    "e2e:simulado": "pnpm --filter @regalale/e2e simulado"
+    "e2e:simulado": "pnpm --filter @regalale/e2e simulado",
+    "e2e:avanzado": "pnpm --filter @regalale/e2e avanzado"
   },
   "devDependencies": {
     "@types/node": "24.19.1",

@@ -1,4 +1,4 @@
-import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCoreError, type Network, openGiftWallet } from '@regalale/core';
+import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCoreError, multisigGiftWallet, type Network, openGiftWallet } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
@@ -70,7 +70,17 @@ export function ClaimPage({ id }: { id: string }) {
   const checkWords = async (words: string[]): Promise<string | null> => {
     if (entropy === null || gift === null || network === null) return t('reclamo.linkRoto.titulo');
     try {
-      const w = openGiftWallet(entropy, words, gift.idioma, network);
+      const plain = openGiftWallet(entropy, words, gift.idioma, network);
+      // Regalo con recupero avanzado: la misma clave, en la multifirma 1-de-2 que guarda el servidor.
+      let w = plain;
+      if (gift.testigo != null) {
+        try {
+          w = multisigGiftWallet(plain, Uint8Array.from(gift.testigo.match(/../g) ?? [], (h) => Number.parseInt(h, 16)));
+        } catch {
+          plain.wipe();
+          return t('palabras.incorrectas');
+        }
+      }
       if (w.address !== gift.direccion) {
         w.wipe();
         return t('palabras.incorrectas');

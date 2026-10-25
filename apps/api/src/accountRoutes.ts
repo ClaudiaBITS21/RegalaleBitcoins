@@ -5,6 +5,7 @@ import {
   type Account,
   accountCredentials,
   accountGifts,
+  accountRecoveryKey,
   consumeChallenge,
   createAccount,
   createChallenge,
@@ -18,6 +19,7 @@ import {
   redeemMailLink,
   SESSION_DAYS,
   sessionAccount,
+  setAccountRecoveryKey,
   touchCredential,
 } from './accounts.ts';
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
@@ -56,7 +58,7 @@ export async function currentAccount(sql: Sql, c: Context): Promise<Account | nu
 
 export function registerAccountRoutes(
   app: Hono,
-  deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string; price?: PriceClient; arsPrice?: ArsPriceClient | undefined; adminEmails?: readonly string[] },
+  deps: { sql: Sql; chain: ChainClient; config: AccountConfig; clientIp: (c: Context) => string; price?: PriceClient; arsPrice?: ArsPriceClient | undefined; adminEmails?: readonly string[]; advancedRecovery?: boolean },
 ): void {
   const { sql, chain, config } = deps;
   const challengeLimiter = new RateLimiter(60, 60 * 60 * 1000);
@@ -344,6 +346,26 @@ export function registerAccountRoutes(
     });
   });
 
+  /**
+   * Recupero avanzado: la clave pública de la billetera del que regala, cifrada en su navegador
+   * con una clave que sale de su clave maestra (docs/derivacion.md, sección 10). El servidor la
+   * guarda y la devuelve, pero no la puede leer. null vuelve al modo común (regalos nuevos).
+   */
+  app.get('/api/cuenta/recupero', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    return c.json({ recupero: await accountRecoveryKey(sql, account.id) });
+  });
+  app.post('/api/cuenta/recupero', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    if (!deps.advancedRecovery) throw new ApiError(403, 'avanzado_no_habilitado');
+    const { recupero } = await body(c);
+    if (recupero !== null && (typeof recupero !== 'string' || !/^r1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{40,400}$/.test(recupero))) throw new ApiError(400, 'pedido_invalido');
+    await setAccountRecoveryKey(sql, account.id, recupero);
+    return c.json({ ok: true });
+  });
+
   /** El panel: cuenta, passkeys y regalos con su estado (calculado desde la cadena). */
   app.get('/api/cuenta', async (c) => {
     const account = await currentAccount(sql, c);
@@ -382,6 +404,8 @@ export function registerAccountRoutes(
         // Para comprobar en el navegador que unas 12 palabras son las de esta cuenta.
         direccion: g.address,
         satsEsperados: g.satsExpected,
+        // Regalo con recupero avanzado: con qué billetera se armó (huella y ruta).
+        rutaRecupero: g.recoveryPath,
         creado: g.createdAt.toISOString(),
         estilo: g.style,
         abierto: g.claimedAt?.toISOString() ?? null,

@@ -3,14 +3,17 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import {
   deriveGift,
   deriveGiftSecrets,
+  deriveMultisigGift,
   getNetwork,
   masterRootFromMnemonic,
   openGiftWallet,
   parseDestination,
+  parseRecoveryKey,
   planSweep,
+  recoveryKeyText,
   signSweep,
 } from '@regalale/core';
-import { createApp, verifySweep } from '../src/app.ts';
+import { advancedRecoveryEnabled, createApp, verifySweep } from '../src/app.ts';
 import { ApiError } from '../src/errors.ts';
 import { processPending } from '../src/broadcaster.ts';
 import { type AddressStats, arsPriceClient, ChainError, type ChainClient, type FeeRates, type MempoolPayment, type PriceClient, type Utxo } from '../src/chain.ts';
@@ -317,6 +320,32 @@ describe('API para regalar', () => {
     const view = (await (await app.request(`/api/gifts/${id}`)).json()) as { estado: string; sats: { esperados: string } };
     assert.equal(view.estado, 'esperando');
     assert.equal(view.sats.esperados, '25000');
+  });
+
+  it('recupero avanzado: regalo multifirma 1-de-2 con su script de testigo; el servidor lo valida', async () => {
+    const walletRoot = masterRootFromMnemonic('legal winner thank year wave sausage worth useful legal winner thank yellow');
+    const key = parseRecoveryKey(recoveryKeyText(walletRoot, signet), signet);
+    const ms = deriveMultisigGift(root, 2, 'pt', signet, key);
+    const ruta = `${key.fingerprintHex}/48h/1h/0h/2h/0/2`;
+    const testigo = Buffer.from(ms.witnessScript).toString('hex');
+    // Sin script, una P2WSH no se acepta; con el script de otro regalo, tampoco.
+    assert.equal((await post('/api/gifts', nuevo(2, { direccion: ms.address }))).status, 400);
+    const other = deriveMultisigGift(root, 3, 'pt', signet, key);
+    assert.equal((await post('/api/gifts', nuevo(2, { direccion: ms.address, testigo: Buffer.from(other.witnessScript).toString('hex'), rutaRecupero: ruta }))).status, 400);
+    assert.equal((await post('/api/gifts', nuevo(2, { direccion: ms.address, testigo, rutaRecupero: 'x' }))).status, 400);
+    const res = await post('/api/gifts', nuevo(2, { direccion: ms.address, testigo, rutaRecupero: ruta }));
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const view = (await (await app.request(`/api/gifts/${id}`)).json()) as { direccion: string; testigo: string };
+    assert.deepEqual([view.direccion, view.testigo], [ms.address, testigo]);
+    const plain = (await (await post('/api/gifts', nuevo(4))).json()) as { id: string };
+    assert.equal(((await (await app.request(`/api/gifts/${plain.id}`)).json()) as { testigo: unknown }).testigo, null);
+    assert.equal(((await (await app.request('/api/salud')).json()) as { recuperoAvanzado: boolean }).recuperoAvanzado, true);
+  });
+
+  it('recupero avanzado en mainnet: apagado hasta que la responsable lo autorice', async () => {
+    assert.equal(advancedRecoveryEnabled(getNetwork('mainnet', { allowMainnet: true })), false);
+    assert.equal(advancedRecoveryEnabled(signet), true);
   });
 
   it('la misma dirección no se registra dos veces: el navegador prueba el índice siguiente', async () => {

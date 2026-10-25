@@ -55,7 +55,8 @@ export function ConfirmStep({
     setError(null);
     try {
       const [utxos, fees] = await Promise.all([api.utxos(gift.id), api.fees()]);
-      const plan = (feeRate: number) => planSweep({ network, utxos, giftScript: wallet.script, destination, feeRate });
+      const plan = (feeRate: number) =>
+        planSweep({ network, utxos, giftScript: wallet.script, destination, feeRate, ...(wallet.witnessScript === undefined ? {} : { witnessScript: wallet.witnessScript }) });
       // "Ahora" y "esperar" se arman por separado: si a la tasa rápida no alcanza, igual se puede
       // dejar programado a la económica o, como último recurso, a la mínima.
       const ahora = tryPlan(plan, fees.halfHour);

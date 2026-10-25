@@ -273,6 +273,19 @@ describe('Cuentas con passkey', () => {
     assert.equal((await req('/api/cuenta/link/canje', { token })).status, 401);
   });
 
+  it('recupero avanzado: la clave de la billetera se guarda solo cifrada y solo con sesión', async () => {
+    const sealed = `r1.${'A'.repeat(16)}.${'b'.repeat(120)}`;
+    assert.equal((await req('/api/cuenta/recupero', { recupero: sealed })).status, 401);
+    const { cookie } = await signUp('ana@example.com');
+    assert.deepEqual(await (await req('/api/cuenta/recupero', undefined, cookie)).json(), { recupero: null });
+    // En claro no se acepta: solo el formato cifrado.
+    assert.equal((await req('/api/cuenta/recupero', { recupero: '[b8688df1/48h/1h/0h/2h]tpubDEfobrrtptRTbKf4gysDhoabneAB' }, cookie)).status, 400);
+    assert.equal((await req('/api/cuenta/recupero', { recupero: sealed }, cookie)).status, 200);
+    assert.deepEqual(await (await req('/api/cuenta/recupero', undefined, cookie)).json(), { recupero: sealed });
+    assert.equal((await req('/api/cuenta/recupero', { recupero: null }, cookie)).status, 200);
+    assert.deepEqual(await (await req('/api/cuenta/recupero', undefined, cookie)).json(), { recupero: null });
+  });
+
   it('sin sesión no hay panel; salir cierra la sesión', async () => {
     assert.equal((await req('/api/cuenta')).status, 401);
     const { cookie } = await signUp('ana@example.com');
