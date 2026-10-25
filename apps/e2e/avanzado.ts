@@ -174,6 +174,9 @@ try {
   await giver.getByRole('heading', { name: '¡Pago recibido! Mandá el regalo' }).waitFor({ timeout: 15_000 });
   giver.on('dialog', (d) => void d.accept());
   await giver.goto(`${BASE}/panel`);
+  // Cada regalo hecho con la billetera lo dice, con su huella, aunque todavía no se pueda recuperar.
+  await giver.locator('.regalo-billetera').first().waitFor();
+  if ((await giver.locator('.regalo-billetera', { hasText: `Con tu billetera ·${fingerprint}·` }).count()) !== 2) fail('falta la etiqueta de la billetera en los regalos del panel');
   await giver.getByRole('button', { name: 'Recuperar con mi billetera' }).click();
   await giver.getByLabel('Una dirección de tu billetera, para recibirlo').fill(giverAddress);
   await giver.getByRole('button', { name: 'Armar la transacción' }).click();

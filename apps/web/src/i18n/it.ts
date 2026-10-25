@@ -925,6 +925,7 @@ export const it: Dict = {
   'avanzado.panel.titulo': "Recuperare i miei regali",
   'avanzado.panel.comun': "Con questo sito: la tua passkey o le tue 12 parole.",
   'avanzado.panel.propia': "Con il tuo portafoglio ·{huella}·.",
+  'avanzado.panel.etiqueta': "Con il tuo portafoglio ·{huella}·",
   'avanzado.panel.volverComun': "Torna all'opzione normale",
   'avanzado.panel.abrir': "Per cambiarla, apri prima i tuoi regali con la passkey o le 12 parole.",
   'avanzado.recuperar.boton': "Recupera con il mio portafoglio",

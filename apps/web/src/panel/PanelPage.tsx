@@ -320,6 +320,8 @@ export function PanelPage() {
                       <span class={`estado estado-${g.estado ?? 'desconocido'}`}>{g.estado === null ? '—' : t(STATE_KEYS[g.estado] ?? 'panel.estado.esperando')}</span>
                     </div>
                     <span class="regalo-motivo">{occasionLabel(g.ocasion, lang, g.ocasionLibre)}</span>
+                    {/* Recupero avanzado: se ve en cada regalo, no solo cuando aparece el botón (Claudia, 25/10). */}
+                    {g.rutaRecupero != null && <span class="regalo-billetera">{t('avanzado.panel.etiqueta', { huella: g.rutaRecupero.slice(0, 8) })}</span>}
                     <span class="texto-suave">
                       {new Date(g.creado).toLocaleDateString(lang)}
                       {sats !== null ? ` · ${formatSats(sats, lang)}` : ''}

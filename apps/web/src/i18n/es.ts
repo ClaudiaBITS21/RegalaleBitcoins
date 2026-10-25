@@ -925,6 +925,7 @@ export const es = {
   'avanzado.panel.titulo': "Recuperar mis regalos",
   'avanzado.panel.comun': "Con esta web: tu passkey o tus 12 palabras.",
   'avanzado.panel.propia': "Con tu billetera ·{huella}·.",
+  'avanzado.panel.etiqueta': "Con tu billetera ·{huella}·",
   'avanzado.panel.volverComun': "Volver a la opción común",
   'avanzado.panel.abrir': "Para cambiarlo, primero abrí tus regalos con tu passkey o tus 12 palabras.",
   'avanzado.recuperar.boton': "Recuperar con mi billetera",

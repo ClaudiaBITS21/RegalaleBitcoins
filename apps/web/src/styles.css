@@ -3837,3 +3837,11 @@ svg.tarjeta-imagen {
 .recupero-psbt .qr { width: 180px; height: 180px; margin: 0 auto; display: block; }
 .recupero-ajuste { display: flex; flex-direction: column; gap: 10px; }
 .recupero-ajuste h3 { margin: 0; }
+.regalo-billetera {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--borde);
+  font-size: 12.5px;
+  font-weight: 600;
+}
