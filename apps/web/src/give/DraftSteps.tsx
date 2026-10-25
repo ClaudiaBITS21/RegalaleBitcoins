@@ -315,7 +315,7 @@ export function AmountStep({
         <label class="casilla casilla-valor">
           <input type="checkbox" checked={showValue} onChange={(e) => setShowValue((e.currentTarget as HTMLInputElement).checked)} />
           <span>
-            {t(picked.currency === 'ARS' ? 'regalar.cuanto.mostrarPesos' : 'regalar.cuanto.mostrarDolares')}
+            {t('regalar.cuanto.mostrar', { moneda: t(picked.currency === 'ARS' ? 'regalar.cuanto.pesos' : 'regalar.cuanto.dolares') })}
             <small class="texto-suave">{t(showValue ? 'regalar.cuanto.mostrarSi' : 'regalar.cuanto.mostrarNo', { valor: money(picked) })}</small>
           </span>
         </label>

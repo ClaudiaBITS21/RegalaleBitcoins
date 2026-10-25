@@ -2,7 +2,7 @@ import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCo
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
-import { explorerTxUrl, formatSats, formatUsd, formatUsdExact, satsToUsd } from '../format.ts';
+import { explorerTxUrl, formatUsd, satsToUsd } from '../format.ts';
 import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
@@ -241,21 +241,10 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
           {before !== null && <p class="tarjeta-valor">{t('reclamo.valor', { valor: before })}</p>}
         </div>
       </article>
-      {sats > 0n && (
+      {/* Sin sats ni cuentas (Claudia, 25/10): lo que le llegó es lo que le llegó. En plata, solo si quien regala quiso. */}
+      {sats > 0n && now !== null && (
         <div class="caja monto">
-          <strong class="monto-sats">{formatSats(sats, lang)}</strong>
-          {now !== null && <span class="texto-suave">{before !== null ? t('reclamo.valia', { antes: before, hoy: now }) : t('reclamo.vale', { hoy: now })}</span>}
-          {now !== null && gift.usdPorBtcHoy !== null && (
-            <small class="letra-chica">
-              {t('regalar.cuanto.calculoSats', {
-                precio: formatUsdExact(gift.usdPorBtcHoy, lang),
-                fuente: 'mempool.space',
-                sats: formatSats(sats, lang),
-                unBtc: formatSats(100_000_000n, lang).replace(' sats', ''),
-                monto: formatUsdExact(satsToUsd(sats, gift.usdPorBtcHoy), lang),
-              })}
-            </small>
-          )}
+          <span class="texto-suave">{before !== null ? t('reclamo.valia', { antes: before, hoy: now }) : t('reclamo.vale', { hoy: now })}</span>
         </div>
       )}
       {notice !== undefined && <Notice kind={gift.estado === 'reclamado' ? 'ok' : 'info'}>{t(notice)}</Notice>}
