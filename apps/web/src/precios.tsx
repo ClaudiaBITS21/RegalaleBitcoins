@@ -66,6 +66,12 @@ const PRODUCTOS: readonly Producto[] = [
   { id: 'fundador', codigo: 'fundador', base: { sats: 210_000n, regalos: null, listas: 10, plan: true, dias: null, cupo: 21, saludo: true, ia: true, tarjeta: true } },
 ];
 
+/** Lo que se vende por unidad (Claudia, 25/10), con su precio mientras no llega de la API. */
+const UNIDADES: readonly { readonly codigo: string; readonly nombre: Key; readonly sats: bigint }[] = [
+  { codigo: 'regalo', nombre: 'precios.regalo.n', sats: 2_100n },
+  { codigo: 'lista_otras', nombre: 'precios.listaSuelta.n', sats: 10_500n },
+];
+
 function contenido(p: Producto, vivos: Products | null): Contenido {
   const v = vivos?.productos.find((x) => x.codigo === p.codigo);
   // Sin precio en sats (API anterior), los de la tabla.
@@ -292,6 +298,33 @@ export function PricingPage({ testnet }: { testnet: boolean }) {
               );
             })}
           </ul>
+          {/* Por unidad (Claudia, 25/10): un regalo o una lista sueltos, para cuando falta uno. */}
+          <div class="precios-unidad">
+            <h3>{t('precios.unidad.titulo')}</h3>
+            <p class="texto-suave">{t('precios.unidad.texto')}</p>
+            <ul>
+              {UNIDADES.map((u) => {
+                const v = vivos?.productos.find((x) => x.codigo === u.codigo);
+                // Con la API al día, solo lo que está activo y a la venta.
+                if (vivos !== null && (v === undefined || v.seVendeSuelto !== true)) return null;
+                const sats = v !== undefined && typeof v.precioSats === 'string' ? BigInt(v.precioSats) : u.sats;
+                return (
+                  <li key={u.codigo}>
+                    <span class="precios-unidad-nombre">{t(u.nombre)}</span>
+                    <span class="precios-unidad-precio">
+                      <strong>{formatSatsShort(sats, lang)}</strong>
+                      {usdPorBtc !== null && <small>{t('precios.usdHoy', { usd: formatUsdExact(satsToUsd(sats, usdPorBtc), lang) })}</small>}
+                    </span>
+                    {vivos?.seVende === true && (
+                      <a class="boton boton-contorno precio-comprar" href={`/comprar?producto=${u.codigo}`}>
+                        {t('precios.comprar')}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
           <p class="texto-suave precios-nota">{t('precios.cotizacion')}</p>
         </section>
 
