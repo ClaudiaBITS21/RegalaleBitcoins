@@ -59,6 +59,8 @@ export interface AccountView {
 
 export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
+  /** Descarta un regalo que nunca se pagó (409 regalo_con_fondos si ya recibió algo). */
+  discardGift: (id: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, {}),
   logout: async () => {
     const res = await call<{ ok: boolean }>('/api/cuenta/salir', {});
     setSignedIn(false);

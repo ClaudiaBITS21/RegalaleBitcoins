@@ -155,12 +155,14 @@ export interface AccountGift {
   readonly usdPerBtc: number | null;
   /** Solo en regalos multifirma: huella y ruta de la clave de la billetera del que regala. */
   readonly recoveryPath: string | null;
+  /** Cuándo lo descartó quien lo armó (sin pagar); null si no. */
+  readonly discardedAt: Date | null;
 }
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
@@ -180,6 +182,7 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     amount: r.monto === null ? null : Number(r.monto),
     usdPerBtc: r.usd_por_btc === null ? null : Number(r.usd_por_btc),
     recoveryPath: r.recupero_ruta,
+    discardedAt: r.descartado,
   }));
 }
 

@@ -398,13 +398,16 @@ export function registerAccountRoutes(
         }
       }),
     );
+    // Los descartados no se muestran, salvo que igual les haya llegado un pago (o no se sepa).
+    const received = (i: number): bigint | null => (states[i] == null ? null : states[i].confirmedSats + states[i].unconfirmedSats);
+    const visible = gifts.map((g, i) => ({ g, i })).filter(({ g, i }) => g.discardedAt === null || received(i) !== 0n);
     return c.json({
       email: account.email,
       idioma: account.lang,
       credenciales: credentials,
       proximoIndice: next,
       cotizacion: { usdPorBtc: usdNow, arsPorBtc: arsNow },
-      regalos: gifts.map((g, i) => ({
+      regalos: visible.map(({ g, i }) => ({
         id: g.id,
         indice: g.index,
         idioma: g.lang,
@@ -421,8 +424,25 @@ export function registerAccountRoutes(
         abierto: g.claimedAt?.toISOString() ?? null,
         original: g.currency === null || g.amount === null ? null : { moneda: g.currency, monto: g.amount, usdPorBtc: g.usdPerBtc },
         estado: states[i]?.state ?? null,
-        sats: states[i] === null || states[i] === undefined ? null : (states[i].confirmedSats + states[i].unconfirmedSats).toString(),
+        sats: received(i)?.toString() ?? null,
       })),
     });
+  });
+
+  /**
+   * Descartar un regalo que nunca se pagó (Claudia, 28/10/2026): deja de verse en «Mis regalos» y
+   * de contar para el tope diario. Solo si su dirección no tiene ningún movimiento, ni sin confirmar.
+   */
+  app.post('/api/cuenta/regalos/:id/descartar', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const [g] = await sql<{ direccion: string; descartado: Date | null; reclamo_txid: string | null }[]>`
+      select direccion, descartado, reclamo_txid from regalos where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+    if (g === undefined) throw new ApiError(404, 'no_encontrado');
+    if (g.descartado !== null) return c.json({ ok: true });
+    const stats = await chain.addressStats(g.direccion);
+    if (g.reclamo_txid !== null || stats.txCount > 0 || stats.mempoolFunded > 0n || stats.confirmedFunded > 0n) throw new ApiError(409, 'regalo_con_fondos');
+    await sql`update regalos set descartado = now() where id = ${c.req.param('id')} and usuario_id = ${account.id} and descartado is null`;
+    return c.json({ ok: true });
   });
 }

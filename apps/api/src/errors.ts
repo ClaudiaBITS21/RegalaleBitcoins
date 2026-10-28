@@ -51,7 +51,8 @@ export type ErrorCode =
   | 'direccion_invalida'
   | 'arrepentimiento_vencido'
   | 'creditos_usados'
-  | 'tope_diario';
+  | 'tope_diario'
+  | 'regalo_con_fondos';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;

@@ -1,8 +1,8 @@
 // Tope diario de los regalos de una cuenta (autorizado el 28/10/2026, docs/mainnet.md): la suma,
 // en dólares, de los regalos que cargó en las últimas 24 horas (ventana móvil). Se controla en el
-// servidor al registrar cada regalo. Cuenta el monto elegido al crearlo, pagado o no: no hay forma
-// de cancelar un regalo antes del depósito, y contar solo los pagados dejaría cargar muchos sin
-// pagar para pagarlos todos después.
+// servidor al registrar cada regalo. Cuenta el monto elegido al crearlo, pagado o no (contar solo
+// los pagados dejaría cargar muchos sin pagar para pagarlos todos después). No cuentan los
+// descartados: solo se descartan regalos cuya dirección nunca recibió nada.
 
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
@@ -43,7 +43,7 @@ export function dailyAllowance(rows: readonly DailyRow[], newUsd: number, limitU
 export async function checkDailyLimit(sql: Sql, accountId: string, network: string, newUsd: number, limitUsd: number, now = new Date()): Promise<void> {
   const rows = await sql<{ creado: Date; moneda: string | null; monto: string | null; sats_esperados: string | null; usd_por_btc: string | null }[]>`
     select creado, moneda, monto, sats_esperados, usd_por_btc from regalos
-    where usuario_id = ${accountId} and red = ${network} and creado > ${new Date(now.getTime() - DAY_MS)}`;
+    where usuario_id = ${accountId} and red = ${network} and creado > ${new Date(now.getTime() - DAY_MS)} and descartado is null`;
   const daily = rows.map((r) => ({
     at: r.creado,
     usd: r.moneda === 'USD' && r.monto !== null ? Number(r.monto) : (Number(r.sats_esperados ?? 0) / 1e8) * Number(r.usd_por_btc ?? 0),

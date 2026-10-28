@@ -382,6 +382,30 @@ describe('Cuentas con passkey', () => {
     assert.equal((await (await req('/api/salud')).json() as { topeDiarioUsd: number }).topeDiarioUsd, 500);
   });
 
+  it('descartar un regalo sin pagar: sale de «Mis regalos» y del tope diario; con fondos no se puede; si igual le llega un pago, vuelve', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const root = masterRootFromMnemonic(MASTER);
+    const gifts = [0, 1, 2, 3, 4, 5].map((i) => deriveGift(root, i, 'es', signet));
+    const give = (i: number) => req('/api/gifts', { direccion: gifts[i]?.address, idioma: 'es', ocasion: 'cumple', para: `P${i}`, mensaje: '', imagen: 1, moneda: 'USD', monto: 100, sats: '100000', indice: i }, cookie);
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) ids.push(((await (await give(i)).json()) as { id: string }).id);
+    assert.equal((await give(5)).status, 409, 'el sexto pasa el tope diario');
+    const discard = (id: string, ck = cookie) => req(`/api/cuenta/regalos/${id}/descartar`, {}, ck);
+    // Con un pago, no se descarta.
+    funded.add(gifts[0]?.address as string);
+    assert.equal((await discard(ids[0] as string)).status, 409);
+    // Sin pago, sí; de otra cuenta, no existe.
+    const other = await signUp('beto@example.com');
+    assert.equal((await discard(ids[1] as string, other.cookie)).status, 404);
+    assert.equal((await discard(ids[1] as string)).status, 200);
+    const list = async () => ((await (await req('/api/cuenta', undefined, cookie)).json()) as { regalos: Array<{ id: string }> }).regalos.map((g) => g.id);
+    assert.ok(!(await list()).includes(ids[1] as string), 'el descartado no se ve');
+    assert.equal((await give(5)).status, 201, 'el descartado ya no cuenta para el tope diario');
+    // Si igual le llega un pago, vuelve a aparecer para poder abrirlo o recuperarlo.
+    funded.add(gifts[1]?.address as string);
+    assert.ok((await list()).includes(ids[1] as string));
+  });
+
   it('si el regalo pago sigue sin abrirse, recuerda a quien regala a los 14 y a los 60 días, y nada más', async () => {
     const { cookie } = await signUp('ana@example.com');
     const root = masterRootFromMnemonic(MASTER);

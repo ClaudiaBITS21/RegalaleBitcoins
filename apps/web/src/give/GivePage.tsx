@@ -511,7 +511,8 @@ export function GivePage() {
             tope: formatUsd(dailyStop.tope, lang),
             resta: formatUsd(dailyStop.resta, lang),
             cuando: formatDayTime(dailyStop.desde, lang),
-          })}
+          })}{' '}
+          {t('regalar.topeDiario.descartar')}
         </Notice>
       )}
       {recoveryNotSaved && step === 'pagar' && <Notice kind="info">{t('avanzado.error.guardar')}</Notice>}

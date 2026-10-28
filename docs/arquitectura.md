@@ -76,7 +76,8 @@ oficiales.
 | POST | `/api/cuenta/ingreso` | `{credencial}`: verifica la firma de la passkey (origen, rpId, UP+UV, contador) y devuelve la bóveda de esa credencial. |
 | POST | `/api/cuenta/link` | Manda un link de acceso por mail (`/panel#acceso=…`, 20 min). Siempre 202, exista o no la cuenta. |
 | POST | `/api/cuenta/link/canje` | Canjea el token del link (una vez) y abre sesión. |
-| GET | `/api/cuenta` | Mail, credenciales, próximo índice y regalos de la cuenta con su estado. |
+| GET | `/api/cuenta` | Mail, credenciales, próximo índice y regalos de la cuenta con su estado (sin los descartados que no recibieron nada). |
+| POST | `/api/cuenta/regalos/:id/descartar` | Descarta un regalo de la cuenta que nunca recibió nada (409 `regalo_con_fondos` si tuvo movimientos): sale del panel y del tope diario. Migración 035. |
 | POST | `/api/cuenta/salir` | Cierra la sesión. |
 
 **Qué verifica el servidor antes de difundir:**
