@@ -156,6 +156,12 @@ try {
   if ((await page.getByRole('link', { name: 'App Store' }).getAttribute('href')) !== 'https://apps.apple.com/app/bluewallet-bitcoin-wallet/id1376878040') fail('la guía no lleva a BlueWallet en App Store');
   if ((await page.getByRole('link', { name: 'Google Play' }).getAttribute('href')) !== 'https://play.google.com/store/apps/details?id=io.bluewallet.bluewallet') fail('la guía no lleva a BlueWallet en Google Play');
   await page.getByText('Ojo: no son las 4 palabras del regalo.', { exact: false }).waitFor();
+  // Capturas de BlueWallet: chicas al costado; tocar una la agranda y tocarla otra vez la achica.
+  const thumb = page.getByRole('button', { name: 'BlueWallet al abrirla, con el botón «Añadir»' });
+  await thumb.click();
+  if ((await thumb.getAttribute('aria-expanded')) !== 'true') fail('tocar la captura no la agrandó');
+  await shot2(page, '5-guia-captura');
+  await thumb.click();
   await page.getByLabel('Anoté mis 12 palabras en papel').check();
   await page.getByRole('button', { name: 'Ya tengo mi dirección' }).click();
 
