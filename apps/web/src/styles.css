@@ -3917,6 +3917,38 @@ svg.tarjeta-imagen {
   max-width: 100%;
 }
 
+/* Paso con su captura en miniatura al costado: chica, para no tapar el texto; tocarla la agranda debajo. */
+/* flow-root contiene la miniatura flotante sin cortar el número del paso. */
+.guia-paso {
+  display: flow-root;
+}
+
+.captura {
+  float: right;
+  width: 56px;
+  margin: 0 0 6px 12px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  overflow: hidden;
+  background: none;
+  cursor: zoom-in;
+}
+
+.captura img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.guia-paso-abierto .captura {
+  float: none;
+  display: block;
+  width: min(240px, 100%);
+  margin: 10px 0 0;
+  cursor: zoom-out;
+}
+
 .guia-otras {
   display: block;
   margin-top: 8px;

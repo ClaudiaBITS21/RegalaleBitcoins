@@ -7,6 +7,11 @@ import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key, UiLang } from '../i18n/index.ts';
+import shotStart from '../capturas/bluewallet-1-inicio-2026-10-28.webp';
+import shotAdd from '../capturas/bluewallet-2-anadir-2026-10-28.webp';
+import shotWallet from '../capturas/bluewallet-3-cartera-2026-10-28.webp';
+import shotInside from '../capturas/bluewallet-4-dentro-2026-10-28.webp';
+import shotReceive from '../capturas/bluewallet-5-recibir-2026-10-28.webp';
 import appStoreEn from '../insignias/app-store-en.svg';
 import appStoreEs from '../insignias/app-store-es.svg';
 import appStorePt from '../insignias/app-store-pt.svg';
@@ -36,6 +41,27 @@ const BADGES: Readonly<Record<UiLang, { appStore: string; googlePlay: string }>>
   en: { appStore: appStoreEn, googlePlay: googlePlayEn },
   it: { appStore: appStoreEn, googlePlay: googlePlayEn },
 };
+
+/**
+ * Capturas de BlueWallet en español (Android, 28/10/2026), recortadas, con el QR y la dirección
+ * borrosos. Si BlueWallet cambia su interfaz, se vuelven a sacar.
+ */
+const SHOTS = [shotStart, shotAdd, shotWallet, shotInside, shotReceive] as const;
+
+/** Un paso de la guía con su captura en miniatura al costado; tocarla la agranda. */
+function GuideStep({ text, shot, alt }: { text: string; shot: string; alt: string }) {
+  const [big, setBig] = useState(false);
+  return (
+    <li>
+      <div class={`guia-paso${big ? ' guia-paso-abierto' : ''}`}>
+        <button type="button" class="captura" aria-expanded={big} onClick={() => setBig(!big)}>
+          <img src={shot} alt={alt} loading="lazy" />
+        </button>
+        {text}
+      </div>
+    </li>
+  );
+}
 
 /** Las dos tiendas, la del sistema del celu primero. */
 function StoreLinks() {
@@ -179,12 +205,17 @@ export function ClaimPage({ id }: { id: string }) {
               {t('guia.otras')}
             </button>
           </li>
-          <li>{t('guia.paso2')}</li>
+          <GuideStep text={t('guia.paso2')} shot={SHOTS[0]} alt={t('guia.captura1')} />
+          <GuideStep text={t('guia.paso3')} shot={SHOTS[1]} alt={t('guia.captura2')} />
+          {/* Las 12 palabras, sin captura a propósito: es la pantalla que nadie tiene que fotografiar. */}
           <li>
-            <strong>{t('guia.paso3')}</strong>
+            <strong>{t('guia.paso4')}</strong>
             <Notice>{t('guia.distintas')}</Notice>
           </li>
-          <li>{t('guia.paso4')}</li>
+          <GuideStep text={t('guia.paso5')} shot={SHOTS[2]} alt={t('guia.captura3')} />
+          <GuideStep text={t('guia.paso6')} shot={SHOTS[3]} alt={t('guia.captura4')} />
+          <GuideStep text={t('guia.paso7')} shot={SHOTS[4]} alt={t('guia.captura5')} />
+          <li>{t('guia.paso8')}</li>
         </ol>
         <label class="casilla casilla-destacada">
           <input type="checkbox" checked={wrote} onChange={(e) => setWrote((e.currentTarget as HTMLInputElement).checked)} />

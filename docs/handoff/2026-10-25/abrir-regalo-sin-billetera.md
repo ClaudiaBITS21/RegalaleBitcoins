@@ -3,7 +3,10 @@
 Estado: INTEGRADO (PR «Abrir un regalo sin billetera: hoy vale en su moneda y guía nueva»), salvo:
 - 2: hecho el 28/10 con las insignias oficiales que pasó la responsable (App Store y Google
   Play, versiones negras en es, pt y en; en italiano, las de inglés).
-- 3: las capturas de BlueWallet, que pasa Rodolfo.
+- 3: hecho el 28/10 con las capturas que pasó la responsable (Android, en español), recortadas
+  y con el QR y la dirección borrosos. La guía pasó a 8 pasos con su redacción («Creá una
+  billetera nueva», «tocala para entrar», «tocá el texto debajo del QR»); el de las 12 palabras va
+  sin captura, a propósito.
 - 5: guardar el paso en `sessionStorage`, consultado con la responsable (ver el PR).
 
 Base: `main` 4c2e41e. Archivos: `apps/web/src/claim/ClaimPage.tsx`, `apps/web/src/i18n/es.ts` (y espejos en tu/en/pt/it), `apps/api/src/app.ts`.
