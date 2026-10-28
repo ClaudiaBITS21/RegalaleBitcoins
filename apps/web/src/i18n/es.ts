@@ -59,6 +59,8 @@ export const es = {
   'guia.anote': 'Anoté mis 12 palabras en papel',
   'guia.listo': 'Ya tengo mi dirección',
   'guia.otras': '¿Ya usás otra billetera? También sirve',
+  'guia.googlePlay': 'Descargar en Google Play',
+  'guia.appStore': 'Consíguelo en el App Store',
   'guia.signet': 'Estás en la red de prueba y BlueWallet no la usa: probá con Sparrow o Electrum en modo signet.',
 
   'direccion.titulo': 'Pegá tu dirección',

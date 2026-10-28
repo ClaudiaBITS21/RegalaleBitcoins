@@ -7,6 +7,12 @@ import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key, UiLang } from '../i18n/index.ts';
+import appStoreEn from '../insignias/app-store-en.svg';
+import appStoreEs from '../insignias/app-store-es.svg';
+import appStorePt from '../insignias/app-store-pt.svg';
+import googlePlayEn from '../insignias/google-play-en.svg';
+import googlePlayEs from '../insignias/google-play-es.svg';
+import googlePlayPt from '../insignias/google-play-pt.svg';
 import { installWay } from '../pwa.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AddressStep } from './AddressStep.tsx';
@@ -21,27 +27,29 @@ const APP_STORE = 'https://apps.apple.com/app/bluewallet-bitcoin-wallet/id137687
 const GOOGLE_PLAY = 'https://play.google.com/store/apps/details?id=io.bluewallet.bluewallet';
 
 /**
- * Las dos tiendas, la del sistema del celu primero. Van como botones de texto hasta tener las
- * insignias oficiales en español (SVG autoalojados, sin modificar).
+ * Insignias oficiales de las tiendas según el idioma, sin modificar (SVG autoalojados). Ninguna de
+ * las dos tiene versión en italiano: va la de inglés.
  */
-function StoreLinks() {
-  const [way] = useState(() => installWay(navigator.userAgent, navigator.maxTouchPoints ?? 0));
-  const stores: [string, string][] = [
-    ['App Store', APP_STORE],
-    ['Google Play', GOOGLE_PLAY],
-  ];
-  if (way === 'android') stores.reverse();
-  return (
-    <span class="tiendas">
-      {stores.map(([name, url]) => (
-        <a key={name} class="boton boton-contorno tienda" href={url} target="_blank" rel="noopener noreferrer">
-          {name}
-        </a>
-      ))}
-    </span>
-  );
-}
+const BADGES: Readonly<Record<UiLang, { appStore: string; googlePlay: string }>> = {
+  es: { appStore: appStoreEs, googlePlay: googlePlayEs },
+  pt: { appStore: appStorePt, googlePlay: googlePlayPt },
+  en: { appStore: appStoreEn, googlePlay: googlePlayEn },
+  it: { appStore: appStoreEn, googlePlay: googlePlayEn },
+};
 
+/** Las dos tiendas, la del sistema del celu primero. */
+function StoreLinks() {
+  const { t, lang } = useI18n();
+  const [way] = useState(() => installWay(navigator.userAgent, navigator.maxTouchPoints ?? 0));
+  const badge = (key: string, url: string, src: string, alt: string) => (
+    <a key={key} class="tienda tienda-insignia" href={url} target="_blank" rel="noopener noreferrer">
+      <img src={src} alt={alt} height={48} />
+    </a>
+  );
+  const appStore = badge('app-store', APP_STORE, BADGES[lang].appStore, t('guia.appStore'));
+  const googlePlay = badge('google-play', GOOGLE_PLAY, BADGES[lang].googlePlay, t('guia.googlePlay'));
+  return <span class="tiendas">{way === 'android' ? [googlePlay, appStore] : [appStore, googlePlay]}</span>;
+}
 
 /**
  * Lee la semilla del fragmento del link (#...) una sola vez y la saca de la barra de

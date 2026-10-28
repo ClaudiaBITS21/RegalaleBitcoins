@@ -3903,6 +3903,20 @@ svg.tarjeta-imagen {
   margin-top: 10px;
 }
 
+/* La insignia oficial, tal cual: misma altura que el botón de al lado, sin fondo ni borde propios. */
+.tienda-insignia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tienda-insignia img {
+  display: block;
+  height: 48px;
+  width: auto;
+  max-width: 100%;
+}
+
 .guia-otras {
   display: block;
   margin-top: 8px;
