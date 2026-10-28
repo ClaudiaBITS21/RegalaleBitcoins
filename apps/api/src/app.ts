@@ -14,6 +14,7 @@ import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
 import { registerReportRoutes } from './reports.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
+import { checkDailyLimit, giftUsd } from './topes.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
 import { isAdmin, registerAdminUserRoutes } from './admins.ts';
@@ -39,6 +40,10 @@ export interface AppDeps {
   readonly accounts?: AccountConfig;
   /** Techo por regalo en dólares (TOPE_USD). En mainnet nunca supera MAINNET_CEILING_USD. */
   readonly ceilingUsd?: number;
+  /** Techo por aporte de las listas que lo tienen alto (TOPE_LISTA_USD). En mainnet, ≤ MAINNET_LIST_CEILING_USD. */
+  readonly listCeilingUsd?: number;
+  /** Tope diario de los regalos de una cuenta (TOPE_DIARIO_USD). En mainnet, ≤ MAINNET_DAILY_ACCOUNT_USD. */
+  readonly dailyAccountUsd?: number;
   /** Aportes a listas que puede confirmar una misma IP por hora. */
   readonly listContributionsPerHour?: number;
   /** Mails con acceso al panel de administración (ADMIN_EMAILS). */
@@ -56,6 +61,19 @@ export const CEILING_USD = 100;
  * requiere una nueva autorización explícita, no solo cambiar la variable de entorno.
  */
 export const MAINNET_CEILING_USD = 100;
+/**
+ * Techo por aporte de las listas de casamiento con «Semilla nueva» y de todas las listas con
+ * billetera propia (autorizado el 28/10/2026, docs/mainnet.md). Las demás de «Semilla nueva»
+ * usan el techo de los regalos.
+ */
+export const LIST_CEILING_USD = 250;
+export const MAINNET_LIST_CEILING_USD = 250;
+/**
+ * Tope de seguridad de mainnet: la suma de los regalos que carga una cuenta en 24 horas (ventana
+ * móvil). Rige también para los admins (autorizado el 28/10/2026, docs/mainnet.md).
+ */
+export const DAILY_ACCOUNT_USD = 500;
+export const MAINNET_DAILY_ACCOUNT_USD = 500;
 
 /**
  * Recupero avanzado (multifirma con la billetera del que regala). Guardado y apagado por decisión
@@ -70,10 +88,13 @@ export function advancedRecoveryEnabled(network: Network, requested = false): bo
   return network.name === 'mainnet' ? ADVANCED_RECOVERY_MAINNET : requested;
 }
 
-/** Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. */
-export function effectiveCeilingUsd(network: Network, configured: number | undefined): number {
-  const base = configured !== undefined && Number.isFinite(configured) && configured > 0 ? configured : CEILING_USD;
-  return network.name === 'mainnet' ? Math.min(base, MAINNET_CEILING_USD) : base;
+/**
+ * Techo efectivo según la red: en mainnet, el menor entre el configurado y el autorizado. La
+ * variable de entorno solo puede bajarlo.
+ */
+export function effectiveCeilingUsd(network: Network, configured: number | undefined, base = CEILING_USD, authorized = MAINNET_CEILING_USD): number {
+  const value = configured !== undefined && Number.isFinite(configured) && configured > 0 ? configured : base;
+  return network.name === 'mainnet' ? Math.min(value, authorized) : value;
 }
 // Mismo catálogo que apps/web/src/content/occasions.ts ("otra" = ocasión libre; "graduacion" queda por regalos viejos).
 export const OCCASIONS = [
@@ -148,7 +169,7 @@ export function createApp(deps: AppDeps): Hono {
     if (error instanceof ApiError) {
       // Rechazos de cuenta y passkey al log, con el motivo (nunca el mail ni la credencial).
       if (c.req.path.startsWith('/api/cuenta/') && error.status !== 429) console.warn(`cuenta: ${c.req.path} ${error.status} ${error.code}: ${error.message}`);
-      return c.json({ error: error.code, detalle: error.message }, error.status);
+      return c.json({ error: error.code, detalle: error.message, ...(error.data === undefined ? {} : { datos: error.data }) }, error.status);
     }
     if (error instanceof ChainError) return c.json({ error: 'cadena_no_disponible' }, 502);
     console.error(error);
@@ -156,12 +177,14 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   const ceilingUsd = effectiveCeilingUsd(network, deps.ceilingUsd);
+  const listCeilingUsd = effectiveCeilingUsd(network, deps.listCeilingUsd, LIST_CEILING_USD, MAINNET_LIST_CEILING_USD);
+  const dailyAccountUsd = effectiveCeilingUsd(network, deps.dailyAccountUsd, DAILY_ACCOUNT_USD, MAINNET_DAILY_ACCOUNT_USD);
   const advancedRecovery = advancedRecoveryEnabled(network, deps.advancedRecovery === true);
-  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd, recuperoAvanzado: advancedRecovery }));
+  app.get('/api/salud', (c) => c.json({ ok: true, red: network.name, topeUsd: ceilingUsd, topeDiarioUsd: dailyAccountUsd, recuperoAvanzado: advancedRecovery }));
 
   const accounts: AccountConfig = deps.accounts ?? { origins: ['http://localhost'], publicUrl: 'http://localhost', mailer: consoleMailer, cookieSecure: false };
   registerAccountRoutes(app, { sql, chain, config: accounts, clientIp: (c) => clientIp(c.req.header('x-forwarded-for')), price, arsPrice: deps.arsPrice, adminEmails: deps.adminEmails ?? [], advancedRecovery });
-  registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
+  registerListRoutes(app, { sql, chain, price, arsPrice: deps.arsPrice, network, ceilingUsd, listCeilingUsd, occasions: OCCASIONS, ...(deps.listContributionsPerHour === undefined ? {} : { contributionsPerHour: deps.listContributionsPerHour }) });
   registerAdminRoutes(app, { sql, chain, price, network: network.name, adminEmails: deps.adminEmails ?? [] });
   registerReportRoutes(app, { sql, network: network.name, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer, publicUrl: accounts.publicUrl });
   registerAdminCobroRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
@@ -279,6 +302,7 @@ export function createApp(deps: AppDeps): Hono {
     // regalos): quien recibió ese regalo antes tiene link y palabras. Se trata como existente.
     if (history.txCount > 0) throw new ApiError(409, 'regalo_existente');
     checkAmount(g, usdPerBtc, arsPerBtc, minimumGiftAmount(fees.economy), ceilingUsd);
+    if (account !== null) await checkDailyLimit(sql, account.id, network.name, giftUsd(g, usdPerBtc), dailyAccountUsd);
     try {
       const gift = await insertGift(sql, {
         ...g,

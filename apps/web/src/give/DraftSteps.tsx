@@ -160,6 +160,8 @@ export function AmountStep({
   error,
   ceilingUsd,
   presets,
+  ceilingNote,
+  perContribution = false,
   showValueOption = false,
   onNext,
 }: {
@@ -169,6 +171,10 @@ export function AmountStep({
   ceilingUsd: number | null;
   /** Montos sugeridos en dólares; si no, salen del techo. */
   presets?: readonly number[];
+  /** Los topes que corresponden, ya escritos (leídos de la API, sin números fijos). */
+  ceilingNote?: string;
+  /** En una lista: el máximo es por aporte, no por regalo. */
+  perContribution?: boolean;
   /** En un regalo (no en una lista): el tilde de si quien recibe ve cuánto vale en plata. */
   showValueOption?: boolean;
   onNext: (a: Picked & { showValue: boolean }) => void;
@@ -231,7 +237,7 @@ export function AmountStep({
   if (picked !== null && picked.sats < market.minSats) {
     problem = t('regalar.cuanto.minimo', { minimo: formatSats(market.minSats, lang) });
   } else if (picked !== null && market.maxSats !== null && ceilingUsd !== null && picked.sats > market.maxSats) {
-    problem = t('regalar.cuanto.maximo', { maximo: formatUsd(ceilingUsd, lang) });
+    problem = t(perContribution ? 'lista.aporte.maximo' : 'regalar.cuanto.maximo', { maximo: formatUsd(ceilingUsd, lang) });
   }
   const valid = picked !== null && problem === null;
   const units: Unit[] = market.arsPerBtc === null ? ['USD', 'SAT'] : ['USD', 'ARS', 'SAT'];
@@ -309,6 +315,7 @@ export function AmountStep({
           <Calculation picked={picked} market={market} />
         </div>
       )}
+      {ceilingNote !== undefined && <small class="texto-suave">{ceilingNote}</small>}
       {problem !== null && <Notice kind="error">{problem}</Notice>}
       {/* Quien regala elige si quien recibe ve cuánto vale en plata (Claudia, 25/10): de entrada, no. */}
       {showValueOption && picked !== null && problem === null && (

@@ -1,6 +1,7 @@
 import { deriveGift, deriveMultisigGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
+import { formatDayTime, formatUsd } from '../format.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
 import type { CardStyle } from '../content/GiftCardArt.tsx';
@@ -218,13 +219,17 @@ export function GivePage() {
   const [credits, setCredits] = useState<Credits | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
+  // Tope diario de la cuenta (28/10/2026): cuánto es, y si el último intento lo pasó, cuánto queda y desde cuándo.
+  const [dailyUsd, setDailyUsd] = useState<number | null>(null);
+  const [dailyStop, setDailyStop] = useState<{ tope: number; resta: number; desde: Date } | null>(null);
   const step = steps[steps.length - 1] ?? 'ocasion';
 
   const loadNetwork = async () => {
     setNetError(null);
     try {
-      const { red, topeUsd, recuperoAvanzado } = await api.health();
+      const { red, topeUsd, topeDiarioUsd, recuperoAvanzado } = await api.health();
       if (typeof topeUsd === 'number' && topeUsd > 0) setCeilingUsd(topeUsd);
+      if (typeof topeDiarioUsd === 'number' && topeDiarioUsd > 0) setDailyUsd(topeDiarioUsd);
       setAdvancedAvailable(recuperoAvanzado === true);
       try {
         setNetwork(getNetwork(red, { allowMainnet: ALLOW_MAINNET }));
@@ -315,6 +320,7 @@ export function GivePage() {
     if (network === null) return;
     setBusy(true);
     setError(null);
+    setDailyStop(null);
     // Deja pintar "Preparando…": derivar el regalo tarda unos cientos de milisegundos.
     await new Promise((r) => setTimeout(r, 30));
     try {
@@ -328,6 +334,11 @@ export function GivePage() {
       if (code === 'sin_creditos') {
         // Sin créditos ni plan: antes de mostrar la dirección del regalo, los packs.
         go('sinCreditos');
+        return;
+      }
+      const datos = e instanceof ApiFailure ? e.data : undefined;
+      if (code === 'tope_diario' && typeof datos?.topeUsd === 'number' && typeof datos.restaUsd === 'number' && typeof datos.desde === 'string') {
+        setDailyStop({ tope: datos.topeUsd, resta: datos.restaUsd, desde: new Date(datos.desde) });
         return;
       }
       setError(code === 'monto_invalido' ? 'regalar.errorMonto' : code === 'demasiados_pedidos' ? 'regalar.demasiados' : 'regalar.error');
@@ -396,6 +407,7 @@ export function GivePage() {
         draft={draft}
         error={error}
         ceilingUsd={ceilingUsd}
+        {...(dailyUsd === null ? {} : { ceilingNote: t('regalar.cuanto.topes', { maximo: formatUsd(ceilingUsd, lang), diario: formatUsd(dailyUsd, lang) }) })}
         showValueOption
         onNext={(a) => {
           const next = { ...draft, ...a };
@@ -493,6 +505,15 @@ export function GivePage() {
         </nav>
       )}
       {error !== null && step !== 'cuanto' && step !== 'verificar' && step !== 'tengoCodigo' && <Notice kind="error">{t(error)}</Notice>}
+      {dailyStop !== null && (
+        <Notice kind="error">
+          {t(dailyStop.resta > 0 ? 'regalar.topeDiario.resta' : 'regalar.topeDiario.nada', {
+            tope: formatUsd(dailyStop.tope, lang),
+            resta: formatUsd(dailyStop.resta, lang),
+            cuando: formatDayTime(dailyStop.desde, lang),
+          })}
+        </Notice>
+      )}
       {recoveryNotSaved && step === 'pagar' && <Notice kind="info">{t('avanzado.error.guardar')}</Notice>}
       {body}
     </Layout>

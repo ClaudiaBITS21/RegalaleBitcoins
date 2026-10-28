@@ -26,6 +26,10 @@ export interface Config {
   readonly cookieSecure: boolean;
   /** Techo por regalo en dólares (TOPE_USD); en mainnet lo acota MAINNET_CEILING_USD. */
   readonly ceilingUsd: number | undefined;
+  /** Techo por aporte de las listas altas (TOPE_LISTA_USD); en mainnet lo acota MAINNET_LIST_CEILING_USD. */
+  readonly listCeilingUsd: number | undefined;
+  /** Tope diario de los regalos de una cuenta (TOPE_DIARIO_USD); en mainnet lo acota MAINNET_DAILY_ACCOUNT_USD. */
+  readonly dailyAccountUsd: number | undefined;
   /** Mails con acceso al panel de administración (ADMIN_EMAILS, separados por coma). */
   readonly adminEmails: readonly string[];
   /** Recupero avanzado (guardado y apagado): solo en redes de prueba con RECUPERO_AVANZADO=prueba. */
@@ -83,6 +87,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     cookieSecure: env.COOKIE_SECURE === undefined ? publicUrl.startsWith('https://') : env.COOKIE_SECURE !== 'no',
     adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e !== ''),
     ceilingUsd: env.TOPE_USD === undefined ? undefined : Number(env.TOPE_USD),
+    listCeilingUsd: env.TOPE_LISTA_USD === undefined ? undefined : Number(env.TOPE_LISTA_USD),
+    dailyAccountUsd: env.TOPE_DIARIO_USD === undefined ? undefined : Number(env.TOPE_DIARIO_USD),
     advancedRecovery: env.RECUPERO_AVANZADO === 'prueba',
     webDist: env.WEB_DIST ?? null,
   });

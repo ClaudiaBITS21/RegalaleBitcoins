@@ -4,7 +4,7 @@ import { ALLOW_MAINNET } from '../config.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { deckPick, fillName, loadExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
-import { formatMinor, formatSats, parseAmount } from '../format.ts';
+import { formatMinor, formatSats, formatUsd, parseAmount } from '../format.ts';
 import { AmountStep } from '../give/DraftSteps.tsx';
 import type { Draft } from '../give/GivePage.tsx';
 import { PayBox } from '../give/PayBox.tsx';
@@ -78,7 +78,7 @@ function ReportList({ id, nombre, onDone }: { id: string; nombre: string; onDone
 
 export function ListPage({ id }: { id: string }) {
   const { t, lang, trato } = useI18n();
-  const { network, ceilingUsd } = useNetwork();
+  const { network } = useNetwork();
   const [list, setList] = useState<PublicList | null>(null);
   const [missing, setMissing] = useState(false);
   const [step, setStep] = useState<Step>('lista');
@@ -262,8 +262,10 @@ export function ListPage({ id }: { id: string }) {
       <AmountStep
         draft={{} as Draft}
         error={error}
-        ceilingUsd={list.topeUsd === null ? null : Math.min(ceilingUsd, list.topeUsd)}
-        {...(list.topeUsd === null ? { presets: LIST_PRESETS_USD } : {})}
+        ceilingUsd={list.topeUsd}
+        perContribution
+        {...(list.topeUsd === null || list.topeUsd >= 150 ? { presets: LIST_PRESETS_USD } : {})}
+        {...(list.topeUsd === null ? {} : { ceilingNote: t('lista.aporte.tope', { maximo: formatUsd(list.topeUsd, lang) }) })}
         onNext={(a) => {
           setAmount(a);
           setError(null);

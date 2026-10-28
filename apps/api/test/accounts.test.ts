@@ -359,6 +359,29 @@ describe('Cuentas con passkey', () => {
     assert.ok(!ready?.html?.includes('/r/'), 'el HTML tampoco lleva el link del regalo');
   });
 
+  it('tope diario: hasta USD 500 en regalos por cuenta en 24 h; el sexto de USD 100 se rechaza hasta que sale el primero', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const root = masterRootFromMnemonic(MASTER);
+    const give = (i: number) => {
+      const g = deriveGift(root, i, 'es', signet);
+      return req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', para: 'Tomi', mensaje: '', imagen: 1, moneda: 'USD', monto: 100, sats: '100000', indice: i }, cookie);
+    };
+    for (let i = 0; i < 5; i++) assert.equal((await give(i)).status, 201, `regalo ${i + 1}`);
+    const sixth = await give(5);
+    assert.equal(sixth.status, 409);
+    const body = (await sixth.json()) as { error: string; datos: { topeUsd: number; restaUsd: number; desde: string } };
+    assert.equal(body.error, 'tope_diario');
+    assert.equal(body.datos.topeUsd, 500);
+    assert.equal(body.datos.restaUsd, 0);
+    const [first] = await sql<{ id: string; creado: Date }[]>`select id, creado from regalos order by creado limit 1`;
+    assert.equal(new Date(body.datos.desde).getTime(), (first?.creado.getTime() ?? 0) + 24 * 60 * 60 * 1000);
+    // Ventana móvil: cuando el primero cumple 24 h, entra otro.
+    await sql`update regalos set creado = now() - interval '25 hours' where id = ${first?.id ?? ''}`;
+    assert.equal((await give(5)).status, 201);
+    // Sin cuenta no hay tope por cuenta (el de cada regalo y el de la IP siguen).
+    assert.equal((await (await req('/api/salud')).json() as { topeDiarioUsd: number }).topeDiarioUsd, 500);
+  });
+
   it('si el regalo pago sigue sin abrirse, recuerda a quien regala a los 14 y a los 60 días, y nada más', async () => {
     const { cookie } = await signUp('ana@example.com');
     const root = masterRootFromMnemonic(MASTER);

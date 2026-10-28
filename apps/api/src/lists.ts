@@ -30,6 +30,8 @@ export interface ListDeps {
   readonly arsPrice?: ArsPriceClient | undefined;
   readonly network: Network;
   readonly ceilingUsd: number;
+  /** Techo por aporte de las listas de casamiento y de las de billetera propia. */
+  readonly listCeilingUsd: number;
   readonly occasions: readonly string[];
   readonly contributionsPerHour?: number;
   readonly now?: () => number;
@@ -153,12 +155,14 @@ async function mapLimit<T, R>(items: readonly T[], n: number, fn: (item: T) => P
 }
 
 /**
- * Tope por aporte: las listas con billetera propia (cold wallet) no tienen; las de "Semilla nueva",
- * el mismo que los regalos (autorizado el 17/10/2026, docs/mainnet.md).
+ * Tope por aporte (autorizado el 28/10/2026, docs/mainnet.md): las listas con billetera propia
+ * (cold wallet) y las de casamiento, el de las listas (USD 250); las demás de «Semilla nueva», el
+ * de los regalos (USD 100). Rige para los aportes nuevos, también en listas ya publicadas.
  */
-const listCeiling = (l: Pick<ListRow, 'semilla'>, ceilingUsd: number): number | null => (l.semilla ? ceilingUsd : null);
+export const listCeiling = (l: Pick<ListRow, 'semilla' | 'ocasion'>, d: Pick<ListDeps, 'ceilingUsd' | 'listCeilingUsd'>): number =>
+  !l.semilla || l.ocasion === 'casamiento' ? d.listCeilingUsd : d.ceilingUsd;
 
-const publicList = (l: ListRow, ceilingUsd: number) => ({
+const publicList = (l: ListRow, d: Pick<ListDeps, 'ceilingUsd' | 'listCeilingUsd'>) => ({
   id: l.id,
   red: l.red,
   titulo: l.titulo,
@@ -168,7 +172,7 @@ const publicList = (l: ListRow, ceilingUsd: number) => ({
   fecha: l.fecha === null ? null : l.fecha.toISOString().slice(0, 10),
   idioma: l.idioma,
   abierta: l.cerrada === null,
-  topeUsd: listCeiling(l, ceilingUsd),
+  topeUsd: listCeiling(l, d),
   estado: l.estado,
   // Acepta transferencias de persona a persona en la moneda de la lista (el dato va cifrado).
   aceptaTransferencias: l.estado === 'activa' && (l.cobro !== null || l.alias !== null),
@@ -305,7 +309,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
   app.get('/api/listas/:id', async (c) => {
     const list = await findList(sql, c.req.param('id'));
     if (list === null || list.red !== network.name || list.estado === 'baja') throw new ApiError(404, 'no_encontrado');
-    return c.json(publicList(list, deps.ceilingUsd));
+    return c.json(publicList(list, deps));
   });
 
   /**
@@ -336,7 +340,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
       price.btcUsd(),
       amount.currency === 'ARS' ? (deps.arsPrice?.btcArs().then((q) => q.price) ?? Promise.reject(new ApiError(422, 'monto_invalido'))) : null,
     ]);
-    checkAmount(amount, usdPerBtc, arsPerBtc, MIN_CONTRIBUTION_SATS, listCeiling(list, deps.ceilingUsd) ?? Number.POSITIVE_INFINITY);
+    checkAmount(amount, usdPerBtc, arsPerBtc, MIN_CONTRIBUTION_SATS, listCeiling(list, deps));
     const name = text(b.nombre, LIST_LIMITS.name, false);
     const message = text(b.mensaje, LIST_LIMITS.message, false) ?? '';
     const key = parseAccountKey(list.xpub, network);
@@ -499,7 +503,7 @@ export function registerListRoutes(app: Hono, deps: ListDeps): void {
         // Los motivos de las denuncias, sin el mail de quien denunció.
         const reports = await sql<{ motivo: string; creada: Date }[]>`select motivo, creada from denuncias where lista_id = ${l.id} order by creada`;
         return {
-          ...publicList(l, deps.ceilingUsd),
+          ...publicList(l, deps),
           xpub: l.xpub,
           cobro: l.cobro,
           claveCifrada: l.clave_cifrada,
