@@ -1,7 +1,7 @@
 # Handoff 28/10/2026: topes en mainnet
 
-Estado: INTEGRADO (PR «Topes en mainnet: listas a 250 y tope diario de 500 por cuenta»), salvo
-lo que no tiene el código: no existe cancelar un regalo antes del depósito (ver «Para Code» 3).
+Estado: INTEGRADO (PR «Topes en mainnet: listas a 250 y tope diario de 500 por cuenta» y PR
+«Descartar un regalo sin pagar»: los descartados no cuentan, decidido por Claudia el 28/10).
 
 Decidido por Rodolfo (la responsable) en Cowork, 28/10/2026. **Cuenta como autorización explícita
 de cambio de topes en mainnet** (CLAUDE.md, `docs/mainnet.md`). Agregar la fila a la tabla de

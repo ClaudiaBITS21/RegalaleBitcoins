@@ -84,6 +84,9 @@ export function PanelPage() {
     }
   };
   const [busy, setBusy] = useState(false);
+  // Descartar un regalo sin pagar: cuál se está confirmando y si falló porque ya tenía fondos.
+  const [discarding, setDiscarding] = useState<string | null>(null);
+  const [discardFailed, setDiscardFailed] = useState<string | null>(null);
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
   const [mailSent, setMailSent] = useState(false);
@@ -380,6 +383,11 @@ export function PanelPage() {
                       {t(recovering === g.id ? 'panel.ocultar' : 'avanzado.recuperar.boton')}
                     </Button>
                   )}
+                  {g.estado === 'esperando' && (g.sats === null || g.sats === '0') && (
+                    <Button kind="contorno" disabled={busy} onClick={() => setDiscarding(discarding === g.id ? null : g.id)}>
+                      {t('panel.descartar')}
+                    </Button>
+                  )}
                   {pending && (
                     <Button
                       kind="contorno"
@@ -420,6 +428,30 @@ export function PanelPage() {
                   )}
                   {recovering === g.id && master !== null && network !== null && (
                     <RecoverWithWallet gift={g} root={masterRoot(master)} network={network} onDone={() => void load()} />
+                  )}
+                  {discarding === g.id && (
+                    <div class="regalo-secretos">
+                      <p>{t('panel.descartar.pregunta')}</p>
+                      {discardFailed === g.id && <Notice kind="error">{t('panel.descartar.conFondos')}</Notice>}
+                      <Button
+                        disabled={busy}
+                        onClick={async () => {
+                          setDiscardFailed(null);
+                          try {
+                            await accountApi.discardGift(g.id);
+                            setDiscarding(null);
+                            await load();
+                          } catch {
+                            setDiscardFailed(g.id);
+                          }
+                        }}
+                      >
+                        {t('panel.descartar.si')}
+                      </Button>
+                      <Button kind="contorno" onClick={() => setDiscarding(null)}>
+                        {t('panel.descartar.no')}
+                      </Button>
+                    </div>
                   )}
                   {cardFailed === g.id && <small class="error-campo">{t('panel.tarjetaError')}</small>}
                   {card?.id === g.id && link !== null && <PrintCard link={link} view={card} conPlan={conPlan} />}

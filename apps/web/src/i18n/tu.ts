@@ -57,6 +57,8 @@ export const tu: Partial<Record<Key, string>> = {
   'regalar.pagar.titulo': 'Paga {monto}',
   'regalar.topeDiario.resta': 'Pasarías el tope de {tope} por día entre todos tus regalos. Hoy te quedan {resta}: vuelve al paso del monto y bájalo, o sigue con este monto desde el {cuando}.',
   'regalar.topeDiario.nada': 'Llegaste al tope de {tope} por día entre todos tus regalos. Puedes seguir desde el {cuando}.',
+  'panel.descartar.pregunta': 'Este regalo todavía no se pagó. Si lo descartas, sale de tu lista y deja de contar para el tope por día. No se puede deshacer, y no mandes nada a su dirección.',
+  'regalar.topeDiario.descartar': 'Si armaste regalos que no vas a pagar, descártalos desde «Mis regalos» y dejan de contar.',
   'regalar.pagar.texto': 'Escanea el código con tu billetera, o manda a esta dirección desde tu billetera o el retiro de tu exchange.',
   'regalar.pagar.qrCopiar': 'Toca el QR para copiar dirección y monto',
   'regalar.pagar.menos': 'Llegaron {llego} de {esperado}. Puedes mandar lo que falta a la misma dirección o seguir con lo que llegó.',

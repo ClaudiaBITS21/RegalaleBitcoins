@@ -23,9 +23,10 @@
   | Lista de otra ocasión con «Semilla nueva» | USD 100 por aporte (el de los regalos) | `MAINNET_CEILING_USD` (`TOPE_USD`) |
   | Transferencias en pesos de las listas | sin tope (no pasan por la plataforma) | — |
 
-  El tope diario suma el monto elegido al crear cada regalo de la cuenta, pagado o no (no hay
-  forma de cancelar un regalo antes del depósito; contar solo los pagados dejaría cargar muchos
-  sin pagar y pagarlos todos después).
+  El tope diario suma el monto elegido al crear cada regalo de la cuenta, pagado o no (contar solo
+  los pagados dejaría cargar muchos sin pagar y pagarlos todos después). Los regalos que quien los
+  armó descarta desde «Mis regalos» no cuentan; solo se descartan si su dirección nunca recibió
+  nada (Claudia, 28/10/2026).
 - Hasta tener el dominio, mainnet vive en `https://regalalebitcoins.web.app`. La responsable no
   usa signet: el sitio `regalalebitcoins-signet` no se creó (el destino queda en `firebase.json`
   por si hace falta) y el servicio `regalalebitcoins-api` de signet sigue con la versión anterior.
