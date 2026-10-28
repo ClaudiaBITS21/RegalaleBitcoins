@@ -27,6 +27,8 @@ export interface GiftView {
   readonly mostrarValor?: boolean;
   readonly original: { readonly moneda: string | null; readonly monto: number; readonly usdPorBtc: number | null } | null;
   readonly usdPorBtcHoy: number | null;
+  /** Lo que vale hoy lo recibido, en la moneda del regalo (en dólares si fue en sats o si falla la de pesos). Sin el dato: API anterior. */
+  readonly valorHoy?: { readonly moneda: 'USD' | 'ARS'; readonly monto: number } | null;
   readonly reclamo: { readonly txid: string; readonly tipo: string } | null;
 }
 

@@ -336,6 +336,23 @@ describe('API para regalar', () => {
     assert.equal((await post('/api/gifts', nuevo(24, { mostrarValor: 'no' }))).status, 400);
   });
 
+  it('«hoy vale» en la moneda del regalo: pesos con pesos; si falla la cotización en pesos, dólares; sats, en dólares; oculto, nada (25/10)', async () => {
+    const crear = async (i: number, extra: Record<string, unknown>) => ((await (await post('/api/gifts', nuevo(i, extra))).json()) as { id: string }).id;
+    const ars = await crear(31, { moneda: 'ARS', monto: 40000, sats: '25000' }); // a $160.000.000 por bitcoin
+    const usd = await crear(32, {});
+    const sat = await crear(33, { moneda: 'SAT', monto: 25000, sats: '25000' });
+    const oculto = await crear(34, { mostrarValor: false });
+    const hoy = async (id: string, a = app) => ((await (await a.request(`/api/gifts/${id}`)).json()) as { valorHoy: unknown }).valorHoy;
+    assert.equal(await hoy(usd), null, 'sin nada recibido, no hay valor de hoy');
+    chain.mempoolFunded = 50_000n; // llegaron 50.000 sats (sin confirmar)
+    assert.deepEqual(await hoy(ars), { moneda: 'ARS', monto: 80000 });
+    assert.deepEqual(await hoy(usd), { moneda: 'USD', monto: 50 });
+    assert.deepEqual(await hoy(sat), { moneda: 'USD', monto: 50 });
+    assert.equal(await hoy(oculto), null);
+    const sinPesos = createApp({ sql, chain, price, arsPrice: { btcArs: async () => Promise.reject(new Error('caída')) }, network: signet });
+    assert.deepEqual(await hoy(ars, sinPesos), { moneda: 'USD', monto: 50 });
+  });
+
   it('recupero avanzado: regalo multifirma 1-de-2 con su script de testigo; el servidor lo valida', async () => {
     const walletRoot = masterRootFromMnemonic('legal winner thank year wave sausage worth useful legal winner thank yellow');
     const key = parseRecoveryKey(recoveryKeyText(walletRoot, signet), signet);

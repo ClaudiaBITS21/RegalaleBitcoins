@@ -1,6 +1,6 @@
 # Handoff 28/10/2026 (agregado): abrir un regalo sin billetera
 
-Estado: PENDIENTE
+Estado: INTEGRADO (PR «Abrir un regalo sin billetera: hoy vale en su moneda y guía nueva»)
 
 Se suma a «2026-10-25 - abrir regalo sin billetera.md» (que todavía no está en el repo: pasar los
 dos a `docs/handoff/2026-10-25/` y `docs/handoff/2026-10-28/`). Cierra su único punto ABIERTO.

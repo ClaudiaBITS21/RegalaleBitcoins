@@ -355,6 +355,7 @@ export function createApp(deps: AppDeps): Hono {
         esperados: gift.satsExpected === null ? null : gift.satsExpected.toString(),
       },
       pagoTrabado: stuck,
+      valorHoy: gift.showValue ? await valueToday(gift.currency, funds.confirmedSats + funds.unconfirmedSats, usdNow) : null,
       // Cuánto valía en plata, solo si quien regala eligió mostrarlo (25/10); si no, ni se manda.
       mostrarValor: gift.showValue,
       original: gift.amount === null || !gift.showValue ? null : { moneda: gift.currency, monto: gift.amount, usdPorBtc: gift.usdPerBtc },
@@ -362,6 +363,21 @@ export function createApp(deps: AppDeps): Hono {
       reclamo: gift.claimTxid === null ? (pending === null ? null : { txid: pending.txid, tipo: 'programado' }) : { txid: gift.claimTxid, tipo: gift.claimKind },
     });
   });
+
+  /**
+   * Lo que vale hoy lo recibido, en la moneda del regalo (handoff 25/10/2026): nunca se comparan
+   * monedas distintas. En pesos, con la cotización en pesos; si falla, en dólares (la web muestra
+   * entonces solo «Hoy vale», sin el «Valía»). En sats o sin moneda, en dólares.
+   */
+  const valueToday = async (currency: string | null, sats: bigint, usdPerBtc: number | null): Promise<{ moneda: 'USD' | 'ARS'; monto: number } | null> => {
+    if (sats === 0n) return null;
+    const btc = Number(sats) / 1e8;
+    if (currency === 'ARS') {
+      const ars = await deps.arsPrice?.btcArs().then((q) => q.price).catch(() => null);
+      if (ars != null) return { moneda: 'ARS', monto: Math.round(btc * ars) };
+    }
+    return usdPerBtc === null ? null : { moneda: 'USD', monto: Math.round(btc * usdPerBtc * 100) / 100 };
+  };
 
   /** UTXO confirmados con su transacción completa: el navegador verifica los montos contra el txid. */
   /**

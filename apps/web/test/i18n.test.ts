@@ -18,7 +18,7 @@ describe('Traducciones', () => {
   }
 
   it('el mensaje fijo de seguridad está en todos los idiomas', () => {
-    assert.equal(translate('es', 'pie'), 'Nunca te vamos a pedir las palabras de tu billetera.');
+    assert.equal(translate('es', 'pie'), 'Nunca te vamos a pedir las 12 o 24 palabras de tu billetera.');
     for (const lang of UI_LANGS) assert.ok(translate(lang, 'pie').length > 10);
   });
 

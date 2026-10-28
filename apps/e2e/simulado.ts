@@ -152,7 +152,11 @@ try {
   await page.getByRole('button', { name: 'No, todavía no' }).click();
   await page.getByRole('heading', { name: 'Creá tu billetera' }).waitFor();
   await shot('5-guia');
-  await page.getByLabel('Ya anoté mis 12 palabras en papel').check();
+  // Guía del 25/10: las dos tiendas, el aviso de que las 12 no son las 4 del regalo y el texto nuevo.
+  if ((await page.getByRole('link', { name: 'App Store' }).getAttribute('href')) !== 'https://apps.apple.com/app/bluewallet-bitcoin-wallet/id1376878040') fail('la guía no lleva a BlueWallet en App Store');
+  if ((await page.getByRole('link', { name: 'Google Play' }).getAttribute('href')) !== 'https://play.google.com/store/apps/details?id=io.bluewallet.bluewallet') fail('la guía no lleva a BlueWallet en Google Play');
+  await page.getByText('Ojo: no son las 4 palabras del regalo.', { exact: false }).waitFor();
+  await page.getByLabel('Anoté mis 12 palabras en papel').check();
   await page.getByRole('button', { name: 'Ya tengo mi dirección' }).click();
 
   await page.getByRole('heading', { name: 'Pegá tu dirección' }).waitFor();

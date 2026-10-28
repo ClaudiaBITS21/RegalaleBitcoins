@@ -1,6 +1,6 @@
 // Textos en castellano rioplatense: es la fuente; pt, en e it traducen estas claves.
 export const es = {
-  'pie': 'Nunca te vamos a pedir las palabras de tu billetera.',
+  'pie': 'Nunca te vamos a pedir las 12 o 24 palabras de tu billetera.',
   'red.prueba': 'Red de prueba (signet): estos bitcoins no tienen valor.',
   'idioma': 'Idioma',
   'inicio': 'Inicio',
@@ -27,6 +27,8 @@ export const es = {
   'reclamo.anonimo': 'Te hicieron un regalo',
   'reclamo.valia': 'Valía {antes} cuando te lo regalaron. Hoy vale {hoy}.',
   'reclamo.vale': 'Hoy vale {hoy}.',
+  'reclamo.sats': 'Son {sats}. Valor de hoy: unos {usd}.',
+  'reclamo.satsSolo': 'Son {sats}.',
   'reclamo.valor': "Un regalo de {valor} en bitcoin",
   'reclamo.cta': 'Recibir mi regalo',
   'reclamo.estado.esperando': 'Este regalo todavía se está preparando. Volvé a abrir el link en un rato.',
@@ -38,7 +40,7 @@ export const es = {
   'reclamo.actualizar': 'Actualizar',
 
   'palabras.titulo': 'Escribí las 4 palabras',
-  'palabras.texto': "Te las dieron por otro lado: en persona, en la tarjeta o en otro mensaje. Escribilas en orden.",
+  'palabras.texto': 'Te las dieron por otro lado: en persona, en la tarjeta o en otro mensaje. Escribilas en orden. Sirven solo para abrir este regalo.',
   'palabras.etiqueta': 'Palabra {n}',
   'palabras.fueraDeLista': 'Esa palabra no está en la lista. Revisala.',
   'palabras.incorrectas': 'No encontramos fondos con esas palabras, revisalas.',
@@ -48,13 +50,15 @@ export const es = {
   'billetera.no': 'No, todavía no',
 
   'guia.titulo': 'Creá tu billetera',
-  'guia.paso1': 'Bajá BlueWallet de tu tienda de apps.',
-  'guia.paso2': 'Tocá +, elegí Bitcoin, ponele un nombre y dejá Native SegWit.',
-  'guia.paso3': 'Anotá las 12 palabras en papel. Si perdés el teléfono, son lo único que recupera tu plata.',
-  'guia.paso4': 'Tocá Recibir, copiá la dirección y volvé acá.',
-  'guia.anote': 'Ya anoté mis 12 palabras en papel',
+  'guia.paso1': 'Bajá BlueWallet:',
+  'guia.paso2': 'Abrila y tocá «Añadir cartera». Elegí Bitcoin y tocá «Crear».',
+  'guia.paso3': 'Te va a mostrar 12 palabras. Anotalas en papel, en orden. No les saques foto ni se las pases a nadie, tampoco a nosotros. Si perdés el teléfono, son lo único que recupera tu plata.',
+  'guia.paso4': 'Tocá «Recibir», copiá la dirección y volvé a esta página.',
+  'guia.intro': 'Te lleva unos 3 minutos. Si preferís hacerlo más tarde, el regalo te espera: no vence. Y si te cuesta, pedile una mano a quien te lo regaló.',
+  'guia.distintas': 'Ojo: no son las 4 palabras del regalo. Esas 4 sirven solo para abrir este regalo. Las 12 son la llave de tu billetera, para siempre.',
+  'guia.anote': 'Anoté mis 12 palabras en papel',
   'guia.listo': 'Ya tengo mi dirección',
-  'guia.otras': 'Otras billeteras en bitcoin.org',
+  'guia.otras': '¿Ya usás otra billetera? También sirve',
   'guia.signet': 'Estás en la red de prueba y BlueWallet no la usa: probá con Sparrow o Electrum en modo signet.',
 
   'direccion.titulo': 'Pegá tu dirección',
@@ -69,7 +73,7 @@ export const es = {
 
   'confirmar.titulo': 'Confirmá',
   'confirmar.recibis': 'Vas a recibir {monto}.',
-  'confirmar.comision': 'Comisión de la red: {comision}.',
+  'confirmar.comision': 'Comisión de la red: {comision}. La cobra la red de Bitcoin, no nosotros.',
   'confirmar.comisionAlta': 'La comisión supera USD 1. Si no tenés apuro, podés esperar a que baje.',
   'confirmar.ahora': 'Ahora, velocidad media',
   'confirmar.esperar': 'Esperar a que baje la comisión',

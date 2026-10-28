@@ -1,7 +1,7 @@
 import type { Dict } from './es.ts';
 
 export const it: Dict = {
-  'pie': 'Non ti chiederemo mai le parole del tuo portafoglio.',
+  'pie': 'Non ti chiederemo mai le 12 o 24 parole del tuo portafoglio.',
   'red.prueba': 'Rete di prova (signet): questi bitcoin non hanno valore.',
   'idioma': 'Lingua',
   'inicio': 'Home',
@@ -28,6 +28,8 @@ export const it: Dict = {
   'reclamo.anonimo': 'Hai ricevuto un regalo',
   'reclamo.valia': 'Valeva {antes} quando te l’hanno regalato. Oggi vale {hoy}.',
   'reclamo.vale': 'Oggi vale {hoy}.',
+  'reclamo.sats': 'Sono {sats}. Valore di oggi: circa {usd}.',
+  'reclamo.satsSolo': 'Sono {sats}.',
   'reclamo.valor': "Un regalo di {valor} in bitcoin",
   'reclamo.cta': 'Ricevi il mio regalo',
   'reclamo.estado.esperando': 'Questo regalo è ancora in preparazione. Riapri il link tra poco.',
@@ -39,7 +41,7 @@ export const it: Dict = {
   'reclamo.actualizar': 'Aggiorna',
 
   'palabras.titulo': 'Scrivi le 4 parole',
-  'palabras.texto': "Te le hanno date in un altro modo: di persona, sul biglietto o in un altro messaggio. Scrivile in ordine.",
+  'palabras.texto': 'Te le hanno date in un altro modo: di persona, sul biglietto o in un altro messaggio. Scrivile in ordine. Servono solo ad aprire questo regalo.',
   'palabras.etiqueta': 'Parola {n}',
   'palabras.fueraDeLista': 'Questa parola non è nella lista. Controllala.',
   'palabras.incorrectas': 'Non abbiamo trovato fondi con queste parole, controllale.',
@@ -49,13 +51,15 @@ export const it: Dict = {
   'billetera.no': 'No, non ancora',
 
   'guia.titulo': 'Crea il tuo portafoglio',
-  'guia.paso1': 'Scarica BlueWallet dal tuo store di app.',
-  'guia.paso2': 'Tocca +, scegli Bitcoin, dagli un nome e lascia Native SegWit.',
-  'guia.paso3': 'Scrivi le 12 parole su carta. Se perdi il telefono, sono l’unico modo per recuperare i tuoi soldi.',
-  'guia.paso4': 'Tocca Ricevi, copia l’indirizzo e torna qui.',
+  'guia.paso1': 'Scarica BlueWallet:',
+  'guia.paso2': 'Aprila e tocca «Aggiungi portafoglio». Scegli Bitcoin e tocca «Crea».',
+  'guia.paso3': 'Ti mostrerà 12 parole. Scrivile su carta, in ordine. Non fotografarle e non darle a nessuno, nemmeno a noi. Se perdi il telefono, sono l’unico modo per recuperare i tuoi soldi.',
+  'guia.paso4': 'Tocca «Ricevi», copia l’indirizzo e torna a questa pagina.',
+  'guia.intro': 'Ci vogliono circa 3 minuti. Se preferisci farlo più tardi, il regalo ti aspetta: non scade. E se ti riesce difficile, chiedi una mano a chi te l’ha regalato.',
+  'guia.distintas': 'Attenzione: non sono le 4 parole del regalo. Quelle 4 servono solo ad aprire questo regalo. Le 12 sono la chiave del tuo portafoglio, per sempre.',
   'guia.anote': 'Ho scritto le mie 12 parole su carta',
   'guia.listo': 'Ho il mio indirizzo',
-  'guia.otras': 'Altri portafogli su bitcoin.org',
+  'guia.otras': 'Usi già un altro portafoglio? Va bene anche quello',
   'guia.signet': 'Sei sulla rete di prova e BlueWallet non la supporta: prova Sparrow o Electrum in modalità signet.',
 
   'direccion.titulo': 'Incolla il tuo indirizzo',
@@ -70,7 +74,7 @@ export const it: Dict = {
 
   'confirmar.titulo': 'Conferma',
   'confirmar.recibis': 'Riceverai {monto}.',
-  'confirmar.comision': 'Commissione di rete: {comision}.',
+  'confirmar.comision': 'Commissione di rete: {comision}. La applica la rete Bitcoin, non noi.',
   'confirmar.comisionAlta': 'La commissione supera 1 USD. Se non hai fretta, puoi aspettare che scenda.',
   'confirmar.ahora': 'Adesso, velocità media',
   'confirmar.esperar': 'Aspetta che la commissione scenda',
