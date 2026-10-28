@@ -160,3 +160,8 @@ export function formatBtc(sats: bigint, lang: UiLang): string {
   const nf = new Intl.NumberFormat(LOCALES[lang], { ...GROUPING, maximumFractionDigits: 8 });
   return `${nf.format(satsToBtcString(sats) as Intl.StringNumericLiteral)} BTC`;
 }
+
+/** Día y hora para avisos ("29/10, 14:05"), según el idioma. */
+export function formatDayTime(date: Date, lang: UiLang): string {
+  return new Intl.DateTimeFormat(LOCALES[lang], { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+}

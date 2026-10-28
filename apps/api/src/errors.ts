@@ -50,14 +50,18 @@ export type ErrorCode =
   | 'sin_creditos'
   | 'direccion_invalida'
   | 'arrepentimiento_vencido'
-  | 'creditos_usados';
+  | 'creditos_usados'
+  | 'tope_diario';
 
 export class ApiError extends Error {
   readonly status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502;
   readonly code: ErrorCode;
-  constructor(status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502, code: ErrorCode, message: string = code) {
+  /** Datos para que la web arme el mensaje (por ejemplo, cuánto queda del tope diario). */
+  readonly data: Readonly<Record<string, string | number>> | undefined;
+  constructor(status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 502, code: ErrorCode, message: string = code, data?: Readonly<Record<string, string | number>>) {
     super(message);
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }

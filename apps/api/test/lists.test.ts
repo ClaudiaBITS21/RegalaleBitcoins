@@ -102,7 +102,7 @@ describe('listas de regalos', () => {
     const { id } = (await ok.json()) as { id: string };
     const pub = (await (await req(`/api/listas/${id}`, undefined, false)).json()) as Record<string, unknown>;
     assert.equal(pub.titulo, 'Casamiento de Ana y Leo');
-    assert.equal(pub.topeUsd, null);
+    assert.equal(pub.topeUsd, 250, 'billetera propia: el tope de las listas');
     assert.ok(!JSON.stringify(pub).includes(VPUB), 'la página pública no muestra la llave');
   });
 
@@ -123,17 +123,26 @@ describe('listas de regalos', () => {
     assert.deepEqual(panel.listas[0]?.aportes.map((x) => [x.nombre, x.estado]), [['Tía Marta', 'recibido'], ['Primo Juan', 'esperando']]);
   });
 
-  it('tope por aporte solo en listas de semilla nueva; mínimo de 1.000 sats en todas', async () => {
-    const seeded = (await (await newList({ semilla: true })).json()) as { id: string };
-    assert.equal(((await (await req(`/api/listas/${seeded.id}`)).json()) as { topeUsd: number | null }).topeUsd, 20);
-    assert.equal((await aporte(seeded.id, { monto: 25, sats: '25000' })).status, 422);
-    assert.equal((await aporte(seeded.id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
-    assert.equal((await aporte(seeded.id, { monto: 20, sats: '20000' })).status, 201);
-    // Billetera propia (cold wallet): sin tope. (Misma llave de prueba: se limpian los aportes anteriores.)
+  it('tope por aporte (28/10): casamiento y billetera propia 250; semilla nueva de otra ocasión, el de los regalos; mínimo de 1.000 sats', async () => {
+    const tope = async (id: string) => ((await (await req(`/api/listas/${id}`)).json()) as { topeUsd: number }).topeUsd;
+    // Semilla nueva de cumpleaños: el techo de los regalos (en esta prueba, 20).
+    const birthday = (await (await newList({ semilla: true, ocasion: 'cumple' })).json()) as { id: string };
+    assert.equal(await tope(birthday.id), 20);
+    assert.equal((await aporte(birthday.id, { monto: 25, sats: '25000' })).status, 422);
+    assert.equal((await aporte(birthday.id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
+    assert.equal((await aporte(birthday.id, { monto: 20, sats: '20000' })).status, 201);
+    // Semilla nueva de casamiento: 250. (Misma llave de prueba: se limpian los aportes anteriores.)
     await sql`delete from aportes`;
-    const own = (await (await newList()).json()) as { id: string };
-    assert.equal(((await (await req(`/api/listas/${own.id}`)).json()) as { topeUsd: number | null }).topeUsd, null);
+    const wedding = (await (await newList({ semilla: true })).json()) as { id: string };
+    assert.equal(await tope(wedding.id), 250);
+    assert.equal((await aporte(wedding.id, { monto: 250, sats: '250000' })).status, 201);
+    assert.equal((await aporte(wedding.id, { monto: 300, sats: '300000' })).status, 422);
+    // Billetera propia (cold wallet), cualquier ocasión: 250 (antes, sin tope).
+    await sql`delete from aportes`;
+    const own = (await (await newList({ ocasion: 'cumple' })).json()) as { id: string };
+    assert.equal(await tope(own.id), 250);
     assert.equal((await aporte(own.id, { monto: 150, sats: '150000' })).status, 201);
+    assert.equal((await aporte(own.id, { monto: 300, sats: '300000' })).status, 422);
     assert.equal((await aporte(own.id, { moneda: 'SAT', monto: 500, sats: '500' })).status, 422);
   });
 

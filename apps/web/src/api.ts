@@ -67,10 +67,13 @@ export interface NewGift {
 export class ApiFailure extends Error {
   readonly status: number;
   readonly code: string;
-  constructor(status: number, code: string) {
+  /** Datos que manda la API para armar el mensaje (por ejemplo, cuánto queda del tope diario). */
+  readonly data: Readonly<Record<string, unknown>> | undefined;
+  constructor(status: number, code: string, data?: Readonly<Record<string, unknown>>) {
     super(code);
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -81,8 +84,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiFailure(0, 'sin_conexion');
   }
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new ApiFailure(res.status, body.error ?? 'error');
+  const body = (await res.json().catch(() => ({}))) as { error?: string; datos?: Record<string, unknown> };
+  if (!res.ok) throw new ApiFailure(res.status, body.error ?? 'error', body.datos);
   return body as T;
 }
 
@@ -374,7 +377,7 @@ export const api = {
   gift: (id: string) => call<GiftView>(`/api/gifts/${encodeURIComponent(id)}`),
   utxos: async (id: string) => (await call<{ utxos: FundingUtxo[] }>(`/api/gifts/${encodeURIComponent(id)}/utxos`)).utxos,
   fees: () => call<FeeRates>('/api/fees'),
-  health: () => call<{ ok: boolean; red: NetworkName; topeUsd: number; recuperoAvanzado?: boolean }>('/api/salud'),
+  health: () => call<{ ok: boolean; red: NetworkName; topeUsd: number; topeDiarioUsd?: number; recuperoAvanzado?: boolean }>('/api/salud'),
   price: () => call<{ usdPorBtc: number; fuenteUsd: string; arsPorBtc: number | null; fuenteArs: 'criptoya' | 'bitso' | null }>('/api/precio'),
   /** Registra un regalo antes de pagarlo. Solo datos públicos: nunca la semilla ni las palabras. */
   createGift: async (gift: NewGift) =>

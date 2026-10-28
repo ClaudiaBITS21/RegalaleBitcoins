@@ -31,7 +31,7 @@ export interface PublicList {
   readonly fecha: string | null;
   readonly idioma: string;
   readonly abierta: boolean;
-  /** Tope por aporte en dólares; null en listas con billetera propia (sin tope). */
+  /** Tope por aporte en dólares (28/10/2026: 250 en casamiento y billetera propia; si no, el de los regalos). null = sin tope (API vieja). */
   readonly topeUsd: number | null;
   /** Quien armó la lista acepta transferencias a su cuenta (el dato va cifrado; la clave, en el link). */
   readonly aceptaTransferencias: boolean;
