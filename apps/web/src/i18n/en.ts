@@ -1,7 +1,7 @@
 import type { Dict } from './es.ts';
 
 export const en: Dict = {
-  'pie': 'We will never ask for your wallet words.',
+  'pie': 'We will never ask for the 12 or 24 words of your wallet.',
   'red.prueba': 'Test network (signet): these bitcoins have no value.',
   'idioma': 'Language',
   'inicio': 'Home',
@@ -28,6 +28,8 @@ export const en: Dict = {
   'reclamo.anonimo': 'You got a gift',
   'reclamo.valia': 'It was worth {antes} when you got it. Today it is worth {hoy}.',
   'reclamo.vale': 'Today it is worth {hoy}.',
+  'reclamo.sats': 'That’s {sats}. Today’s value: about {usd}.',
+  'reclamo.satsSolo': 'That’s {sats}.',
   'reclamo.valor': "A {valor} gift in bitcoin",
   'reclamo.cta': 'Receive my gift',
   'reclamo.estado.esperando': 'This gift is still being prepared. Open the link again in a little while.',
@@ -39,7 +41,7 @@ export const en: Dict = {
   'reclamo.actualizar': 'Refresh',
 
   'palabras.titulo': 'Type the 4 words',
-  'palabras.texto': "You got them another way: in person, on the card or in another message. Type them in order.",
+  'palabras.texto': 'You got them another way: in person, on the card or in another message. Type them in order. They only open this gift.',
   'palabras.etiqueta': 'Word {n}',
   'palabras.fueraDeLista': 'That word is not on the list. Please check it.',
   'palabras.incorrectas': 'We found no funds with those words, please check them.',
@@ -49,13 +51,15 @@ export const en: Dict = {
   'billetera.no': 'Not yet',
 
   'guia.titulo': 'Create your wallet',
-  'guia.paso1': 'Download BlueWallet from your app store.',
-  'guia.paso2': 'Tap +, choose Bitcoin, give it a name and keep Native SegWit.',
-  'guia.paso3': 'Write the 12 words down on paper. If you lose your phone, they are the only way to recover your money.',
-  'guia.paso4': 'Tap Receive, copy the address and come back here.',
+  'guia.paso1': 'Download BlueWallet:',
+  'guia.paso2': 'Open it and tap “Add Wallet”. Choose Bitcoin and tap “Create”.',
+  'guia.paso3': 'It will show you 12 words. Write them down on paper, in order. Don’t take a photo or share them with anyone, us included. If you lose your phone, they are the only way to recover your money.',
+  'guia.paso4': 'Tap “Receive”, copy the address and come back to this page.',
+  'guia.intro': 'It takes about 3 minutes. If you’d rather do it later, the gift will wait: it doesn’t expire. And if it’s hard, ask the person who gave it to you for a hand.',
+  'guia.distintas': 'Careful: these are not the gift’s 4 words. Those 4 only open this gift. The 12 are the key to your wallet, forever.',
   'guia.anote': 'I wrote my 12 words down on paper',
   'guia.listo': 'I have my address',
-  'guia.otras': 'Other wallets at bitcoin.org',
+  'guia.otras': 'Already use another wallet? That works too',
   'guia.signet': 'You are on the test network and BlueWallet does not support it: try Sparrow or Electrum in signet mode.',
 
   'direccion.titulo': 'Paste your address',
@@ -70,7 +74,7 @@ export const en: Dict = {
 
   'confirmar.titulo': 'Confirm',
   'confirmar.recibis': 'You will receive {monto}.',
-  'confirmar.comision': 'Network fee: {comision}.',
+  'confirmar.comision': 'Network fee: {comision}. The Bitcoin network charges it, not us.',
   'confirmar.comisionAlta': 'The fee is over USD 1. If you are not in a hurry, you can wait for it to go down.',
   'confirmar.ahora': 'Now, medium speed',
   'confirmar.esperar': 'Wait for a lower fee',

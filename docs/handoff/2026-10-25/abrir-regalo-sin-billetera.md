@@ -1,5 +1,11 @@
 # Handoff 25/10/2026: abrir un regalo sin billetera
 
+Estado: INTEGRADO (PR «Abrir un regalo sin billetera: hoy vale en su moneda y guía nueva»), salvo:
+- 2: las insignias oficiales de App Store y Google Play en español van como botones de texto
+  hasta tener los SVG oficiales (no se pudieron bajar desde el entorno de desarrollo).
+- 3: las capturas de BlueWallet, que pasa Rodolfo.
+- 5: guardar el paso en `sessionStorage`, consultado con la responsable (ver el PR).
+
 Base: `main` 4c2e41e. Archivos: `apps/web/src/claim/ClaimPage.tsx`, `apps/web/src/i18n/es.ts` (y espejos en tu/en/pt/it), `apps/api/src/app.ts`.
 Aprobado por Rodolfo el 25/10. Lo marcado **ABIERTO** se consulta antes de implementar.
 

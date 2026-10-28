@@ -2,7 +2,7 @@ import type { Dict } from './es.ts';
 
 // Português do Brasil.
 export const pt: Dict = {
-  'pie': 'Nunca vamos pedir as palavras da sua carteira.',
+  'pie': 'Nunca vamos pedir as 12 ou 24 palavras da sua carteira.',
   'red.prueba': 'Rede de teste (signet): estes bitcoins não têm valor.',
   'idioma': 'Idioma',
   'inicio': 'Início',
@@ -29,6 +29,8 @@ export const pt: Dict = {
   'reclamo.anonimo': 'Você ganhou um presente',
   'reclamo.valia': 'Valia {antes} quando você ganhou. Hoje vale {hoy}.',
   'reclamo.vale': 'Hoje vale {hoy}.',
+  'reclamo.sats': 'São {sats}. Valor de hoje: cerca de {usd}.',
+  'reclamo.satsSolo': 'São {sats}.',
   'reclamo.valor': "Um presente de {valor} em bitcoin",
   'reclamo.cta': 'Receber meu presente',
   'reclamo.estado.esperando': 'Este presente ainda está sendo preparado. Abra o link de novo daqui a pouco.',
@@ -40,7 +42,7 @@ export const pt: Dict = {
   'reclamo.actualizar': 'Atualizar',
 
   'palabras.titulo': 'Digite as 4 palavras',
-  'palabras.texto': "Você as recebeu por outro meio: pessoalmente, no cartão ou em outra mensagem. Digite-as na ordem.",
+  'palabras.texto': 'Você as recebeu por outro meio: pessoalmente, no cartão ou em outra mensagem. Digite-as na ordem. Elas servem só para abrir este presente.',
   'palabras.etiqueta': 'Palavra {n}',
   'palabras.fueraDeLista': 'Essa palavra não está na lista. Confira.',
   'palabras.incorrectas': 'Não encontramos fundos com essas palavras, confira.',
@@ -50,13 +52,15 @@ export const pt: Dict = {
   'billetera.no': 'Não, ainda não',
 
   'guia.titulo': 'Crie sua carteira',
-  'guia.paso1': 'Baixe a BlueWallet na sua loja de apps.',
-  'guia.paso2': 'Toque em +, escolha Bitcoin, dê um nome e deixe Native SegWit.',
-  'guia.paso3': 'Anote as 12 palavras no papel. Se perder o celular, elas são a única forma de recuperar seu dinheiro.',
-  'guia.paso4': 'Toque em Receber, copie o endereço e volte aqui.',
-  'guia.anote': 'Já anotei minhas 12 palavras no papel',
+  'guia.paso1': 'Baixe a BlueWallet:',
+  'guia.paso2': 'Abra e toque em «Adicionar carteira». Escolha Bitcoin e toque em «Criar».',
+  'guia.paso3': 'Ela vai mostrar 12 palavras. Anote no papel, na ordem. Não tire foto nem passe para ninguém, nem para nós. Se perder o celular, elas são a única forma de recuperar seu dinheiro.',
+  'guia.paso4': 'Toque em «Receber», copie o endereço e volte a esta página.',
+  'guia.intro': 'Leva uns 3 minutos. Se preferir fazer mais tarde, o presente espera por você: não vence. E se tiver dificuldade, peça uma mão a quem te deu o presente.',
+  'guia.distintas': 'Atenção: não são as 4 palavras do presente. Essas 4 servem só para abrir este presente. As 12 são a chave da sua carteira, para sempre.',
+  'guia.anote': 'Anotei minhas 12 palavras no papel',
   'guia.listo': 'Já tenho meu endereço',
-  'guia.otras': 'Outras carteiras em bitcoin.org',
+  'guia.otras': 'Já usa outra carteira? Também serve',
   'guia.signet': 'Você está na rede de teste e a BlueWallet não a usa: tente com Sparrow ou Electrum no modo signet.',
 
   'direccion.titulo': 'Cole seu endereço',
@@ -71,7 +75,7 @@ export const pt: Dict = {
 
   'confirmar.titulo': 'Confirme',
   'confirmar.recibis': 'Você vai receber {monto}.',
-  'confirmar.comision': 'Taxa da rede: {comision}.',
+  'confirmar.comision': 'Taxa da rede: {comision}. Quem cobra é a rede do Bitcoin, não nós.',
   'confirmar.comisionAlta': 'A taxa passa de USD 1. Se não tiver pressa, você pode esperar ela baixar.',
   'confirmar.ahora': 'Agora, velocidade média',
   'confirmar.esperar': 'Esperar a taxa baixar',
