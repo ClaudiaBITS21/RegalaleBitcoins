@@ -61,6 +61,7 @@ export const pt: Dict = {
   'guia.anote': 'Anotei minhas 12 palavras no papel',
   'guia.listo': 'Já tenho meu endereço',
   'guia.otras': 'Já usa outra carteira? Também serve',
+  'guia.googlePlay': 'Disponível no Google Play',
   'guia.signet': 'Você está na rede de teste e a BlueWallet não a usa: tente com Sparrow ou Electrum no modo signet.',
 
   'direccion.titulo': 'Cole seu endereço',

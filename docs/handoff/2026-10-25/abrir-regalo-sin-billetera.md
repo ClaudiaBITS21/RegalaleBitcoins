@@ -1,8 +1,8 @@
 # Handoff 25/10/2026: abrir un regalo sin billetera
 
 Estado: INTEGRADO (PR «Abrir un regalo sin billetera: hoy vale en su moneda y guía nueva»), salvo:
-- 2: las insignias oficiales de App Store y Google Play en español van como botones de texto
-  hasta tener los SVG oficiales (no se pudieron bajar desde el entorno de desarrollo).
+- 2: Google Play ya va con su insignia oficial (es, pt y en; la pasó la responsable el 28/10; en
+  italiano, la de inglés). App Store sigue como botón de texto hasta tener su SVG oficial.
 - 3: las capturas de BlueWallet, que pasa Rodolfo.
 - 5: guardar el paso en `sessionStorage`, consultado con la responsable (ver el PR).
 

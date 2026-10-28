@@ -7,6 +7,9 @@ import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key, UiLang } from '../i18n/index.ts';
+import googlePlayEn from '../insignias/google-play-en.svg';
+import googlePlayEs from '../insignias/google-play-es.svg';
+import googlePlayPt from '../insignias/google-play-pt.svg';
 import { installWay } from '../pwa.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AddressStep } from './AddressStep.tsx';
@@ -20,28 +23,28 @@ type LoadError = 'link' | 'no_existe' | 'sin_red' | 'mainnet';
 const APP_STORE = 'https://apps.apple.com/app/bluewallet-bitcoin-wallet/id1376878040';
 const GOOGLE_PLAY = 'https://play.google.com/store/apps/details?id=io.bluewallet.bluewallet';
 
+/** Insignia oficial de Google Play según el idioma (Google no tiene versión en italiano: va la de inglés). */
+const GOOGLE_PLAY_BADGE: Readonly<Record<UiLang, string>> = { es: googlePlayEs, pt: googlePlayPt, en: googlePlayEn, it: googlePlayEn };
+
 /**
- * Las dos tiendas, la del sistema del celu primero. Van como botones de texto hasta tener las
- * insignias oficiales en español (SVG autoalojados, sin modificar).
+ * Las dos tiendas, la del sistema del celu primero. Google Play con su insignia oficial (SVG
+ * autoalojado, sin modificar); App Store como botón de texto hasta tener la suya.
  */
 function StoreLinks() {
+  const { t, lang } = useI18n();
   const [way] = useState(() => installWay(navigator.userAgent, navigator.maxTouchPoints ?? 0));
-  const stores: [string, string][] = [
-    ['App Store', APP_STORE],
-    ['Google Play', GOOGLE_PLAY],
-  ];
-  if (way === 'android') stores.reverse();
-  return (
-    <span class="tiendas">
-      {stores.map(([name, url]) => (
-        <a key={name} class="boton boton-contorno tienda" href={url} target="_blank" rel="noopener noreferrer">
-          {name}
-        </a>
-      ))}
-    </span>
+  const appStore = (
+    <a key="app-store" class="boton boton-contorno tienda" href={APP_STORE} target="_blank" rel="noopener noreferrer">
+      App Store
+    </a>
   );
+  const googlePlay = (
+    <a key="google-play" class="tienda tienda-insignia" href={GOOGLE_PLAY} target="_blank" rel="noopener noreferrer">
+      <img src={GOOGLE_PLAY_BADGE[lang]} alt={t('guia.googlePlay')} width={162} height={48} />
+    </a>
+  );
+  return <span class="tiendas">{way === 'android' ? [googlePlay, appStore] : [appStore, googlePlay]}</span>;
 }
-
 
 /**
  * Lee la semilla del fragmento del link (#...) una sola vez y la saca de la barra de
