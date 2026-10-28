@@ -61,6 +61,7 @@ export const en: Dict = {
   'guia.listo': 'I have my address',
   'guia.otras': 'Already use another wallet? That works too',
   'guia.googlePlay': 'Get it on Google Play',
+  'guia.appStore': 'Download on the App Store',
   'guia.signet': 'You are on the test network and BlueWallet does not support it: try Sparrow or Electrum in signet mode.',
 
   'direccion.titulo': 'Paste your address',

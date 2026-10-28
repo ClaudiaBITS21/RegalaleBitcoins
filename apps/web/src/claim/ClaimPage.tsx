@@ -7,6 +7,9 @@ import { giftValueText } from '../valorRegalo.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import type { Key, UiLang } from '../i18n/index.ts';
+import appStoreEn from '../insignias/app-store-en.svg';
+import appStoreEs from '../insignias/app-store-es.svg';
+import appStorePt from '../insignias/app-store-pt.svg';
 import googlePlayEn from '../insignias/google-play-en.svg';
 import googlePlayEs from '../insignias/google-play-es.svg';
 import googlePlayPt from '../insignias/google-play-pt.svg';
@@ -23,26 +26,28 @@ type LoadError = 'link' | 'no_existe' | 'sin_red' | 'mainnet';
 const APP_STORE = 'https://apps.apple.com/app/bluewallet-bitcoin-wallet/id1376878040';
 const GOOGLE_PLAY = 'https://play.google.com/store/apps/details?id=io.bluewallet.bluewallet';
 
-/** Insignia oficial de Google Play según el idioma (Google no tiene versión en italiano: va la de inglés). */
-const GOOGLE_PLAY_BADGE: Readonly<Record<UiLang, string>> = { es: googlePlayEs, pt: googlePlayPt, en: googlePlayEn, it: googlePlayEn };
-
 /**
- * Las dos tiendas, la del sistema del celu primero. Google Play con su insignia oficial (SVG
- * autoalojado, sin modificar); App Store como botón de texto hasta tener la suya.
+ * Insignias oficiales de las tiendas según el idioma, sin modificar (SVG autoalojados). Ninguna de
+ * las dos tiene versión en italiano: va la de inglés.
  */
+const BADGES: Readonly<Record<UiLang, { appStore: string; googlePlay: string }>> = {
+  es: { appStore: appStoreEs, googlePlay: googlePlayEs },
+  pt: { appStore: appStorePt, googlePlay: googlePlayPt },
+  en: { appStore: appStoreEn, googlePlay: googlePlayEn },
+  it: { appStore: appStoreEn, googlePlay: googlePlayEn },
+};
+
+/** Las dos tiendas, la del sistema del celu primero. */
 function StoreLinks() {
   const { t, lang } = useI18n();
   const [way] = useState(() => installWay(navigator.userAgent, navigator.maxTouchPoints ?? 0));
-  const appStore = (
-    <a key="app-store" class="boton boton-contorno tienda" href={APP_STORE} target="_blank" rel="noopener noreferrer">
-      App Store
+  const badge = (key: string, url: string, src: string, alt: string) => (
+    <a key={key} class="tienda tienda-insignia" href={url} target="_blank" rel="noopener noreferrer">
+      <img src={src} alt={alt} height={48} />
     </a>
   );
-  const googlePlay = (
-    <a key="google-play" class="tienda tienda-insignia" href={GOOGLE_PLAY} target="_blank" rel="noopener noreferrer">
-      <img src={GOOGLE_PLAY_BADGE[lang]} alt={t('guia.googlePlay')} width={162} height={48} />
-    </a>
-  );
+  const appStore = badge('app-store', APP_STORE, BADGES[lang].appStore, t('guia.appStore'));
+  const googlePlay = badge('google-play', GOOGLE_PLAY, BADGES[lang].googlePlay, t('guia.googlePlay'));
   return <span class="tiendas">{way === 'android' ? [googlePlay, appStore] : [appStore, googlePlay]}</span>;
 }
 

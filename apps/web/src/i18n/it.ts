@@ -61,6 +61,7 @@ export const it: Dict = {
   'guia.listo': 'Ho il mio indirizzo',
   'guia.otras': 'Usi già un altro portafoglio? Va bene anche quello',
   'guia.googlePlay': 'Get it on Google Play',
+  'guia.appStore': 'Download on the App Store',
   'guia.signet': 'Sei sulla rete di prova e BlueWallet non la supporta: prova Sparrow o Electrum in modalità signet.',
 
   'direccion.titulo': 'Incolla il tuo indirizzo',
