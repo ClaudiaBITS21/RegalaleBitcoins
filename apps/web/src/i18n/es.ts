@@ -729,7 +729,7 @@ export const es = {
   'tarjeta.doblar': 'Imprimí el PDF en A4 al 100 %. Doblá primero por la mitad horizontal, con lo impreso hacia afuera, y después por la mitad vertical.',
   'tarjeta.para': "Para",
   'tarjeta.adentro': "Adentro hay un regalo para abrir.",
-  'vista.tenes': "Tenés un regalo",
+  'vista.espera': "Un regalo te espera",
   'tarjeta.adentroValor': "Adentro hay {valor} en bitcoin para abrir.",
   'tarjeta.hecho': "Hecho con",
   'tarjeta.abrir': "Abrí tu regalo",

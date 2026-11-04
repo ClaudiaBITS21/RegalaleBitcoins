@@ -2,7 +2,6 @@ import type { Lang } from '@regalale/core';
 import { h, render } from 'preact';
 import { type CardStyle, GiftCardArt } from '../content/GiftCardArt.tsx';
 import { translate } from '../i18n/index.ts';
-import type { Trato } from '../i18n/trato.ts';
 import { dataUrl, svgCompacto } from '../content/logo.ts';
 import { artImage } from './tarjetaPdf.ts';
 
@@ -25,7 +24,7 @@ const CONFETI: readonly (readonly [number, number, number, number, string, numbe
   [40, 34, 20, 20, AMARILLO, 0],
   [520, 26, 34, 14, '#ff5d8f', 28],
   [1130, 40, 18, 18, '#4cc9f0', 0],
-  [1160, 470, 30, 12, '#4cc9f0', -35],
+  [1150, 585, 30, 12, '#4cc9f0', -35],
   [30, 560, 16, 16, '#ffffff', 0],
   [640, 590, 22, 22, '#ffffff', 0],
 ];
@@ -38,10 +37,6 @@ export interface PreviewInput {
   /** data: de la imagen propia (estilo «propia»). */
   readonly ownImage: string | null;
   readonly to: string;
-  /** Vos o tú, el de quien arma el regalo (en castellano). */
-  readonly trato: Trato;
-  /** Borrador (04/11): fondo oscuro, o naranja con la tarjeta sobre un marco crema. */
-  readonly opcion?: 'oscuro' | 'marco';
 }
 
 /** Corta la frase en renglones que entren en `width` con la tipografía de títulos en `size`. */
@@ -76,8 +71,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    const oscuro = g.opcion === 'oscuro';
-    ctx.fillStyle = oscuro ? TINTA : NARANJA;
+    ctx.fillStyle = NARANJA;
     ctx.fillRect(0, 0, W, H);
     for (const [x, y, w, hh, color, giro] of CONFETI) {
       ctx.save();
@@ -99,11 +93,11 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       const ah = art.naturalHeight * k;
       const ax = 40 + (maxW - aw) / 2;
       const ay = (H - ah) / 2;
-      // Con el fondo naranja, la tarjeta va sobre un marco crema: si no, una tarjeta naranja parece
-      // transparente (Claudia, 04/11).
-      const m = oscuro ? 0 : 16;
+      // La tarjeta va sobre un marco crema: si no, una tarjeta naranja parece transparente sobre el
+      // fondo naranja (Claudia, 04/11).
+      const m = 16;
       ctx.save();
-      if (!oscuro) {
+      {
         ctx.fillStyle = TINTA;
         ctx.beginPath();
         ctx.roundRect(ax - m + 10, ay - m + 10, aw + 2 * m, ah + 2 * m, 32);
@@ -125,37 +119,36 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.fillRect(ax, ay, aw, ah);
       ctx.drawImage(art, ax, ay, aw, ah);
       ctx.restore();
-      if (oscuro) {
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.roundRect(ax, ay, aw, ah, 22);
-        ctx.stroke();
-      }
     }
 
-    // A la derecha, angosto: «Tenés un regalo» (o «Tienes») y, abajo, el logotipo en dos líneas (04/11).
-    const x = 880;
-    const width = W - x - 40;
-    const frase = translate(g.lang, 'vista.tenes', undefined, g.trato);
+    // A la derecha, centrado: «Un regalo te espera» y, abajo, el logotipo compacto para fondo
+    // naranja, grande (Claudia, 04/11).
+    const left = 840;
+    const width = W - left - 40;
+    const cx = left + width / 2;
+    const frase = translate(g.lang, 'vista.espera');
     ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
     let size = 60;
     let lineas = partir(ctx, frase, width, size);
-    while (size > 34 && (lineas.length > 4 || lineas.some((l) => ctx.measureText(l).width > width))) {
+    while (size > 34 && (lineas.length > 3 || lineas.some((l) => ctx.measureText(l).width > width))) {
       size -= 2;
       lineas = partir(ctx, frase, width, size);
     }
-    const alto = lineas.length * size * 1.12;
-    let y = Math.max(90, (H - 120 - alto) / 2) + size;
+    const logo = new Image();
+    logo.src = dataUrl(svgCompacto('naranja'));
+    await logo.decode();
+    const lw = Math.min(width, 320);
+    const lh = (logo.naturalHeight / logo.naturalWidth) * lw;
+    // Texto y logo como un bloque, centrados en la altura.
+    const alto = lineas.length * size * 1.12 + 56 + lh;
+    let y = (H - alto) / 2 + size;
     for (const l of lineas) {
-      ctx.fillText(l, x, y, width);
+      ctx.fillText(l, cx, y, width);
       y += size * 1.12;
     }
-    const logo = new Image();
-    logo.src = dataUrl(svgCompacto(oscuro ? 'oscuro' : 'naranja'));
-    await logo.decode();
-    const lh = 70;
-    ctx.drawImage(logo, x, H - 60 - lh, (logo.naturalWidth / logo.naturalHeight) * lh, lh);
+    ctx.textAlign = 'left';
+    ctx.drawImage(logo, cx - lw / 2, y - size * 1.12 + 56 + size * 0.25, lw, lh);
 
     for (const q of [0.85, 0.7, 0.55]) {
       const b64 = canvas.toDataURL('image/jpeg', q).split(',')[1] ?? '';

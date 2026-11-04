@@ -323,5 +323,4 @@ export const tu: Partial<Record<Key, string>> = {
   'avanzado.recuperar.otraPsbt': "Esa transacción no es la de este recupero. Baja la de arriba y firma esa.",
   'avanzado.recuperar.otraBilletera': "Este regalo se armó con otra billetera (·{huella}·). Usa su archivo de recupero.",
   'avanzado.recuperar.sinWebTexto': "Baja el archivo de recupero de este regalo e impórtalo en una billetera que acepte descriptores, como Bitcoin Core.",
-  'vista.tenes': "Tienes un regalo",
 };
