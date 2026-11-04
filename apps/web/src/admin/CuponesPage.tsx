@@ -16,7 +16,7 @@ import { type PreparedLogo, prepareLogo } from '../cuponLogo.ts';
 // Además (Claudia, 21/10): cupones para un mail y lotes (N códigos sueltos o uno por cada mail de
 // un CSV), cada código con su link de invitación; el lote se baja como CSV para mandarlo.
 
-type Filtro = 'vigentes' | 'pausados' | 'terminados' | 'todos';
+type Filtro = 'vigentes' | 'pausados' | 'vencidos' | 'agotados' | 'todos';
 type Vista = 'cupones' | 'lista';
 
 const PLANES = ['pack10', 'pack10_lista', 'anual', 'fundador'] as const;
@@ -67,8 +67,8 @@ export function mailsDe(texto: string): string[] {
 
 export function estadoLote(l: AdminCouponBatch): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
-  if (l.hasta !== null && new Date(l.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
-  if (l.usados >= l.total) return { clave: 'terminados', texto: 'Agotado' };
+  if (l.hasta !== null && new Date(l.hasta).getTime() <= now) return { clave: 'vencidos', texto: 'Vencido' };
+  if (l.usados >= l.total) return { clave: 'agotados', texto: 'Agotado' };
   if (l.activos === 0) return { clave: 'pausados', texto: 'Pausado' };
   if (l.desde !== null && new Date(l.desde).getTime() > now) return { clave: 'vigentes', texto: `Empieza el ${fechaCorta(l.desde)}` };
   return { clave: 'vigentes', texto: 'Activo', activo: true };
@@ -101,8 +101,8 @@ export const ultimoDia = (iso: string) => new Date(new Date(iso).getTime() - 1).
 
 export function estado(c: AdminCoupon): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
-  if (c.hasta !== null && new Date(c.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
-  if (c.usados >= c.maxUsos) return { clave: 'terminados', texto: 'Agotado' };
+  if (c.hasta !== null && new Date(c.hasta).getTime() <= now) return { clave: 'vencidos', texto: 'Vencido' };
+  if (c.usados >= c.maxUsos) return { clave: 'agotados', texto: 'Agotado' };
   if (!c.activo) return { clave: 'pausados', texto: 'Pausado' };
   if (new Date(c.desde).getTime() > now) return { clave: 'vigentes', texto: `Empieza el ${fechaCorta(c.desde)}` };
   return { clave: 'vigentes', texto: 'Activo', activo: true };
@@ -425,8 +425,15 @@ export function CuponesPage() {
     );
   }
 
-  const visibles = (cupones ?? []).filter((c) => filtro === 'todos' || estado(c).clave === filtro);
-  const lotesVisibles = lotes.filter((l) => filtro === 'todos' || estadoLote(l).clave === filtro);
+  // Por vencimiento (Claudia, 04/11/2026): los vencidos, del que venció último al más viejo; el
+  // resto, del que vence antes al que vence después, y al final los que no vencen.
+  const venceEn = (hasta: string | null) => (hasta === null ? Number.POSITIVE_INFINITY : Date.parse(hasta));
+  // En «Todos», separados: primero los vigentes, después pausados, agotados y vencidos.
+  const GRUPO: Readonly<Record<Exclude<Filtro, 'todos'>, number>> = { vigentes: 0, pausados: 1, agotados: 2, vencidos: 3 };
+  const orden = (ga: Exclude<Filtro, 'todos'>, a: string | null, gb: Exclude<Filtro, 'todos'>, b: string | null) =>
+    GRUPO[ga] - GRUPO[gb] || (ga === 'vencidos' ? venceEn(b) - venceEn(a) : venceEn(a) - venceEn(b)) || 0;
+  const visibles = (cupones ?? []).filter((c) => filtro === 'todos' || estado(c).clave === filtro).sort((a, b) => orden(estado(a).clave, a.hasta, estado(b).clave, b.hasta));
+  const lotesVisibles = lotes.filter((l) => filtro === 'todos' || estadoLote(l).clave === filtro).sort((a, b) => orden(estadoLote(a).clave, a.hasta, estadoLote(b).clave, b.hasta));
   return (
     <div class="cupones-app">
       <Cabecera onNuevo={() => setHoja(true)} />
@@ -437,7 +444,8 @@ export function CuponesPage() {
             [
               ['vigentes', 'Vigentes'],
               ['pausados', 'Pausados'],
-              ['terminados', 'Vencidos o agotados'],
+              ['vencidos', 'Vencidos'],
+              ['agotados', 'Agotados'],
               ['todos', 'Todos'],
             ] as const
           ).map(([f, nombre]) => (
@@ -572,7 +580,7 @@ function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, onUsos, c
       <button type="button" class="cupones-accion" onClick={() => onLogo(c)}>
         {c.conLogo ? 'Logo ✓' : 'Logo'}
       </button>
-      {e.clave !== 'terminados' && (
+      {e.clave !== 'vencidos' && e.clave !== 'agotados' && (
         <button type="button" class="cupones-accion" onClick={() => onPausar(c)}>
           {c.activo ? 'Pausar' : 'Reactivar'}
         </button>
@@ -728,7 +736,7 @@ function Lote({ l, onCsv, onPausar }: { l: AdminCouponBatch; onCsv: (l: AdminCou
             <button type="button" class="cupones-accion" onClick={() => onCsv(l)}>
               Bajar CSV con links
             </button>
-            {e.clave !== 'terminados' && (
+            {e.clave !== 'vencidos' && e.clave !== 'agotados' && (
               <button type="button" class="cupones-accion" onClick={() => onPausar(l)}>
                 {l.activos > 0 ? 'Pausar el lote' : 'Reactivar el lote'}
               </button>
