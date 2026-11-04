@@ -1,33 +1,21 @@
 import type { Lang } from '@regalale/core';
 import { h, render } from 'preact';
 import { type CardStyle, GiftCardArt } from '../content/GiftCardArt.tsx';
-import { translate } from '../i18n/index.ts';
 import { dataUrl, svgCompacto } from '../content/logo.ts';
+import { translate } from '../i18n/index.ts';
 import { artImage } from './tarjetaPdf.ts';
 
 // Imagen para compartir el link de un regalo (Rodolfo, 21/10): la que muestran WhatsApp y las
-// redes en la vista previa del link (1200 × 630). Se arma acá al crear el regalo, con la misma
-// ilustración de la tarjeta, la ocasión y el nombre de quien recibe, y viaja con el regalo. Si
-// algo falla, el regalo se crea igual y el link usa la imagen general del sitio.
+// redes en la vista previa del link (1200 × 630). Se arma acá al crear el regalo y viaja con él.
+// Desde el 04/11 (Claudia): fondo oscuro, la tarjeta entera a la izquierda y, a la derecha,
+// «Un regalo te espera» con el logotipo compacto, sin confeti. Si algo falla, el regalo se crea
+// igual y el link usa la imagen general del sitio.
 
 const W = 1200;
 const H = 630;
 const TINTA = '#1a1530';
-const NARANJA = '#ff8a1f';
-const AMARILLO = '#ffd23f';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
-
-/** Confeti en los bordes: [x, y, ancho, alto, color, giro]. */
-const CONFETI: readonly (readonly [number, number, number, number, string, number])[] = [
-  // Fuera de la tarjeta, en la columna de la derecha y en las esquinas.
-  [800, 40, 20, 20, AMARILLO, 0],
-  [1010, 60, 34, 14, '#ff5d8f', 28],
-  [1150, 40, 18, 18, '#4cc9f0', 0],
-  [1150, 585, 30, 12, '#4cc9f0', -35],
-  [810, 590, 16, 16, '#ffffff', 0],
-  [1000, 575, 22, 22, AMARILLO, 0],
-];
 
 export interface PreviewInput {
   readonly lang: Lang;
@@ -74,19 +62,6 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     // Fondo oscuro (Claudia, 04/11): la tarjeta, sea foto o ilustración naranja, se recorta clara.
     ctx.fillStyle = TINTA;
     ctx.fillRect(0, 0, W, H);
-    const confeti = (piezas: typeof CONFETI) => {
-      for (const [x, y, w, hh, color, giro] of piezas) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate((giro * Math.PI) / 180);
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.roundRect(-w / 2, -hh / 2, w, hh, w === hh ? w / 2 : hh / 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    };
-    confeti(CONFETI);
 
     // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11), con el mismo aire
     // a la izquierda que arriba y abajo. A la derecha queda una columna para el texto, con el doble
@@ -106,18 +81,6 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     if (art !== null) {
       const ax = m;
       const ay = (H - ah) / 2;
-      // Algo de confeti en el aire alrededor de la tarjeta, desparejo para que no parezca un marco
-      // (Claudia, 04/11). Nunca la toca: cada pieza va dentro del margen y es más chica que él.
-      const t = Math.min(22, ay * 0.5, ax * 0.5);
-      const enMargen = (lado: number, f: number) => lado * f; // f entre 0,3 y 0,7 del margen
-      const abajo = ay + ah;
-      confeti([
-        [ax * 0.45, enMargen(ay, 0.4), t * 0.7, t * 0.7, '#ffffff', 0],
-        [ax + aw * 0.36, enMargen(ay, 0.62), t * 1.5, t * 0.6, '#ff5d8f', 28],
-        [enMargen(ax, 0.55), ay + ah * 0.58, t * 0.9, t * 0.9, AMARILLO, 0],
-        [ax + aw * 0.23, abajo + enMargen(H - abajo, 0.66), t * 0.6, t * 0.6, '#4cc9f0', 0],
-        [ax + aw * 0.67, abajo + enMargen(H - abajo, 0.4), t * 1.4, t * 0.55, AMARILLO, -22],
-      ]);
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(ax, ay, aw, ah, 22);
