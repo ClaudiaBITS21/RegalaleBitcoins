@@ -7,8 +7,8 @@ import { artImage } from './tarjetaPdf.ts';
 
 // Imagen para compartir el link de un regalo (Rodolfo, 21/10): la que muestran WhatsApp y las
 // redes en la vista previa del link (1200 × 630). Se arma acá al crear el regalo y viaja con él.
-// Desde el 04/11 (Claudia): fondo oscuro, la tarjeta entera a la izquierda y, a la derecha,
-// «Un regalo te espera» con el logotipo compacto, y confeti suelto. Si algo falla, el regalo se crea
+// Desde el 04/11 (Claudia): fondo oscuro, banderines arriba, la tarjeta entera a la izquierda y,
+// a la derecha, «Un regalo te espera» con el logotipo compacto. Si algo falla, el regalo se crea
 // igual y el link usa la imagen general del sitio.
 
 const W = 1200;
@@ -17,6 +17,7 @@ const TINTA = '#1a1530';
 const AMARILLO = '#ffd23f';
 const ROSA = '#ff5d8f';
 const CELESTE = '#4cc9f0';
+const NARANJA = '#ff8a1f';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
 
@@ -84,7 +85,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     if (art !== null) {
       const ax = m;
       const ay = (H - ah) / 2;
-      ctx.save();
+        ctx.save();
       ctx.beginPath();
       ctx.roundRect(ax, ay, aw, ah, 22);
       ctx.clip();
@@ -130,44 +131,32 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     ctx.textAlign = 'left';
     ctx.drawImage(logo, cx - lw / 2, y - size * 1.12 + 56 + size * 0.25, lw, lh);
 
-    // Confeti suelto y repartido (Claudia, 04/11): alrededor del texto y del logotipo sin taparlos,
-    // alrededor de la tarjeta y algunos papelitos que pisan apenas su borde.
-    const arriba = (H - alto) / 2 - 24;
-    const abajo = (H + alto) / 2 + 24;
-    const ay = (H - ah) / 2;
-    const der = left + width;
-    const piezas: ReadonlyArray<readonly [number, number, number, number, string, number]> = [
-      // Columna derecha: arriba del texto, a un costado y abajo del logotipo.
-      [left + width * 0.08, arriba * 0.4, 20, 20, AMARILLO, 0],
-      [left + width * 0.62, arriba * 0.7, 34, 14, ROSA, 28],
-      [der + m * 0.9, H * 0.5, 16, 16, CELESTE, 0],
-      [left + width * 0.2, abajo + (H - abajo) * 0.55, 14, 14, '#ffffff', 0],
-      [der + m * 0.2, abajo + (H - abajo) * 0.4, 32, 12, AMARILLO, 22],
-      // Alrededor de la tarjeta: arriba, a la izquierda y abajo.
-      ...(art === null
-        ? []
-        : ([
-            [m + aw * 0.12, ay * 0.45, 16, 16, CELESTE, 0],
-            [m + aw * 0.68, ay * 0.55, 32, 12, AMARILLO, -18],
-            [m * 0.45, ay + ah * 0.38, 14, 14, ROSA, 0],
-            [m + aw * 0.3, ay + ah + (H - ay - ah) * 0.5, 30, 12, ROSA, 30],
-            [m + aw * 0.86, ay + ah + (H - ay - ah) * 0.42, 18, 18, '#ffffff', 0],
-            // Sobre el borde de la tarjeta.
-            [m + aw, ay + ah * 0.22, 22, 22, AMARILLO, 0],
-            [m + aw * 0.42, ay, 14, 14, '#ffffff', 0],
-            [m, ay + ah * 0.82, 30, 12, CELESTE, 34],
-            [m + aw * 0.58, ay + ah, 34, 13, ROSA, -24],
-          ] as const)),
-    ];
-    for (const [px, py, w, hh, color, giro] of piezas) {
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate((giro * Math.PI) / 180);
-      ctx.fillStyle = color;
+    // Banderines arriba, de punta a punta (Claudia, 04/11): un hilo que cae un poco en el medio,
+    // con triángulos de los colores de la marca.
+    const colores = [AMARILLO, ROSA, CELESTE, '#ffffff', NARANJA];
+    const caida = 34;
+    const hilo = (px: number) => 8 + caida * 4 * (px / W) * (1 - px / W);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, hilo(0));
+    for (let px = 0; px <= W; px += 20) ctx.lineTo(px, hilo(px));
+    ctx.stroke();
+    const paso = 56;
+    const ancho = 38;
+    const largo = 44;
+    for (let n = 0, px = paso / 2; px < W; n++, px += paso) {
+      const a = px - ancho / 2;
+      const b = px + ancho / 2;
+      const ya = hilo(a);
+      const yb = hilo(b);
+      ctx.fillStyle = colores[n % colores.length] as string;
       ctx.beginPath();
-      ctx.roundRect(-w / 2, -hh / 2, w, hh, w === hh ? w / 2 : hh / 2);
+      ctx.moveTo(a, ya);
+      ctx.lineTo(b, yb);
+      ctx.lineTo(px, (ya + yb) / 2 + largo);
+      ctx.closePath();
       ctx.fill();
-      ctx.restore();
     }
 
     for (const q of [0.85, 0.7, 0.55]) {
