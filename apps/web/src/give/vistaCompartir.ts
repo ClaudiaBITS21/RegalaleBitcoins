@@ -106,21 +106,17 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     if (art !== null) {
       const ax = m;
       const ay = (H - ah) / 2;
-      // Confeti también en el aire alrededor de la tarjeta, sin tocarla (Claudia, 04/11): cada
-      // pieza va en el medio del margen y es más chica que la mitad del margen.
-      const arriba = ay / 2;
-      const abajo = ay + ah + (H - ay - ah) / 2;
-      const izq = ax / 2;
-      const t = Math.min(22, ay * 0.55, ax * 0.55);
+      // Algo de confeti en el aire alrededor de la tarjeta, desparejo para que no parezca un marco
+      // (Claudia, 04/11). Nunca la toca: cada pieza va dentro del margen y es más chica que él.
+      const t = Math.min(22, ay * 0.5, ax * 0.5);
+      const enMargen = (lado: number, f: number) => lado * f; // f entre 0,3 y 0,7 del margen
+      const abajo = ay + ah;
       confeti([
-        [ax + aw * 0.18, arriba, t, t, '#ffffff', 0],
-        [ax + aw * 0.48, arriba + 4, t * 1.6, t * 0.65, '#ff5d8f', 24],
-        [ax + aw * 0.8, arriba - 3, t * 0.8, t * 0.8, '#4cc9f0', 0],
-        [izq, ay + ah * 0.32, t * 0.75, t * 0.75, AMARILLO, 0],
-        [izq, ay + ah * 0.7, t * 1.5, t * 0.6, '#4cc9f0', -40],
-        [ax + aw * 0.12, abajo, t * 1.5, t * 0.6, AMARILLO, 30],
-        [ax + aw * 0.42, abajo - 3, t * 0.85, t * 0.85, '#ff5d8f', 0],
-        [ax + aw * 0.74, abajo + 2, t * 0.7, t * 0.7, '#ffffff', 0],
+        [ax * 0.45, enMargen(ay, 0.4), t * 0.7, t * 0.7, '#ffffff', 0],
+        [ax + aw * 0.36, enMargen(ay, 0.62), t * 1.5, t * 0.6, '#ff5d8f', 28],
+        [enMargen(ax, 0.55), ay + ah * 0.58, t * 0.9, t * 0.9, AMARILLO, 0],
+        [ax + aw * 0.23, abajo + enMargen(H - abajo, 0.66), t * 0.6, t * 0.6, '#4cc9f0', 0],
+        [ax + aw * 0.67, abajo + enMargen(H - abajo, 0.4), t * 1.4, t * 0.55, AMARILLO, -22],
       ]);
       ctx.save();
       ctx.beginPath();
