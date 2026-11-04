@@ -9,6 +9,7 @@ import type { OccasionChoice } from '../content/OccasionPicker.tsx';
 import type { ProcessedImage } from './ownImage.ts';
 import { borrarBorrador, guardarBorrador, recuperarBorrador } from './borrador.ts';
 import { DICTS, type Key, translate } from '../i18n/index.ts';
+import type { Trato } from '../i18n/trato.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { EnterCode, ShowCode, VerifyCode } from './CodeSteps.tsx';
 import { SaveStep } from './SaveStep.tsx';
@@ -96,7 +97,7 @@ const MAX_INDEX_TRIES = 500;
  * Registra el regalo con el primer índice libre a partir de `start`. Si la dirección ya
  * existe (un regalo anterior con el mismo código), prueba el siguiente.
  */
-async function register(session: Session, draft: Draft, network: Network): Promise<MadeGift> {
+async function register(session: Session, draft: Draft, network: Network, trato: Trato): Promise<MadeGift> {
   // La imagen para la vista previa del link (WhatsApp, redes); sin ella, el link usa la general.
   const vista = await sharePreview({
     lang: draft.lang,
@@ -105,6 +106,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
     style: draft.style,
     ownImage: draft.style === 'propia' ? (draft.ownImage?.dataUrl ?? null) : null,
     to: draft.to,
+    trato,
   });
   for (let index = session.next; index < session.next + MAX_INDEX_TRIES; index++) {
     const multisig = session.recovery === null ? null : deriveMultisigGift(session.root, index, draft.lang, network, session.recovery);
@@ -179,7 +181,7 @@ function presetOccasion(): OccasionChoice | null {
 }
 
 export function GivePage() {
-  const { t, lang } = useI18n();
+  const { t, lang, trato } = useI18n();
   const [network, setNetwork] = useState<Network | null>(null);
   const [ceilingUsd, setCeilingUsd] = useState(100);
   // Recupero avanzado: si el servidor lo ofrece en esta red, y la billetera elegida en este paso 4.
@@ -325,7 +327,7 @@ export function GivePage() {
     await new Promise((r) => setTimeout(r, 30));
     try {
       setCredits(await api.creditsIfSignedIn().catch(() => null));
-      setGift(await register(s, d, network));
+      setGift(await register(s, d, network, trato));
       setNewMnemonic(null);
       borrarBorrador();
       restart('pagar');

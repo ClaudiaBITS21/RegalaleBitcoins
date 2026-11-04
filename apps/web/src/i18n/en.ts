@@ -730,6 +730,7 @@ export const en: Dict = {
   'tarjeta.doblar': 'Print the PDF on A4 at 100%. Fold in half horizontally first, printed side out, then in half vertically.',
   'tarjeta.para': "For",
   'tarjeta.adentro': "There’s a gift inside to open.",
+  'vista.tenes': "You have a gift",
   'tarjeta.adentroValor': "Inside there’s {valor} in bitcoin to open.",
   'tarjeta.hecho': "Made with",
   'tarjeta.abrir': "Open your gift",

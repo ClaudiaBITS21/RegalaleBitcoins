@@ -730,6 +730,7 @@ export const it: Dict = {
   'tarjeta.doblar': 'Stampa il PDF in A4 al 100%. Piega prima a metà in orizzontale, con la stampa verso l’esterno, poi a metà in verticale.',
   'tarjeta.para': "Per",
   'tarjeta.adentro': "Dentro c’è un regalo da aprire.",
+  'vista.tenes': "Hai un regalo",
   'tarjeta.adentroValor': "Dentro ci sono {valor} in bitcoin da aprire.",
   'tarjeta.hecho': "Fatto con",
   'tarjeta.abrir': "Apri il tuo regalo",

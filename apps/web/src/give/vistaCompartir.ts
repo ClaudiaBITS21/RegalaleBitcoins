@@ -1,8 +1,9 @@
 import type { Lang } from '@regalale/core';
 import { h, render } from 'preact';
 import { type CardStyle, GiftCardArt } from '../content/GiftCardArt.tsx';
-import { occasionLabel } from '../content/occasions.ts';
 import { translate } from '../i18n/index.ts';
+import type { Trato } from '../i18n/trato.ts';
+import { dataUrl, svgCompacto } from '../content/logo.ts';
 import { artImage } from './tarjetaPdf.ts';
 
 // Imagen para compartir el link de un regalo (Rodolfo, 21/10): la que muestran WhatsApp y las
@@ -23,7 +24,7 @@ const CONFETI: readonly (readonly [number, number, number, number, string, numbe
   [40, 34, 20, 20, AMARILLO, 0],
   [520, 26, 34, 14, '#ff5d8f', 28],
   [1130, 40, 18, 18, '#4cc9f0', 0],
-  [1080, 560, 30, 12, '#4cc9f0', -35],
+  [1160, 470, 30, 12, '#4cc9f0', -35],
   [30, 560, 16, 16, '#ffffff', 0],
   [640, 590, 22, 22, '#ffffff', 0],
 ];
@@ -36,6 +37,26 @@ export interface PreviewInput {
   /** data: de la imagen propia (estilo «propia»). */
   readonly ownImage: string | null;
   readonly to: string;
+  /** Vos o tú, el de quien arma el regalo (en castellano). */
+  readonly trato: Trato;
+}
+
+/** Corta la frase en renglones que entren en `width` con la tipografía de títulos en `size`. */
+function partir(ctx: CanvasRenderingContext2D, text: string, width: number, size: number): string[] {
+  ctx.font = `800 ${size}px ${TITULOS}`;
+  const out: string[] = [];
+  let line = '';
+  for (const word of text.split(/ +/)) {
+    const next = line === '' ? word : `${line} ${word}`;
+    if (line !== '' && ctx.measureText(next).width > width) {
+      out.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line !== '') out.push(line);
+  return out;
 }
 
 /** La imagen para compartir en JPEG, en base64; null si no se pudo armar. */
@@ -65,14 +86,14 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.restore();
     }
 
-    // A la izquierda, la tarjeta.
+    // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11).
     if (art !== null) {
-      const maxW = 560;
-      const maxH = 470;
+      const maxW = 780;
+      const maxH = H - 80;
       const k = Math.min(maxW / art.naturalWidth, maxH / art.naturalHeight);
       const aw = art.naturalWidth * k;
       const ah = art.naturalHeight * k;
-      const ax = 70 + (maxW - aw) / 2;
+      const ax = 40 + (maxW - aw) / 2;
       const ay = (H - ah) / 2;
       ctx.save();
       ctx.fillStyle = TINTA;
@@ -95,30 +116,28 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.stroke();
     }
 
-    // A la derecha: la ocasión, «Para», el nombre y el dominio.
-    const x = 690;
-    const width = W - x - 60;
-    const t = (key: Parameters<typeof translate>[1]) => translate(g.lang, key);
-    const ocasion = occasionLabel(g.occasion, g.lang, g.occasionFree);
-    ctx.font = `700 28px ${TEXTO}`;
-    const pw = Math.min(ctx.measureText(ocasion).width + 48, width);
+    // A la derecha, angosto: «Tenés un regalo» (o «Tienes») y, abajo, el logotipo en dos líneas (04/11).
+    const x = 880;
+    const width = W - x - 40;
+    const frase = translate(g.lang, 'vista.tenes', undefined, g.trato);
     ctx.fillStyle = TINTA;
-    ctx.beginPath();
-    ctx.roundRect(x, 150, pw, 56, 28);
-    ctx.fill();
-    ctx.fillStyle = AMARILLO;
-    ctx.fillText(ocasion, x + 24, 188, pw - 48);
-    ctx.fillStyle = TINTA;
-    ctx.font = `400 34px ${TEXTO}`;
-    ctx.fillText(t('tarjeta.para'), x, 270);
-    let size = 88;
-    ctx.font = `800 ${size}px ${TITULOS}`;
-    while (size > 40 && ctx.measureText(g.to).width > width) ctx.font = `800 ${--size}px ${TITULOS}`;
-    ctx.fillText(g.to, x, 270 + size * 1.05, width);
-    ctx.font = `400 30px ${TEXTO}`;
-    ctx.fillText(t('tarjeta.adentro'), x, 270 + size * 1.05 + 60, width);
-    ctx.font = `700 28px ${TEXTO}`;
-    ctx.fillText('regalalebitcoin.com', x, 560);
+    let size = 60;
+    let lineas = partir(ctx, frase, width, size);
+    while (size > 34 && (lineas.length > 4 || lineas.some((l) => ctx.measureText(l).width > width))) {
+      size -= 2;
+      lineas = partir(ctx, frase, width, size);
+    }
+    const alto = lineas.length * size * 1.12;
+    let y = Math.max(90, (H - 120 - alto) / 2) + size;
+    for (const l of lineas) {
+      ctx.fillText(l, x, y, width);
+      y += size * 1.12;
+    }
+    const logo = new Image();
+    logo.src = dataUrl(svgCompacto('naranja'));
+    await logo.decode();
+    const lh = 70;
+    ctx.drawImage(logo, x, H - 60 - lh, (logo.naturalWidth / logo.naturalHeight) * lh, lh);
 
     for (const q of [0.85, 0.7, 0.55]) {
       const b64 = canvas.toDataURL('image/jpeg', q).split(',')[1] ?? '';
