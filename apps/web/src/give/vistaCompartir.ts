@@ -20,12 +20,13 @@ const TEXTO = '"DM Sans", system-ui, sans-serif';
 
 /** Confeti en los bordes: [x, y, ancho, alto, color, giro]. */
 const CONFETI: readonly (readonly [number, number, number, number, string, number])[] = [
-  [40, 34, 20, 20, AMARILLO, 0],
-  [520, 26, 34, 14, '#ff5d8f', 28],
-  [1130, 40, 18, 18, '#4cc9f0', 0],
+  // Fuera de la tarjeta, en la columna de la derecha y en las esquinas.
+  [800, 40, 20, 20, AMARILLO, 0],
+  [1010, 60, 34, 14, '#ff5d8f', 28],
+  [1150, 40, 18, 18, '#4cc9f0', 0],
   [1150, 585, 30, 12, '#4cc9f0', -35],
-  [30, 560, 16, 16, '#ffffff', 0],
-  [640, 590, 22, 22, '#ffffff', 0],
+  [810, 590, 16, 16, '#ffffff', 0],
+  [1000, 575, 22, 22, AMARILLO, 0],
 ];
 
 export interface PreviewInput {
@@ -84,14 +85,23 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.restore();
     }
 
-    // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11).
+    // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11), con el mismo aire
+    // a la izquierda que arriba y abajo. A la derecha queda una columna para el texto, con el doble
+    // de ese aire a cada lado.
+    const COLUMNA = 290;
+    let m = 40;
+    let aw = 0;
+    let ah = 0;
     if (art !== null) {
-      const maxW = 780;
-      const maxH = H - 100;
-      const k = Math.min(maxW / art.naturalWidth, maxH / art.naturalHeight);
-      const aw = art.naturalWidth * k;
-      const ah = art.naturalHeight * k;
-      const ax = 40 + (maxW - aw) / 2;
+      const r = art.naturalWidth / art.naturalHeight;
+      // Alto completo con 40 de aire; si no entra a lo ancho, el aire que hace que entre justo:
+      // r·(H − 2m) = W − 5m − COLUMNA.
+      if (m + r * (H - 2 * m) + 4 * m + COLUMNA > W) m = r < 2.5 ? Math.max(20, (W - COLUMNA - r * H) / (5 - 2 * r)) : 20;
+      ah = Math.min(H - 2 * m, (W - 5 * m - COLUMNA) / r);
+      aw = r * ah;
+    }
+    if (art !== null) {
+      const ax = m;
       const ay = (H - ah) / 2;
       ctx.save();
       ctx.beginPath();
@@ -112,8 +122,8 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
 
     // A la derecha, centrado: «Un regalo te espera» y, abajo, el logotipo compacto para fondo
     // oscuro, grande (Claudia, 04/11).
-    const left = 840;
-    const width = W - left - 40;
+    const left = art === null ? 2 * m : m + aw + 2 * m;
+    const width = W - 2 * m - left;
     const cx = left + width / 2;
     const frase = translate(g.lang, 'vista.espera');
     ctx.fillStyle = '#ffffff';
