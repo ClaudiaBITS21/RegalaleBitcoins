@@ -15,7 +15,6 @@ const H = 630;
 const TINTA = '#1a1530';
 const NARANJA = '#ff8a1f';
 const AMARILLO = '#ffd23f';
-const CREMA = '#fff1e3';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
 
@@ -71,7 +70,8 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    ctx.fillStyle = NARANJA;
+    // Fondo oscuro (Claudia, 04/11): la tarjeta, sea foto o ilustración naranja, se recorta clara.
+    ctx.fillStyle = TINTA;
     ctx.fillRect(0, 0, W, H);
     for (const [x, y, w, hh, color, giro] of CONFETI) {
       ctx.save();
@@ -93,23 +93,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       const ah = art.naturalHeight * k;
       const ax = 40 + (maxW - aw) / 2;
       const ay = (H - ah) / 2;
-      // La tarjeta va sobre un marco crema: si no, una tarjeta naranja parece transparente sobre el
-      // fondo naranja (Claudia, 04/11).
-      const m = 16;
       ctx.save();
-      {
-        ctx.fillStyle = TINTA;
-        ctx.beginPath();
-        ctx.roundRect(ax - m + 10, ay - m + 10, aw + 2 * m, ah + 2 * m, 32);
-        ctx.fill();
-        ctx.fillStyle = CREMA;
-        ctx.beginPath();
-        ctx.roundRect(ax - m, ay - m, aw + 2 * m, ah + 2 * m, 32);
-        ctx.fill();
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = TINTA;
-        ctx.stroke();
-      }
       ctx.beginPath();
       ctx.roundRect(ax, ay, aw, ah, 22);
       ctx.clip();
@@ -119,10 +103,15 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.fillRect(ax, ay, aw, ah);
       ctx.drawImage(art, ax, ay, aw, ah);
       ctx.restore();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, aw, ah, 22);
+      ctx.stroke();
     }
 
     // A la derecha, centrado: «Un regalo te espera» y, abajo, el logotipo compacto para fondo
-    // naranja, grande (Claudia, 04/11).
+    // oscuro, grande (Claudia, 04/11).
     const left = 840;
     const width = W - left - 40;
     const cx = left + width / 2;
@@ -136,7 +125,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       lineas = partir(ctx, frase, width, size);
     }
     const logo = new Image();
-    logo.src = dataUrl(svgCompacto('naranja'));
+    logo.src = dataUrl(svgCompacto('oscuro'));
     await logo.decode();
     const lw = Math.min(width, 320);
     const lh = (logo.naturalHeight / logo.naturalWidth) * lw;
