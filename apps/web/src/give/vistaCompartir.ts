@@ -88,15 +88,15 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11), con el mismo aire
     // a la izquierda que arriba y abajo. A la derecha queda una columna para el texto, con el doble
     // de ese aire a cada lado.
-    const COLUMNA = 290;
-    let m = 40;
+    const COLUMNA = 300;
+    let m = 64;
     let aw = 0;
     let ah = 0;
     if (art !== null) {
       const r = art.naturalWidth / art.naturalHeight;
-      // Alto completo con 40 de aire; si no entra a lo ancho, el aire que hace que entre justo:
+      // Alto completo con 64 de aire; si no entra a lo ancho, el aire que hace que entre justo:
       // r·(H − 2m) = W − 5m − COLUMNA.
-      if (m + r * (H - 2 * m) + 4 * m + COLUMNA > W) m = r < 2.5 ? Math.max(20, (W - COLUMNA - r * H) / (5 - 2 * r)) : 20;
+      if (m + r * (H - 2 * m) + 4 * m + COLUMNA > W) m = r < 2.5 ? Math.max(56, (W - COLUMNA - r * H) / (5 - 2 * r)) : 56;
       ah = Math.min(H - 2 * m, (W - 5 * m - COLUMNA) / r);
       aw = r * ah;
     }
