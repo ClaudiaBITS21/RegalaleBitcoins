@@ -46,6 +46,9 @@ export interface AccountGift {
   readonly sats: string | null;
   /** Recupero avanzado: huella y ruta de la clave de la billetera con que se armó. */
   readonly rutaRecupero?: string | null;
+  /** El mensaje de la tarjeta y si quien recibe ve cuánto vale (se pueden editar mientras no se abra). */
+  readonly mensaje?: string;
+  readonly mostrarValor?: boolean;
 }
 
 export interface AccountView {
@@ -60,6 +63,7 @@ export interface AccountView {
 export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
   /** Descarta un regalo que nunca se pagó (409 regalo_con_fondos si ya recibió algo). */
+  editGift: (id: string, cambios: { mensaje?: string; mostrarValor?: boolean }) => call<{ mensaje: string; mostrarValor: boolean }>(`/api/cuenta/regalos/${id}/editar`, cambios),
   discardGift: (id: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, {}),
   logout: async () => {
     const res = await call<{ ok: boolean }>('/api/cuenta/salir', {});

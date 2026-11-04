@@ -342,6 +342,19 @@ describe('Cuentas con passkey', () => {
     // Para mostrar cuánto vale hoy: lo que se puso al armarlo y la cotización de hoy.
     assert.deepEqual([me.regalos[0]?.original.moneda, me.regalos[0]?.original.monto, me.cotizacion.usdPorBtc], ['SAT', 30000, usdPerBtc]);
 
+    // Desde «Mis regalos» se edita el mensaje y si se muestra el valor (04/11); solo el propio.
+    const id = ((await created.clone().json()) as { id: string }).id;
+    const editar = (body: unknown, ck = cookie) => req(`/api/cuenta/regalos/${id}/editar`, body, ck);
+    assert.equal((await editar({ mensaje: 'Feliz cumple, Tomi 🎂', mostrarValor: true })).status, 200);
+    const vista = (await (await req(`/api/gifts/${id}`)).json()) as { mensaje: string; mostrarValor: boolean; original: { monto: number } | null };
+    assert.deepEqual([vista.mensaje, vista.mostrarValor, vista.original?.monto], ['Feliz cumple, Tomi 🎂', true, 30000]);
+    assert.equal((await editar({ mostrarValor: false })).status, 200);
+    assert.deepEqual(((await (await req(`/api/gifts/${id}`)).json()) as { original: unknown }).original, null);
+    assert.equal((await editar({ mensaje: 'x'.repeat(281) })).status, 400);
+    assert.equal((await editar({})).status, 400);
+    const otra = await signUp('beto@example.com');
+    assert.equal((await editar({ mensaje: 'hola' }, otra.cookie)).status, 404);
+
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
     const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number };
