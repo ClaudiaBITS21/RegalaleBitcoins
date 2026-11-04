@@ -74,16 +74,19 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     // Fondo oscuro (Claudia, 04/11): la tarjeta, sea foto o ilustración naranja, se recorta clara.
     ctx.fillStyle = TINTA;
     ctx.fillRect(0, 0, W, H);
-    for (const [x, y, w, hh, color, giro] of CONFETI) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate((giro * Math.PI) / 180);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.roundRect(-w / 2, -hh / 2, w, hh, w === hh ? w / 2 : hh / 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    const confeti = (piezas: typeof CONFETI) => {
+      for (const [x, y, w, hh, color, giro] of piezas) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate((giro * Math.PI) / 180);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -hh / 2, w, hh, w === hh ? w / 2 : hh / 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    };
+    confeti(CONFETI);
 
     // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11), con el mismo aire
     // a la izquierda que arriba y abajo. A la derecha queda una columna para el texto, con el doble
@@ -103,6 +106,22 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     if (art !== null) {
       const ax = m;
       const ay = (H - ah) / 2;
+      // Confeti también en el aire alrededor de la tarjeta, sin tocarla (Claudia, 04/11): cada
+      // pieza va en el medio del margen y es más chica que la mitad del margen.
+      const arriba = ay / 2;
+      const abajo = ay + ah + (H - ay - ah) / 2;
+      const izq = ax / 2;
+      const t = Math.min(22, ay * 0.55, ax * 0.55);
+      confeti([
+        [ax + aw * 0.18, arriba, t, t, '#ffffff', 0],
+        [ax + aw * 0.48, arriba + 4, t * 1.6, t * 0.65, '#ff5d8f', 24],
+        [ax + aw * 0.8, arriba - 3, t * 0.8, t * 0.8, '#4cc9f0', 0],
+        [izq, ay + ah * 0.32, t * 0.75, t * 0.75, AMARILLO, 0],
+        [izq, ay + ah * 0.7, t * 1.5, t * 0.6, '#4cc9f0', -40],
+        [ax + aw * 0.12, abajo, t * 1.5, t * 0.6, AMARILLO, 30],
+        [ax + aw * 0.42, abajo - 3, t * 0.85, t * 0.85, '#ff5d8f', 0],
+        [ax + aw * 0.74, abajo + 2, t * 0.7, t * 0.7, '#ffffff', 0],
+      ]);
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(ax, ay, aw, ah, 22);
