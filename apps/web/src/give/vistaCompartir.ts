@@ -8,12 +8,15 @@ import { artImage } from './tarjetaPdf.ts';
 // Imagen para compartir el link de un regalo (Rodolfo, 21/10): la que muestran WhatsApp y las
 // redes en la vista previa del link (1200 × 630). Se arma acá al crear el regalo y viaja con él.
 // Desde el 04/11 (Claudia): fondo oscuro, la tarjeta entera a la izquierda y, a la derecha,
-// «Un regalo te espera» con el logotipo compacto, sin confeti. Si algo falla, el regalo se crea
+// «Un regalo te espera» con el logotipo compacto, y confeti suelto. Si algo falla, el regalo se crea
 // igual y el link usa la imagen general del sitio.
 
 const W = 1200;
 const H = 630;
 const TINTA = '#1a1530';
+const AMARILLO = '#ffd23f';
+const ROSA = '#ff5d8f';
+const CELESTE = '#4cc9f0';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
 
@@ -126,6 +129,46 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     }
     ctx.textAlign = 'left';
     ctx.drawImage(logo, cx - lw / 2, y - size * 1.12 + 56 + size * 0.25, lw, lh);
+
+    // Confeti suelto (Claudia, 04/11): más en la columna de la derecha, alrededor del texto y del
+    // logotipo sin taparlos, y algunos papelitos que pisan apenas el borde de la tarjeta.
+    const arriba = (H - alto) / 2 - 24;
+    const abajo = (H + alto) / 2 + 24;
+    const ay = (H - ah) / 2;
+    const der = left + width;
+    const piezas: ReadonlyArray<readonly [number, number, number, number, string, number]> = [
+      // Columna derecha, arriba del texto.
+      [left + width * 0.04, arriba * 0.35, 20, 20, AMARILLO, 0],
+      [left + width * 0.42, arriba * 0.6, 34, 14, ROSA, 28],
+      [der + m * 0.9, arriba * 0.3, 18, 18, CELESTE, 0],
+      [left + width * 0.78, arriba * 0.85, 14, 14, '#ffffff', 0],
+      // A los costados del texto y el logotipo.
+      [left - m * 0.9, H * 0.47, 30, 12, CELESTE, -32],
+      [der + m * 1.1, H * 0.52, 16, 16, AMARILLO, 0],
+      // Columna derecha, abajo del logotipo.
+      [left + width * 0.1, abajo + (H - abajo) * 0.45, 16, 16, '#ffffff', 0],
+      [left + width * 0.5, abajo + (H - abajo) * 0.7, 22, 22, AMARILLO, 0],
+      [der + m * 0.3, abajo + (H - abajo) * 0.35, 32, 12, ROSA, 22],
+      // Sobre el borde de la tarjeta.
+      ...(art === null
+        ? []
+        : ([
+            [m + aw, ay + ah * 0.18, 22, 22, AMARILLO, 0],
+            [m + aw + 4, ay + ah * 0.82, 36, 14, ROSA, -26],
+            [m + aw * 0.42, ay, 14, 14, '#ffffff', 0],
+            [m, ay + ah * 0.9, 30, 12, CELESTE, 34],
+          ] as const)),
+    ];
+    for (const [px, py, w, hh, color, giro] of piezas) {
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((giro * Math.PI) / 180);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -hh / 2, w, hh, w === hh ? w / 2 : hh / 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     for (const q of [0.85, 0.7, 0.55]) {
       const b64 = canvas.toDataURL('image/jpeg', q).split(',')[1] ?? '';
