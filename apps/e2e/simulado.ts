@@ -485,7 +485,15 @@ try {
   const [waPopup] = await Promise.all([giver.waitForEvent('popup'), giver.locator('.envio').first().getByRole('link', { name: 'WhatsApp' }).click()]);
   await waPopup.close();
   await giver.getByRole('button', { name: 'Se las doy en persona' }).click();
+  // Una imagen de vista previa de antes del diseño del 04/11 se rehace sola al abrir «Mis regalos».
+  await sql`update vistas set creada = '2026-11-01T00:00:00Z' where regalo_id = (select id from regalos where direccion = ${lupeAddress})`;
   await giver.goto(`${BASE}/panel`);
+  for (let i = 0; ; i++) {
+    const v = (await sql`select creada from vistas where regalo_id = (select id from regalos where direccion = ${lupeAddress})`)[0];
+    if (v !== undefined && new Date(v.creada as Date).getTime() > Date.parse('2026-11-04T10:53:00Z')) break;
+    if (i > 50) fail(`«Mis regalos» no rehízo la imagen vieja de la vista previa: ${JSON.stringify(v)}`);
+    await giver.waitForTimeout(200);
+  }
   await giver.getByRole('heading', { name: 'Regalos que hiciste' }).waitFor();
   await giver.getByText('Para Lupe').waitFor();
   await giver.getByText('Listo para abrir').waitFor();
