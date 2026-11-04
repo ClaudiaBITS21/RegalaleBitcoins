@@ -20,6 +20,7 @@ import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { RecoverWithWallet, RecoverySettings } from '../recupero/Recuperar.tsx';
 import { EditarRegalo } from './EditarRegalo.tsx';
+import { refreshPreviews } from './rehacerVistas.ts';
 
 // Panel de quien regala: sus regalos con el estado que calcula el servidor desde la
 // cadena. Para volver a ver un link y sus palabras, o el código de recuperación, se abre la
@@ -122,8 +123,10 @@ export function PanelPage() {
 
   const load = async () => {
     try {
-      setView(await accountApi.me());
+      const me = await accountApi.me();
+      setView(me);
       setState('adentro');
+      void refreshPreviews(me.regalos);
     } catch (e) {
       setState(e instanceof ApiFailure && e.status === 401 ? 'afuera' : 'sin_red');
     }

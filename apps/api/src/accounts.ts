@@ -160,12 +160,15 @@ export interface AccountGift {
   readonly message: string;
   /** Si quien recibe ve cuánto vale en plata. */
   readonly showValue: boolean;
+  /** Cuándo se subió la imagen para compartir el link; null si no tiene. */
+  readonly previewAt: Date | null;
 }
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean; vista_creada: Date | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor,
+      (select v.creada from vistas v where v.regalo_id = regalos.id) as vista_creada
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
@@ -188,6 +191,7 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     discardedAt: r.descartado,
     message: r.mensaje,
     showValue: r.mostrar_valor,
+    previewAt: r.vista_creada,
   }));
 }
 

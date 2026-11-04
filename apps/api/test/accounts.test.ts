@@ -355,6 +355,16 @@ describe('Cuentas con passkey', () => {
     const otra = await signUp('beto@example.com');
     assert.equal((await editar({ mensaje: 'hola' }, otra.cookie)).status, 404);
 
+    // La imagen para compartir se puede rehacer (cambio de diseño, 04/11); solo la del regalo propio.
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(3000, 7)]);
+    const rehacer = (body: unknown, ck = cookie) => req(`/api/cuenta/regalos/${id}/vista`, body, ck);
+    assert.equal((await rehacer({ vista: jpeg.toString('base64') }, otra.cookie)).status, 404);
+    assert.equal((await rehacer({ vista: 'no' })).status, 400);
+    assert.equal((await rehacer({ vista: jpeg.toString('base64') })).status, 200);
+    assert.ok(Buffer.from(await (await req(`/api/gifts/${id}/vista.jpg`)).arrayBuffer()).equals(jpeg));
+    const conVista = (await (await req('/api/cuenta', undefined, cookie)).json()) as { regalos: Array<{ vistaCreada: string | null }> };
+    assert.ok(conVista.regalos[0]?.vistaCreada !== null);
+
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
     const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number };
