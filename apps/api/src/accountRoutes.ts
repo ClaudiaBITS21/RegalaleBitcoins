@@ -23,14 +23,17 @@ import {
   touchCredential,
 } from './accounts.ts';
 import { parseSignupStats } from './altas.ts';
+import { LIMITS } from './app.ts';
 import type { ArsPriceClient, ChainClient, PriceClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { isAdmin } from './admins.ts';
 import { balance, canGive, chargingActive, features, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
+import { pendingFor } from './gifts.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { giftState } from './state.ts';
+import { text } from './validate.ts';
 import { verifyAssertion, verifyRegistration, WebAuthnError } from './webauthn.ts';
 
 // Cuentas de quien regala: registro e ingreso con passkey, link por mail y panel.
@@ -425,8 +428,32 @@ export function registerAccountRoutes(
         original: g.currency === null || g.amount === null ? null : { moneda: g.currency, monto: g.amount, usdPorBtc: g.usdPerBtc },
         estado: states[i]?.state ?? null,
         sats: received(i)?.toString() ?? null,
+        mensaje: g.message,
+        mostrarValor: g.showValue,
       })),
     });
+  });
+
+  /**
+   * Editar el mensaje o si se muestra cuánto vale (Claudia, 04/11/2026), desde «Mis regalos»: solo
+   * los regalos propios y mientras no se hayan abierto. Quien recibe lo ve al abrir el link.
+   */
+  app.post('/api/cuenta/regalos/:id/editar', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    const message = b.mensaje === undefined ? undefined : (text(b.mensaje, LIMITS.message, false) ?? '');
+    if (b.mostrarValor !== undefined && typeof b.mostrarValor !== 'boolean') throw new ApiError(400, 'pedido_invalido');
+    const showValue = b.mostrarValor as boolean | undefined;
+    if (message === undefined && showValue === undefined) throw new ApiError(400, 'pedido_invalido');
+    const [g] = await sql<{ reclamo_txid: string | null; mensaje: string; mostrar_valor: boolean }[]>`
+      select reclamo_txid, mensaje, mostrar_valor from regalos where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+    if (g === undefined) throw new ApiError(404, 'no_encontrado');
+    if (g.reclamo_txid !== null || (await pendingFor(sql, c.req.param('id'))) !== null) throw new ApiError(409, 'regalo_abierto');
+    await sql`
+      update regalos set mensaje = ${message ?? g.mensaje}, mostrar_valor = ${showValue ?? g.mostrar_valor}
+      where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+    return c.json({ mensaje: message ?? g.mensaje, mostrarValor: showValue ?? g.mostrar_valor });
   });
 
   /**

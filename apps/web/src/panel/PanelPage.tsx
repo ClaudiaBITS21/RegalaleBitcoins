@@ -19,6 +19,7 @@ import { giftValue } from './valor.ts';
 import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { RecoverWithWallet, RecoverySettings } from '../recupero/Recuperar.tsx';
+import { EditarRegalo } from './EditarRegalo.tsx';
 
 // Panel de quien regala: sus regalos con el estado que calcula el servidor desde la
 // cadena. Para volver a ver un link y sus palabras, o el código de recuperación, se abre la
@@ -86,6 +87,8 @@ export function PanelPage() {
   const [busy, setBusy] = useState(false);
   // Descartar un regalo sin pagar: cuál se está confirmando y si falló porque ya tenía fondos.
   const [discarding, setDiscarding] = useState<string | null>(null);
+  // Editar el mensaje o si se muestra el valor de un regalo que todavía no se abrió (04/11).
+  const [editing, setEditing] = useState<string | null>(null);
   const [discardFailed, setDiscardFailed] = useState<string | null>(null);
   const [error, setError] = useState<Key | null>(null);
   const [email, setEmail] = useState('');
@@ -383,6 +386,11 @@ export function PanelPage() {
                       {t(recovering === g.id ? 'panel.ocultar' : 'avanzado.recuperar.boton')}
                     </Button>
                   )}
+                  {pending && g.mensaje !== undefined && (
+                    <Button kind="contorno" disabled={busy} onClick={() => setEditing(editing === g.id ? null : g.id)}>
+                      {t(editing === g.id ? 'panel.ocultar' : 'panel.editar')}
+                    </Button>
+                  )}
                   {g.estado === 'esperando' && (g.sats === null || g.sats === '0') && (
                     <Button kind="contorno" disabled={busy} onClick={() => setDiscarding(discarding === g.id ? null : g.id)}>
                       {t('panel.descartar')}
@@ -429,6 +437,7 @@ export function PanelPage() {
                   {recovering === g.id && master !== null && network !== null && (
                     <RecoverWithWallet gift={g} root={masterRoot(master)} network={network} onDone={() => void load()} />
                   )}
+                  {editing === g.id && <EditarRegalo gift={g} onDone={() => void load()} />}
                   {discarding === g.id && (
                     <div class="regalo-secretos">
                       <p>{t('panel.descartar.pregunta')}</p>
