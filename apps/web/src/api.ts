@@ -79,6 +79,21 @@ export class ApiFailure extends Error {
   }
 }
 
+/**
+ * El cuerpo JSON de una respuesta. Si una respuesta buena llega cortada (la página cambió a mitad
+ * de camino, o se cortó la red), es un error de conexión: nunca un objeto vacío, que la pantalla
+ * tomaría por datos (y rompería al leer, por ejemplo, la lista de productos). 204: null.
+ */
+export async function readJson(res: Response): Promise<Record<string, unknown> | null> {
+  if (res.status === 204) return null;
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    if (res.ok) throw new ApiFailure(0, 'sin_conexion');
+    return {};
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -86,8 +101,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiFailure(0, 'sin_conexion');
   }
-  const body = (await res.json().catch(() => ({}))) as { error?: string; datos?: Record<string, unknown> };
-  if (!res.ok) throw new ApiFailure(res.status, body.error ?? 'error', body.datos);
+  const body = (await readJson(res)) as { error?: string; datos?: Record<string, unknown> } | null;
+  if (!res.ok) throw new ApiFailure(res.status, body?.error ?? 'error', body?.datos);
   return body as T;
 }
 

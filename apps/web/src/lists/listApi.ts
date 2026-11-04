@@ -1,4 +1,4 @@
-import { ApiFailure } from '../api.ts';
+import { ApiFailure, readJson } from '../api.ts';
 
 // Listas de regalos: llamadas a la API. La llave pública (zpub/vpub) solo viaja al crear la
 // lista y vuelve únicamente al panel de quien la armó.
@@ -16,8 +16,8 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   } catch {
     throw new ApiFailure(0, 'sin_conexion');
   }
-  const json = (await res.json().catch(() => ({}))) as { error?: string; detalle?: string };
-  if (!res.ok) throw new ApiFailure(res.status, json.detalle ?? json.error ?? 'error');
+  const json = (await readJson(res)) as { error?: string; detalle?: string } | null;
+  if (!res.ok) throw new ApiFailure(res.status, json?.detalle ?? json?.error ?? 'error');
   return json as T;
 }
 
