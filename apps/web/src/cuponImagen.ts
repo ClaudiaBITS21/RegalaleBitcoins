@@ -32,6 +32,8 @@ export interface CouponImageInput {
   readonly hasta: string | null;
   /** El logo de quien lo promueve (una URL del sitio o data:), o null. */
   readonly logo?: string | null;
+  /** La etiqueta de arriba, en el idioma de la imagen (de entrada, «CUPÓN»). */
+  readonly etiqueta?: string;
 }
 
 /** Corta un texto en renglones que entren en `width` con la fuente actual (como mucho `max`). */
@@ -117,7 +119,7 @@ export async function couponImage(c: CouponImageInput): Promise<string | null> {
     ctx.fill();
     ctx.fillStyle = AMARILLO;
     ctx.font = `700 28px ${TEXTO}`;
-    ctx.fillText('CUPÓN', x + 44, ty + 87);
+    ctx.fillText(c.etiqueta ?? 'CUPÓN', x + 44, ty + 87, 120);
     ctx.fillStyle = TINTA;
     let size = 64;
     ctx.font = `800 ${size}px ${TITULOS}`;

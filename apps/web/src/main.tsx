@@ -20,7 +20,7 @@ import { ClaimPage } from './claim/ClaimPage.tsx';
 import { GivePage } from './give/GivePage.tsx';
 import { ALLOW_MAINNET } from './config.ts';
 import { Home } from './home.tsx';
-import { detectLang, translate, type UiLang } from './i18n/index.ts';
+import { detectLang, translate, UI_LANGS, type UiLang } from './i18n/index.ts';
 import { browserTrato, type Trato } from './i18n/trato.ts';
 import { OpenGiftPage } from './open.tsx';
 import { CuponesPage } from './admin/CuponesPage.tsx';
@@ -46,6 +46,12 @@ function savedLang(): string | null {
 
 /** Idioma y trato: lo que eligió la persona ("es-tu" es castellano con tú) o lo que dice el dispositivo. */
 function initialLang(): { lang: UiLang; trato: Trato } {
+  // Un link compartido en un idioma (?l=en, el de un cupón: Claudia, 04/11/2026) abre la página en
+  // ese idioma, sin guardarlo: la próxima visita vuelve a lo que eligió la persona.
+  const pedido = new URLSearchParams(window.location.search).get('l');
+  if (pedido === 'es-tu') return { lang: 'es', trato: 'tu' };
+  if (pedido === 'es') return { lang: 'es', trato: browserTrato() };
+  if (pedido !== null && (UI_LANGS as readonly string[]).includes(pedido)) return { lang: pedido as UiLang, trato: browserTrato() };
   const saved = savedLang();
   if (saved === 'es-tu') return { lang: 'es', trato: 'tu' };
   if (saved === 'es') return { lang: 'es', trato: 'vos' };

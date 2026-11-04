@@ -912,8 +912,20 @@ describe('Cuentas con passkey', () => {
     assert.ok(Buffer.from(await img.arrayBuffer()).equals(jpeg));
     const html = await (await req(`/c/${corto}`)).text();
     assert.ok(html.includes('<title>Un cupón para Regalale Bitcoin</title>'), html);
-    assert.ok(html.includes(`content="${ORIGIN}/api/c/${corto}/vista.jpg"`), html);
+    assert.match(html, new RegExp(`content="${ORIGIN}/api/c/${corto}/vista\\.jpg\\?v=\\d+"`), html);
     assert.ok(html.includes('21 % de descuento en los packs'), html);
+    // En otro idioma (?l=en, 04/11): título y texto en inglés; sin imagen en inglés, la de castellano.
+    const en = await (await req(`/c/${corto}?l=en`)).text();
+    assert.ok(en.includes('<title>A coupon for Regalale Bitcoin</title>') && en.includes('21% off plans'), en);
+    assert.ok(Buffer.from(await (await req(`/api/c/${corto}/vista.jpg?l=en`)).arrayBuffer()).equals(jpeg));
+    const jpegEn = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(3000, 8)]);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/vista', { imagen: jpegEn.toString('base64'), idioma: 'fr' }, admin.cookie)).status, 400);
+    assert.equal((await req('/api/admin/cupones/LABC2026HODL21/vista', { imagen: jpegEn.toString('base64'), idioma: 'en' }, admin.cookie)).status, 204);
+    assert.ok(Buffer.from(await (await req(`/api/c/${corto}/vista.jpg?l=en`)).arrayBuffer()).equals(jpegEn));
+    assert.ok(Buffer.from(await (await req(`/api/c/${corto}/vista.jpg`)).arrayBuffer()).equals(jpeg));
+    assert.match(await (await req(`/c/${corto}?l=en`)).text(), new RegExp(`/api/c/${corto}/vista\\.jpg\\?l=en&amp;v=\\d+"`));
+    const vistas = ((await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; vistas: Record<string, string> }> }).cupones;
+    assert.deepEqual(Object.keys(vistas.find((c) => c.codigo === 'LABC2026HODL21')!.vistas).sort(), ['en', 'es']);
     // Uno que todavía no empezó (el de un evento): el link ya lo muestra, con su fecha; usarlo, todavía no.
     assert.equal((await req('/api/admin/cupones', { codigo: 'EVENTO', descuento: 10, desde: '2099-11-01T03:00:00.000Z', hasta: '2099-12-01T03:00:00.000Z', maxUsos: 5 }, admin.cookie)).status, 201);
     const evento = ((await (await req('/api/admin/cupones', undefined, admin.cookie)).json()) as { cupones: Array<{ codigo: string; corto: string; conVista: boolean }> }).cupones;

@@ -175,10 +175,25 @@ export function parseLogo(value: unknown): Uint8Array {
   return data;
 }
 
-/** La imagen del cupón para la vista previa del link, si el admin ya la subió. */
-export async function findCouponPreview(sql: Sql, code: string): Promise<Uint8Array | null> {
-  const [r] = await sql<{ datos: Buffer }[]>`select datos from cupones_vistas where codigo = ${code}`;
-  return r === undefined ? null : new Uint8Array(r.datos);
+/** Idiomas en que se puede compartir un cupón (la imagen y el texto de la vista previa). */
+export const COUPON_LANGS = ['es', 'en', 'pt', 'it'] as const;
+export type CouponLang = (typeof COUPON_LANGS)[number];
+/** El idioma pedido en el link (?l=en, ?l=es-tu…); castellano si no viene o no se conoce. */
+export const couponLang = (v: unknown): CouponLang => {
+  const l = typeof v === 'string' ? v.slice(0, 2) : '';
+  return (COUPON_LANGS as readonly string[]).includes(l) ? (l as CouponLang) : 'es';
+};
+
+/**
+ * La imagen del cupón para la vista previa del link, si el admin ya la subió: la del idioma
+ * pedido y, si no está, la de castellano. `version` (segundos) va en la URL para los cachés.
+ */
+export async function findCouponPreview(sql: Sql, code: string, lang: CouponLang = 'es'): Promise<{ data: Uint8Array; lang: CouponLang; version: number } | null> {
+  const rows = await sql<{ datos: Buffer; idioma: CouponLang; creada: Date }[]>`
+    select datos, idioma, creada from cupones_vistas where codigo = ${code} and idioma in (${lang}, 'es')
+    order by (idioma = ${lang}) desc limit 1`;
+  const r = rows[0];
+  return r === undefined ? null : { data: new Uint8Array(r.datos), lang: r.idioma, version: Math.floor(r.creada.getTime() / 1000) };
 }
 
 export const couponView = (c: Coupon) => ({
@@ -249,10 +264,10 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
   app.get('/api/c/:corto/vista.jpg', async (c) => {
     const corto = normalizeShortCode(c.req.param('corto'));
     const [k] = corto === null ? [] : await sql<{ codigo: string }[]>`select codigo from cupones where corto = ${corto}`;
-    const data = k === undefined ? null : await findCouponPreview(sql, k.codigo);
-    if (data === null) return c.redirect(`${publicUrl}/og.jpg`, 302);
+    const found = k === undefined ? null : await findCouponPreview(sql, k.codigo, couponLang(c.req.query('l')));
+    if (found === null) return c.redirect(`${publicUrl}/og.jpg`, 302);
     // Se puede volver a subir (si cambian las condiciones): sin immutable.
-    return c.body(data as Uint8Array<ArrayBuffer>, 200, {
+    return c.body(found.data as Uint8Array<ArrayBuffer>, 200, {
       'content-type': 'image/jpeg',
       'cache-control': 'public, max-age=3600',
       'content-security-policy': "default-src 'none'; sandbox",
@@ -295,9 +310,10 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
 
   app.get('/api/admin/cupones', async (c) => {
     await admin(c, false);
-    const rows = await sql<(Coupon & { con_vista: boolean; vista_creada: Date | null; con_logo: boolean })[]>`
-      select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo) as con_vista,
-             (select v.creada from cupones_vistas v where v.codigo = k.codigo) as vista_creada,
+    const rows = await sql<(Coupon & { con_vista: boolean; vista_creada: Date | null; vistas: Record<string, string> | null; con_logo: boolean })[]>`
+      select k.*, exists (select 1 from cupones_vistas v where v.codigo = k.codigo and v.idioma = 'es') as con_vista,
+             (select v.creada from cupones_vistas v where v.codigo = k.codigo and v.idioma = 'es') as vista_creada,
+             (select json_object_agg(v.idioma, v.creada) from cupones_vistas v where v.codigo = k.codigo) as vistas,
              exists (select 1 from cupones_logos l where l.codigo = k.codigo) as con_logo
       from cupones k where k.lote is null order by k.creado desc limit 500`;
     const lotes = await sql<{ id: string; nombre: string; creado_por: string; creado: Date; total: string; activos: string; con_mail: string; usados: string; codigo: string }[]>`
@@ -325,6 +341,8 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           corto: r.corto,
           conVista: r.con_vista,
           vistaCreada: r.vista_creada?.toISOString() ?? null,
+          // Cuándo se subió la imagen de cada idioma (las que hay).
+          vistas: Object.fromEntries(Object.entries(r.vistas ?? {}).map(([l, d]) => [l, new Date(d).toISOString()])),
           conLogo: r.con_logo,
           desde: r.desde.toISOString(),
           hasta: r.hasta?.toISOString() ?? null,
@@ -493,10 +511,13 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
   app.post('/api/admin/cupones/:codigo/vista', async (c) => {
     await admin(c, false);
     const code = codeOf(c.req.param('codigo'));
-    const data = parsePreview((await body(c)).imagen);
+    const b = await body(c);
+    const data = parsePreview(b.imagen);
+    if (b.idioma !== undefined && !(COUPON_LANGS as readonly unknown[]).includes(b.idioma)) throw new ApiError(400, 'pedido_invalido');
+    const lang = (b.idioma ?? 'es') as CouponLang;
     const rows = await sql`
-      insert into cupones_vistas (codigo, datos) select codigo, ${Buffer.from(data)} from cupones where codigo = ${code}
-      on conflict (codigo) do update set datos = excluded.datos, creada = now()
+      insert into cupones_vistas (codigo, idioma, datos) select codigo, ${lang}, ${Buffer.from(data)} from cupones where codigo = ${code}
+      on conflict (codigo, idioma) do update set datos = excluded.datos, creada = now()
       returning codigo`;
     if (rows.length === 0) throw new ApiError(404, 'cupon_invalido');
     return c.body(null, 204);
