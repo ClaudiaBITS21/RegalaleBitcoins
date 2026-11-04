@@ -16,6 +16,7 @@ const H = 630;
 const TINTA = '#1a1530';
 const NARANJA = '#ff8a1f';
 const AMARILLO = '#ffd23f';
+const CREMA = '#fff1e3';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
 
@@ -39,6 +40,8 @@ export interface PreviewInput {
   readonly to: string;
   /** Vos o tú, el de quien arma el regalo (en castellano). */
   readonly trato: Trato;
+  /** Borrador (04/11): fondo oscuro, o naranja con la tarjeta sobre un marco crema. */
+  readonly opcion?: 'oscuro' | 'marco';
 }
 
 /** Corta la frase en renglones que entren en `width` con la tipografía de títulos en `size`. */
@@ -73,7 +76,8 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    ctx.fillStyle = NARANJA;
+    const oscuro = g.opcion === 'oscuro';
+    ctx.fillStyle = oscuro ? TINTA : NARANJA;
     ctx.fillRect(0, 0, W, H);
     for (const [x, y, w, hh, color, giro] of CONFETI) {
       ctx.save();
@@ -89,19 +93,31 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     // A la izquierda, la tarjeta entera, lo más grande que entre (Claudia, 04/11).
     if (art !== null) {
       const maxW = 780;
-      const maxH = H - 80;
+      const maxH = H - 100;
       const k = Math.min(maxW / art.naturalWidth, maxH / art.naturalHeight);
       const aw = art.naturalWidth * k;
       const ah = art.naturalHeight * k;
       const ax = 40 + (maxW - aw) / 2;
       const ay = (H - ah) / 2;
+      // Con el fondo naranja, la tarjeta va sobre un marco crema: si no, una tarjeta naranja parece
+      // transparente (Claudia, 04/11).
+      const m = oscuro ? 0 : 16;
       ctx.save();
-      ctx.fillStyle = TINTA;
+      if (!oscuro) {
+        ctx.fillStyle = TINTA;
+        ctx.beginPath();
+        ctx.roundRect(ax - m + 10, ay - m + 10, aw + 2 * m, ah + 2 * m, 32);
+        ctx.fill();
+        ctx.fillStyle = CREMA;
+        ctx.beginPath();
+        ctx.roundRect(ax - m, ay - m, aw + 2 * m, ah + 2 * m, 32);
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = TINTA;
+        ctx.stroke();
+      }
       ctx.beginPath();
-      ctx.roundRect(ax + 10, ay + 10, aw, ah, 28);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.roundRect(ax, ay, aw, ah, 28);
+      ctx.roundRect(ax, ay, aw, ah, 22);
       ctx.clip();
       // Fondo blanco detrás: la ilustración puede venir sin fondo y el JPEG no tiene transparencia
       // (sin esto se ve el naranja de atrás, Rodolfo 21/10).
@@ -109,18 +125,20 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       ctx.fillRect(ax, ay, aw, ah);
       ctx.drawImage(art, ax, ay, aw, ah);
       ctx.restore();
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = TINTA;
-      ctx.beginPath();
-      ctx.roundRect(ax, ay, aw, ah, 28);
-      ctx.stroke();
+      if (oscuro) {
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(ax, ay, aw, ah, 22);
+        ctx.stroke();
+      }
     }
 
     // A la derecha, angosto: «Tenés un regalo» (o «Tienes») y, abajo, el logotipo en dos líneas (04/11).
     const x = 880;
     const width = W - x - 40;
     const frase = translate(g.lang, 'vista.tenes', undefined, g.trato);
-    ctx.fillStyle = TINTA;
+    ctx.fillStyle = '#ffffff';
     let size = 60;
     let lineas = partir(ctx, frase, width, size);
     while (size > 34 && (lineas.length > 4 || lineas.some((l) => ctx.measureText(l).width > width))) {
@@ -134,7 +152,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
       y += size * 1.12;
     }
     const logo = new Image();
-    logo.src = dataUrl(svgCompacto('naranja'));
+    logo.src = dataUrl(svgCompacto(oscuro ? 'oscuro' : 'naranja'));
     await logo.decode();
     const lh = 70;
     ctx.drawImage(logo, x, H - 60 - lh, (logo.naturalWidth / logo.naturalHeight) * lh, lh);
