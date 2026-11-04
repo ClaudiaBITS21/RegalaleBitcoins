@@ -49,6 +49,8 @@ export interface AccountGift {
   /** El mensaje de la tarjeta y si quien recibe ve cuánto vale (se pueden editar mientras no se abra). */
   readonly mensaje?: string;
   readonly mostrarValor?: boolean;
+  /** Cuándo se subió la imagen para compartir el link (null si no tiene). */
+  readonly vistaCreada?: string | null;
 }
 
 export interface AccountView {
@@ -64,6 +66,7 @@ export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
   /** Descarta un regalo que nunca se pagó (409 regalo_con_fondos si ya recibió algo). */
   editGift: (id: string, cambios: { mensaje?: string; mostrarValor?: boolean }) => call<{ mensaje: string; mostrarValor: boolean }>(`/api/cuenta/regalos/${id}/editar`, cambios),
+  updatePreview: (id: string, vista: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/vista`, { vista }),
   discardGift: (id: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, {}),
   logout: async () => {
     const res = await call<{ ok: boolean }>('/api/cuenta/salir', {});

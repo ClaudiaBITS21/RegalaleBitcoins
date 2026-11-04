@@ -32,6 +32,7 @@ import { ApiError } from './errors.ts';
 import { pendingFor } from './gifts.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
+import { parsePreview } from './share.ts';
 import { giftState } from './state.ts';
 import { text } from './validate.ts';
 import { verifyAssertion, verifyRegistration, WebAuthnError } from './webauthn.ts';
@@ -430,6 +431,7 @@ export function registerAccountRoutes(
         sats: received(i)?.toString() ?? null,
         mensaje: g.message,
         mostrarValor: g.showValue,
+        vistaCreada: g.previewAt?.toISOString() ?? null,
       })),
     });
   });
@@ -454,6 +456,24 @@ export function registerAccountRoutes(
       update regalos set mensaje = ${message ?? g.mensaje}, mostrar_valor = ${showValue ?? g.mostrar_valor}
       where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
     return c.json({ mensaje: message ?? g.mensaje, mostrarValor: showValue ?? g.mostrar_valor });
+  });
+
+  /**
+   * Rehacer la imagen para compartir el link (Claudia, 04/11/2026): cuando cambia el diseño, el
+   * navegador de quien armó el regalo la vuelve a dibujar y la sube. Solo regalos propios.
+   */
+  app.post('/api/cuenta/regalos/:id/vista', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    const data = parsePreview(b.vista);
+    const id = c.req.param('id');
+    const [g] = await sql<{ id: string }[]>`select id from regalos where id = ${id} and usuario_id = ${account.id}`;
+    if (g === undefined) throw new ApiError(404, 'no_encontrado');
+    await sql`
+      insert into vistas (regalo_id, datos) values (${id}, ${Buffer.from(data)})
+      on conflict (regalo_id) do update set datos = excluded.datos, creada = now()`;
+    return c.json({ ok: true });
   });
 
   /**

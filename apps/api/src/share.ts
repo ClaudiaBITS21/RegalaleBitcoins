@@ -29,6 +29,13 @@ async function findPreview(sql: Sql, id: string): Promise<Uint8Array | null> {
   return r === undefined ? null : new Uint8Array(r.datos);
 }
 
+/** Cuándo se subió la imagen (null si no hay): va en su URL, así una imagen rehecha no sale de un caché. */
+async function previewVersion(sql: Sql, id: string): Promise<number | null> {
+  if (!GIFT_ID.test(id)) return null;
+  const [r] = await sql<{ creada: Date }[]>`select creada from vistas where regalo_id = ${id}`;
+  return r === undefined ? null : Math.floor(r.creada.getTime() / 1000);
+}
+
 // Sin formas de vos ni de tú: valen para los dos tratos.
 const TITLE: Readonly<Record<Lang, string>> = { es: 'Un regalo para {para}', pt: 'Um presente para {para}', en: 'A gift for {para}', it: 'Un regalo per {para}' };
 const DESCRIPTION: Readonly<Record<Lang, string>> = {
@@ -92,12 +99,12 @@ export function registerShareRoutes(app: Hono, deps: { sql: Sql; publicUrl: stri
     if (gift === null) return c.html(html);
     const lang: Lang = isLang(gift.lang) ? gift.lang : 'es';
     const title = TITLE[lang].replace('{para}', gift.to);
-    const hasPreview = (await findPreview(sql, id)) !== null;
+    const version = await previewVersion(sql, id);
     return c.html(
       withGiftMeta(html, {
         title,
         description: DESCRIPTION[lang],
-        image: hasPreview ? `${publicUrl}/api/gifts/${id}/vista.jpg` : `${publicUrl}/og.jpg`,
+        image: version !== null ? `${publicUrl}/api/gifts/${id}/vista.jpg?v=${version}` : `${publicUrl}/og.jpg`,
         url: `${publicUrl}/r/${id}`,
         alt: title,
       }),

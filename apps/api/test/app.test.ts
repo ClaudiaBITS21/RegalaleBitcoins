@@ -411,7 +411,7 @@ describe('API para regalar', () => {
     const page = await share.request(`/r/${id}`);
     const html = await page.text();
     assert.equal(page.status, 200);
-    assert.ok(html.includes(`<meta property="og:image" content="https://ejemplo.test/api/gifts/${id}/vista.jpg" />`), html);
+    assert.match(html, new RegExp(`<meta property="og:image" content="https://ejemplo\\.test/api/gifts/${id}/vista\\.jpg\\?v=\\d+" />`), html);
     assert.ok(html.includes('<title>Um presente para Ana &lt;3</title>'), 'en el idioma del regalo y escapado');
     assert.ok(html.includes('<div id="app"></div>'), 'es la misma web');
     assert.ok(page.headers.get('content-security-policy')?.includes("default-src 'self'"));

@@ -21,6 +21,9 @@ const NARANJA = '#ff8a1f';
 const TITULOS = '"Bricolage Grotesque", system-ui, sans-serif';
 const TEXTO = '"DM Sans", system-ui, sans-serif';
 
+/** Desde cuándo rige el diseño actual de la imagen: las de antes se rehacen desde «Mis regalos». */
+export const DISENO_VISTA = '2026-11-04T10:53:00Z';
+
 export interface PreviewInput {
   readonly lang: Lang;
   readonly occasion: string;
