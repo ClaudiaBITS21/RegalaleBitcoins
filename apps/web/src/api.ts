@@ -79,6 +79,21 @@ export class ApiFailure extends Error {
   }
 }
 
+/**
+ * El cuerpo JSON de una respuesta. Si una respuesta buena llega cortada (la página cambió a mitad
+ * de camino, o se cortó la red), es un error de conexión: nunca un objeto vacío, que la pantalla
+ * tomaría por datos (y rompería al leer, por ejemplo, la lista de productos). 204: null.
+ */
+export async function readJson(res: Response): Promise<Record<string, unknown> | null> {
+  if (res.status === 204) return null;
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    if (res.ok) throw new ApiFailure(0, 'sin_conexion');
+    return {};
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -86,8 +101,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiFailure(0, 'sin_conexion');
   }
-  const body = (await res.json().catch(() => ({}))) as { error?: string; datos?: Record<string, unknown> };
-  if (!res.ok) throw new ApiFailure(res.status, body.error ?? 'error', body.datos);
+  const body = (await readJson(res)) as { error?: string; datos?: Record<string, unknown> } | null;
+  if (!res.ok) throw new ApiFailure(res.status, body?.error ?? 'error', body?.datos);
   return body as T;
 }
 
@@ -249,6 +264,8 @@ export interface AdminCoupon extends CouponView {
   readonly conVista: boolean;
   /** Cuándo se subió esa imagen (para rehacer las de un diseño viejo). */
   readonly vistaCreada?: string | null;
+  /** Cuándo se subió la imagen de cada idioma (las que hay). */
+  readonly vistas?: Readonly<Record<string, string>>;
   /** Si tiene el logo de quien lo promueve. */
   readonly conLogo: boolean;
   readonly desde: string;
@@ -334,7 +351,7 @@ export const api = {
   shortCoupon: (corto: string) => call<CouponView & { corto: string; desde: string; hasta: string | null; paraUnMail: boolean; conLogo: boolean }>(`/api/c/${encodeURIComponent(corto)}`),
   /** Pone o cambia (PNG en base64) o saca (null) el logo de quien promueve el cupón. Pide passkey. */
   adminCouponLogo: (codigo: string, imagen: string | null) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/logo`, { imagen }),
-  adminCouponPreview: (codigo: string, imagen: string) => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/vista`, { imagen }),
+  adminCouponPreview: (codigo: string, imagen: string, idioma: 'es' | 'en' | 'pt' | 'it' = 'es') => post<null>(`/api/admin/cupones/${encodeURIComponent(codigo)}/vista`, { imagen, idioma }),
   adminCreateCoupon: (c: {
     codigo: string;
     descuento: number | null;

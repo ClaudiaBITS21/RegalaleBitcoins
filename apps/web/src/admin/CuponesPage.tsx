@@ -4,8 +4,8 @@ import { ApiFailure, api, type AdminCoupon, type AdminCouponBatch } from '../api
 import { PRODUCT_NAME } from '../comprar.tsx';
 import { occasionLabel } from '../content/occasions.ts';
 import { formatSats } from '../format.ts';
-import { translate } from '../i18n/index.ts';
-import { browserTrato, type Trato } from '../i18n/trato.ts';
+import { translate, type UiLang } from '../i18n/index.ts';
+import { browserTrato } from '../i18n/trato.ts';
 import { couponImage } from '../cuponImagen.ts';
 import { type PreparedLogo, prepareLogo } from '../cuponLogo.ts';
 
@@ -16,18 +16,31 @@ import { type PreparedLogo, prepareLogo } from '../cuponLogo.ts';
 // Además (Claudia, 21/10): cupones para un mail y lotes (N códigos sueltos o uno por cada mail de
 // un CSV), cada código con su link de invitación; el lote se baja como CSV para mandarlo.
 
-type Filtro = 'vigentes' | 'pausados' | 'terminados' | 'todos';
+type Filtro = 'vigentes' | 'pausados' | 'vencidos' | 'agotados' | 'todos';
 type Vista = 'cupones' | 'lista';
 
 const PLANES = ['pack10', 'pack10_lista', 'anual', 'fundador'] as const;
 const OCASIONES = ['', 'navidad', 'reyes', 'dianino', 'cumple', 'bautismo', 'casamiento', 'babyshower', 'diamadre', 'diapadre'] as const;
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const VISTA_KEY = 'cupones-vista';
-const TRATO_KEY = 'cupones-trato';
+const IDIOMA_KEY = 'cupones-idioma';
+/**
+ * En qué idioma se comparte un cupón (Claudia, 04/11/2026): el mensaje, el link (?l=…, que abre la
+ * página en ese idioma) y la imagen de la vista previa. En castellano, con vos o con tú.
+ */
+export type IdiomaCupon = 'es-vos' | 'es-tu' | 'en' | 'pt' | 'it';
+const IDIOMAS: ReadonlyArray<{ id: IdiomaCupon; texto: string; titulo: string }> = [
+  { id: 'es-vos', texto: 'ES vos', titulo: 'Acá tenés un cupón…' },
+  { id: 'es-tu', texto: 'ES tú', titulo: 'Aquí tienes un cupón…' },
+  { id: 'en', texto: 'EN', titulo: 'Here is a coupon…' },
+  { id: 'pt', texto: 'PT', titulo: 'Aqui está um cupom…' },
+  { id: 'it', texto: 'IT', titulo: 'Ecco un coupon…' },
+];
+const langDe = (i: IdiomaCupon): UiLang => (i === 'es-vos' || i === 'es-tu' ? 'es' : i);
 /** En todo texto, la dirección del sitio es siempre esta (CLAUDE.md). */
 const SITIO = 'https://regalalebitcoin.com';
 export const linkInvitacion = (codigo: string) => `${SITIO}/invitacion/${codigo}`;
-export const linkCorto = (corto: string) => `${SITIO}/c/${corto}`;
+export const linkCorto = (corto: string, idioma: IdiomaCupon = 'es-vos') => `${SITIO}/c/${corto}${idioma === 'es-vos' ? '' : `?l=${idioma === 'es-tu' ? 'es-tu' : idioma}`}`;
 
 /** Celda de CSV: entre comillas si hace falta y sin fórmulas (una celda que empieza con = + - @). */
 const celda = (v: string) => {
@@ -54,8 +67,8 @@ export function mailsDe(texto: string): string[] {
 
 export function estadoLote(l: AdminCouponBatch): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
-  if (l.hasta !== null && new Date(l.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
-  if (l.usados >= l.total) return { clave: 'terminados', texto: 'Agotado' };
+  if (l.hasta !== null && new Date(l.hasta).getTime() <= now) return { clave: 'vencidos', texto: 'Vencido' };
+  if (l.usados >= l.total) return { clave: 'agotados', texto: 'Agotado' };
   if (l.activos === 0) return { clave: 'pausados', texto: 'Pausado' };
   if (l.desde !== null && new Date(l.desde).getTime() > now) return { clave: 'vigentes', texto: `Empieza el ${fechaCorta(l.desde)}` };
   return { clave: 'vigentes', texto: 'Activo', activo: true };
@@ -88,8 +101,8 @@ export const ultimoDia = (iso: string) => new Date(new Date(iso).getTime() - 1).
 
 export function estado(c: AdminCoupon): { clave: Exclude<Filtro, 'todos'>; texto: string; activo?: true } {
   const now = Date.now();
-  if (c.hasta !== null && new Date(c.hasta).getTime() <= now) return { clave: 'terminados', texto: 'Vencido' };
-  if (c.usados >= c.maxUsos) return { clave: 'terminados', texto: 'Agotado' };
+  if (c.hasta !== null && new Date(c.hasta).getTime() <= now) return { clave: 'vencidos', texto: 'Vencido' };
+  if (c.usados >= c.maxUsos) return { clave: 'agotados', texto: 'Agotado' };
   if (!c.activo) return { clave: 'pausados', texto: 'Pausado' };
   if (new Date(c.desde).getTime() > now) return { clave: 'vigentes', texto: `Empieza el ${fechaCorta(c.desde)}` };
   return { clave: 'vigentes', texto: 'Activo', activo: true };
@@ -139,11 +152,19 @@ const fechaLarga = (iso: string) => {
 /**
  * El texto para copiar o compartir (Claudia, 25/10): una línea y el link corto, que muestra el
  * cupón (con su imagen en la vista previa) y lo deja puesto para la compra. Con vos o con tú,
- * según el trato elegido arriba (con tú la marca lleva acento, como en el sitio).
+ * o en el idioma elegido arriba (con tú la marca lleva acento, como en el sitio).
  */
-export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html: string } {
-  const frase = trato === 'tu' ? 'Aquí tienes un cupón para Regálale Bitcoin' : 'Acá tenés un cupón para Regalale Bitcoin';
-  const link = linkCorto(c.corto);
+const FRASES: Readonly<Record<IdiomaCupon, string>> = {
+  'es-vos': 'Acá tenés un cupón para Regalale Bitcoin',
+  'es-tu': 'Aquí tienes un cupón para Regálale Bitcoin',
+  en: 'Here is a coupon for Regalale Bitcoin',
+  pt: 'Aqui está um cupom para o Regalale Bitcoin',
+  it: 'Ecco un coupon per Regalale Bitcoin',
+};
+
+export function textoCupon(c: AdminCoupon, idioma: IdiomaCupon): { plano: string; html: string } {
+  const frase = FRASES[idioma];
+  const link = linkCorto(c.corto, idioma);
   const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return { plano: `${frase}: ${link}`, html: `<p>${esc(frase)}: <a href="${link}">${esc(link)}</a></p>` };
 }
@@ -153,10 +174,38 @@ export function textoCupon(c: AdminCoupon, trato: Trato): { plano: string; html:
  * rehacen solas al abrir la página.
  */
 const VISTA_DESDE = Date.parse('2026-10-25T16:00:00Z');
-const vistaAlDia = (c: AdminCoupon) => c.conVista && c.vistaCreada != null && Date.parse(c.vistaCreada) >= VISTA_DESDE;
+const vistaAlDia = (c: AdminCoupon, lang: UiLang = 'es') => {
+  const creada = lang === 'es' ? (c.conVista ? c.vistaCreada : null) : c.vistas?.[lang];
+  return creada != null && Date.parse(creada) >= VISTA_DESDE;
+};
 
-/** Lo que dice la imagen del cupón (la vista previa del link). `logo`: el de quien lo promueve, si cambió recién. */
-export function imagenCupon(c: AdminCoupon, logo?: string | null) {
+// Las fechas de un cupón son días de la Argentina: se dicen en esa hora (como en la página del cupón).
+const fechaEn = (iso: string, lang: UiLang) => new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date(iso));
+
+/** Lo que dice la imagen del cupón en otro idioma: con los mismos textos que su página. */
+function textosEn(c: AdminCoupon, lang: UiLang): { que: string; hasta: string | null; etiqueta: string } {
+  const t = (k: Parameters<typeof translate>[1], v?: Record<string, string | number>) => translate(lang, k, v);
+  const partes: string[] = [];
+  if (c.descuento !== null) partes.push(c.descuento === 100 ? t('invitacion.gratis') : t('invitacion.descuento', { n: c.descuento }));
+  if (c.da !== null) {
+    const n = c.da.cantidad;
+    const base = c.da.unidad === 'regalo' ? (n === 1 ? t('invitacion.unRegalo') : t('invitacion.nRegalos', { n })) : n === 1 ? t('invitacion.unaLista') : t('invitacion.nListas', { n });
+    partes.push(c.da.ocasion === null ? base : t('invitacion.ocasion', { que: base, ocasion: occasionLabel(c.da.ocasion, lang) }));
+  }
+  const que = partes.length === 2 ? t('invitacion.y', { a: partes[0] as string, b: partes[1] as string }) : (partes[0] ?? '');
+  const empieza = new Date(c.desde).getTime() > Date.now() ? fechaEn(c.desde, lang) : null;
+  const hasta = c.hasta === null ? null : fechaEn(ultimoDia(c.hasta), lang);
+  const fechas = empieza !== null ? (hasta === null ? t('cupon.desde', { fecha: empieza }) : t('cupon.del', { desde: empieza, hasta })) : hasta === null ? null : t('cupon.hasta', { fecha: hasta });
+  return { que: que.charAt(0).toUpperCase() + que.slice(1), hasta: fechas, etiqueta: t('cupon.etiqueta').toLocaleUpperCase(lang) };
+}
+
+/**
+ * Lo que dice la imagen del cupón (la vista previa del link). `logo`: el de quien lo promueve, si
+ * cambió recién. `lang`: el idioma en que se comparte (de entrada, castellano).
+ */
+export function imagenCupon(c: AdminCoupon, logo?: string | null, lang: UiLang = 'es') {
+  const logoUrl = logo !== undefined ? logo : c.conLogo ? `/api/c/${c.corto}/logo.png?v=${Date.now()}` : null;
+  if (lang !== 'es') return { codigo: c.codigo, ...textosEn(c, lang), logo: logoUrl };
   const que = beneficio(c).replace(/^un /, '');
   // Si todavía no empezó (el de un evento se comparte antes), las dos fechas.
   const empieza = new Date(c.desde).getTime() > Date.now() ? fechaLarga(c.desde) : null;
@@ -166,7 +215,7 @@ export function imagenCupon(c: AdminCoupon, logo?: string | null) {
     codigo: c.codigo,
     que: que.charAt(0).toUpperCase() + que.slice(1),
     hasta: fechas,
-    logo: logo !== undefined ? logo : c.conLogo ? `/api/c/${c.corto}/logo.png?v=${Date.now()}` : null,
+    logo: logoUrl,
   };
 }
 
@@ -206,12 +255,13 @@ export function CuponesPage() {
       return 'cupones';
     }
   });
-  const [trato, setTrato] = useState<Trato>(() => {
+  const [idioma, setIdioma] = useState<IdiomaCupon>(() => {
+    const deEntrada: IdiomaCupon = browserTrato() === 'tu' ? 'es-tu' : 'es-vos';
     try {
-      const t = localStorage.getItem(TRATO_KEY);
-      return t === 'vos' || t === 'tu' ? t : browserTrato();
+      const i = localStorage.getItem(IDIOMA_KEY);
+      return IDIOMAS.some((x) => x.id === i) ? (i as IdiomaCupon) : deEntrada;
     } catch {
-      return browserTrato();
+      return deEntrada;
     }
   });
   const [conImagen] = useState(() => new Set<string>());
@@ -243,9 +293,11 @@ export function CuponesPage() {
   useEffect(() => {
     if (cupones === null) return;
     void (async () => {
-      for (const c of cupones) if (!vistaAlDia(c) && estado(c).clave === 'vigentes') await subirImagen(c);
+      for (const c of cupones) if (estado(c).clave === 'vigentes') await subirImagen(c, 'es');
+      // Y las del idioma elegido para compartir, así la vista previa ya sale en ese idioma.
+      if (langDe(idioma) !== 'es') for (const c of cupones) if (estado(c).clave === 'vigentes') await subirImagen(c, langDe(idioma));
     })();
-  }, [cupones]);
+  }, [cupones, idioma]);
 
   const avisar = (m: string) => {
     setAviso(m);
@@ -257,19 +309,20 @@ export function CuponesPage() {
    * copiar o compartir (el portapapeles pide que sea enseguida del toque) y, si falla, el link
    * muestra la imagen general del sitio.
    */
-  const subirImagen = async (c: AdminCoupon) => {
-    if (vistaAlDia(c) || conImagen.has(c.codigo)) return;
-    conImagen.add(c.codigo);
+  const subirImagen = async (c: AdminCoupon, lang: UiLang = langDe(idioma)) => {
+    const clave = `${c.codigo}:${lang}`;
+    if (vistaAlDia(c, lang) || conImagen.has(clave)) return;
+    conImagen.add(clave);
     try {
-      const img = await couponImage(imagenCupon(c));
-      if (img !== null) await api.adminCouponPreview(c.codigo, img);
+      const img = await couponImage(imagenCupon(c, undefined, lang));
+      if (img !== null) await api.adminCouponPreview(c.codigo, img, lang);
     } catch {
-      conImagen.delete(c.codigo);
+      conImagen.delete(clave);
     }
   };
   /** Copia el mensaje del cupón: con el link como link donde se pueda, y si no, el texto plano. */
   const copiarCupon = async (c: AdminCoupon) => {
-    const { plano, html } = textoCupon(c, trato);
+    const { plano, html } = textoCupon(c, idioma);
     try {
       if (typeof ClipboardItem === 'function' && typeof navigator.clipboard.write === 'function') {
         await navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([plano], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]);
@@ -283,15 +336,15 @@ export function CuponesPage() {
     void subirImagen(c);
   };
   const compartir = (c: AdminCoupon) => {
-    const text = textoCupon(c, trato).plano;
+    const text = textoCupon(c, idioma).plano;
     if (typeof navigator.share === 'function') navigator.share({ text }).catch(() => undefined);
     else void copiar(text, 'Texto copiado para compartir');
     void subirImagen(c);
   };
-  const cambiarTrato = (t: Trato) => {
-    setTrato(t);
+  const cambiarIdioma = (i: IdiomaCupon) => {
+    setIdioma(i);
     try {
-      localStorage.setItem(TRATO_KEY, t);
+      localStorage.setItem(IDIOMA_KEY, i);
     } catch {
       // Sin almacenamiento: vale para esta visita.
     }
@@ -372,8 +425,15 @@ export function CuponesPage() {
     );
   }
 
-  const visibles = (cupones ?? []).filter((c) => filtro === 'todos' || estado(c).clave === filtro);
-  const lotesVisibles = lotes.filter((l) => filtro === 'todos' || estadoLote(l).clave === filtro);
+  // Por vencimiento (Claudia, 04/11/2026): los vencidos, del que venció último al más viejo; el
+  // resto, del que vence antes al que vence después, y al final los que no vencen.
+  const venceEn = (hasta: string | null) => (hasta === null ? Number.POSITIVE_INFINITY : Date.parse(hasta));
+  // En «Todos», separados: primero los vigentes, después pausados, agotados y vencidos.
+  const GRUPO: Readonly<Record<Exclude<Filtro, 'todos'>, number>> = { vigentes: 0, pausados: 1, agotados: 2, vencidos: 3 };
+  const orden = (ga: Exclude<Filtro, 'todos'>, a: string | null, gb: Exclude<Filtro, 'todos'>, b: string | null) =>
+    GRUPO[ga] - GRUPO[gb] || (ga === 'vencidos' ? venceEn(b) - venceEn(a) : venceEn(a) - venceEn(b)) || 0;
+  const visibles = (cupones ?? []).filter((c) => filtro === 'todos' || estado(c).clave === filtro).sort((a, b) => orden(estado(a).clave, a.hasta, estado(b).clave, b.hasta));
+  const lotesVisibles = lotes.filter((l) => filtro === 'todos' || estadoLote(l).clave === filtro).sort((a, b) => orden(estadoLote(a).clave, a.hasta, estadoLote(b).clave, b.hasta));
   return (
     <div class="cupones-app">
       <Cabecera onNuevo={() => setHoja(true)} />
@@ -384,7 +444,8 @@ export function CuponesPage() {
             [
               ['vigentes', 'Vigentes'],
               ['pausados', 'Pausados'],
-              ['terminados', 'Vencidos o agotados'],
+              ['vencidos', 'Vencidos'],
+              ['agotados', 'Agotados'],
               ['todos', 'Todos'],
             ] as const
           ).map(([f, nombre]) => (
@@ -398,13 +459,12 @@ export function CuponesPage() {
             {visibles.length === 1 ? '1 cupón' : `${visibles.length} cupones`}
             {lotesVisibles.length > 0 && (lotesVisibles.length === 1 ? ' · 1 lote' : ` · ${lotesVisibles.length} lotes`)}
           </span>
-          <div class="cupones-vista" role="group" aria-label="Mensaje al copiar">
-            <button type="button" aria-pressed={trato === 'vos'} title="Acá tenés un cupón…" onClick={() => cambiarTrato('vos')}>
-              Vos
-            </button>
-            <button type="button" aria-pressed={trato === 'tu'} title="Aquí tienes un cupón…" onClick={() => cambiarTrato('tu')}>
-              Tú
-            </button>
+          <div class="cupones-vista" role="group" aria-label="Idioma al compartir">
+            {IDIOMAS.map((i) => (
+              <button key={i.id} type="button" aria-pressed={idioma === i.id} title={i.titulo} onClick={() => cambiarIdioma(i.id)}>
+                {i.texto}
+              </button>
+            ))}
           </div>
           <div class="cupones-vista" role="group" aria-label="Ver como">
             <button type="button" aria-pressed={vista === 'cupones'} onClick={() => cambiarVista('cupones')}>
@@ -520,7 +580,7 @@ function BotonesAcciones({ c, onCompartir, onCopiar, onPausar, onLogo, onUsos, c
       <button type="button" class="cupones-accion" onClick={() => onLogo(c)}>
         {c.conLogo ? 'Logo ✓' : 'Logo'}
       </button>
-      {e.clave !== 'terminados' && (
+      {e.clave !== 'vencidos' && e.clave !== 'agotados' && (
         <button type="button" class="cupones-accion" onClick={() => onPausar(c)}>
           {c.activo ? 'Pausar' : 'Reactivar'}
         </button>
@@ -676,7 +736,7 @@ function Lote({ l, onCsv, onPausar }: { l: AdminCouponBatch; onCsv: (l: AdminCou
             <button type="button" class="cupones-accion" onClick={() => onCsv(l)}>
               Bajar CSV con links
             </button>
-            {e.clave !== 'terminados' && (
+            {e.clave !== 'vencidos' && e.clave !== 'agotados' && (
               <button type="button" class="cupones-accion" onClick={() => onPausar(l)}>
                 {l.activos > 0 ? 'Pausar el lote' : 'Reactivar el lote'}
               </button>

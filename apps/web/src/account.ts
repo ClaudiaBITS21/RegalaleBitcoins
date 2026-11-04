@@ -1,6 +1,6 @@
 import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openVault, sealVault } from '@regalale/core';
 import { signupStats } from './origen.ts';
-import { ApiFailure } from './api.ts';
+import { ApiFailure, readJson } from './api.ts';
 import type { Key } from './i18n/index.ts';
 import { setSignedIn } from './sesion.ts';
 import { createPasskey, PasskeyError, signalUnknownPasskey, unlockWithPasskey } from './passkey.ts';
@@ -21,8 +21,8 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   } catch {
     throw new ApiFailure(0, 'sin_conexion');
   }
-  const json = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new ApiFailure(res.status, json.error ?? 'error');
+  const json = (await readJson(res)) as { error?: string } | null;
+  if (!res.ok) throw new ApiFailure(res.status, json?.error ?? 'error');
   return json as T;
 }
 
