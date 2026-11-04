@@ -130,33 +130,33 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     ctx.textAlign = 'left';
     ctx.drawImage(logo, cx - lw / 2, y - size * 1.12 + 56 + size * 0.25, lw, lh);
 
-    // Confeti suelto (Claudia, 04/11): más en la columna de la derecha, alrededor del texto y del
-    // logotipo sin taparlos, y algunos papelitos que pisan apenas el borde de la tarjeta.
+    // Confeti suelto y repartido (Claudia, 04/11): alrededor del texto y del logotipo sin taparlos,
+    // alrededor de la tarjeta y algunos papelitos que pisan apenas su borde.
     const arriba = (H - alto) / 2 - 24;
     const abajo = (H + alto) / 2 + 24;
     const ay = (H - ah) / 2;
     const der = left + width;
     const piezas: ReadonlyArray<readonly [number, number, number, number, string, number]> = [
-      // Columna derecha, arriba del texto.
-      [left + width * 0.04, arriba * 0.35, 20, 20, AMARILLO, 0],
-      [left + width * 0.42, arriba * 0.6, 34, 14, ROSA, 28],
-      [der + m * 0.9, arriba * 0.3, 18, 18, CELESTE, 0],
-      [left + width * 0.78, arriba * 0.85, 14, 14, '#ffffff', 0],
-      // A los costados del texto y el logotipo.
-      [left - m * 0.9, H * 0.47, 30, 12, CELESTE, -32],
-      [der + m * 1.1, H * 0.52, 16, 16, AMARILLO, 0],
-      // Columna derecha, abajo del logotipo.
-      [left + width * 0.1, abajo + (H - abajo) * 0.45, 16, 16, '#ffffff', 0],
-      [left + width * 0.5, abajo + (H - abajo) * 0.7, 22, 22, AMARILLO, 0],
-      [der + m * 0.3, abajo + (H - abajo) * 0.35, 32, 12, ROSA, 22],
-      // Sobre el borde de la tarjeta.
+      // Columna derecha: arriba del texto, a un costado y abajo del logotipo.
+      [left + width * 0.08, arriba * 0.4, 20, 20, AMARILLO, 0],
+      [left + width * 0.62, arriba * 0.7, 34, 14, ROSA, 28],
+      [der + m * 0.9, H * 0.5, 16, 16, CELESTE, 0],
+      [left + width * 0.2, abajo + (H - abajo) * 0.55, 14, 14, '#ffffff', 0],
+      [der + m * 0.2, abajo + (H - abajo) * 0.4, 32, 12, AMARILLO, 22],
+      // Alrededor de la tarjeta: arriba, a la izquierda y abajo.
       ...(art === null
         ? []
         : ([
-            [m + aw, ay + ah * 0.18, 22, 22, AMARILLO, 0],
-            [m + aw + 4, ay + ah * 0.82, 36, 14, ROSA, -26],
+            [m + aw * 0.12, ay * 0.45, 16, 16, CELESTE, 0],
+            [m + aw * 0.68, ay * 0.55, 32, 12, AMARILLO, -18],
+            [m * 0.45, ay + ah * 0.38, 14, 14, ROSA, 0],
+            [m + aw * 0.3, ay + ah + (H - ay - ah) * 0.5, 30, 12, ROSA, 30],
+            [m + aw * 0.86, ay + ah + (H - ay - ah) * 0.42, 18, 18, '#ffffff', 0],
+            // Sobre el borde de la tarjeta.
+            [m + aw, ay + ah * 0.22, 22, 22, AMARILLO, 0],
             [m + aw * 0.42, ay, 14, 14, '#ffffff', 0],
-            [m, ay + ah * 0.9, 30, 12, CELESTE, 34],
+            [m, ay + ah * 0.82, 30, 12, CELESTE, 34],
+            [m + aw * 0.58, ay + ah, 34, 13, ROSA, -24],
           ] as const)),
     ];
     for (const [px, py, w, hh, color, giro] of piezas) {
