@@ -134,7 +134,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     // Banderines arriba, de punta a punta y rectos (Claudia, 04/11), con triángulos de los colores
     // de la marca; abajo, una cinta finita con los mismos colores, que cierra la imagen.
     const colores = [AMARILLO, ROSA, CELESTE, '#ffffff', NARANJA];
-    const hilo = (_px: number) => 10;
+    const hilo = (_px: number) => 0;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -160,7 +160,7 @@ export async function sharePreview(g: PreviewInput): Promise<string | null> {
     const tramo = paso * 2;
     for (let n = 0, px = 0; px < W; n++, px += tramo) {
       ctx.fillStyle = colores[n % colores.length] as string;
-      ctx.fillRect(px, H - 10, tramo, 10);
+      ctx.fillRect(px, H - 22, tramo, 22);
     }
 
     for (const q of [0.85, 0.7, 0.55]) {
