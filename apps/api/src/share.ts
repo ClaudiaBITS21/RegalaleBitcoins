@@ -39,10 +39,11 @@ async function previewVersion(sql: Sql, id: string): Promise<number | null> {
 // Sin formas de vos ni de tú: valen para los dos tratos.
 const TITLE: Readonly<Record<Lang, string>> = { es: 'Un regalo para {para}', pt: 'Um presente para {para}', en: 'A gift for {para}', it: 'Un regalo per {para}' };
 const DESCRIPTION: Readonly<Record<Lang, string>> = {
-  es: 'Un regalo en bitcoin que, al abrirlo, es tuyo de verdad.',
-  pt: 'Um presente em bitcoin que, ao abrir, é seu de verdade.',
-  en: 'A bitcoin gift that is truly yours once you open it.',
-  it: 'Un regalo in bitcoin che, una volta aperto, è davvero tuo.',
+  // Frase de Claudia (04/11/2026). «te» vale igual con vos y con tú.
+  es: 'Alguien que te quiere, te lo demostró regalándote Bitcoin.',
+  pt: 'Alguém que gosta de você demonstrou isso te dando Bitcoin de presente.',
+  en: 'Someone who loves you showed it by giving you Bitcoin.',
+  it: 'Qualcuno che ti vuole bene te l’ha dimostrato regalandoti Bitcoin.',
 };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
