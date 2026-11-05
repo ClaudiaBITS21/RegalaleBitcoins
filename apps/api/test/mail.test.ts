@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { confirmMail, loginMail, readyMail, reminderMail } from '../src/mail.ts';
+import { OCCASION_NAMES, occasionName } from '../src/ocasiones.ts';
+import { OCCASION_LABELS } from '../../web/src/content/occasions.ts';
 
 const LINK = 'https://regalalebitcoin.com/panel#acceso=' + 'a'.repeat(43);
 
@@ -20,6 +22,22 @@ describe('Mails con el diseño de la marca', () => {
     const m = readyMail('ana@example.com', 'en', { para: '<img src=x onerror=alert(1)>', sats: 1n, first: true, verified: true, link: LINK });
     assert.ok(!m.html?.includes('<img src=x'));
     assert.ok(m.html?.includes('&lt;img src=x onerror=alert(1)&gt;'));
+  });
+
+  it('el recordatorio dice la ocasión y el día en que se armó el regalo (05/11)', () => {
+    const creado = new Date('2026-11-03T15:00:00Z');
+    const es = reminderMail('a@b.co', 'es', 'Rodolfo', LINK, { ocasion: occasionName('cumple', 'es'), creado });
+    assert.ok(es.text.startsWith('El regalo para Rodolfo (Cumpleaños, armado el 3 de noviembre de 2026) está pago'), es.text);
+    assert.ok(es.html?.includes('El regalo para Rodolfo (Cumpleaños, armado el 3 de noviembre de 2026) está pago'));
+    const en = reminderMail('a@b.co', 'en', 'Rodolfo', LINK, { ocasion: occasionName('otra', 'en', 'Mudanza'), creado });
+    assert.ok(en.text.startsWith('The gift for Rodolfo (Mudanza, made on November 3, 2026) is paid'), en.text);
+    // Sin ocasión, solo la fecha; sin nada, como antes.
+    assert.ok(reminderMail('a@b.co', 'es', 'Tomi', LINK, { ocasion: occasionName('otra', 'es', null), creado }).text.startsWith('El regalo para Tomi (armado el 3 de noviembre de 2026) está'));
+    assert.ok(reminderMail('a@b.co', 'es', 'Tomi', LINK).text.startsWith('El regalo para Tomi está pago'));
+  });
+
+  it('los nombres de las ocasiones son los mismos que los de la web', () => {
+    assert.deepEqual(OCCASION_NAMES, OCCASION_LABELS);
   });
 
   it('todos los mails llevan HTML con el logotipo, el botón y el pie', () => {

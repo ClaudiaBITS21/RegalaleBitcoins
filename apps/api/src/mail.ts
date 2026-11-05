@@ -118,10 +118,10 @@ const fill = (s: string, vars: Record<string, string>): string => s.replace(/\{(
 // Recordatorio a quien regala si el regalo sigue sin abrirse. Sin formas de vos ni de tú: el
 // mismo texto sirve para los dos tratos.
 const REMINDER: Record<Lang, Texts> = {
-  es: { subject: '{para} todavía no abrió tu regalo', body: 'El regalo para {para} está pago y sigue esperando: todavía no lo abrió. No vence, así que no hay apuro; quizás sea un buen momento para recordárselo o para acompañarlo a abrirlo.\n\nEn tu panel ves cómo va, y con tu cara o tu huella se pueden volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
-  pt: { subject: '{para} ainda não abriu seu presente', body: 'O presente para {para} está pago e continua esperando: ainda não foi aberto. Ele não vence, então não há pressa; talvez seja um bom momento para lembrar ou para ajudar a abri-lo.\n\nNo seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
-  en: { subject: '{para} hasn’t opened your gift yet', body: 'The gift for {para} is paid and still waiting: it hasn’t been opened yet. It doesn’t expire, so there’s no rush; it may be a good moment for a reminder or to help open it.\n\nIn your dashboard you can follow it and, with your face or fingerprint, see the link and the words again:\n\n{link}\n\nWe will never ask for the words of your wallet.' },
-  it: { subject: '{para} non ha ancora aperto il tuo regalo', body: 'Il regalo per {para} è pagato e sta ancora aspettando: non è stato aperto. Non scade, quindi non c’è fretta; forse è un buon momento per ricordarglielo o per aiutarlo ad aprirlo.\n\nNel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole:\n\n{link}\n\nNon ti chiederemo mai le parole del tuo portafoglio.' },
+  es: { subject: '{para} todavía no abrió tu regalo', body: 'El regalo para {para}{cual} está pago y sigue esperando: todavía no lo abrió. No vence, así que no hay apuro; quizás sea un buen momento para recordárselo o para acompañarlo a abrirlo.\n\nEn tu panel ves cómo va, y con tu cara o tu huella se pueden volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
+  pt: { subject: '{para} ainda não abriu seu presente', body: 'O presente para {para}{cual} está pago e continua esperando: ainda não foi aberto. Ele não vence, então não há pressa; talvez seja um bom momento para lembrar ou para ajudar a abri-lo.\n\nNo seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
+  en: { subject: '{para} hasn’t opened your gift yet', body: 'The gift for {para}{cual} is paid and still waiting: it hasn’t been opened yet. It doesn’t expire, so there’s no rush; it may be a good moment for a reminder or to help open it.\n\nIn your dashboard you can follow it and, with your face or fingerprint, see the link and the words again:\n\n{link}\n\nWe will never ask for the words of your wallet.' },
+  it: { subject: '{para} non ha ancora aperto il tuo regalo', body: 'Il regalo per {para}{cual} è pagato e sta ancora aspettando: non è stato aperto. Non scade, quindi non c’è fretta; forse è un buon momento per ricordarglielo o per aiutarlo ad aprirlo.\n\nNel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole:\n\n{link}\n\nNon ti chiederemo mai le parole del tuo portafoglio.' },
 };
 
 export function loginMail(to: string, lang: Lang, link: string): Mail {
@@ -151,10 +151,22 @@ export function readyMail(to: string, lang: Lang, g: { para: string; sats: bigin
   };
 }
 
-export function reminderMail(to: string, lang: Lang, para: string, link: string): Mail {
+// De qué regalo se trata (Claudia, 05/11/2026): la ocasión y el día en que se armó, que se guardan
+// sin cifrar. «(Cumpleaños, armado el 3 de noviembre de 2026)». Sin vos ni tú.
+const MADE: Record<Lang, string> = { es: 'armado el {fecha}', pt: 'feito em {fecha}', en: 'made on {fecha}', it: 'fatto il {fecha}' };
+
+/** « (Cumpleaños, armado el 3 de noviembre de 2026)», o solo la fecha si no tiene ocasión. */
+export function reminderDetail(lang: Lang, ocasion: string | null, creado: Date | null): string {
+  const fecha = creado === null ? null : new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }).format(creado);
+  const parts = [ocasion, fecha === null ? null : fill(MADE[lang], { fecha })].filter((x): x is string => x !== null && x !== '');
+  return parts.length === 0 ? '' : ` (${parts.join(', ')})`;
+}
+
+export function reminderMail(to: string, lang: Lang, para: string, link: string, about: { ocasion: string | null; creado: Date | null } = { ocasion: null, creado: null }): Mail {
   const t = REMINDER[lang];
   const subject = fill(t.subject, { para });
-  return { to, subject, text: fill(t.body, { para, link }), html: fromText(lang, subject, t.body, { para }, link, CONGRATS[lang].buttonPanel) };
+  const cual = reminderDetail(lang, about.ocasion, about.creado);
+  return { to, subject, text: fill(t.body, { para, cual, link }), html: fromText(lang, subject, t.body, { para, cual }, link, CONGRATS[lang].buttonPanel) };
 }
 
 // Aviso a quien armó una lista que fue reportada (sin el mail de quien la reportó). Sin formas de

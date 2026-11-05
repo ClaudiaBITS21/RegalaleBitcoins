@@ -3,6 +3,7 @@ import { createMailLink } from './accounts.ts';
 import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { type Mailer, readyMail, reminderMail } from './mail.ts';
+import { occasionName } from './ocasiones.ts';
 
 // «¡Felicitaciones!»: cuando entra el pago de un regalo de una cuenta, se avisa por mail con un
 // link al panel (que además confirma el mail). Lo dispara la tarea programada (Cloud Scheduler).
@@ -57,8 +58,8 @@ export const REMINDER_DAYS = [14, 60] as const;
 export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
   const [first, second] = REMINDER_DAYS;
-  const due = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; recordatorios: number }[]>`
-    select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, r.recordatorios
+  const due = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; recordatorios: number; ocasion: string; ocasion_libre: string | null; creado: Date }[]>`
+    select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, r.recordatorios, r.ocasion, r.ocasion_libre, r.creado
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is not null and r.reclamo_txid is null
       and ((r.recordatorios = 0 and r.aviso_listo < now() - make_interval(days => ${first}))
@@ -84,7 +85,8 @@ export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer
     if (marked.length === 0) continue;
     const token = await createMailLink(sql, g.usuario_id, LINK_DAYS_MINUTES);
     try {
-      await mailer.send(reminderMail(g.email, isLang(g.idioma) ? g.idioma : 'es', g.para, `${publicUrl}/panel#acceso=${token}`));
+      const lang = isLang(g.idioma) ? g.idioma : 'es';
+      await mailer.send(reminderMail(g.email, lang, g.para, `${publicUrl}/panel#acceso=${token}`, { ocasion: occasionName(g.ocasion, lang, g.ocasion_libre), creado: g.creado }));
       sent++;
     } catch (error) {
       console.error(`No se pudo mandar el recordatorio del regalo ${g.id}: ${(error as Error).message}`);
