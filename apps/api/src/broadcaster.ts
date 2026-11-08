@@ -1,4 +1,4 @@
-import { addressFromScript, inspectTransaction, type Network } from '@regalale/core';
+import { inspectTransaction, type Network } from '@regalale/core';
 import { ChainError, type ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { allPending, findGift, markPending, recordClaim } from './gifts.ts';
@@ -37,8 +37,7 @@ export async function processPending({ sql, chain, network }: BroadcasterDeps): 
     if (p.satVb < fees.minimum) continue;
     try {
       const txid = await chain.broadcast(p.hex);
-      const script = tx.outputs[0]?.script ?? new Uint8Array(0);
-      await recordClaim(sql, gift.id, { txid, kind: 'reclamo', destination: addressFromScript(script, network) ?? '' });
+      await recordClaim(sql, gift.id, { txid, kind: 'reclamo' });
       await markPending(sql, p.id, 'difundida');
       difundidas++;
     } catch (error) {

@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createHash } from 'node:crypto';
-import { addressFromScript, isCoreError, isLang, isSealedCard, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination, parseGiftWitnessScript } from '@regalale/core';
+import { isCoreError, isLang, isSealedCard, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination, parseGiftWitnessScript } from '@regalale/core';
 import { Hono } from 'hono';
 import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
@@ -437,7 +437,6 @@ export function createApp(deps: AppDeps): Hono {
     const utxos = await chain.addressUtxos(gift.address);
     if (confirmedUtxos(utxos).length === 0) throw new ApiError(409, 'regalo_no_disponible');
     const { tx, feeRate } = verifySweep(body.hex, utxos);
-    const destination = describeOutput(tx, network);
 
     if (body.modo === 'esperar') {
       const fees = await chain.fees();
@@ -456,7 +455,7 @@ export function createApp(deps: AppDeps): Hono {
       throw error;
     }
     if (txid !== tx.txid) throw new ApiError(502, 'cadena_no_disponible', 'El servidor de cadena devolvió otro txid.');
-    await recordClaim(sql, gift.id, { txid, kind: 'reclamo', destination });
+    await recordClaim(sql, gift.id, { txid, kind: 'reclamo' });
     return c.json({ txid, estado: 'reclamado' });
   });
 
@@ -564,7 +563,3 @@ function giftScriptHash(witnessScript: Uint8Array): string {
 
 
 /** La dirección de destino del barrido, para registrarla (o el script en hex si no es estándar). */
-function describeOutput(tx: InspectedTx, network: Network): string {
-  const script = tx.outputs[0]?.script ?? new Uint8Array(0);
-  return addressFromScript(script, network) ?? Buffer.from(script).toString('hex');
-}

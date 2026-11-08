@@ -53,7 +53,7 @@ export function PrivacyPage() {
           <h2>Qué datos guardamos</h2>
           <ul>
             <li>
-              <strong>Cuenta de quien regala:</strong> mail, idioma y si el mail ya fue confirmado. Con passkey, además, su clave pública y una caja cifrada que solo abre esa passkey (y, si se
+              <strong>Cuenta de quien regala:</strong> mail (guardado cifrado: una copia de la base no deja leerlo), idioma y si el mail ya fue confirmado. Con passkey, además, su clave pública y una caja cifrada que solo abre esa passkey (y, si se
               usa desde otro dispositivo con el QR, hasta tres copias de esa caja, también cifradas). Para abrirla en otra compu, el celu le pasa la llave cifrada para esa compu: nosotros solo
               guardamos ese paquete, que no podemos abrir, hasta que la compu lo recibe o pasan 10 minutos.
             </li>
@@ -78,12 +78,12 @@ export function PrivacyPage() {
             </li>
             <li>
               <strong>Reportes de listas:</strong> el motivo de quien reporta una lista. Su mail no se guarda: solo una huella (un hash) distinta para cada lista, que sirve para que la misma
-              persona no reporte dos veces la misma lista y no permite saber quién es. También su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le llega
+              persona no reporte dos veces la misma lista y no permite saber quién es. La dirección IP no se guarda (se usa solo en el momento para frenar abusos). A quien armó la lista le llega
               el motivo.
             </li>
             <li>
               <strong>Cupones:</strong> el código, lo que da, quién lo usó y cuándo. Un cupón puede estar hecho para un mail: ese mail queda guardado con el cupón aunque la persona todavía no
-              tenga cuenta, solo para que nadie más lo pueda usar. No le mandamos mails a esa dirección por el cupón; la invitación la manda quien la reparte.
+              tenga cuenta (cifrado, como el de las cuentas), solo para que nadie más lo pueda usar. No le mandamos mails a esa dirección por el cupón; la invitación la manda quien la reparte.
             </li>
             <li>
               <strong>Datos técnicos:</strong> una cookie de sesión (<code>__session</code>) solo para mantener la cuenta abierta; el idioma elegido, en el propio navegador. La dirección IP se usa en

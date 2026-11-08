@@ -37,6 +37,7 @@ import { RateLimiter } from './ratelimit.ts';
 import { parsePreview } from './share.ts';
 import { text } from './validate.ts';
 import { verifyAssertion, verifyRegistration, WebAuthnError } from './webauthn.ts';
+import { open } from './secreto.ts';
 
 // Cuentas de quien regala: registro e ingreso con passkey, link por mail y panel.
 // Sesión en la cookie "__session" (Firebase Hosting solo deja pasar esa) con HttpOnly,
@@ -196,9 +197,9 @@ export function registerAccountRoutes(
     await touchCredential(sql, credential.id, result.signCount);
     const [row] = await sql<{ email: string; idioma: string }[]>`select email, idioma from usuarios where id = ${credential.accountId}`;
     if (row === undefined) throw new ApiError(401, 'passkey_invalida');
-    await startSession(c, { id: credential.accountId, email: row.email, lang: isLang(row.idioma) ? row.idioma : 'es' }, 'passkey', credential.id);
+    await startSession(c, { id: credential.accountId, email: open(row.email), lang: isLang(row.idioma) ? row.idioma : 'es' }, 'passkey', credential.id);
     const extra = await sql<{ boveda: string }[]>`select boveda from bovedas_extra where credencial_id = ${credential.id} order by creada desc`;
-    return c.json({ email: row.email, credencial: credential.id, boveda: credential.vault, bovedasExtra: extra.map((r) => r.boveda) });
+    return c.json({ email: open(row.email), credencial: credential.id, boveda: credential.vault, bovedasExtra: extra.map((r) => r.boveda) });
   });
 
   // ── Vincular la compu con el celu (docs en la migración 024) ──
