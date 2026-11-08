@@ -8,6 +8,7 @@ import { type Key, translate } from '../i18n/index.ts';
 import { Button, useI18n } from '../ui.tsx';
 import { giftValueText } from '../valorRegalo.ts';
 import { artImage, type CardTexts, canvasJpeg, drawCard, jpegToPdf, previewUrl } from './tarjetaPdf.ts';
+import { seedFromLink, useOpenedView } from '../tarjeta.ts';
 
 // Tarjeta para entregar en mano (docs/handoff/2026-10-17/INDICE-chat.txt, sección 3): una hoja
 // A4 impresa de un solo lado y doblada en cuatro, queda en A6. Arriba (girada 180°) la tapa y
@@ -20,8 +21,11 @@ const chars = (s: string) => [...s].length;
 // Se baja como PDF A4 (Rodolfo, 21/10: imprimir desde el celular sacaba la hoja desarmada), con
 // su vista preliminar debajo de la frase. Lo gratis no trae la tarjeta: se ve la vista preliminar
 // con la marca «Vista previa» y no se baja (Rodolfo, 20/10).
-export function PrintCard({ link, view, conPlan }: { link: string; view: GiftView; conPlan: boolean | null }) {
+export function PrintCard({ link, view: raw, conPlan }: { link: string; view: GiftView; conPlan: boolean | null }) {
   const { t, trato } = useI18n();
+  // La tarjeta viene cifrada con el link (08/11/2026): se abre acá con su semilla.
+  const [seed] = useState(() => seedFromLink(link));
+  const view = useOpenedView(raw, seed) ?? raw;
   const lang = view.idioma as Lang;
   // En el idioma de quien recibe; en castellano, con el trato de quien regala (suelen ser del mismo lugar).
   const r = (key: Key, vars?: Record<string, string>) => translate(lang, key, vars, trato);
@@ -55,7 +59,7 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
   const texts: CardTexts = {
     ocasion: occasionLabel(view.ocasion, lang, view.ocasionLibre),
     para: r('tarjeta.para'),
-    nombre: view.para,
+    nombre: view.para ?? '',
     // Con el valor, si quien regala eligió mostrarlo (25/10).
     adentro: valor === null ? r('tarjeta.adentro') : r('tarjeta.adentroValor', { valor }),
     remate: ok ? remate.trim() : '',
@@ -104,7 +108,7 @@ export function PrintCard({ link, view, conPlan }: { link: string; view: GiftVie
       const url = URL.createObjectURL(pdf);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tarjeta-${view.para.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'regalo'}.pdf`;
+      a.download = `tarjeta-${(view.para ?? '').normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'regalo'}.pdf`;
       document.body.append(a);
       a.click();
       a.remove();

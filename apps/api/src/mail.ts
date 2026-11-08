@@ -64,6 +64,8 @@ interface Congrats {
   readonly subjectFirst: string;
   readonly subjectNext: string;
   readonly paid: string;
+  /** Sin el nombre: con la tarjeta cifrada (08/11/2026) el servidor no lo sabe. */
+  readonly paidAnon: string;
   readonly confirm: string;
   readonly panel: string;
   readonly buttonConfirm: string;
@@ -75,6 +77,7 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
     subjectFirst: '¡Felicitaciones! Hiciste tu primer regalo',
     subjectNext: '¡Felicitaciones! Hiciste un nuevo regalo',
     paid: 'El regalo para {para} ya está pago y listo para abrir: {sats}.',
+    paidAnon: 'Tu regalo ya está pago y listo para abrir: {sats}.',
     confirm: 'Falta un paso: confirmar tu mail. Con el botón se confirma y se entra a tu panel, donde está el regalo.',
     panel: 'En tu panel ves cómo va y, con tu cara o tu huella, se pueden volver a ver el link y las palabras.',
     buttonConfirm: 'Confirmar mi mail',
@@ -85,6 +88,7 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
     subjectFirst: 'Parabéns! Você deu seu primeiro presente',
     subjectNext: 'Parabéns! Você deu um novo presente',
     paid: 'O presente para {para} já está pago e pronto para abrir: {sats}.',
+    paidAnon: 'Seu presente já está pago e pronto para abrir: {sats}.',
     confirm: 'Falta um passo: confirmar seu e-mail. Com o botão ele é confirmado e você entra no seu painel, onde está o presente.',
     panel: 'No seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras.',
     buttonConfirm: 'Confirmar meu e-mail',
@@ -95,6 +99,7 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
     subjectFirst: 'Congratulations! You made your first gift',
     subjectNext: 'Congratulations! You made a new gift',
     paid: 'The gift for {para} is paid and ready to open: {sats}.',
+    paidAnon: 'Your gift is paid and ready to open: {sats}.',
     confirm: 'One step left: confirm your email. The button confirms it and opens your dashboard, where the gift is.',
     panel: 'In your dashboard you can follow it and, with your face or fingerprint, see the link and the words again.',
     buttonConfirm: 'Confirm my email',
@@ -105,6 +110,7 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
     subjectFirst: 'Congratulazioni! Hai fatto il tuo primo regalo',
     subjectNext: 'Congratulazioni! Hai fatto un nuovo regalo',
     paid: 'Il regalo per {para} è pagato e pronto da aprire: {sats}.',
+    paidAnon: 'Il tuo regalo è pagato e pronto da aprire: {sats}.',
     confirm: 'Manca un passo: confermare la tua email. Con il pulsante si conferma e si entra nel tuo pannello, dove c’è il regalo.',
     panel: 'Nel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole.',
     buttonConfirm: 'Conferma la mia email',
@@ -137,10 +143,10 @@ export function confirmMail(to: string, lang: Lang, link: string): Mail {
 const LOCALES: Readonly<Record<Lang, string>> = { es: 'es-AR', pt: 'pt-BR', en: 'en-US', it: 'it-IT' };
 const satsText = (sats: bigint, lang: Lang) => `${new Intl.NumberFormat(LOCALES[lang], { useGrouping: 'always' } as unknown as Intl.NumberFormatOptions).format(sats)} sats`;
 
-export function readyMail(to: string, lang: Lang, g: { para: string; sats: bigint; first: boolean; verified: boolean; link: string }): Mail {
+export function readyMail(to: string, lang: Lang, g: { para: string | null; sats: bigint; first: boolean; verified: boolean; link: string }): Mail {
   const t = CONGRATS[lang];
   const subject = g.first ? t.subjectFirst : t.subjectNext;
-  const paid = fill(t.paid, { para: g.para, sats: satsText(g.sats, lang) });
+  const paid = g.para === null ? fill(t.paidAnon, { sats: satsText(g.sats, lang) }) : fill(t.paid, { para: g.para, sats: satsText(g.sats, lang) });
   const next = g.verified ? t.panel : t.confirm;
   const button = g.verified ? t.buttonPanel : t.buttonConfirm;
   return {
@@ -162,11 +168,20 @@ export function reminderDetail(lang: Lang, ocasion: string | null, creado: Date 
   return parts.length === 0 ? '' : ` (${parts.join(', ')})`;
 }
 
-export function reminderMail(to: string, lang: Lang, para: string, link: string, about: { ocasion: string | null; creado: Date | null } = { ocasion: null, creado: null }): Mail {
-  const t = REMINDER[lang];
-  const subject = fill(t.subject, { para });
+// Con la tarjeta cifrada (08/11/2026) el servidor no sabe para quién es: el recordatorio dice cuál
+// es por la ocasión y la fecha.
+const REMINDER_ANON: Record<Lang, Texts> = {
+  es: { subject: 'Tu regalo todavía no se abrió', body: 'Tu regalo{cual} está pago y sigue esperando: todavía no se abrió. No vence, así que no hay apuro; quizás sea un buen momento para recordarlo o para acompañar a quien lo recibe a abrirlo.\n\nEn tu panel ves cómo va, y con tu cara o tu huella se pueden volver a ver el link y las palabras:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
+  pt: { subject: 'Seu presente ainda não foi aberto', body: 'Seu presente{cual} está pago e continua esperando: ainda não foi aberto. Ele não vence, então não há pressa; talvez seja um bom momento para lembrar ou para ajudar quem recebe a abri-lo.\n\nNo seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
+  en: { subject: 'Your gift hasn’t been opened yet', body: 'Your gift{cual} is paid and still waiting: it hasn’t been opened yet. It doesn’t expire, so there’s no rush; it may be a good moment for a reminder or to help the recipient open it.\n\nIn your dashboard you can follow it and, with your face or fingerprint, see the link and the words again:\n\n{link}\n\nWe will never ask for the words of your wallet.' },
+  it: { subject: 'Il tuo regalo non è ancora stato aperto', body: 'Il tuo regalo{cual} è pagato e sta ancora aspettando: non è stato aperto. Non scade, quindi non c’è fretta; forse è un buon momento per ricordarlo o per aiutare chi lo riceve ad aprirlo.\n\nNel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole:\n\n{link}\n\nNon ti chiederemo mai le parole del tuo portafoglio.' },
+};
+
+export function reminderMail(to: string, lang: Lang, para: string | null, link: string, about: { ocasion: string | null; creado: Date | null } = { ocasion: null, creado: null }): Mail {
+  const t = para === null ? REMINDER_ANON[lang] : REMINDER[lang];
+  const subject = fill(t.subject, { para: para ?? '' });
   const cual = reminderDetail(lang, about.ocasion, about.creado);
-  return { to, subject, text: fill(t.body, { para, cual, link }), html: fromText(lang, subject, t.body, { para, cual }, link, CONGRATS[lang].buttonPanel) };
+  return { to, subject, text: fill(t.body, { para: para ?? '', cual, link }), html: fromText(lang, subject, t.body, { para: para ?? '', cual }, link, CONGRATS[lang].buttonPanel) };
 }
 
 // Aviso a quien armó una lista que fue reportada (sin el mail de quien la reportó). Sin formas de

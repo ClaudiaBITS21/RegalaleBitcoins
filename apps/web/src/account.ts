@@ -32,7 +32,10 @@ export interface AccountGift {
   readonly idioma: 'es' | 'pt' | 'en' | 'it';
   readonly ocasion: string;
   readonly ocasionLibre: string | null;
-  readonly para: string;
+  /** null con la tarjeta cifrada (08/11/2026): se abre en el panel con la clave maestra. */
+  readonly para: string | null;
+  readonly de?: string | null;
+  readonly tarjeta?: string | null;
   readonly satsEsperados: string | null;
   /** Dirección del regalo: sirve para comprobar en el navegador unas 12 palabras. */
   readonly direccion?: string;
@@ -66,6 +69,7 @@ export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
   /** Descarta un regalo que nunca se pagó (409 regalo_con_fondos si ya recibió algo). */
   editGift: (id: string, cambios: { mensaje?: string; mostrarValor?: boolean }) => call<{ mensaje: string; mostrarValor: boolean }>(`/api/cuenta/regalos/${id}/editar`, cambios),
+  sealCard: (id: string, tarjeta: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/tarjeta`, { tarjeta }),
   updatePreview: (id: string, vista: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/vista`, { vista }),
   discardGift: (id: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, {}),
   logout: async () => {

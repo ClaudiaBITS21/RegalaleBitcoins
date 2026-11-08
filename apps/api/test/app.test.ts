@@ -12,6 +12,8 @@ import {
   planSweep,
   recoveryKeyText,
   signSweep,
+  openCard,
+  sealCard,
 } from '@regalale/core';
 import { advancedRecoveryEnabled, createApp, verifySweep } from '../src/app.ts';
 import { ApiError } from '../src/errors.ts';
@@ -466,6 +468,22 @@ describe('API para regalar', () => {
     assert.equal(await status({ sats: '25000.5' }), 400);
     assert.equal(await status({ sats: 25000 }), 400);
     assert.equal(await status({ moneda: 'EUR' }), 400);
+  });
+
+  it('tarjeta cifrada con el link (08/11): el servidor guarda y devuelve solo el cifrado, sin para, de ni mensaje', async () => {
+    const seed = Uint8Array.from({ length: 16 }, (_, i) => i + 1);
+    const g = nuevo(9);
+    const tarjeta = await sealCard(seed, g.direccion, { para: 'Ana', de: 'Rodo', mensaje: 'Feliz Navidad 🎄' });
+    const { para: _p, de: _d, mensaje: _m, ...sinTexto } = g;
+    assert.equal((await post('/api/gifts', { ...sinTexto, tarjeta: 'Ana' })).status, 400);
+    const res = await post('/api/gifts', { ...sinTexto, tarjeta });
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const view = (await (await app.request(`/api/gifts/${id}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([view.para, view.de, view.mensaje, view.tarjeta], [null, null, '', tarjeta]);
+    assert.deepEqual(await openCard(seed, g.direccion, view.tarjeta as string), { para: 'Ana', de: 'Rodo', mensaje: 'Feliz Navidad 🎄' });
+    const [row] = await sql`select para, de, mensaje from regalos where id = ${id}`;
+    assert.deepEqual([row?.para, row?.de, row?.mensaje], [null, null, '']);
   });
 
   it('valida la tarjeta: largos, ocasión, imagen, idioma y dirección de la red', async () => {

@@ -58,8 +58,8 @@ export function PrivacyPage() {
               guardamos ese paquete, que no podemos abrir, hasta que la compu lo recibe o pasan 10 minutos.
             </li>
             <li>
-              <strong>Regalos:</strong> la dirección bitcoin, la ocasión, el nombre de quien recibe, quién lo manda, el mensaje, el idioma, el monto, el estilo de la tarjeta y la imagen propia si se sube
-              una (se achica y se le sacan los datos ocultos, como la ubicación, en el propio teléfono antes de enviarla). También su estado y las transacciones, que son públicas en la red de bitcoin.
+              <strong>Regalos:</strong> la dirección bitcoin, la ocasión, el idioma, el monto, el estilo de la tarjeta y la imagen propia si se sube
+              una (se achica y se le sacan los datos ocultos, como la ubicación, en el propio teléfono antes de enviarla). También su estado y las transacciones, que son públicas en la red de bitcoin. El nombre de quien recibe, quién lo manda y el mensaje se cifran en el navegador con una clave que va en el link del regalo: los guardamos así y no los podemos leer (los regalos anteriores al 8 de noviembre de 2026 se cifran cuando quien regala entra a «Mis regalos»).
             </li>
             <li>
               <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta transferencias, el país y la moneda; el dato

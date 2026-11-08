@@ -1,4 +1,4 @@
-import { deriveGift, deriveMultisigGift, encodeGiftFragment, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
+import { deriveGift, deriveMultisigGift, encodeGiftFragment, sealCard, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
 import { formatDayTime, formatUsd } from '../format.ts';
@@ -110,15 +110,16 @@ async function register(session: Session, draft: Draft, network: Network): Promi
     const multisig = session.recovery === null ? null : deriveMultisigGift(session.root, index, draft.lang, network, session.recovery);
     const gift = multisig ?? deriveGift(session.root, index, draft.lang, network);
     const testigo = multisig === null ? null : Array.from(multisig.witnessScript, (b) => b.toString(16).padStart(2, '0')).join('');
+    // Para quién, de quién y el mensaje viajan cifrados con la semilla del link (08/11/2026): el
+    // servidor no los puede leer (docs/derivacion.md, «Tarjeta»).
+    const tarjeta = await sealCard(gift.entropy, gift.address, { para: draft.to, de: draft.from.trim() === '' ? null : draft.from, mensaje: draft.message });
     try {
       const id = await api.createGift({
         direccion: gift.address,
         idioma: draft.lang,
         ocasion: draft.occasion,
         ...(draft.occasion === 'otra' && draft.occasionFree !== '' ? { ocasionLibre: draft.occasionFree } : {}),
-        para: draft.to,
-        de: draft.from,
-        mensaje: draft.message,
+        tarjeta,
         imagen: 1, // una sola imagen por estilo; el campo queda por compatibilidad
         estilo: draft.style,
         ...(draft.style === 'propia' && draft.ownImage !== null ? { imagenPropia: draft.ownImage.base64 } : {}),

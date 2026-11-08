@@ -21,6 +21,7 @@ export type CoreErrorCode =
   | 'AMOUNT_BELOW_DUST'
   | 'SIGNING_FAILED'
   | 'INVALID_VAULT'
+  | 'INVALID_CARD'
   | 'INVALID_XPUB';
 
 export class CoreError extends Error {

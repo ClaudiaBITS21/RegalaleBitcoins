@@ -91,3 +91,4 @@ export {
   type RecoveryPsbtOptions,
   sealRecoveryKey,
 } from './recovery.ts';
+export { CARD_VERSION, type CardText, isSealedCard, openCard, sealCard } from './card.ts';

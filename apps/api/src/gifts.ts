@@ -21,9 +21,12 @@ export interface Gift {
   readonly occasion: string;
   /** Texto de la ocasión libre (ocasión "otra"). */
   readonly occasionFree: string | null;
-  readonly to: string;
+  /** null si la tarjeta está cifrada (va en `card`). */
+  readonly to: string | null;
   readonly from: string | null;
   readonly message: string;
+  /** Para quién, de quién y el mensaje, cifrados con el link (08/11/2026). */
+  readonly card: string | null;
   readonly image: number;
   readonly style: CardStyle;
   readonly currency: string | null;
@@ -49,9 +52,11 @@ export interface NewGift {
   readonly lang: Lang;
   readonly occasion: string;
   readonly occasionFree?: string | null;
-  readonly to: string;
+  /** En claro (regalos de antes) o, con `card`, null. */
+  readonly to: string | null;
   readonly from?: string | null;
   readonly message?: string;
+  readonly card?: string | null;
   readonly image?: number;
   readonly style?: CardStyle;
   /** Solo con style 'propia'. */
@@ -86,9 +91,10 @@ interface Row {
   idioma: string;
   ocasion: string;
   ocasion_libre: string | null;
-  para: string;
+  para: string | null;
   de: string | null;
   mensaje: string;
+  tarjeta: string | null;
   imagen: number;
   estilo: CardStyle;
   moneda: string | null;
@@ -116,6 +122,7 @@ function fromRow(r: Row): Gift {
     to: r.para,
     from: r.de,
     message: r.mensaje,
+    card: r.tarjeta ?? null,
     image: r.imagen,
     style: r.estilo,
     currency: r.moneda,
@@ -137,9 +144,9 @@ export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   if ((style === 'propia') !== (g.ownImage != null)) throw new Error('La imagen propia va solo con el estilo "propia".');
   return sql.begin(async (tx) => {
     const [row] = await tx<Row[]>`
-      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta, mostrar_valor)
+      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, tarjeta, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta, mostrar_valor)
       values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
-              ${g.message ?? ''}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
+              ${g.message ?? ''}, ${g.card ?? null}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
               ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
               ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null},
               ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null}, ${g.showValue ?? true})

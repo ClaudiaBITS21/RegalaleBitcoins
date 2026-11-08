@@ -1,5 +1,5 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { numberedWords, WordsList } from '../give/WordsList.tsx';
 import { accessErrorCode, accessErrorKey, accountApi, type AccountView, canRepairVault, RepairError, repairVault, signIn } from '../account.ts';
 import { ApiFailure, api, type GiftView } from '../api.ts';
@@ -21,6 +21,7 @@ import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { RecoverWithWallet, RecoverySettings } from '../recupero/Recuperar.tsx';
 import { EditarRegalo } from './EditarRegalo.tsx';
 import { refreshPreviews } from './rehacerVistas.ts';
+import { type OpenedCards, openCards, sealOldCards, withCard } from './tarjetas.ts';
 
 // Panel de quien regala: sus regalos con el estado que calcula el servidor desde la
 // cadena. Para volver a ver un link y sus palabras, o el código de recuperación, se abre la
@@ -131,6 +132,23 @@ export function PanelPage() {
       setState(e instanceof ApiFailure && e.status === 401 ? 'afuera' : 'sin_red');
     }
   };
+
+  // Tarjetas cifradas con el link (08/11/2026): con la clave maestra abierta se abren acá, y las de
+  // los regalos de antes (todavía en claro) se cifran y se suben una vez.
+  const [cards, setCards] = useState<OpenedCards>({});
+  const sealing = useRef(false);
+  useEffect(() => {
+    if (view === null || master === null) return;
+    void openCards(view.regalos, master).then(setCards);
+    if (!sealing.current && view.regalos.some((g) => g.tarjeta == null && g.para !== null)) {
+      sealing.current = true;
+      void sealOldCards(view.regalos, master).then((n) => {
+        sealing.current = false;
+        if (n > 0) void load();
+      });
+    }
+  }, [view, master]);
+  const regalos = view === null ? [] : view.regalos.map((g) => withCard(g, cards));
 
   useEffect(() => {
     const token = readAccessToken();
@@ -285,6 +303,12 @@ export function PanelPage() {
           </div>
         ) : (
           <>
+            {/* La tarjeta va cifrada con el link (08/11/2026): sin la passkey no se sabe para quién es cada regalo. */}
+            {master === null && view.regalos.some((g) => g.para === null) && (
+              <Button kind="contorno" disabled={busy} onClick={() => void unlock()}>
+                {t('panel.verNombres')}
+              </Button>
+            )}
             <div class="regalos-barra">
               <label class="campo regalos-buscar">
                 <span class="solo-lector">{t('panel.buscar')}</span>
@@ -309,7 +333,7 @@ export function PanelPage() {
               </div>
             </div>
             {(() => {
-              const shown = sortGifts(filterGifts(view.regalos, query), order, (g) => occasionLabel(g.ocasion, lang, g.ocasionLibre), lang);
+              const shown = sortGifts(filterGifts(regalos, query), order, (g) => occasionLabel(g.ocasion, lang, g.ocasionLibre), lang);
               if (shown.length === 0) return <p class="texto-suave">{t('panel.sinResultados')}</p>;
               return (
           <ul class={`lista-regalos regalos-${layout}`}>
@@ -325,7 +349,7 @@ export function PanelPage() {
                   <GiftCardArt class="regalo-miniatura" occasion={g.ocasion} estilo={g.estilo} src={g.estilo === 'propia' ? `/api/gifts/${g.id}/imagen` : null} />
                   <div class="regalo-datos">
                     <div class="regalo-cabecera">
-                      <strong>{t('panel.para', { para: g.para })}</strong>
+                      <strong>{g.para === null ? occasionLabel(g.ocasion, lang, g.ocasionLibre) : t('panel.para', { para: g.para })}</strong>
                       <span class={`estado estado-${g.estado ?? 'desconocido'}`}>{g.estado === null ? '—' : t(STATE_KEYS[g.estado] ?? 'panel.estado.esperando')}</span>
                     </div>
                     <span class="regalo-motivo">{occasionLabel(g.ocasion, lang, g.ocasionLibre)}</span>
@@ -389,7 +413,7 @@ export function PanelPage() {
                       {t(recovering === g.id ? 'panel.ocultar' : 'avanzado.recuperar.boton')}
                     </Button>
                   )}
-                  {pending && g.mensaje !== undefined && (
+                  {pending && g.mensaje !== undefined && (g.tarjeta == null || cards[g.id] !== undefined) && (
                     <Button kind="contorno" disabled={busy} onClick={() => setEditing(editing === g.id ? null : g.id)}>
                       {t(editing === g.id ? 'panel.ocultar' : 'panel.editar')}
                     </Button>
@@ -440,7 +464,7 @@ export function PanelPage() {
                   {recovering === g.id && master !== null && network !== null && (
                     <RecoverWithWallet gift={g} root={masterRoot(master)} network={network} onDone={() => void load()} />
                   )}
-                  {editing === g.id && <EditarRegalo gift={g} onDone={() => void load()} />}
+                  {editing === g.id && <EditarRegalo gift={g} master={master} onDone={() => void load()} />}
                   {discarding === g.id && (
                     <div class="regalo-secretos">
                       <p>{t('panel.descartar.pregunta')}</p>

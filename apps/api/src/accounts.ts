@@ -143,7 +143,10 @@ export interface AccountGift {
   readonly lang: Lang;
   readonly occasion: string;
   readonly occasionFree: string | null;
-  readonly to: string;
+  readonly to: string | null;
+  readonly from: string | null;
+  /** Tarjeta cifrada con el link (08/11/2026). */
+  readonly card: string | null;
   readonly satsExpected: string | null;
   readonly claimTxid: string | null;
   readonly claimKind: string | null;
@@ -169,8 +172,8 @@ export interface AccountGift {
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean; vista_creada: Date | null }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor,
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string | null; de: string | null; tarjeta: string | null; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean; vista_creada: Date | null }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, de, tarjeta, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor,
       (select v.creada from vistas v where v.regalo_id = regalos.id) as vista_creada
     from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
@@ -181,6 +184,8 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     occasion: r.ocasion,
     occasionFree: r.ocasion_libre,
     to: r.para,
+    from: r.de,
+    card: r.tarjeta,
     satsExpected: r.sats_esperados,
     claimTxid: r.reclamo_txid,
     claimKind: r.reclamo_tipo,
