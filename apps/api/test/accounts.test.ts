@@ -375,7 +375,7 @@ describe('Cuentas con passkey', () => {
     assert.equal((await run()).avisos, 0); // una sola vez
     // «¡Felicitaciones!» con el diseño de la marca; el primero dice «tu primer regalo».
     const ready = mails.at(-1);
-    assert.equal(ready?.subject, '¡Felicitaciones! Hiciste tu primer regalo');
+    assert.equal(ready?.subject, '¡Felicitaciones, hiciste tu primer regalo de bitcoin!');
     assert.ok(!ready?.text.includes('/r/'), 'el mail nunca lleva el link del regalo');
     // El mail todavía no está confirmado: el botón lo confirma (y abre el panel).
     assert.match(ready?.text ?? '', /Confirmar mi mail: https:\/\/[^ ]+\/panel#acceso=[A-Za-z0-9_-]{43}/);

@@ -7,21 +7,20 @@ import { OCCASION_LABELS } from '../../web/src/content/occasions.ts';
 const LINK = 'https://regalalebitcoin.com/panel#acceso=' + 'a'.repeat(43);
 
 describe('Mails con el diseño de la marca', () => {
-  it('felicitaciones: primer regalo o uno nuevo; confirmar el mail o ver los regalos', () => {
-    const first = readyMail('ana@example.com', 'es', { para: 'Tomi', sats: 30500n, first: true, verified: false, link: LINK });
-    assert.equal(first.subject, '¡Felicitaciones! Hiciste tu primer regalo');
-    assert.ok(first.text.includes('¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir.'));
-    // Sin para quién ni cuánto (08/11/2026).
-    assert.ok(!first.text.includes('Tomi') && !first.text.includes('sats'));
+  it('felicitaciones (08/11): la ocasión, sin para quién ni cuánto; confirmar el mail o ver los regalos', () => {
+    const first = readyMail('ana@example.com', 'es', { ocasion: occasionName('cumple', 'es'), first: true, verified: false, link: LINK });
+    assert.equal(first.subject, '¡Felicitaciones, hiciste tu primer regalo de bitcoin!');
+    assert.ok(first.text.startsWith('Tu regalo de Cumpleaños ya está acreditado en la red de bitcoin.'), first.text);
+    assert.ok(first.text.includes('en 14 días te mandamos un primer recordatorio'));
     assert.ok(first.html?.includes('Confirmar mi mail'));
-    const next = readyMail('ana@example.com', 'it', { para: 'Tomi', sats: 1234n, first: false, verified: true, link: LINK });
-    assert.equal(next.subject, 'Congratulazioni! Hai fatto un nuovo regalo');
-    assert.ok(!next.text.includes('1.234'));
+    const next = readyMail('ana@example.com', 'it', { ocasion: null, first: false, verified: true, link: LINK });
+    assert.equal(next.subject, 'Congratulazioni, hai fatto un nuovo regalo in bitcoin!');
+    assert.ok(next.text.startsWith('Il tuo regalo è già accreditato'), next.text);
     assert.ok(next.html?.includes('Vedi i miei regali') && !next.html.includes('Conferma la mia email'));
   });
 
-  it('lo que escribe la persona va escapado en el HTML', () => {
-    const m = readyMail('ana@example.com', 'en', { para: '<img src=x onerror=alert(1)>', sats: 1n, first: true, verified: true, link: LINK });
+  it('la ocasión libre que escribe la persona va escapada en el HTML', () => {
+    const m = readyMail('ana@example.com', 'en', { ocasion: '<img src=x onerror=alert(1)>', first: true, verified: true, link: LINK });
     assert.ok(!m.html?.includes('<img src=x'));
   });
 
