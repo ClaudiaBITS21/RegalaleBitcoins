@@ -408,9 +408,10 @@ try {
     fail(`el regalo quedó mal registrado: ${JSON.stringify(created)}`);
   }
   newGiftId = created.id as string;
-  // Vista previa del link: /r/<id> trae la imagen de la tarjeta de este regalo (WhatsApp, redes).
+  // Vista previa del link: /r/<id> trae la imagen de la tarjeta de este regalo (WhatsApp, redes),
+  // con la frase como título y sin el nombre de quien recibe.
   const shareHtml = await (await fetch(`${BASE}/r/${newGiftId}`)).text();
-  if (!shareHtml.includes(`/api/gifts/${newGiftId}/vista.jpg`) || !shareHtml.includes('Um presente para Ana')) fail('el link del regalo no trae su vista previa');
+  if (!shareHtml.includes(`/api/gifts/${newGiftId}/vista.jpg`) || !shareHtml.includes('Alguém que gosta de você') || shareHtml.includes('Ana')) fail('el link del regalo no trae su vista previa');
   const vista = await fetch(`${BASE}/api/gifts/${newGiftId}/vista.jpg`);
   if (vista.headers.get('content-type') !== 'image/jpeg') fail('la imagen para compartir no es un JPEG');
   writeFileSync(join(SHOTS, 'v1-vista-link.jpg'), Buffer.from(await vista.arrayBuffer()));

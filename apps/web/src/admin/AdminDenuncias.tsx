@@ -61,8 +61,8 @@ export function AdminDenunciasPanel() {
           </span>
           <ul class="admin-lista">
             {l.denuncias.map((d) => (
-              <li key={`${d.email}${d.creada}`}>
-                «{d.motivo}» <span class="texto-suave">— {d.email}, {new Date(d.creada).toLocaleString('es-AR')}</span>
+              <li key={`${d.quien}${d.creada}`}>
+                «{d.motivo}» <span class="texto-suave">— denunciante {d.quien}, {new Date(d.creada).toLocaleString('es-AR')}</span>
               </li>
             ))}
           </ul>

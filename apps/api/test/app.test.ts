@@ -395,7 +395,7 @@ describe('API para regalar', () => {
     assert.deepEqual(await again.json(), { error: 'regalo_existente', detalle: 'regalo_existente' });
   });
 
-  it('vista previa del link: la imagen del regalo y «Un regalo para …» en /r/<id>, sin datos de la clave', async () => {
+  it('vista previa del link: la imagen del regalo y la frase como título en /r/<id>, sin el nombre, sin copete ni datos de la clave', async () => {
     const INDEX = '<!doctype html><html><head><title>Regalale Bitcoin</title><meta property="og:title" content="Regalale Bitcoin" /><meta property="og:description" content="x" /><meta property="og:image" content="https://ejemplo.test/og.jpg" /><meta property="og:image:alt" content="x" /></head><body><div id="app"></div></body></html>';
     const share = createApp({ sql, chain, price, network: signet, createLimitPerHour: 8, accounts: { origins: ['https://ejemplo.test'], publicUrl: 'https://ejemplo.test', mailer: { send: async () => undefined }, cookieSecure: true }, indexHtml: async () => INDEX });
     const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(3000, 9)]);
@@ -412,7 +412,9 @@ describe('API para regalar', () => {
     const html = await page.text();
     assert.equal(page.status, 200);
     assert.match(html, new RegExp(`<meta property="og:image" content="https://ejemplo\\.test/api/gifts/${id}/vista\\.jpg\\?v=\\d+" />`), html);
-    assert.ok(html.includes('<title>Um presente para Ana &lt;3</title>'), 'en el idioma del regalo y escapado');
+    assert.ok(html.includes('<title>Alguém que gosta de você demonstrou isso te dando Bitcoin de presente.</title>'), 'en el idioma del regalo');
+    assert.ok(!html.includes('Ana'), 'sin el nombre de quien recibe');
+    assert.ok(!html.includes('og:description'), 'sin copete');
     assert.ok(html.includes('<div id="app"></div>'), 'es la misma web');
     assert.ok(page.headers.get('content-security-policy')?.includes("default-src 'self'"));
     // Sin imagen propia para compartir, la general; un id que no existe, la web tal cual.

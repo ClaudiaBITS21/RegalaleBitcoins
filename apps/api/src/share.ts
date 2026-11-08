@@ -36,10 +36,9 @@ async function previewVersion(sql: Sql, id: string): Promise<number | null> {
   return r === undefined ? null : Math.floor(r.creada.getTime() / 1000);
 }
 
-// Sin formas de vos ni de tú: valen para los dos tratos.
-const TITLE: Readonly<Record<Lang, string>> = { es: 'Un regalo para {para}', pt: 'Um presente para {para}', en: 'A gift for {para}', it: 'Un regalo per {para}' };
-const DESCRIPTION: Readonly<Record<Lang, string>> = {
-  // Frase de Claudia (04/11/2026). «te» vale igual con vos y con tú.
+// El título es la frase de Claudia (04/11/2026), sin el nombre de quien recibe y sin copete
+// (08/11/2026): la vista previa no dice para quién es. «te» vale igual con vos y con tú.
+const TITLE: Readonly<Record<Lang, string>> = {
   es: 'Alguien que te quiere, te lo demostró regalándote Bitcoin.',
   pt: 'Alguém que gosta de você demonstrou isso te dando Bitcoin de presente.',
   en: 'Someone who loves you showed it by giving you Bitcoin.',
@@ -54,7 +53,13 @@ function setMeta(html: string, key: string, value: string): string {
   return re.test(html) ? html.replace(re, `$1${esc(value)}$2`) : html.replace('</head>', `<meta property="${key}" content="${esc(value)}" />\n</head>`);
 }
 
-export function withGiftMeta(html: string, m: { title: string; description: string; image: string; url: string; alt: string }): string {
+/** Saca una etiqueta <meta> (por property o name) del HTML de la web. */
+function dropMeta(html: string, key: string): string {
+  return html.replace(new RegExp(`\\s*<meta\\s+(?:property|name)="${key.replace(/[.:]/g, '\\$&')}"\\s+content="[^"]*"\\s*/?>`), '');
+}
+
+/** Título, imagen y link de la vista previa. Sin `description`, la vista previa va sin copete. */
+export function withGiftMeta(html: string, m: { title: string; description: string | null; image: string; url: string; alt: string }): string {
   let out = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(m.title)}</title>`);
   for (const [k, v] of [
     ['og:title', m.title],
@@ -66,9 +71,9 @@ export function withGiftMeta(html: string, m: { title: string; description: stri
     ['twitter:description', m.description],
     ['twitter:image', m.image],
   ] as const) {
-    out = setMeta(out, k, v);
+    out = v === null ? dropMeta(out, k) : setMeta(out, k, v);
   }
-  return out;
+  return m.description === null ? dropMeta(out, 'description') : out;
 }
 
 export function registerShareRoutes(app: Hono, deps: { sql: Sql; publicUrl: string; indexHtml: () => Promise<string> }): void {
@@ -99,12 +104,12 @@ export function registerShareRoutes(app: Hono, deps: { sql: Sql; publicUrl: stri
     c.header('cache-control', 'no-cache');
     if (gift === null) return c.html(html);
     const lang: Lang = isLang(gift.lang) ? gift.lang : 'es';
-    const title = TITLE[lang].replace('{para}', gift.to);
+    const title = TITLE[lang];
     const version = await previewVersion(sql, id);
     return c.html(
       withGiftMeta(html, {
         title,
-        description: DESCRIPTION[lang],
+        description: null,
         image: version !== null ? `${publicUrl}/api/gifts/${id}/vista.jpg?v=${version}` : `${publicUrl}/og.jpg`,
         url: `${publicUrl}/r/${id}`,
         alt: title,
