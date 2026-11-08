@@ -4,6 +4,7 @@ import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { type Mailer, readyMail, reminderMail, genericReminderMail } from './mail.ts';
 import { occasionName } from './ocasiones.ts';
+import { open } from './secreto.ts';
 
 // «¡Felicitaciones!»: cuando entra el pago de un regalo de una cuenta, se avisa por mail con un
 // link al panel (que además confirma el mail). Lo dispara la tarea programada (Cloud Scheduler).
@@ -37,7 +38,7 @@ export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mai
         + greatest((select regalos_hechos from usuarios where id = ${g.usuario_id}) - 1, 0) as n`;
     try {
       await mailer.send(
-        readyMail(g.email, isLang(g.idioma) ? g.idioma : 'es', {
+        readyMail(open(g.email), isLang(g.idioma) ? g.idioma : 'es', {
           para: g.para,
           sats: stats.confirmedFunded,
           first: Number(prev?.n ?? 0) === 0,
@@ -89,7 +90,7 @@ export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer
     const token = await createMailLink(sql, g.usuario_id, LINK_DAYS_MINUTES);
     try {
       const lang = isLang(g.idioma) ? g.idioma : 'es';
-      await mailer.send(reminderMail(g.email, lang, g.para, `${publicUrl}/panel#acceso=${token}`, { ocasion: occasionName(g.ocasion, lang, g.ocasion_libre), creado: g.creado }));
+      await mailer.send(reminderMail(open(g.email), lang, g.para, `${publicUrl}/panel#acceso=${token}`, { ocasion: occasionName(g.ocasion, lang, g.ocasion_libre), creado: g.creado }));
       sent++;
     } catch (error) {
       console.error(`No se pudo mandar el recordatorio del regalo ${g.id}: ${(error as Error).message}`);
@@ -121,7 +122,7 @@ export async function sendGenericReminders(deps: { sql: Sql; mailer: Mailer; pub
   for (const u of due) {
     const token = await createMailLink(sql, u.id, LINK_DAYS_MINUTES);
     try {
-      await mailer.send(genericReminderMail(u.email, isLang(u.idioma) ? u.idioma : 'es', `${publicUrl}/panel#acceso=${token}`));
+      await mailer.send(genericReminderMail(open(u.email), isLang(u.idioma) ? u.idioma : 'es', `${publicUrl}/panel#acceso=${token}`));
       sent++;
     } catch (error) {
       console.error(`No se pudo mandar el aviso genérico: ${(error as Error).message}`);

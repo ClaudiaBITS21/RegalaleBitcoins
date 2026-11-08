@@ -31,6 +31,7 @@ import { connect, migrate } from '../api/src/db.ts';
 import { insertGift } from '../api/src/gifts.ts';
 import { startFakeEsplora } from './fake-esplora.ts';
 import { parseLinkFragment, sealForLink, startLink } from '../web/src/vinculo.ts';
+import { mailHash, open } from '../api/src/secreto.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist');
@@ -478,7 +479,7 @@ try {
   const lupeLink = await giver.locator('.enlace-regalo').innerText();
   const lupeWords = await giver.locator('.palabras-regalo li strong').allInnerTexts();
   const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
-  if (account === undefined || account.indice !== 0 || account.email !== 'lupe.e2e@example.com' || !String(account.boveda).startsWith('v1.')) {
+  if (account === undefined || account.indice !== 0 || open(String(account.email)) !== 'lupe.e2e@example.com' || String(account.email).includes('@') || !String(account.boveda).startsWith('v1.')) {
     fail(`el regalo no quedó en la cuenta con su bóveda: ${JSON.stringify(account)}`);
   }
   if (lupeWords.some((w) => String(account.boveda).includes(w))) fail('la bóveda contiene las palabras en claro');
@@ -539,7 +540,7 @@ try {
   await giver.reload();
   await giver.getByRole('button', { name: 'Ver para quién es cada regalo' }).click();
   for (let i = 0; ; i++) {
-    const r = (await sql`select r.usuario_id, r.llave_edicion, u.lista_regalos from regalos r, usuarios u where r.direccion = ${lupeAddress} and u.email = 'lupe.e2e@example.com'`)[0];
+    const r = (await sql`select r.usuario_id, r.llave_edicion, (select lista_regalos from usuarios where lista_regalos is not null limit 1) as lista_regalos from regalos r where r.direccion = ${lupeAddress}`)[0];
     if (r?.usuario_id === null && /^[0-9a-f]{64}$/.test(String(r.llave_edicion)) && String(r.lista_regalos).startsWith('l1.')) break;
     if (i > 75) fail(`el panel no desvinculó el regalo: ${JSON.stringify(r)}`);
     await giver.waitForTimeout(200);
@@ -566,7 +567,7 @@ try {
   if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
   // Passkey usada por QR desde otro dispositivo: da otra salida PRF y la bóveda no abre. Se simula
   // cerrando la bóveda guardada con otra salida; con las 12 palabras se guarda una copia que sí abre.
-  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email = 'lupe.e2e@example.com'`)[0]!;
+  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email_huella = ${mailHash('lupe.e2e@example.com')}`)[0]!;
   const otherPrf = crypto.getRandomValues(new Uint8Array(32));
   await sql`update credenciales set boveda = ${await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'))} where id = ${lupeCode.id}`;
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
@@ -702,7 +703,7 @@ try {
   await giver.getByLabel('Alias', { exact: true }).fill('Lupe.E2E.mp');
   await giver.getByLabel('Titular de la cuenta').fill('Lupe Pérez');
   if (!(await giver.getByRole('button', { name: 'Seguir' }).isDisabled())) fail('con pesos se puede seguir sin el compromiso de convertir');
-  await giver.getByText('Me comprometo a convertir a bitcoin').click();
+  await giver.getByText('Me comprometo a comprar bitcoin, por mi cuenta').click();
   await giver.getByRole('button', { name: 'Seguir' }).click();
   await giver.getByRole('button', { name: /^Mi cold wallet/ }).click();
   await giver.getByRole('heading', { name: '¿Dónde te llegan los regalos?' }).waitFor();
@@ -831,12 +832,12 @@ try {
   await giver.locator('.tanda-reparto').getByText('35.000 sats').waitFor();
   await giver.locator('.lista-transferencias').screenshot({ path: join(SHOTS, 'l6-tanda.png') });
   await giver.getByRole('button', { name: 'Repartir 35.000 sats entre 1' }).click();
-  await row.getByText('Convertida').waitFor();
+  await row.getByText('Usada en una compra').waitFor();
   await giver.locator('.mis-listas').screenshot({ path: join(SHOTS, 'l6-panel-pesos.png') });
   // En el panel, con la clave en este navegador: el link completo y el dato descifrado.
   await giver.locator('.lista-cobro').getByText('lupe.e2e.mp', { exact: false }).waitFor();
   await cousin.goto(cousinMine);
-  await cousin.getByText('¡Listo! Tu parte se convirtió en 35.000 sats.').waitFor({ timeout: 15_000 });
+  await cousin.getByText('¡Listo! Quien armó la lista ya compró bitcoin con los aportes. Según lo que declaró, a tu parte le corresponden 35.000 sats.').waitFor({ timeout: 15_000 });
   await cousin.getByText(/^lupe\.e2e\.mp \(Lupe Pérez\) · código RB-/).waitFor();
 
   // Denuncia: la primera pausa la lista en el acto y oculta los datos para aportar; Lupe ve el
@@ -918,7 +919,7 @@ try {
   console.log('OK: lista de regalos con vpub, invitado paga a una dirección de la llave, ve solo su aporte, el panel lo muestra.');
   console.log('OK: lista con semilla nueva: 12 palabras verificadas en el navegador, al servidor solo la llave pública.');
   console.log('OK: denuncia: la lista se pausa y no muestra cómo aportar; el dueño ve el motivo y la reactiva.');
-  console.log('OK: transferencia en pesos: dato de cobro cifrado en el navegador (clave en el link), código único, anunciada → recibida → convertida en una compra en tanda.');
+  console.log('OK: transferencia en pesos: dato de cobro cifrado en el navegador (clave en el link), código único, anunciada → recibida → usada en una compra de quien armó la lista.');
   console.log('OK: "crear cuenta" con mail existente no crea passkey; salida con 12 palabras y aviso de cuenta nueva.');
   console.log('OK: compra de un pack desde precios con cupón del 20 %: dirección de la llave de cobro, pago confirmado, créditos en «Mi plan».');
   console.log('OK: botón de arrepentimiento: valida la dirección y da el código de trámite.');
@@ -930,14 +931,14 @@ try {
   await chain.close();
   await sql`delete from regalos where id = ${gift.id}`;
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
-  await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from regalos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
+  await sql`delete from listas where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
+  await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
   await sql`delete from cupon_usos where cupon in ('E2EVEINTE', 'E2EINVITA')`;
-  await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from pagos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
   await sql`delete from cupones where codigo in ('E2EVEINTE', 'E2EINVITA')`;
   await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
-  await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
+  await sql`delete from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')}`;
   await sql.end();
 }
 

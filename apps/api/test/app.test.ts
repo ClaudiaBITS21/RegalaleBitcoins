@@ -170,6 +170,8 @@ describe('API del reclamo', () => {
     assert.equal(gift?.claimTxid, sweep.txid);
     const again = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' });
     assert.equal(again.status, 409);
+    // La dirección a la que fue el barrido no queda atada al regalo (08/11).
+    assert.equal((await sql`select reclamo_destino from regalos where id = ${giftId}`)[0]?.reclamo_destino, null);
   });
 
   it('un reclamo que la red olvidó (expulsado de la mempool) se libera para firmar otra vez', async () => {
@@ -238,6 +240,8 @@ describe('API del reclamo', () => {
     chain.feeRates = { fastest: 3, halfHour: 2, hour: 2, economy: 1, minimum: 1 };
     assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 1, canceladas: 0 });
     assert.equal(await estado(), 'reclamado');
+    // Difundida, la transacción firmada ya no se guarda.
+    assert.deepEqual([...(await sql`select hex from difusiones`)], [{ hex: null }]);
     assert.deepEqual(chain.broadcasts, [sweep.hex]);
   });
 

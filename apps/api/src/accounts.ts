@@ -3,6 +3,7 @@ import type { Lang } from '@regalale/core';
 import { countSignup, type SignupStats } from './altas.ts';
 import type { Sql } from './db.ts';
 import { grantWelcome } from './credits.ts';
+import { mailHash, open, seal } from './secreto.ts';
 
 // Cuentas de quien regala. Los tokens (sesión, link por mail) se guardan solo como hash:
 // una copia de la base no alcanza para entrar.
@@ -54,8 +55,10 @@ export async function consumeChallenge(sql: Sql, challenge: string, kind: 'regis
 }
 
 export async function findAccountByEmail(sql: Sql, email: string): Promise<Account | null> {
-  const [r] = await sql<{ id: string; email: string; idioma: Lang }[]>`select id, email, idioma from usuarios where email = ${email}`;
-  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma };
+  // Por la huella: el mail se guarda sellado (secreto.ts). Las cuentas todavía sin sellar, por el mail.
+  const [r] = await sql<{ id: string; email: string; idioma: Lang }[]>`
+    select id, email, idioma from usuarios where email_huella = ${mailHash(email)} or (email_huella is null and email = ${email})`;
+  return r === undefined ? null : { id: r.id, email: open(r.email), lang: r.idioma };
 }
 
 export async function createAccount(
@@ -63,7 +66,7 @@ export async function createAccount(
   a: { email: string; lang: Lang; credential: Omit<Credential, 'accountId'> | null; stats?: SignupStats },
 ): Promise<Account> {
   return sql.begin(async (tx) => {
-    const [u] = await tx<{ id: string }[]>`insert into usuarios (email, idioma) values (${a.email}, ${a.lang}) returning id`;
+    const [u] = await tx<{ id: string }[]>`insert into usuarios (email, email_huella, idioma) values (${seal(a.email)}, ${mailHash(a.email)}, ${a.lang}) returning id`;
     const id = (u as { id: string }).id;
     const c = a.credential;
     // Sin credencial: cuenta con solo el mail (quien regala con el código de 12 palabras).
@@ -108,7 +111,7 @@ export async function sessionAccount(sql: Sql, token: string | undefined): Promi
   const [r] = await sql<{ id: string; email: string; idioma: Lang; metodo: 'passkey' | 'link' | 'mail'; credencial: string | null }[]>`
     select u.id, u.email, u.idioma, s.metodo, s.credencial from sesiones s join usuarios u on u.id = s.usuario_id
     where s.token_hash = ${hash(token)} and s.expira > now()`;
-  return r === undefined ? null : { id: r.id, email: r.email, lang: r.idioma, viaPasskey: r.metodo === 'passkey', credentialId: r.credencial };
+  return r === undefined ? null : { id: r.id, email: open(r.email), lang: r.idioma, viaPasskey: r.metodo === 'passkey', credentialId: r.credencial };
 }
 
 export async function deleteSession(sql: Sql, token: string | undefined): Promise<void> {
@@ -130,7 +133,7 @@ export async function redeemMailLink(sql: Sql, token: string): Promise<Account |
   if (r === undefined) return null;
   const [u] = await sql<{ id: string; email: string; idioma: Lang }[]>`
     update usuarios set verificado = coalesce(verificado, now()) where id = ${r.usuario_id} returning id, email, idioma`;
-  return u === undefined ? null : { id: u.id, email: u.email, lang: u.idioma };
+  return u === undefined ? null : { id: u.id, email: open(u.email), lang: u.idioma };
 }
 
 export interface AccountGift {
