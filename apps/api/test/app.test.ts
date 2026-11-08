@@ -236,6 +236,8 @@ describe('API del reclamo', () => {
     chain.feeRates = { fastest: 3, halfHour: 2, hour: 2, economy: 1, minimum: 1 };
     assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 1, canceladas: 0 });
     assert.equal(await estado(), 'reclamado');
+    // Difundida, la transacción firmada ya no se guarda.
+    assert.deepEqual([...(await sql`select hex from difusiones`)], [{ hex: null }]);
     assert.deepEqual(chain.broadcasts, [sweep.hex]);
   });
 
