@@ -25,8 +25,8 @@ export function EditarRegalo({ gift: g, master, onDone }: { gift: AccountGift; m
       // Con la tarjeta cifrada (08/11/2026), el mensaje nuevo se cifra acá y viaja cifrado.
       const sealed = g.tarjeta != null && master !== null && g.para !== null ? await resealCard(g, master, { para: g.para, de: g.de ?? null, mensaje: message.trim() }) : null;
       if (g.tarjeta != null && sealed === null) throw new Error('sin la clave para cifrar');
-      if (sealed !== null) await accountApi.sealCard(g.id, sealed);
-      await accountApi.editGift(g.id, sealed !== null ? { mostrarValor: showValue } : { mensaje: message.trim(), mostrarValor: showValue });
+      if (sealed !== null) await accountApi.sealCard(g.id, sealed, g.llave);
+      await accountApi.editGift(g.id, sealed !== null ? { mostrarValor: showValue } : { mensaje: message.trim(), mostrarValor: showValue }, g.llave);
       setSaved(true);
       onDone();
     } catch {

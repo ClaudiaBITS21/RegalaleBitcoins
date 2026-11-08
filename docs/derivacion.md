@@ -178,7 +178,7 @@ No cambia nada de la derivación de las claves ni de la dirección.
 - **Contenido:** JSON UTF-8 `[{"i": índice, "id": id del regalo, "l": idioma}, …]`.
 - **Formato:** `l1.<iv base64url>.<cifrado base64url>`.
 - **Llave de edición:** `HMAC-SHA256(HKDF-SHA256(entropía, salt vacío, info
-  "regalalebitcoins/edicion/v1"), id del regalo)`, en hex. Con ella quien regala prueba que un
+  "regalalebitcoins/edicion/v1"), dirección del regalo [ASCII])`, en hex. Con ella quien regala prueba que un
   regalo desvinculado es suyo (editar, tarjeta, vista, descartar). El servidor guarda solo
   `SHA-256` de esa llave en hex.
 - Vectores en `packages/core/test/giftlist.test.ts` (verificados también con `node:crypto`).

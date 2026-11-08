@@ -187,7 +187,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
         <section class="seccion" aria-labelledby="custodia-guardamos">
           <h2 id="custodia-guardamos">{t('custodia.guardamos.titulo')}</h2>
           <TwoLists
-            yes={{ title: 'custodia.guardamos.si', items: ['custodia.guardamos.si1', 'custodia.guardamos.si2', 'custodia.guardamos.si3', 'custodia.guardamos.si4'] }}
+            yes={{ title: 'custodia.guardamos.si', items: ['custodia.guardamos.si1', 'custodia.guardamos.si2', 'custodia.guardamos.si3', 'custodia.guardamos.si4', 'custodia.guardamos.si5'] }}
             no={{ title: 'custodia.guardamos.no', items: ['custodia.guardamos.no1', 'custodia.guardamos.no2', 'custodia.guardamos.no3'] }}
           />
         </section>

@@ -533,6 +533,21 @@ try {
   await giver.getByPlaceholder('Buscar por nombre').fill('lupe');
   await giver.locator('.regalos-lista .regalo-item').waitFor();
   await giver.getByRole('button', { name: 'Tarjetas' }).click();
+  // Etapa D (08/11): con el crédito resuelto, el panel guarda el regalo en la lista cifrada con la
+  // clave maestra y lo desvincula de la cuenta; se sigue viendo, y con la llave se edita sin cookies.
+  await sql`update regalos set credito = now() where direccion = ${lupeAddress}`;
+  await giver.reload();
+  await giver.getByRole('button', { name: 'Ver para quién es cada regalo' }).click();
+  for (let i = 0; ; i++) {
+    const r = (await sql`select r.usuario_id, r.llave_edicion, u.lista_regalos from regalos r, usuarios u where r.direccion = ${lupeAddress} and u.email = 'lupe.e2e@example.com'`)[0];
+    if (r?.usuario_id === null && /^[0-9a-f]{64}$/.test(String(r.llave_edicion)) && String(r.lista_regalos).startsWith('l1.')) break;
+    if (i > 75) fail(`el panel no desvinculó el regalo: ${JSON.stringify(r)}`);
+    await giver.waitForTimeout(200);
+  }
+  await giver.reload();
+  await giver.getByRole('button', { name: 'Ver todos tus regalos' }).click();
+  await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
+  await giver.getByText('Listo para abrir').waitFor();
   await giver.getByRole('button', { name: 'Ver mi código' }).click();
   await giver.locator('.codigo li').first().waitFor();
   const lupeWords12 = (await giver.locator('.codigo li').allInnerTexts()).map((x) => x.replace(/^\d+\s*/, '').trim()).join(' ');

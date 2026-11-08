@@ -1,7 +1,7 @@
 import { deriveGift, encodeGiftFragment, getNetwork, masterRootFromMnemonic, type Network } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { numberedWords, WordsList } from '../give/WordsList.tsx';
-import { accessErrorCode, accessErrorKey, accountApi, type AccountView, canRepairVault, RepairError, repairVault, signIn } from '../account.ts';
+import { accessErrorCode, accessErrorKey, type AccountGift, accountApi, type AccountView, canRepairVault, RepairError, repairVault, signIn } from '../account.ts';
 import { ApiFailure, api, type GiftView } from '../api.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { MyLists } from '../lists/MyLists.tsx';
@@ -20,6 +20,7 @@ import type { Key } from '../i18n/index.ts';
 import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { RecoverWithWallet, RecoverySettings } from '../recupero/Recuperar.tsx';
 import { EditarRegalo } from './EditarRegalo.tsx';
+import { syncGiftList } from './desvincular.ts';
 import { refreshPreviews } from './rehacerVistas.ts';
 import { type OpenedCards, openCards, sealOldCards, withCard } from './tarjetas.ts';
 
@@ -104,7 +105,7 @@ export function PanelPage() {
     setBusy(true);
     setRepairProblem(null);
     try {
-      setMaster(await repairVault(words, view.regalos, network));
+      setMaster(await repairVault(words, view.regalos, network, view.lista ?? null));
       setWords('');
       setError(null);
       setRepaired(true);
@@ -137,9 +138,18 @@ export function PanelPage() {
   // los regalos de antes (todavía en claro) se cifran y se suben una vez.
   const [cards, setCards] = useState<OpenedCards>({});
   const sealing = useRef(false);
+  // Etapa D: con la clave maestra, todos los regalos (los de la cuenta y los de la lista cifrada).
+  const [synced, setSynced] = useState<AccountGift[] | null>(null);
   useEffect(() => {
     if (view === null || master === null) return;
-    void openCards(view.regalos, master).then(setCards);
+    void syncGiftList(view, master)
+      .then(async (all) => {
+        setSynced(all);
+        setCards(await openCards(all, master));
+        void refreshPreviews(all.filter((g) => g.llave !== undefined));
+      })
+      .catch(() => undefined);
+    void openCards(view.regalos, master).then((c) => setCards((prev) => ({ ...c, ...prev })));
     if (!sealing.current && view.regalos.some((g) => g.tarjeta == null && g.para !== null)) {
       sealing.current = true;
       void sealOldCards(view.regalos, master).then((n) => {
@@ -148,7 +158,7 @@ export function PanelPage() {
       });
     }
   }, [view, master]);
-  const regalos = view === null ? [] : view.regalos.map((g) => withCard(g, cards));
+  const regalos = view === null ? [] : (synced ?? view.regalos).map((g) => withCard(g, cards));
 
   useEffect(() => {
     const token = readAccessToken();
@@ -294,7 +304,7 @@ export function PanelPage() {
           </>
         )}
         {repaired && <Notice kind="ok">{t('panel.reparar.listo')}</Notice>}
-        {view.regalos.length === 0 ? (
+        {regalos.length === 0 && (view.lista == null || master !== null) ? (
           <div class="caja">
             <p>{t('panel.vacio')}</p>
             <a class="boton boton-primario" href="/regalar">
@@ -304,9 +314,10 @@ export function PanelPage() {
         ) : (
           <>
             {/* La tarjeta va cifrada con el link (08/11/2026): sin la passkey no se sabe para quién es cada regalo. */}
-            {master === null && view.regalos.some((g) => g.para === null) && (
+            {/* Etapa D: los regalos ya desvinculados están en la lista cifrada; se ven con la passkey. */}
+            {master === null && (view.lista != null || view.regalos.some((g) => g.para === null)) && (
               <Button kind="contorno" disabled={busy} onClick={() => void unlock()}>
-                {t('panel.verNombres')}
+                {t(view.lista != null ? 'panel.verTodos' : 'panel.verNombres')}
               </Button>
             )}
             <div class="regalos-barra">
@@ -474,7 +485,7 @@ export function PanelPage() {
                         onClick={async () => {
                           setDiscardFailed(null);
                           try {
-                            await accountApi.discardGift(g.id);
+                            await accountApi.discardGift(g.id, g.llave);
                             setDiscarding(null);
                             await load();
                           } catch {

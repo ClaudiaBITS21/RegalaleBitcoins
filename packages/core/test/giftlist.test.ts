@@ -14,7 +14,9 @@ const LIST = [
   { i: 3, id: 'BBBBBBBBBBBBBBBBBBBBBB', l: 'en' as const },
 ];
 const VECTOR = 'l1.EBESExQVFhcYGRob.rLmbIQZJfAvcSXuh-X-Mw7f2o_kZS76X3fJE1ZU6wAWJnPIAt3pRFJYzi0JlVH5B5CHuK4exXyCGWvioH1kuv0CMVJ4AEzvSXnR0gMZ2kPoME8PbhcdJUfo1eVQ2UrfpeULnqsmxPHqqkIWbJgI7';
-const EDIT = 'e8351b5c5256799f4597c87a6f8563653ceeec45bd6ee304388438306b948390';
+const EDIT = '48c3e13676434d7addc3801ad2cc621e71eac8ec2a54f100208af1210ebe45e5';
+// Dirección del regalo (la de BIP84 para «abandon … about», m/84'/0'/0'/0/0).
+const ADDR = 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu';
 
 describe('Lista de regalos cifrada con la clave maestra', () => {
   it('vector fijo, y el mismo resultado con node:crypto', async () => {
@@ -35,11 +37,12 @@ describe('Lista de regalos cifrada con la clave maestra', () => {
     assert.deepEqual(await openGiftList(M, fresh), []);
   });
 
-  it('llave de edición: fija por clave maestra y regalo; el servidor guarda solo su SHA-256', async () => {
-    assert.equal(await giftEditKey(M, 'AAAAAAAAAAAAAAAAAAAAAA'), EDIT);
+  it('llave de edición: fija por clave maestra y dirección del regalo; el servidor guarda solo su SHA-256', async () => {
+    assert.equal(await giftEditKey(M, ADDR), EDIT);
     const k = Buffer.from(hkdfSync('sha256', ENTROPY, new Uint8Array(0), 'regalalebitcoins/edicion/v1', 32));
-    assert.equal(createHmac('sha256', k).update('AAAAAAAAAAAAAAAAAAAAAA').digest('hex'), EDIT);
-    assert.notEqual(await giftEditKey(M, 'BBBBBBBBBBBBBBBBBBBBBB'), EDIT);
+    assert.equal(createHmac('sha256', k).update(ADDR).digest('hex'), EDIT);
+    assert.notEqual(await giftEditKey(M, 'bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g'), EDIT);
+    assert.equal(editKeyHash(EDIT), '056448a4e0b17c58de4a10f756506063e231c666cb5aa73858c5c5e5d6031629');
     assert.equal(editKeyHash(EDIT), createHash('sha256').update(EDIT).digest('hex'));
   });
 });

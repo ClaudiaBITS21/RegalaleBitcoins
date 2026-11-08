@@ -16,7 +16,7 @@ import { ENGLISH } from './wordlists.ts';
 //   cifrado      = AES-256-GCM, IV de 12 bytes al azar, AAD = "regalalebitcoins/lista-regalos/v1"
 //   contenido    = JSON UTF-8 [{"i": índice, "id": id del regalo, "l": idioma}, …]
 //   formato      = "l1." + base64url(iv) + "." + base64url(cifrado+tag)
-//   llave edición = HMAC-SHA256(HKDF(entropía, info "regalalebitcoins/edicion/v1"), id del regalo) → hex;
+//   llave edición = HMAC-SHA256(HKDF(entropía, info "regalalebitcoins/edicion/v1"), dirección del regalo) → hex;
 //                   el servidor guarda solo su SHA-256.
 
 const enc = new TextEncoder();
@@ -86,11 +86,14 @@ export async function openGiftList(masterMnemonic: string, sealed: string): Prom
   });
 }
 
-/** La llave con que quien regala prueba que un regalo es suyo (para editarlo ya desvinculado). */
-export async function giftEditKey(masterMnemonic: string, giftId: string): Promise<string> {
+/**
+ * La llave con que quien regala prueba que un regalo es suyo (para editarlo ya desvinculado). Sale
+ * de la dirección del regalo, que el navegador conoce antes de crearlo (el id lo pone el servidor).
+ */
+export async function giftEditKey(masterMnemonic: string, giftAddress: string): Promise<string> {
   const entropy = masterEntropy(masterMnemonic);
   try {
-    return hex.encode(hmac(sha256, await hkdfBytes(entropy, EDIT_INFO), enc.encode(giftId)));
+    return hex.encode(hmac(sha256, await hkdfBytes(entropy, EDIT_INFO), enc.encode(giftAddress)));
   } finally {
     entropy.fill(0);
   }
