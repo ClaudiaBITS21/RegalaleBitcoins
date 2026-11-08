@@ -464,7 +464,7 @@ describe('API para regalar', () => {
     assert.equal((await post('/api/gifts', nuevo(1, { moneda: 'SAT', monto: 30_000, sats: '30000' }))).status, 201);
     const status = async (extra: Record<string, unknown>) => (await post('/api/gifts', nuevo(2, extra))).status;
     assert.equal(await status({ moneda: 'SAT', monto: 300, sats: '300' }), 422); // no alcanza para barrerlo
-    assert.equal(await status({ monto: 150, sats: '150000' }), 422); // supera USD 100
+    assert.equal(await status({ monto: 300, sats: '300000' }), 422); // supera USD 250
     assert.equal(await status({ monto: 25, sats: '50000' }), 422); // sats de otro monto
     assert.equal(await status({ moneda: 'SAT', monto: 30_000, sats: '31000' }), 422);
     assert.equal(await status({ sats: '25000.5' }), 400);

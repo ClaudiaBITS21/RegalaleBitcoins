@@ -130,6 +130,12 @@ iteraciones. Estimación gruesa a octubre de 2026: unas 1.500 horas de GPU de ga
 por regalo, del orden de USD 500 a 1.000. No escala: cada regalo tiene otra semilla.
 Con el techo de USD 100 de la beta no conviene. Si el techo sube, hay que revisarlo.
 
+**Revisión del 08/11/2026 (techo de USD 250):** romper un regalo sigue costando del orden de
+USD 500 a 1.000 de GPU para ganar como mucho USD 250, así que sigue sin convenir, pero el margen
+baja de 5–10× a 2–4×. Antes de volver a subir el techo hay que revisar esto de nuevo (por ejemplo,
+con una passphrase más larga para montos altos, que sería un cambio de esquema con vectores
+nuevos).
+
 ## 9. Bóveda
 
 La clave maestra se guarda cifrada con la extensión PRF de una passkey (WebAuthn). Solo
