@@ -476,7 +476,7 @@ export const it: Dict = {
   'custodia.guardamos.si1': 'Il biglietto: nome, messaggio e occasione.',
   'custodia.guardamos.si2': 'L’indirizzo pubblico del regalo, per vedere se il pagamento è arrivato. È come un numero di conto: serve a guardare, non a prelevare.',
   'custodia.guardamos.si3': 'Se hai creato l’accesso con una passkey, il tuo codice di recupero chiuso con il tuo volto o la tua impronta. È una busta sigillata che non possiamo aprire.',
-  'custodia.guardamos.si4': 'La tua e-mail, se hai creato un account, per avvisarti di come va il tuo regalo.',
+  'custodia.guardamos.si4': 'La tua e-mail, se hai creato un account, per avvisarti di come va il tuo regalo. La conserviamo cifrata: una copia del nostro database non permette di leggerla.',
   'custodia.guardamos.no': 'Non conserviamo',
   'custodia.guardamos.no1': 'Il link del regalo.',
   'custodia.guardamos.no2': 'Le 4 parole.',

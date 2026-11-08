@@ -476,7 +476,7 @@ export const en: Dict = {
   'custodia.guardamos.si1': 'The card: name, message and occasion.',
   'custodia.guardamos.si2': 'The gift’s public address, to see whether the payment arrived. It’s like an account number: good for looking, not for taking.',
   'custodia.guardamos.si3': 'If you set up your access with a passkey, your recovery code locked with your face or fingerprint. It’s a sealed envelope we can’t open.',
-  'custodia.guardamos.si4': 'Your email, if you created an account, to let you know how your gift is doing.',
+  'custodia.guardamos.si4': 'Your email, if you created an account, to let you know how your gift is doing. We store it encrypted: a copy of our database doesn’t reveal it.',
   'custodia.guardamos.no': 'We don’t keep',
   'custodia.guardamos.no1': 'The gift link.',
   'custodia.guardamos.no2': 'The 4 words.',

@@ -1,6 +1,8 @@
 import type postgres from 'postgres';
 import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
+import { adminEmails as allAdmins } from './admins.ts';
+import { mailHash } from './secreto.ts';
 
 // Créditos (handoff 2026-10-19, «cobro y créditos»). El saldo es la suma de los movimientos, que
 // solo se agregan. Crear un regalo no consume: el crédito se usa cuando llega el primer depósito,
@@ -204,9 +206,11 @@ export function canGive(b: Balance, charging: boolean, occasion?: string, admin 
 export async function consumeGiftCredits(deps: { sql: Sql; chain: ChainClient; adminEmails?: readonly string[] }): Promise<number> {
   const { sql, chain } = deps;
   const fixed = deps.adminEmails ?? [];
+  // Los mails de las cuentas están sellados (secreto.ts): se compara por la huella.
+  const adminHashes = (await allAdmins(sql, fixed)).map((e) => mailHash(e).toString('hex'));
   const pending = await sql<{ id: string; direccion: string; usuario_id: string; ocasion: string; admin: boolean }[]>`
     select r.id, r.direccion, r.usuario_id, r.ocasion,
-      (u.email = any(${sql.array(fixed as string[])}::text[]) or exists (select 1 from admins a where a.email = u.email)) as admin
+      (encode(u.email_huella, 'hex') = any(${sql.array(adminHashes)}::text[])) as admin
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.credito is null and r.usuario_id is not null and r.creado > now() - interval '90 days'
     order by r.creado limit 100`;
