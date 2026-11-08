@@ -37,8 +37,8 @@ export function PrivacyPage() {
               <strong>No sabemos para quién es cada regalo ni quién lo mandó.</strong> El nombre, quién lo manda y el mensaje se cifran en el navegador con la clave del link.
             </li>
             <li>
-              <strong>No unimos los regalos con las cuentas.</strong> Cuando el regalo ya está pago y quien lo armó vuelve a entrar a «Mis regalos», deja de estar asociado a su cuenta; y
-              los créditos usados tampoco dicen en qué regalo se usaron.
+              <strong>El historial de regalos es de cada persona.</strong> Se guarda en su cuenta cifrado con su código de 12 palabras: lo ve completo en «Mis regalos», pero nosotros
+              no podemos saber qué regalos son de quién. Los créditos usados tampoco dicen en qué regalo se usaron.
             </li>
             <li>
               <strong>El mail se guarda cifrado</strong> y se busca con un resumen (hash) que no permite leerlo.

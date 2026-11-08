@@ -2544,6 +2544,12 @@ svg.tarjeta-imagen {
   background: var(--papel);
 }
 
+.custodia-lista-cifrado .custodia-marca {
+  background: #e3f2fb;
+  color: #1d5f86;
+  stroke-width: 2.5;
+}
+
 .custodia-lista-no .custodia-marca {
   background: var(--error);
   color: var(--error-tinta);
@@ -2595,6 +2601,10 @@ svg.tarjeta-imagen {
 
   .custodia-listas {
     gap: 16px;
+  }
+
+  .custodia-listas-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .custodia-lista {
