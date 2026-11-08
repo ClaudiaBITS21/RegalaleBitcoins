@@ -71,7 +71,7 @@ export function PrivacyPage() {
             </li>
             <li>
               <strong>Reportes de listas:</strong> el motivo de quien reporta una lista. Su mail no se guarda: solo una huella (un hash) distinta para cada lista, que sirve para que la misma
-              persona no reporte dos veces la misma lista y no permite saber quién es. También su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le llega
+              persona no reporte dos veces la misma lista y no permite saber quién es. La dirección IP no se guarda (se usa solo en el momento para frenar abusos). A quien armó la lista le llega
               el motivo.
             </li>
             <li>

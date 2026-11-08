@@ -89,3 +89,9 @@ sitio.
 `firebase deploy --only hosting:mainnet`, agregar una fila a `docs/versiones.md` con la fecha, el
 commit, la huella del sitio y la de la herramienta, y subirla. `/sin-custodia` explica cómo
 comprobarla.
+
+El workflow «Deploy web mainnet», después de publicar el sitio, vuelve a compilar la herramienta
+sin conexión en un trabajo aparte y, si da la misma huella que la del sitio, la publica como
+versión del repo (`web-<commit>`, con `SHA256SUMS`). Así queda una copia en GitHub aunque el
+sitio desaparezca (Claudia, 08/11/2026). Si la huella no coincide, no publica nada y el trabajo
+queda en rojo.

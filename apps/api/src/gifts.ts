@@ -214,5 +214,6 @@ export async function allPending(sql: Sql): Promise<PendingBroadcast[]> {
 }
 
 export async function markPending(sql: Sql, id: number, estado: 'difundida' | 'cancelada'): Promise<void> {
-  await sql`update difusiones set estado = ${estado}, difundida = case when ${estado} = 'difundida' then now() else null end where id = ${id}`;
+  // La transacción firmada solo hace falta mientras espera (08/11/2026): al salir de la espera se borra.
+  await sql`update difusiones set estado = ${estado}, hex = null, difundida = case when ${estado} = 'difundida' then now() else null end where id = ${id}`;
 }
