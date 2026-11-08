@@ -52,11 +52,9 @@ function Verify() {
       .catch(() => undefined);
   }, []);
   return (
-    <article class="historia custodia-bloque custodia-verificar">
-      <h2 id="custodia-verificar">{t('custodia.verificar.titulo')}</h2>
-      <p>{t('custodia.verificar.resumen')}</p>
-      {/* Todo lo demás (la huella, los pasos y la herramienta) va plegado para no cortar la lectura. */}
-      <details class="desplegable">
+    <>
+      {/* La huella, los pasos y la herramienta van plegados para no cortar la lectura. */}
+      <details class="desplegable" id="custodia-verificar">
         <summary>{t('custodia.verificar.mas')}</summary>
         <p>{t('custodia.verificar.p1')}</p>
         {v !== null && <p>{t('custodia.verificar.esta')}</p>}
@@ -119,7 +117,51 @@ certutil -hashfile regalalebitcoin-sin-conexion.html SHA256   # Windows`}</code>
         </pre>
         <p class="texto-suave">{t('custodia.offline.usar')}</p>
       </details>
-    </article>
+    </>
+  );
+}
+
+/**
+ * Abrir un regalo en Sparrow sin esta página (Claudia, 08/11/2026): qué parte del link se usa, los
+ * pasos para quien lo recibió y para quien lo regaló (con su código de 12 palabras).
+ */
+function Sparrow() {
+  const { t } = useI18n();
+  return (
+    <details class="desplegable">
+      <summary>{t('custodia.sparrow.titulo')}</summary>
+      <p>{t('custodia.sparrow.link')}</p>
+      <h3>{t('custodia.sparrow.recibe.titulo')}</h3>
+      <ol>
+        <li>
+          {t('custodia.sparrow.recibe.1')}{' '}
+          <a
+            href="#custodia-verificar"
+            onClick={() => {
+              // El desplegable de la herramienta se abre al llegar.
+              const d = document.getElementById('custodia-verificar') as HTMLDetailsElement | null;
+              if (d !== null) d.open = true;
+            }}
+          >
+            {t('custodia.sparrow.herramienta')}
+          </a>
+        </li>
+        <li>{t('custodia.sparrow.recibe.2')}</li>
+        <li>{t('custodia.sparrow.recibe.3')}</li>
+        <li>{t('custodia.sparrow.recibe.4')}</li>
+        <li>{t('custodia.sparrow.recibe.5')}</li>
+      </ol>
+      <h3>{t('custodia.sparrow.regalo.titulo')}</h3>
+      <p>{t('custodia.sparrow.regalo.p')}</p>
+      <ol>
+        <li>{t('custodia.sparrow.regalo.1')}</li>
+        <li>{t('custodia.sparrow.regalo.2')}</li>
+      </ol>
+      <p>
+        {t('custodia.sparrow.regalo.guardar')}{' '}
+        <a href="/panel">{t('custodia.sparrow.regalo.ver')}</a>
+      </p>
+    </details>
   );
 }
 
@@ -187,8 +229,8 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
         <section class="seccion" aria-labelledby="custodia-guardamos">
           <h2 id="custodia-guardamos">{t('custodia.guardamos.titulo')}</h2>
           <TwoLists
-            yes={{ title: 'custodia.guardamos.si', items: ['custodia.guardamos.si1', 'custodia.guardamos.si2', 'custodia.guardamos.si3', 'custodia.guardamos.si4', 'custodia.guardamos.si5'] }}
-            no={{ title: 'custodia.guardamos.no', items: ['custodia.guardamos.no1', 'custodia.guardamos.no2', 'custodia.guardamos.no3'] }}
+            yes={{ title: 'custodia.guardamos.si', items: ['custodia.guardamos.si1', 'custodia.guardamos.si2', 'custodia.guardamos.si3', 'custodia.guardamos.si4', 'custodia.guardamos.si5', 'custodia.guardamos.si6', 'custodia.guardamos.si7'] }}
+            no={{ title: 'custodia.guardamos.no', items: ['custodia.guardamos.no1', 'custodia.guardamos.no2', 'custodia.guardamos.no3', 'custodia.guardamos.no4', 'custodia.guardamos.no5'] }}
           />
         </section>
 
@@ -210,6 +252,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
             </p>
             <p>{t('custodia.desaparece.p2')}</p>
             <p>{t('custodia.desaparece.p3')}</p>
+            <Sparrow />
             <p>
               {t('custodia.desaparece.ayuda')}{' '}
               <a class="custodia-link" href="https://bitcoin.ar" target="_blank" rel="noopener noreferrer">
@@ -226,11 +269,8 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
             <p>{t('custodia.confianza.p1')}</p>
             <p>{t('custodia.confianza.cold')}</p>
             <p>{t('custodia.confianza.p2')}</p>
+            <Verify />
           </article>
-        </section>
-
-        <section class="seccion" aria-labelledby="custodia-verificar">
-          <Verify />
         </section>
 
         <section class="seccion" aria-labelledby="custodia-otra">
