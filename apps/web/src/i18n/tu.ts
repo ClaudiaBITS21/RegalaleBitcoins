@@ -193,7 +193,7 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.hero.bajada': 'Los bitcoins de cada regalo se abren con una llave que nunca pasa por nuestras manos. Te contamos cómo, sin rodeos.',
   'custodia.paso1.d': 'Cuando regalas, tu teléfono (o tu computadora) crea la llave del regalo. No se crea en nuestro servidor y nunca nos llega.',
   'custodia.paso2.t': 'Viaja de ti a quien recibe',
-  'custodia.paso2.d': 'La llave va en dos partes: un link y 4 palabras. Mandas el link por un lado y las palabras por otro, o se las dices en persona.',
+  'custodia.paso2.d': "La llave va en dos partes: un link y 4 palabras. Mandas el link por un lado y las palabras por otro, o se las das en persona.",
   'custodia.otra.p2': 'Cuídalos como cuidarías un billete.',
   'porque.edades.ayuda': 'Toca una tarjeta para ver por qué.',
   'porque.edad.tocar': 'Toca para ver por qué',
