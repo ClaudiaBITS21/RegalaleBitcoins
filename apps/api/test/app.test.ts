@@ -94,7 +94,7 @@ const post = (path: string, body: unknown) =>
 describe('API del reclamo', () => {
   before(async () => {
     sql = connect(DB);
-    await sql`drop table if exists compras_historial, compras, denuncias, vinculos, bovedas_extra, cupon_usos, cupones_vistas, cupones_logos, cupones, altas_semana, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
+    await sql`drop table if exists claves, compras_historial, compras, denuncias, vinculos, bovedas_extra, cupon_usos, cupones_vistas, cupones_logos, cupones, altas_semana, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
     await sql`drop function if exists movimientos_sin_cambios()`;
     await sql`drop function if exists nuevo_corto_cupon()`;
     await migrate(sql);
@@ -238,6 +238,8 @@ describe('API del reclamo', () => {
     chain.feeRates = { fastest: 3, halfHour: 2, hour: 2, economy: 1, minimum: 1 };
     assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 1, canceladas: 0 });
     assert.equal(await estado(), 'reclamado');
+    // Difundida, la transacción firmada ya no se guarda.
+    assert.deepEqual([...(await sql`select hex from difusiones`)], [{ hex: null }]);
     assert.deepEqual(chain.broadcasts, [sweep.hex]);
   });
 

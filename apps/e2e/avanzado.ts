@@ -21,6 +21,7 @@ import { deriveBip84Key, generateMasterMnemonic, getNetwork, inspectTransaction,
 import { chromium } from 'playwright-core';
 import { connect } from '../api/src/db.ts';
 import { startFakeEsplora } from './fake-esplora.ts';
+import { mailHash, open } from '../api/src/secreto.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist');
@@ -205,7 +206,7 @@ try {
   await shot('a7-ajuste');
   await giver.getByRole('button', { name: 'Volver a la opción común' }).click();
   await giver.getByText('Con esta web: tu passkey o tus 12 palabras.').waitFor();
-  const after = (await sql`select recupero from usuarios where email = ${MAIL}`)[0];
+  const after = (await sql`select recupero from usuarios where email_huella = ${mailHash(MAIL)}`)[0];
   if (after?.recupero !== null) fail('volver al modo común no borró la clave de la cuenta');
 
   if (problems.length > 0) fail(problems.join('\n'));

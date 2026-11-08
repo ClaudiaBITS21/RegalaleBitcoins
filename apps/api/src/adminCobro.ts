@@ -2,12 +2,13 @@ import { deriveListAddress, isCoreError, type Network, parsePaymentKey } from '@
 import type { Context, Hono } from 'hono';
 import { currentAccount } from './accountRoutes.ts';
 import { adminEmails as allAdmins, isAdmin } from './admins.ts';
-import type { Account } from './accounts.ts';
+import { type Account, findAccountByEmail } from './accounts.ts';
 import { balance, type Balance, chargingActive, features, freeOffer, hasPlanFeatures, setChargingActive, setFreeOffer } from './credits.ts';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
 import type { Mail, Mailer } from './mail.ts';
 import { foundersLeft, keyFingerprint, paymentKey, pendingPaymentKey, setPaymentKey } from './payments.ts';
+import { open } from './secreto.ts';
 
 // Admin del cobro (handoff 2026-10-19, «cobro y créditos»): llave de cobro, activar el cobro,
 // precios, ajustes manuales de créditos y pagos. La llave nunca vuelve al navegador ni va a los
@@ -219,12 +220,12 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     ) {
       throw new ApiError(400, 'pedido_invalido');
     }
-    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = ${email.trim().toLowerCase()}`;
-    if (u === undefined) throw new ApiError(404, 'cuenta_inexistente');
+    const u = await findAccountByEmail(sql, email.trim().toLowerCase());
+    if (u === null) throw new ApiError(404, 'cuenta_inexistente');
     await sql`
       insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo)
       values (${u.id}, 'ajuste', ${unidad}, ${cantidad}, 'admin', ${motivo.trim()})`;
-    await log(account, 'ajuste', `${email.trim().toLowerCase()}, ${unidad} ${cantidad > 0 ? '+' : ''}${cantidad}: ${motivo.trim()}`);
+    await log(account, 'ajuste', `cuenta ${u.id.slice(0, 8)}, ${unidad} ${cantidad > 0 ? '+' : ''}${cantidad}: ${motivo.trim()}`);
     // Lo que quedó, para mostrarlo en el momento (antes no se veía nada al registrar).
     return c.json({ ok: true, cuenta: await accountView(u.id, email.trim().toLowerCase()) });
   });
@@ -254,7 +255,6 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
   app.get('/api/admin/usuarios', async (c) => {
     await admin(c);
     const q = (c.req.query('q') ?? '').trim().toLowerCase().slice(0, 100);
-    const like = `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
     const rows = await sql<{ email: string; creado: Date; passkey: boolean; regalos: string; listas: string; compras: string; plan: boolean; saldo_regalos: string; saldo_listas: string }[]>`
       select u.email, u.creado,
         exists (select 1 from credenciales c where c.usuario_id = u.id) as passkey,
@@ -265,13 +265,14 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
         (select coalesce(sum(cantidad), 0) from movimientos m where m.usuario_id = u.id and m.unidad = 'regalo') as saldo_regalos,
         (select coalesce(sum(cantidad), 0) from movimientos m where m.usuario_id = u.id and m.unidad <> 'regalo') as saldo_listas
       from usuarios u
-      where ${q} = '' or u.email like ${like}
-      order by u.creado desc limit 500`;
+      order by u.creado desc`;
+    // El mail está sellado (secreto.ts): se abre acá y se busca en memoria.
+    const found = rows.map((r) => ({ ...r, email: open(r.email) })).filter((r) => q === '' || r.email.includes(q)).slice(0, 500);
     const [total] = await sql<{ n: string }[]>`select count(*) as n from usuarios`;
     const admins = new Set(await allAdmins(sql, adminEmails));
     return c.json({
       total: Number(total?.n ?? 0),
-      usuarios: rows.map((r) => ({
+      usuarios: found.map((r) => ({
         email: r.email,
         alta: r.creado.toISOString(),
         passkey: r.passkey,
@@ -299,7 +300,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
       order by m.id desc limit 300`;
     return c.json({
       entregas: rows.map((r) => ({
-        email: r.email,
+        email: open(r.email),
         tipo: r.tipo,
         unidad: r.unidad,
         cantidad: r.cantidad,
@@ -316,8 +317,8 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     await admin(c);
     const email = (c.req.query('email') ?? '').trim().toLowerCase();
     if (email === '' || email.length > 254) throw new ApiError(400, 'pedido_invalido');
-    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = ${email}`;
-    if (u === undefined) throw new ApiError(404, 'cuenta_inexistente');
+    const u = await findAccountByEmail(sql, email);
+    if (u === null) throw new ApiError(404, 'cuenta_inexistente');
     return c.json(await accountView(u.id, email));
   });
 }

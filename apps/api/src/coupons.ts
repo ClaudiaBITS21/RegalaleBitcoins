@@ -6,6 +6,7 @@ import type postgres from 'postgres';
 import type { Sql } from './db.ts';
 import { ApiError } from './errors.ts';
 import { parsePreview } from './share.ts';
+import { mailHash, open, seal } from './secreto.ts';
 
 // Cupones (handoff 2026-10-21, «cupones»). Un cupón da un descuento en planes, regalos o listas
 // gratis, o las dos cosas. Una vez por cuenta y uno por compra. El descuento se usa al comprar; los
@@ -107,8 +108,9 @@ export async function usableCoupon(tx: Tx, code: string, accountId: string): Pro
   const [c] = await tx<Coupon[]>`select * from cupones where codigo = ${code}`;
   if (c === undefined || !c.activo) throw new ApiError(404, 'cupon_invalido');
   if (c.email !== null) {
-    const [me] = await tx<{ email: string }[]>`select lower(email) as email from usuarios where id = ${accountId}`;
-    if (me?.email !== c.email) throw new ApiError(403, 'cupon_de_otra_cuenta');
+    // Los dos mails están sellados (secreto.ts): se comparan abiertos.
+    const [me] = await tx<{ email: string }[]>`select email from usuarios where id = ${accountId}`;
+    if (me === undefined || open(me.email).toLowerCase() !== open(c.email)) throw new ApiError(403, 'cupon_de_otra_cuenta');
   }
   const now = Date.now();
   if (c.desde.getTime() > now) throw new ApiError(409, 'cupon_no_empezo');
@@ -351,7 +353,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
           nota: r.nota,
           creadoPor: r.creado_por,
           creado: r.creado.toISOString(),
-          email: r.email,
+          email: r.email === null ? null : open(r.email),
           usados: mine.reduce((a, u) => a + Number(u.usados), 0),
           reservados: mine.reduce((a, u) => a + Number(u.reservados), 0),
           satsResignados: mine.reduce((a, u) => a + BigInt(u.resignado), 0n).toString(),
@@ -413,8 +415,8 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
   };
   type Terms = ReturnType<typeof termsOf>;
   const insertCoupon = (tx: Tx, code: string, t: Terms, maxUsos: number, email: string | null, lote: string | null, by: string) => tx`
-    insert into cupones (codigo, descuento, productos, da_unidad, da_cantidad, ocasion, desde, hasta, max_usos, nota, creado_por, email, lote)
-    values (${code}, ${t.descuento}, ${t.productos}, ${t.daUnidad}, ${t.daCantidad}, ${t.ocasion}, ${t.desde}, ${t.hasta}, ${maxUsos}, ${t.nota}, ${by}, ${email}, ${lote})
+    insert into cupones (codigo, descuento, productos, da_unidad, da_cantidad, ocasion, desde, hasta, max_usos, nota, creado_por, email, email_huella, lote)
+    values (${code}, ${t.descuento}, ${t.productos}, ${t.daUnidad}, ${t.daCantidad}, ${t.ocasion}, ${t.desde}, ${t.hasta}, ${maxUsos}, ${t.nota}, ${by}, ${email === null ? null : seal(email)}, ${email === null ? null : mailHash(email)}, ${lote})
     on conflict (codigo) do nothing returning codigo`;
 
   /** Un cupón. Con `email`, solo lo usa esa cuenta (y una vez). */
@@ -430,7 +432,7 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     if (typeof maxUsos !== 'number' || !Number.isInteger(maxUsos) || maxUsos < 1 || maxUsos > 1_000_000) throw new ApiError(400, 'pedido_invalido');
     const inserted = await insertCoupon(sql, code, terms, maxUsos, email, null, account.email);
     if (inserted.length === 0) throw new ApiError(409, 'cupon_existente');
-    await sql`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_creado', ${email === null ? code : `${code} para ${email}`})`;
+    await sql`insert into registro_admin (email, accion, detalle) values (${account.email}, 'cupon_creado', ${email === null ? code : `${code} para un mail`})`;
     return c.json({ codigo: code }, 201);
   });
 
@@ -486,8 +488,12 @@ export function registerCouponRoutes(app: Hono, deps: { sql: Sql; adminEmails: r
     if (lote === undefined) throw new ApiError(404, 'no_encontrado');
     const rows = await sql<{ codigo: string; email: string | null; usado: boolean }[]>`
       select k.codigo, k.email, exists (select 1 from cupon_usos u where u.cupon = k.codigo and u.estado = 'usado') as usado
-      from cupones k where k.lote = ${id} order by k.email nulls last, k.codigo`;
-    return c.json({ nombre: lote.nombre, cupones: rows });
+      from cupones k where k.lote = ${id} order by k.codigo`;
+    // El mail está sellado: se abre acá y se ordena en memoria (con mail primero).
+    const cupones = rows
+      .map((r) => ({ ...r, email: r.email === null ? null : open(r.email) }))
+      .sort((a, b) => (a.email === null ? 1 : 0) - (b.email === null ? 1 : 0) || (a.email ?? '').localeCompare(b.email ?? '') || a.codigo.localeCompare(b.codigo));
+    return c.json({ nombre: lote.nombre, cupones });
   });
 
   /** Pausar o reactivar todos los cupones de un lote. */

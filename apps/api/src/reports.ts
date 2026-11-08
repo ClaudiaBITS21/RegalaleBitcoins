@@ -9,6 +9,7 @@ import { GIFT_ID } from './gifts.ts';
 import { type Mailer, reportMail } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { clientIp } from './validate.ts';
+import { open } from './secreto.ts';
 
 // Denuncias de listas y pausa escalonada (handoff 2026-10-21, «listas por país», sección 6).
 // 1. Primera denuncia: la lista se pausa en el acto y deja de mostrar datos para aportar (dato de
@@ -31,7 +32,6 @@ export interface ReportDeps {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const ipHash = (ip: string) => createHash('sha256').update(`denuncia:${ip}`).digest();
 /** Huella del mail de quien denuncia, distinta en cada lista (el mail no se guarda: 08/11/2026). */
 export const reporterHash = (listId: string, email: string) => createHash('sha256').update(`denuncia:${listId}:${email}`).digest();
 
@@ -56,7 +56,7 @@ export function registerReportRoutes(app: Hono, deps: ReportDeps): void {
         where l.id = ${id} and l.red = ${deps.network} for update of l`;
       if (l === undefined || l.estado === 'baja') throw new ApiError(404, 'no_encontrado');
       const inserted = await tx`
-        insert into denuncias (lista_id, email_hash, motivo, ip_hash) values (${id}, ${reporterHash(id, email)}, ${motivo}, ${ipHash(ip)})
+        insert into denuncias (lista_id, email_hash, motivo) values (${id}, ${reporterHash(id, email)}, ${motivo})
         on conflict (lista_id, email_hash) do nothing returning id`;
       if (inserted.length === 0) throw new ApiError(409, 'ya_denunciada');
       if (l.estado !== 'activa') return { owner: null, estado: l.estado };
@@ -68,7 +68,7 @@ export function registerReportRoutes(app: Hono, deps: ReportDeps): void {
     if (result.owner !== null) {
       const lang = isLang(result.owner.idioma) ? result.owner.idioma : 'es';
       await mailer
-        .send(reportMail(result.owner.email, lang, { titulo: result.owner.titulo, motivo, review: result.estado === 'en_revision', link: `${deps.publicUrl}/panel` }))
+        .send(reportMail(open(result.owner.email), lang, { titulo: result.owner.titulo, motivo, review: result.estado === 'en_revision', link: `${deps.publicUrl}/panel` }))
         .catch((e: unknown) => console.warn(`denuncia: no se pudo avisar a quien armó la lista ${id}: ${String(e)}`));
     }
     return c.json({ estado: result.estado }, 201);
@@ -114,7 +114,7 @@ export function registerReportRoutes(app: Hono, deps: ReportDeps): void {
         creada: l.creada.toISOString(),
         estado: l.estado,
         reactivada: l.reactivada?.toISOString() ?? null,
-        dueno: l.email,
+        dueno: open(l.email),
         denuncias: reports.filter((r) => r.lista_id === l.id).map((r) => ({ quien: r.email_hash.toString('hex').slice(0, 6), motivo: r.motivo, creada: r.creada.toISOString() })),
       })),
     });

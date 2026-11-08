@@ -8,6 +8,7 @@ import type { AddressStats, ChainClient, FeeRates, MempoolPayment, PriceClient, 
 import { setChargingActive } from '../src/credits.ts';
 import { setPaymentKey } from '../src/payments.ts';
 import { connect, migrate, type Sql } from '../src/db.ts';
+import { mailHash } from '../src/secreto.ts';
 
 const DB = process.env.DATABASE_URL_TEST ?? 'postgres://regalale:regalale@127.0.0.1:5432/regalale_test';
 const ORIGIN = 'https://regalale.test';
@@ -522,7 +523,7 @@ describe('Cuentas con passkey', () => {
     const ana = await signUp('ana@example.com');
     const bob = await signUp('bob@example.com');
     const admin = await signUp('admin@example.com');
-    const idOf = async (email: string) => ((await sql<{ id: string }[]>`select id from usuarios where email = ${email}`)[0] as { id: string }).id;
+    const idOf = async (email: string) => ((await sql<{ id: string }[]>`select id from usuarios where email_huella = ${mailHash(email)}`)[0] as { id: string }).id;
     // Ana ya usó 2 regalos de bienvenida; Bob compró un pack.
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${await idOf('ana@example.com')}, 'ajuste', 'regalo', -2, 'bienvenida', 'prueba')`;
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen) values (${await idOf('bob@example.com')}, 'compra', 'regalo', 10, 'pago')`;
@@ -580,12 +581,12 @@ describe('Cuentas con passkey', () => {
     const cookie = cookieOf(ok);
     const c = (await (await req('/api/cuenta/creditos', undefined, cookie)).json()) as { regalos: { bienvenida: number } };
     assert.equal(c.regalos.bienvenida, 5);
-    const [u] = await sql<{ verificado: Date | null }[]>`select verificado from usuarios where email = 'leo@example.com'`;
+    const [u] = await sql<{ verificado: Date | null }[]>`select verificado from usuarios where email_huella = ${mailHash('leo@example.com')}`;
     assert.ok(u?.verificado instanceof Date);
     // El mismo mail otra vez responde igual: no crea otra cuenta, manda el link para entrar.
     assert.equal((await req('/api/cuenta/registro-mail', { email: 'leo@example.com' })).status, 202);
     assert.equal(mails.length, 2);
-    assert.equal((await sql`select id from usuarios where email = 'leo@example.com'`).length, 1);
+    assert.equal((await sql`select id from usuarios where email_huella = ${mailHash('leo@example.com')}`).length, 1);
     // Con el cobro activo, sin sesión no se puede registrar un regalo; con la cuenta confirmada, sí.
     await setChargingActive(sql, true);
     const g = deriveGift(masterRootFromMnemonic(MASTER), 0, 'es', signet);
@@ -607,7 +608,7 @@ describe('Cuentas con passkey', () => {
   it('admin: con el cobro activo regala sin saldo, con imagen propia, y sus regalos no descuentan (Claudia, 22/10)', async () => {
     await setChargingActive(sql, true);
     const { cookie } = await signUp('admin@example.com');
-    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'admin@example.com'`;
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email_huella = ${mailHash('admin@example.com')}`;
     const id = (u as { id: string }).id;
     // Sin bienvenida ni pagos: igual puede regalar, con imagen propia (IA).
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -5, 'bienvenida', 'prueba')`;
@@ -644,7 +645,7 @@ describe('Cuentas con passkey', () => {
     assert.equal((await run()).devoluciones, 0);
     assert.equal((await creditos()).regalos.bienvenida, 5);
     // Sin bienvenida, consume de los pagos; con plan vigente, no descuenta.
-    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'ana@example.com'`;
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email_huella = ${mailHash('ana@example.com')}`;
     const id = (u as { id: string }).id;
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, motivo) values (${id}, 'ajuste', 'regalo', -5, 'bienvenida', 'prueba'), (${id}, 'compra', 'regalo', 10, 'pago', null)`;
     funded.add(b?.address as string);
@@ -1119,7 +1120,7 @@ describe('Cuentas con passkey', () => {
     assert.equal((await compras())[0]?.arrepentimiento?.estado, 'devuelto');
     // Si usó créditos de la compra, no procede; pasados 10 días, tampoco.
     const b = await buy('pack10');
-    const [u] = await sql<{ id: string }[]>`select id from usuarios where email = 'ana@example.com'`;
+    const [u] = await sql<{ id: string }[]>`select id from usuarios where email_huella = ${mailHash('ana@example.com')}`;
     await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen) values (${(u as { id: string }).id}, 'consumo', 'regalo', -1, 'pago')`;
     const usado = await req('/api/cuenta/arrepentimiento', { pago: b.id, direccion: devolucion }, ana.cookie);
     assert.deepEqual([usado.status, ((await usado.json()) as { error: string }).error], [409, 'creditos_usados']);

@@ -8,11 +8,17 @@ import { loadConfig } from './config.ts';
 import { connect, migrate } from './db.ts';
 import { consoleMailer, resendMailer } from './mail.ts';
 import { securityHeaders } from './security.ts';
+import { loadKeys, sealExisting, useDevKeys } from './secreto.ts';
 
 const config = loadConfig();
 const sql = connect(config.databaseUrl, config.databaseSocket);
 const applied = await migrate(sql);
 if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
+// Mails cifrados (secreto.ts): con KMS, las claves de verdad; sin KMS (fuera de mainnet), las de prueba.
+if (config.mailKmsKey !== null) await loadKeys(sql, config.mailKmsKey);
+else useDevKeys();
+const sealed = await sealExisting(sql);
+if (sealed > 0) console.log(`Mails sellados: ${sealed}`);
 
 const primary = esploraClient(config.esploraUrl);
 const chain = cachedFees(
