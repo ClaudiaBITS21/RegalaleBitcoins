@@ -57,69 +57,67 @@ const CONFIRM: Readonly<Record<Lang, Texts>> = {
   it: { subject: 'Conferma la tua email su Regalale Bitcoin', body: 'Ciao. Con questo link la tua email viene confermata e il tuo account si apre (vale 24 ore, si usa una sola volta):\n\n{link}\n\nSe non l’hai chiesto, ignora questa email.' },
 };
 
-// «¡Felicitaciones!» (Rodolfo, 21/10): cuando entra el pago de un regalo de una cuenta. El primero
-// dice «tu primer regalo»; los demás, «un nuevo regalo». Si el mail no está confirmado, el botón lo
-// confirma (el link abre el panel y confirma el mail); si ya lo está, lleva a los regalos.
+// «¡Felicitaciones!» (Rodolfo, 21/10; texto de Claudia del 08/11/2026): cuando el pago del regalo
+// ya está confirmado en la red. Dice la ocasión, pero no para quién es ni cuánto: eso solo lo sabe
+// quien regala y lo ve en «Mis regalos». El primero dice «tu primer regalo»; los demás, «un nuevo
+// regalo». Si el mail no está confirmado, el botón lo confirma. Sin vos ni tú.
 interface Congrats {
   readonly subjectFirst: string;
   readonly subjectNext: string;
+  /** {de}: « de Cumpleaños», o nada si no hay ocasión. */
   readonly paid: string;
-  /** Sin el nombre: con la tarjeta cifrada (08/11/2026) el servidor no lo sabe. */
-  readonly paidAnon: string;
   readonly confirm: string;
-  readonly panel: string;
   readonly buttonConfirm: string;
   readonly buttonPanel: string;
+  readonly reminder: string;
   readonly closing: string;
 }
-// Felicitación cuando llega el pago (Claudia, 08/11/2026): sin decir para quién es ni cuánto; el
-// detalle está en «Mis regalos». `paid` y `paidAnon` quedan iguales.
+
 const CONGRATS: Readonly<Record<Lang, Congrats>> = {
   es: {
-    subjectFirst: '¡Felicitaciones! Hiciste tu primer regalo',
-    subjectNext: '¡Felicitaciones! Hiciste un nuevo regalo',
-    paid: '¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir. No sabemos para quién es ni qué le escribiste: eso queda entre quien regala y quien recibe.',
-    paidAnon: '¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir. No sabemos para quién es ni qué le escribiste: eso queda entre quien regala y quien recibe.',
+    subjectFirst: '¡Felicitaciones, hiciste tu primer regalo de bitcoin!',
+    subjectNext: '¡Felicitaciones, hiciste un nuevo regalo de bitcoin!',
+    paid: 'Tu regalo{de} ya está acreditado en la red de bitcoin. Como solo quien regala sabe para quién es y qué le escribió, te invitamos a entrar a la web para seguirlo.',
     confirm: 'Falta un paso: confirmar tu mail. Con el botón se confirma y se entra a tu panel, donde está el regalo.',
-    panel: 'En tu panel ves cómo va y, con tu cara o tu huella, se pueden volver a ver el link y las palabras.',
     buttonConfirm: 'Confirmar mi mail',
     buttonPanel: 'Ver mis regalos',
+    reminder: 'Si todavía no se abrió, en 14 días te mandamos un primer recordatorio. ¡Gracias por usar Regalale Bitcoin!',
     closing: 'El botón vale 3 días y sirve una sola vez. Nunca te vamos a pedir las palabras de tu billetera.',
   },
   pt: {
-    subjectFirst: 'Parabéns! Você deu seu primeiro presente',
-    subjectNext: 'Parabéns! Você deu um novo presente',
-    paid: 'Obrigado por presentear com bitcoin! Seu presente já pode ser aberto. Não sabemos para quem é nem o que você escreveu: isso fica entre quem presenteia e quem recebe.',
-    paidAnon: 'Obrigado por presentear com bitcoin! Seu presente já pode ser aberto. Não sabemos para quem é nem o que você escreveu: isso fica entre quem presenteia e quem recebe.',
+    subjectFirst: 'Parabéns, você deu seu primeiro presente em bitcoin!',
+    subjectNext: 'Parabéns, você deu um novo presente em bitcoin!',
+    paid: 'Seu presente{de} já está creditado na rede bitcoin. Como só quem presenteia sabe para quem é e o que escreveu, convidamos você a entrar no site para acompanhá-lo.',
     confirm: 'Falta um passo: confirmar seu e-mail. Com o botão ele é confirmado e você entra no seu painel, onde está o presente.',
-    panel: 'No seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras.',
     buttonConfirm: 'Confirmar meu e-mail',
     buttonPanel: 'Ver meus presentes',
+    reminder: 'Se ainda não tiver sido aberto, em 14 dias mandamos um primeiro lembrete. Obrigado por usar o Regalale Bitcoin!',
     closing: 'O botão vale 3 dias e funciona uma vez só. Nunca vamos pedir as palavras da sua carteira.',
   },
   en: {
-    subjectFirst: 'Congratulations! You made your first gift',
-    subjectNext: 'Congratulations! You made a new gift',
-    paid: 'Thanks for giving bitcoin! Your gift can now be opened. We don’t know who it’s for or what you wrote: that stays between the giver and the recipient.',
-    paidAnon: 'Thanks for giving bitcoin! Your gift can now be opened. We don’t know who it’s for or what you wrote: that stays between the giver and the recipient.',
+    subjectFirst: 'Congratulations, you made your first bitcoin gift!',
+    subjectNext: 'Congratulations, you made a new bitcoin gift!',
+    paid: 'Your gift{de} is now credited on the bitcoin network. Since only the giver knows who it’s for and what they wrote, we invite you to visit the site to follow it.',
     confirm: 'One step left: confirm your email. The button confirms it and opens your dashboard, where the gift is.',
-    panel: 'In your dashboard you can follow it and, with your face or fingerprint, see the link and the words again.',
     buttonConfirm: 'Confirm my email',
     buttonPanel: 'See my gifts',
+    reminder: 'If it hasn’t been opened yet, we’ll send you a first reminder in 14 days. Thanks for using Regalale Bitcoin!',
     closing: 'The button is valid for 3 days, single use. We will never ask for the words of your wallet.',
   },
   it: {
-    subjectFirst: 'Congratulazioni! Hai fatto il tuo primo regalo',
-    subjectNext: 'Congratulazioni! Hai fatto un nuovo regalo',
-    paid: 'Grazie per aver regalato bitcoin! Il tuo regalo si può già aprire. Non sappiamo per chi è né cosa hai scritto: resta tra chi regala e chi riceve.',
-    paidAnon: 'Grazie per aver regalato bitcoin! Il tuo regalo si può già aprire. Non sappiamo per chi è né cosa hai scritto: resta tra chi regala e chi riceve.',
+    subjectFirst: 'Congratulazioni, hai fatto il tuo primo regalo in bitcoin!',
+    subjectNext: 'Congratulazioni, hai fatto un nuovo regalo in bitcoin!',
+    paid: 'Il tuo regalo{de} è già accreditato sulla rete bitcoin. Siccome solo chi regala sa per chi è e cosa ha scritto, ti invitiamo a entrare nel sito per seguirlo.',
     confirm: 'Manca un passo: confermare la tua email. Con il pulsante si conferma e si entra nel tuo pannello, dove c’è il regalo.',
-    panel: 'Nel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole.',
     buttonConfirm: 'Conferma la mia email',
     buttonPanel: 'Vedi i miei regali',
+    reminder: 'Se non è ancora stato aperto, tra 14 giorni ti mandiamo un primo promemoria. Grazie per usare Regalale Bitcoin!',
     closing: 'Il pulsante vale 3 giorni e si usa una sola volta. Non ti chiederemo mai le parole del tuo portafoglio.',
   },
 };
+
+/** « de Cumpleaños» en el idioma del mail (vacío sin ocasión). */
+const OF: Readonly<Record<Lang, string>> = { es: ' de {o}', pt: ' de {o}', en: ' for {o}', it: ' per {o}' };
 
 const fill = (s: string, vars: Record<string, string>): string => s.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 
@@ -142,20 +140,18 @@ export function confirmMail(to: string, lang: Lang, link: string): Mail {
   return { to, subject: t.subject, text: fill(t.body, { link }), html: fromText(lang, t.subject, t.body, {}, link, CONFIRM_BUTTON[lang]) };
 }
 
-const LOCALES: Readonly<Record<Lang, string>> = { es: 'es-AR', pt: 'pt-BR', en: 'en-US', it: 'it-IT' };
-const satsText = (sats: bigint, lang: Lang) => `${new Intl.NumberFormat(LOCALES[lang], { useGrouping: 'always' } as unknown as Intl.NumberFormatOptions).format(sats)} sats`;
 
-export function readyMail(to: string, lang: Lang, g: { para: string | null; sats: bigint; first: boolean; verified: boolean; link: string }): Mail {
+export function readyMail(to: string, lang: Lang, g: { ocasion: string | null; first: boolean; verified: boolean; link: string }): Mail {
   const t = CONGRATS[lang];
   const subject = g.first ? t.subjectFirst : t.subjectNext;
-  const paid = g.para === null ? fill(t.paidAnon, { sats: satsText(g.sats, lang) }) : fill(t.paid, { para: g.para, sats: satsText(g.sats, lang) });
-  const next = g.verified ? t.panel : t.confirm;
+  const paid = fill(t.paid, { de: g.ocasion === null || g.ocasion === '' ? '' : fill(OF[lang], { o: g.ocasion }) });
+  const paragraphs = g.verified ? [paid] : [paid, t.confirm];
   const button = g.verified ? t.buttonPanel : t.buttonConfirm;
   return {
     to,
     subject,
-    text: `${paid}\n\n${next}\n\n${button}: ${g.link}\n\n${t.closing}`,
-    html: layout(lang, g.link, { title: subject, paragraphs: [paid, next], button: { label: button, url: g.link }, after: [t.closing] }),
+    text: `${paragraphs.join('\n\n')}\n\n${button}: ${g.link}\n\n${t.reminder}\n\n${t.closing}`,
+    html: layout(lang, g.link, { title: subject, paragraphs, button: { label: button, url: g.link }, after: [t.reminder, t.closing] }),
   };
 }
 

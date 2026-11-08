@@ -13,8 +13,8 @@ const LINK_DAYS_MINUTES = 3 * 24 * 60;
 
 export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
-  const pending = await sql<{ id: string; direccion: string; para: string | null; usuario_id: string; email: string; idioma: string; verificado: Date | null }[]>`
-    select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, u.verificado
+  const pending = await sql<{ id: string; direccion: string; usuario_id: string; email: string; idioma: string; verificado: Date | null; ocasion: string; ocasion_libre: string | null }[]>`
+    select r.id, r.direccion, r.usuario_id, u.email, u.idioma, u.verificado, r.ocasion, r.ocasion_libre
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is null and r.reclamo_txid is null and r.creado > now() - interval '30 days'
     order by r.creado limit 50`;
@@ -39,8 +39,7 @@ export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mai
     try {
       await mailer.send(
         readyMail(open(g.email), isLang(g.idioma) ? g.idioma : 'es', {
-          para: g.para,
-          sats: stats.confirmedFunded,
+          ocasion: occasionName(g.ocasion, isLang(g.idioma) ? g.idioma : 'es', g.ocasion_libre),
           first: Number(prev?.n ?? 0) === 0,
           verified: g.verificado !== null,
           link: `${publicUrl}/panel#acceso=${token}`,
