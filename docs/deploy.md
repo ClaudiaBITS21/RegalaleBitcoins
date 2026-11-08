@@ -35,6 +35,11 @@ Variables de cuentas (etapa 4, paso 4):
 - `MAIL_FROM` y el secreto `RESEND_API_KEY=resend-api-key:latest`.
 - `ADMIN_EMAILS`: admins fijos (coma). Desde el 21/10 se pueden sumar más admins desde `/admin`
   (tabla `admins`, con passkey y aviso por mail a todos); los fijos no se quitan desde el panel.
+- `CLAVE_MAILS_KMS` (desde el 08/11/2026, obligatoria en mainnet): la clave de Cloud KMS que envuelve
+  las claves con las que se sellan los mails de las cuentas y de los cupones (`apps/api/src/secreto.ts`).
+  La crea, le da permiso a la cuenta del servicio y la deja configurada `scripts/setup-kms-mails.sh`,
+  una sola vez y **antes** de publicar una API que la necesite (sin ella, la API nueva no arranca y
+  Cloud Run sigue con la anterior). Al arrancar, la API sella los mails que quedaban en claro.
 
 ```sh
 gcloud run services update regalalebitcoins-api --region southamerica-east1 \

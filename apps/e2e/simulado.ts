@@ -31,6 +31,7 @@ import { connect, migrate } from '../api/src/db.ts';
 import { insertGift } from '../api/src/gifts.ts';
 import { startFakeEsplora } from './fake-esplora.ts';
 import { parseLinkFragment, sealForLink, startLink } from '../web/src/vinculo.ts';
+import { mailHash, open } from '../api/src/secreto.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist');
@@ -477,7 +478,7 @@ try {
   const lupeLink = await giver.locator('.enlace-regalo').innerText();
   const lupeWords = await giver.locator('.palabras-regalo li strong').allInnerTexts();
   const account = (await sql`select r.indice, u.email, c.boveda from regalos r join usuarios u on u.id = r.usuario_id join credenciales c on c.usuario_id = u.id where r.direccion = ${lupeAddress}`)[0];
-  if (account === undefined || account.indice !== 0 || account.email !== 'lupe.e2e@example.com' || !String(account.boveda).startsWith('v1.')) {
+  if (account === undefined || account.indice !== 0 || open(String(account.email)) !== 'lupe.e2e@example.com' || String(account.email).includes('@') || !String(account.boveda).startsWith('v1.')) {
     fail(`el regalo no quedó en la cuenta con su bóveda: ${JSON.stringify(account)}`);
   }
   if (lupeWords.some((w) => String(account.boveda).includes(w))) fail('la bóveda contiene las palabras en claro');
@@ -548,7 +549,7 @@ try {
   if ((await giver.locator('.icono-cuenta').count()) > 0) fail('el ícono de la cuenta sigue después de salir');
   // Passkey usada por QR desde otro dispositivo: da otra salida PRF y la bóveda no abre. Se simula
   // cerrando la bóveda guardada con otra salida; con las 12 palabras se guarda una copia que sí abre.
-  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email = 'lupe.e2e@example.com'`)[0]!;
+  const lupeCode = (await sql<{ id: string; boveda: string }[]>`select c.id, c.boveda from credenciales c join usuarios u on u.id = c.usuario_id where u.email_huella = ${mailHash('lupe.e2e@example.com')}`)[0]!;
   const otherPrf = crypto.getRandomValues(new Uint8Array(32));
   await sql`update credenciales set boveda = ${await sealVault(otherPrf, lupeWords12, Buffer.from(lupeCode.id, 'base64url'))} where id = ${lupeCode.id}`;
   await giver.getByRole('button', { name: 'Entrar con mi cara o huella' }).click();
@@ -912,14 +913,14 @@ try {
   await chain.close();
   await sql`delete from regalos where id = ${gift.id}`;
   if (newGiftId !== null) await sql`delete from regalos where id = ${newGiftId}`;
-  await sql`delete from regalos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from listas where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
-  await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from regalos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
+  await sql`delete from listas where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
+  await sql`delete from arrepentimientos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
   await sql`delete from cupon_usos where cupon in ('E2EVEINTE', 'E2EINVITA')`;
-  await sql`delete from pagos where usuario_id in (select id from usuarios where email = 'lupe.e2e@example.com')`;
+  await sql`delete from pagos where usuario_id in (select id from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')})`;
   await sql`delete from cupones where codigo in ('E2EVEINTE', 'E2EINVITA')`;
   await sql`delete from ajustes where clave in ('llave_cobro', 'llave_cobro_nueva')`;
-  await sql`delete from usuarios where email = 'lupe.e2e@example.com'`;
+  await sql`delete from usuarios where email_huella = ${mailHash('lupe.e2e@example.com')}`;
   await sql.end();
 }
 
