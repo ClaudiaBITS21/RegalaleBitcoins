@@ -157,7 +157,7 @@ function OpenElsewhere() {
       </p>
       <p class="texto-suave">
         {t('custodia.abrir.sinWeb')}{' '}
-        <a href={REPO} target="_blank" rel="noopener noreferrer">
+        <a href={`${REPO}/releases/latest`} target="_blank" rel="noopener noreferrer">
           GitHub
         </a>
         . {t('custodia.abrir.sinWeb2')}
