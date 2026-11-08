@@ -164,6 +164,25 @@ su clave maestra. No cambia nada de la derivación de las claves ni de la direcc
   estadísticas) y no dicen quién es quién.
 - Vector en `packages/core/test/card.test.ts` (verificado también con `node:crypto`).
 
+## 9 ter. Lista de regalos y llave de edición (desde el 08/11/2026)
+
+«Mis regalos» sin que el servidor sepa qué regalos son de quién. La lista de regalos de cada
+cuenta (índice, id e idioma de cada uno) se guarda cifrada con una clave que sale de la clave
+maestra, no de una passkey: así la abren todas las passkeys de la cuenta. El vínculo regalo→cuenta
+en la base dura solo hasta que el pago del regalo queda resuelto; después el navegador lo borra.
+No cambia nada de la derivación de las claves ni de la dirección.
+
+- **Clave de la lista:** `HKDF-SHA256(entropía de la clave maestra [16 bytes], salt vacío, info
+  "regalalebitcoins/lista-regalos/v1/aes-gcm")`, 32 bytes.
+- **Cifrado:** AES-256-GCM, IV de 12 bytes al azar, AAD = `"regalalebitcoins/lista-regalos/v1"`.
+- **Contenido:** JSON UTF-8 `[{"i": índice, "id": id del regalo, "l": idioma}, …]`.
+- **Formato:** `l1.<iv base64url>.<cifrado base64url>`.
+- **Llave de edición:** `HMAC-SHA256(HKDF-SHA256(entropía, salt vacío, info
+  "regalalebitcoins/edicion/v1"), dirección del regalo [ASCII])`, en hex. Con ella quien regala prueba que un
+  regalo desvinculado es suyo (editar, tarjeta, vista, descartar). El servidor guarda solo
+  `SHA-256` de esa llave en hex.
+- Vectores en `packages/core/test/giftlist.test.ts` (verificados también con `node:crypto`).
+
 ## 10. Recupero avanzado: multifirma 1-de-2 con la billetera del que regala
 
 **Guardado y apagado (Claudia, 25/10/2026):** no se ofrece en ninguna red. El esquema queda

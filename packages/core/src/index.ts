@@ -92,3 +92,4 @@ export {
   sealRecoveryKey,
 } from './recovery.ts';
 export { CARD_VERSION, type CardText, isSealedCard, openCard, sealCard } from './card.ts';
+export { editKeyHash, giftEditKey, GIFT_LIST_VERSION, type GiftListEntry, isSealedGiftList, openGiftList, sealGiftList } from './giftlist.ts';

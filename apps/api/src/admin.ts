@@ -66,14 +66,14 @@ export async function adminSummary(deps: AdminDeps): Promise<Record<string, unkn
       count(*) filter (where creado > now() - interval '7 days') as d7,
       count(*) filter (where creado > now() - interval '30 days') as d30,
       (select count(distinct usuario_id) from credenciales where boveda is not null) as boveda,
-      (select count(distinct usuario_id) from regalos where usuario_id is not null and red = ${network}) as con_regalos
+      (select count(*) from usuarios where regalos_hechos > 0) as con_regalos
     from usuarios`;
   const [gifts] = await sql<{ total: string; d7: string; d30: string; esperados: string | null; con_cuenta: string }[]>`
     select count(*) as total,
       count(*) filter (where creado > now() - interval '7 days') as d7,
       count(*) filter (where creado > now() - interval '30 days') as d30,
       sum(sats_esperados) as esperados,
-      count(*) filter (where usuario_id is not null) as con_cuenta
+      count(*) filter (where usuario_id is not null or llave_edicion is not null) as con_cuenta
     from regalos where red = ${network}`;
   const [byOccasion, byLang, byCurrency, created, claimed] = await Promise.all([
     sql<{ k: string; n: string }[]>`select ocasion as k, count(*) as n from regalos where red = ${network} group by 1 order by 2 desc, 1 limit 12`,
@@ -140,7 +140,7 @@ export async function adminSummary(deps: AdminDeps): Promise<Record<string, unkn
       left join t on t.h >= b.lo and t.h < b.hi group by b.k order by b.k`,
     sql<{ k: string; n: string }[]>`
       select case when c = 1 then '1' when c <= 3 then '2-3' else '4+' end as k, count(*) as n
-      from (select count(*) as c from regalos where red = ${network} and usuario_id is not null group by usuario_id) x group by 1 order by 1`,
+      from (select regalos_hechos as c from usuarios where regalos_hechos > 0) x group by 1 order by 1`,
     sql<{ total: string; con_mensaje: string; con_de: string; largo: string | null }[]>`
       select count(*) as total, count(*) filter (where mensaje <> '') as con_mensaje, count(*) filter (where de is not null) as con_de,
         avg(char_length(mensaje)) filter (where mensaje <> '') as largo

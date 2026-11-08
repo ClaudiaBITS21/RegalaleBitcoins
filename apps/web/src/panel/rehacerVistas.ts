@@ -34,7 +34,7 @@ export async function refreshPreviews(gifts: readonly AccountGift[]): Promise<nu
         to: g.para ?? '',
       });
       if (vista === null) continue;
-      await accountApi.updatePreview(g.id, vista);
+      await accountApi.updatePreview(g.id, vista, g.llave);
       n++;
     } catch {
       // Sin la imagen nueva el link sigue con la anterior: no es para molestar a nadie.

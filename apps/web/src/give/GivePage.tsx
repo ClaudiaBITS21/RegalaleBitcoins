@@ -1,4 +1,4 @@
-import { deriveGift, deriveMultisigGift, encodeGiftFragment, sealCard, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
+import { deriveGift, deriveMultisigGift, editKeyHash, encodeGiftFragment, giftEditKey, sealCard, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
 import { formatDayTime, formatUsd } from '../format.ts';
@@ -129,6 +129,8 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         sats: draft.sats.toString(),
         mostrarValor: draft.showValue === true,
         indice: index,
+        // Con esta llave (que sale de la clave maestra) se edita el regalo cuando ya no está en la cuenta.
+        llaveEdicion: editKeyHash(await giftEditKey(session.mnemonic, gift.address)),
         ...(multisig === null || session.recovery === null || testigo === null ? {} : { testigo, rutaRecupero: recoveryPathText(session.recovery, index) }),
       });
       session.next = index + 1;

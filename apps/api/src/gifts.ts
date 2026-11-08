@@ -70,6 +70,8 @@ export interface NewGift {
   /** Cuenta de quien regala e índice del regalo en su clave maestra. */
   readonly accountId?: string | null;
   readonly index?: number | null;
+  /** SHA-256 (hex) de la llave de edición (docs/derivacion.md, «Lista de regalos»). */
+  readonly editKeyHash?: string | null;
   readonly witnessScript?: Uint8Array | null;
   readonly recoveryPath?: string | null;
   /** Por defecto, sí (como los regalos de antes). */
@@ -144,12 +146,12 @@ export async function insertGift(sql: Sql, g: NewGift): Promise<Gift> {
   if ((style === 'propia') !== (g.ownImage != null)) throw new Error('La imagen propia va solo con el estilo "propia".');
   return sql.begin(async (tx) => {
     const [row] = await tx<Row[]>`
-      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, tarjeta, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta, mostrar_valor)
+      insert into regalos (id, red, direccion, idioma, ocasion, ocasion_libre, para, de, mensaje, tarjeta, imagen, estilo, moneda, monto, usd_por_btc, sats_esperados, usuario_id, indice, testigo, recupero_ruta, mostrar_valor, llave_edicion)
       values (${newGiftId()}, ${g.network}, ${g.address}, ${g.lang}, ${g.occasion}, ${g.occasionFree ?? null}, ${g.to}, ${g.from ?? null},
               ${g.message ?? ''}, ${g.card ?? null}, ${g.image ?? 1}, ${style}, ${g.currency ?? null}, ${g.amount ?? null}, ${g.usdPerBtc ?? null},
               ${g.satsExpected === undefined || g.satsExpected === null ? null : g.satsExpected.toString()},
               ${g.accountId ?? null}, ${g.accountId ? (g.index ?? null) : null},
-              ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null}, ${g.showValue ?? true})
+              ${g.witnessScript == null ? null : Buffer.from(g.witnessScript)}, ${g.recoveryPath ?? null}, ${g.showValue ?? true}, ${g.editKeyHash ?? null})
       returning *`;
     const gift = fromRow(row as Row);
     if (g.ownImage != null) {

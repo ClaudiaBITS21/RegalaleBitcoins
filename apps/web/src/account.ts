@@ -1,4 +1,4 @@
-import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openVault, sealVault } from '@regalale/core';
+import { CoreError, deriveGift, generateMasterMnemonic, isValidMasterMnemonic, masterRootFromMnemonic, type Network, normalizeMnemonic, openGiftList, openVault, sealVault } from '@regalale/core';
 import { signupStats } from './origen.ts';
 import { ApiFailure, readJson } from './api.ts';
 import type { Key } from './i18n/index.ts';
@@ -8,12 +8,13 @@ import { createPasskey, PasskeyError, signalUnknownPasskey, unlockWithPasskey } 
 // Cuenta de quien regala: crear el acceso (passkey + bóveda) y entrar. La clave maestra
 // se arma y se abre acá, en el navegador; al servidor llega solo la bóveda cifrada.
 
-async function call<T>(path: string, body?: unknown): Promise<T> {
+async function call<T>(path: string, body?: unknown, opts: { method?: 'PUT'; anon?: boolean } = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
-      method: body === undefined ? 'GET' : 'POST',
-      credentials: 'same-origin',
+      method: opts.method ?? (body === undefined ? 'GET' : 'POST'),
+      // Etapa D: lo que se pide con la llave de edición o por id va sin cookies (sin la cuenta).
+      credentials: opts.anon === true ? 'omit' : 'same-origin',
       cache: 'no-store',
       headers: body === undefined ? {} : { 'content-type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -54,6 +55,10 @@ export interface AccountGift {
   readonly mostrarValor?: boolean;
   /** Cuándo se subió la imagen para compartir el link (null si no tiene). */
   readonly vistaCreada?: string | null;
+  /** Etapa D: si ya se resolvió el crédito (se puede desvincular de la cuenta). */
+  readonly resuelto?: boolean;
+  /** Solo en el navegador: la llave de edición de un regalo ya desvinculado (panel/desvincular.ts). */
+  readonly llave?: string;
 }
 
 export interface AccountView {
@@ -61,17 +66,29 @@ export interface AccountView {
   readonly credenciales: ReadonlyArray<{ id: string; prf: boolean }>;
   readonly proximoIndice: number;
   readonly regalos: readonly AccountGift[];
+  /** Etapa D: la lista de regalos cifrada con la clave maestra (null si todavía no tiene). */
+  readonly lista?: string | null;
   /** Cotización de hoy (null si no respondió). */
   readonly cotizacion?: { readonly usdPorBtc: number | null; readonly arsPorBtc: number | null };
 }
 
+const withKey = (llave: string | undefined) => (llave === undefined ? {} : { llave });
+
 export const accountApi = {
   me: () => call<AccountView>('/api/cuenta'),
   /** Descarta un regalo que nunca se pagó (409 regalo_con_fondos si ya recibió algo). */
-  editGift: (id: string, cambios: { mensaje?: string; mostrarValor?: boolean }) => call<{ mensaje: string; mostrarValor: boolean }>(`/api/cuenta/regalos/${id}/editar`, cambios),
-  sealCard: (id: string, tarjeta: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/tarjeta`, { tarjeta }),
-  updatePreview: (id: string, vista: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/vista`, { vista }),
-  discardGift: (id: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, {}),
+  // Con `llave` (regalo ya desvinculado) se piden sin cookies: el servidor no sabe de qué cuenta son.
+  editGift: (id: string, cambios: { mensaje?: string; mostrarValor?: boolean }, llave?: string) =>
+    call<{ mensaje: string; mostrarValor: boolean }>(`/api/cuenta/regalos/${id}/editar`, { ...cambios, ...withKey(llave) }, { anon: llave !== undefined }),
+  sealCard: (id: string, tarjeta: string, llave?: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/tarjeta`, { tarjeta, ...withKey(llave) }, { anon: llave !== undefined }),
+  updatePreview: (id: string, vista: string, llave?: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/vista`, { vista, ...withKey(llave) }, { anon: llave !== undefined }),
+  discardGift: (id: string, llave?: string) => call<{ ok: boolean }>(`/api/cuenta/regalos/${id}/descartar`, withKey(llave), { anon: llave !== undefined }),
+  /** Etapa D: guarda la lista cifrada, pide el estado por id (sin cookies), desvincula y avisa pendientes. */
+  saveList: (lista: string) => call<{ ok: boolean }>('/api/cuenta/lista', { lista }, { method: 'PUT' }),
+  giftStatus: (ids: readonly string[]) => call<{ regalos: AccountGift[] }>('/api/regalos/estado', { ids }, { anon: true }),
+  unlink: (regalos: ReadonlyArray<{ id: string; llave: string }>) => call<{ desvinculados: string[] }>('/api/cuenta/regalos/desvincular', { regalos }),
+  reportPending: (n: number) => call<{ ok: boolean }>('/api/cuenta/pendientes', { n }),
+  refundGift: (id: string, llave: string) => call<{ devuelto: boolean }>(`/api/cuenta/regalos/${id}/devolucion`, { llave }),
   logout: async () => {
     const res = await call<{ ok: boolean }>('/api/cuenta/salir', {});
     setSignedIn(false);
@@ -228,11 +245,18 @@ export class RepairError extends Error {
  * (derivando la dirección de un regalo, si hay) y guarda otra copia de la bóveda cifrada con la
  * salida PRF que dio la passkey acá. La clave no sale del navegador.
  */
-async function saveVaultCopy(master: string, gifts: readonly AccountGift[], network: Network, requireProbe: boolean): Promise<string> {
+async function saveVaultCopy(master: string, gifts: readonly AccountGift[], network: Network, requireProbe: boolean, lista: string | null = null): Promise<string> {
   if (repair === null) throw new RepairError('sinRegalos');
   // Los regalos multifirma no sirven para comprobar: su dirección depende además de la billetera.
   const probe = gifts.find((g) => g.indice !== null && g.direccion !== undefined && (g.rutaRecupero ?? null) === null);
-  if (probe === undefined && requireProbe) throw new RepairError('sinRegalos');
+  // Etapa D: sin regalos vinculados, las palabras se comprueban abriendo la lista cifrada.
+  if (probe === undefined && lista !== null) {
+    try {
+      await openGiftList(master, lista);
+    } catch {
+      throw new RepairError('noCoinciden');
+    }
+  } else if (probe === undefined && requireProbe) throw new RepairError('sinRegalos');
   if (probe !== undefined && deriveGift(masterRootFromMnemonic(master), probe.indice as number, probe.idioma, network).address !== probe.direccion) throw new RepairError('noCoinciden');
   const sealed = await sealVault(repair.prf, master, repair.credentialId);
   await call('/api/cuenta/boveda-extra', { boveda: sealed });
@@ -242,9 +266,9 @@ async function saveVaultCopy(master: string, gifts: readonly AccountGift[], netw
 }
 
 /** Con las 12 palabras escritas: sin regalos con qué comprobarlas, no se guardan (podrían ser otras). */
-export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network): Promise<string> {
+export async function repairVault(words: string, gifts: readonly AccountGift[], network: Network, lista: string | null = null): Promise<string> {
   if (!isValidMasterMnemonic(words)) throw new RepairError('invalidas');
-  return saveVaultCopy(normalizeMnemonic(words), gifts, network, true);
+  return saveVaultCopy(normalizeMnemonic(words), gifts, network, true, lista);
 }
 
 /** Con la clave que mandó el celu (que abrió la bóveda de verdad). */

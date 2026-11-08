@@ -2,7 +2,7 @@ import { isLang } from '@regalale/core';
 import { createMailLink } from './accounts.ts';
 import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
-import { type Mailer, readyMail, reminderMail } from './mail.ts';
+import { type Mailer, readyMail, reminderMail, genericReminderMail } from './mail.ts';
 import { occasionName } from './ocasiones.ts';
 import { open } from './secreto.ts';
 
@@ -31,8 +31,11 @@ export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mai
     const marked = await sql`update regalos set aviso_listo = now() where id = ${g.id} and aviso_listo is null returning id`;
     if (marked.length === 0) continue;
     const token = await createMailLink(sql, g.usuario_id, LINK_DAYS_MINUTES);
-    // ¿Es su primer regalo? Los anteriores de la cuenta que ya tuvieron su aviso.
-    const [prev] = await sql<{ n: string }[]>`select count(*) as n from regalos where usuario_id = ${g.usuario_id} and aviso_listo is not null and id <> ${g.id}`;
+    // ¿Es su primer regalo? Los anteriores de la cuenta que ya tuvieron su aviso, o (etapa D: los
+    // desvinculados ya no se ven) si la cuenta lleva armado más de uno.
+    const [prev] = await sql<{ n: string }[]>`
+      select (select count(*) from regalos where usuario_id = ${g.usuario_id} and aviso_listo is not null and id <> ${g.id})
+        + greatest((select regalos_hechos from usuarios where id = ${g.usuario_id}) - 1, 0) as n`;
     try {
       await mailer.send(
         readyMail(open(g.email), isLang(g.idioma) ? g.idioma : 'es', {
@@ -91,6 +94,38 @@ export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer
       sent++;
     } catch (error) {
       console.error(`No se pudo mandar el recordatorio del regalo ${g.id}: ${(error as Error).message}`);
+    }
+  }
+  return sent;
+}
+
+// Aviso genérico (etapa D): con los regalos desvinculados, el servidor solo sabe cuántos regalos sin
+// abrir vio el navegador la última vez (`pendientes`) y cuándo se armó el último. Manda un mail a
+// los 14 días de un regalo nuevo y, mientras ese número no cambie, otra vez cada 60 días.
+export const GENERIC_DAYS = { first: 14, again: 60 } as const;
+
+export async function sendGenericReminders(deps: { sql: Sql; mailer: Mailer; publicUrl: string }): Promise<number> {
+  const { sql, mailer, publicUrl } = deps;
+  const due = await sql<{ id: string; email: string; idioma: string }[]>`
+    update usuarios set aviso_generico = now()
+    where id in (
+      select id from usuarios
+      where pendientes > 0 and ultimo_regalo is not null
+        -- Si todavía tiene regalos vinculados con recordatorio propio por delante, va ese.
+        and not exists (select 1 from regalos r where r.usuario_id = usuarios.id and r.reclamo_txid is null and r.recordatorios < 2)
+        and ((ultimo_regalo < now() - make_interval(days => ${GENERIC_DAYS.first}) and (aviso_generico is null or aviso_generico < ultimo_regalo))
+          or (aviso_generico < now() - make_interval(days => ${GENERIC_DAYS.again})
+              and coalesce(pendientes_desde, ultimo_regalo) < now() - make_interval(days => ${GENERIC_DAYS.again})))
+      order by ultimo_regalo limit 50)
+    returning id, email, idioma`;
+  let sent = 0;
+  for (const u of due) {
+    const token = await createMailLink(sql, u.id, LINK_DAYS_MINUTES);
+    try {
+      await mailer.send(genericReminderMail(open(u.email), isLang(u.idioma) ? u.idioma : 'es', `${publicUrl}/panel#acceso=${token}`));
+      sent++;
+    } catch (error) {
+      console.error(`No se pudo mandar el aviso genérico: ${(error as Error).message}`);
     }
   }
   return sent;

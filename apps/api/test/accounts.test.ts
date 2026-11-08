@@ -397,10 +397,11 @@ describe('Cuentas con passkey', () => {
     assert.equal(body.error, 'tope_diario');
     assert.equal(body.datos.topeUsd, 500);
     assert.equal(body.datos.restaUsd, 0);
-    const [first] = await sql<{ id: string; creado: Date }[]>`select id, creado from regalos order by creado limit 1`;
+    // Etapa D: el tope sale de su propia tabla (los regalos ya no dicen de qué cuenta son).
+    const [first] = await sql<{ ref: string; creado: Date }[]>`select ref, creado from topes_diarios order by creado limit 1`;
     assert.equal(new Date(body.datos.desde).getTime(), (first?.creado.getTime() ?? 0) + 24 * 60 * 60 * 1000);
     // Ventana móvil: cuando el primero cumple 24 h, entra otro.
-    await sql`update regalos set creado = now() - interval '25 hours' where id = ${first?.id ?? ''}`;
+    await sql`update topes_diarios set creado = now() - interval '25 hours' where ref = ${first?.ref ?? ''}`;
     assert.equal((await give(5)).status, 201);
     // Sin cuenta no hay tope por cuenta (el de cada regalo y el de la IP siguen).
     assert.equal((await (await req('/api/salud')).json() as { topeDiarioUsd: number }).topeDiarioUsd, 500);
@@ -441,7 +442,7 @@ describe('Cuentas con passkey', () => {
     const token = 't'.repeat(40);
     const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
     const run = async () => (await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisos: number; recordatorios: number };
-    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0, creditos: 0, devoluciones: 0, pagos: 0 });
+    assert.deepEqual(await run(), { difundidas: 0, canceladas: 0, avisos: 2, recordatorios: 0, avisosGenericos: 0, topesBorrados: 0, creditos: 0, devoluciones: 0, pagos: 0 });
     const pasan = (dias: number) => sql`update regalos set aviso_listo = now() - make_interval(days => ${dias})`;
     await pasan(13);
     assert.equal((await run()).recordatorios, 0);
@@ -457,6 +458,82 @@ describe('Cuentas con passkey', () => {
     assert.equal((await run()).recordatorios, 1);
     await pasan(400);
     assert.equal((await run()).recordatorios, 0); // dos, y nada más
+  });
+
+  it('etapa D: el regalo se desvincula de la cuenta; queda en la lista cifrada y se edita con su llave', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const root = masterRootFromMnemonic(MASTER);
+    const g = deriveGift(root, 0, 'es', signet);
+    const key = 'a'.repeat(64);
+    const keyHash = createHash('sha256').update(key).digest('hex');
+    const card = `t1.AAAAAAAAAAAAAAAA.${'B'.repeat(40)}`;
+    const created = await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', tarjeta: card, imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0, llaveEdicion: keyHash }, cookie);
+    assert.equal(created.status, 201);
+    const { id } = (await created.json()) as { id: string };
+    const unlink = (k = key) => req('/api/cuenta/regalos/desvincular', { regalos: [{ id, llave: k }] }, cookie);
+    // Mientras el crédito no se resolvió, sigue vinculado.
+    assert.deepEqual(await (await unlink()).json(), { desvinculados: [] });
+    // Se resuelve el crédito (primer depósito) y queda el consumo con el id del regalo.
+    funded.add(g.address);
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } });
+    await sql`insert into movimientos (usuario_id, tipo, unidad, cantidad, origen, referencia) select usuario_id, 'consumo', 'regalo', -1, 'bienvenida', id from regalos where id = ${id}`;
+    // Con otra llave no; con la suya, sí.
+    assert.deepEqual(await (await unlink('b'.repeat(64))).json(), { desvinculados: [] });
+    assert.deepEqual(await (await unlink()).json(), { desvinculados: [id] });
+    const [row] = await sql<{ usuario_id: string | null; indice: number | null; llave_edicion: string }[]>`select usuario_id, indice, llave_edicion from regalos where id = ${id}`;
+    assert.deepEqual(row, { usuario_id: null, indice: null, llave_edicion: keyHash });
+    const movs = await sql<{ referencia: string }[]>`select referencia from movimientos where tipo = 'consumo'`;
+    assert.ok(movs.every((m) => m.referencia !== id && /^d:[0-9a-f]{64}$/.test(m.referencia)), 'el consumo ya no apunta al regalo');
+    // Los movimientos siguen sin poder editarse por fuera de esa excepción.
+    await assert.rejects(sql`update movimientos set cantidad = 5`);
+    // «Mis regalos» ya no lo trae; la lista cifrada sí se guarda y vuelve. El índice sigue avanzando.
+    const panel = async () => (await (await req('/api/cuenta', undefined, cookie)).json()) as { regalos: Array<{ id: string }>; lista: string | null; proximoIndice: number };
+    assert.equal((await panel()).regalos.length, 0);
+    assert.equal((await panel()).proximoIndice, 1);
+    const lista = `l1.EBESExQVFhcYGRob.${'C'.repeat(60)}`;
+    assert.equal((await app.request('/api/cuenta/lista', { method: 'PUT', headers: { origin: ORIGIN, cookie, 'content-type': 'application/json' }, body: JSON.stringify({ lista }) })).status, 200);
+    assert.equal((await panel()).lista, lista);
+    // Estado sin sesión, por id.
+    const estado = (await (await req('/api/regalos/estado', { ids: [id] })).json()) as { regalos: Array<{ id: string; tarjeta: string; estado: string }> };
+    assert.equal(estado.regalos[0]?.id, id);
+    assert.equal(estado.regalos[0]?.tarjeta, card);
+    // Editar sin sesión, con la llave; sin llave o con otra, no.
+    assert.equal((await req(`/api/cuenta/regalos/${id}/editar`, { mostrarValor: false })).status, 401);
+    assert.equal((await req(`/api/cuenta/regalos/${id}/editar`, { mostrarValor: false, llave: 'b'.repeat(64) })).status, 404);
+    assert.equal((await req(`/api/cuenta/regalos/${id}/editar`, { mostrarValor: false, llave: key })).status, 200);
+    assert.equal((await req(`/api/cuenta/regalos/${id}/editar`, { mostrarValor: false }, cookie)).status, 404, 'la sesión sola ya no alcanza');
+    // Recuperado sin abrir: el panel pide la devolución con la llave.
+    await sql`update regalos set reclamo_tipo = 'recupero', reclamo_txid = ${'f'.repeat(64)} where id = ${id}`;
+    assert.deepEqual(await (await req(`/api/cuenta/regalos/${id}/devolucion`, { llave: key }, cookie)).json(), { devuelto: true });
+    assert.deepEqual(await (await req(`/api/cuenta/regalos/${id}/devolucion`, { llave: key }, cookie)).json(), { devuelto: false });
+  });
+
+  it('etapa D: aviso genérico a los 14 días de un regalo nuevo y cada 2 meses sin cambios, sin decir cuáles', async () => {
+    const { cookie } = await signUp('ana@example.com');
+    const root = masterRootFromMnemonic(MASTER);
+    const g = deriveGift(root, 0, 'es', signet);
+    await req('/api/gifts', { direccion: g.address, idioma: 'es', ocasion: 'cumple', tarjeta: `t1.AAAAAAAAAAAAAAAA.${'B'.repeat(40)}`, imagen: 1, moneda: 'SAT', monto: 30000, sats: '30000', indice: 0 }, cookie);
+    // Ya desvinculado (sin recordatorio propio).
+    await sql`update regalos set usuario_id = null, recordatorios = 2`;
+    const token = 't'.repeat(40);
+    const tasks = createApp({ sql, chain, price, network: signet, tasksToken: token, accounts: { origins: [ORIGIN], publicUrl: ORIGIN, mailer: { send: async (m) => void mails.push(m) }, cookieSecure: true } });
+    const run = async () => ((await (await tasks.request('/api/tareas/difusiones', { method: 'POST', headers: { 'x-tarea-token': token } })).json()) as { avisosGenericos: number }).avisosGenericos;
+    assert.equal(await run(), 0);
+    await sql`update usuarios set ultimo_regalo = now() - interval '15 days', pendientes_desde = now() - interval '15 days'`;
+    assert.equal(await run(), 1);
+    assert.equal(mails.at(-1)?.subject, 'Tus regalos de bitcoin');
+    assert.ok(mails.at(-1)?.text.includes(`${ORIGIN}/panel#acceso=`));
+    assert.equal(await run(), 0);
+    // El navegador avisa que sigue habiendo 1 pendiente (sin cambios): a los 60 días, otro.
+    assert.equal((await req('/api/cuenta/pendientes', { n: 1 }, cookie)).status, 200);
+    await sql`update usuarios set aviso_generico = now() - interval '61 days', pendientes_desde = now() - interval '61 days'`;
+    assert.equal(await run(), 1);
+    // Sin pendientes, nada.
+    await req('/api/cuenta/pendientes', { n: 0 }, cookie);
+    await sql`update usuarios set aviso_generico = now() - interval '200 days', pendientes_desde = now() - interval '200 days'`;
+    assert.equal(await run(), 0);
   });
 
   it('panel de admin: solo para los mails autorizados, y solo números agregados', async () => {

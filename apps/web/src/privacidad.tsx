@@ -62,6 +62,13 @@ export function PrivacyPage() {
               una (se achica y se le sacan los datos ocultos, como la ubicación, en el propio teléfono antes de enviarla). También su estado y las transacciones, que son públicas en la red de bitcoin. El nombre de quien recibe, quién lo manda y el mensaje se cifran en el navegador con una clave que va en el link del regalo: los guardamos así y no los podemos leer (los regalos anteriores al 8 de noviembre de 2026 se cifran cuando quien regala entra a «Mis regalos»).
             </li>
             <li>
+              <strong>Qué regalos son de qué cuenta:</strong> mientras se espera el primer pago de un regalo, queda unido a la cuenta de quien lo armó (para descontar el crédito y avisar
+              que llegó el pago). Después, la próxima vez que esa persona entra a «Mis regalos» con su passkey, su navegador lo guarda en una lista cifrada con su clave de 12 palabras y
+              borramos la unión: ya no sabemos qué regalos son de esa cuenta. Para editarlos, su navegador prueba que son suyos con una llave que sale de esa misma clave (guardamos solo
+              un resumen que no permite reconstruirla). De la cuenta queda solo cuántos regalos armó, cuándo el último y cuántos seguían sin abrir la última vez que entró, para el
+              aviso por mail. El tope diario guarda los montos de cada cuenta solo por 24 horas.
+            </li>
+            <li>
               <strong>Listas de regalos:</strong> título, ocasión, mensaje, idioma y la llave pública de la billetera que recibe. Si la lista acepta transferencias, el país y la moneda; el dato
               para transferir y su titular se guardan cifrados en el navegador de quien arma la lista y no los podemos ver (la clave va en el link de la lista). De cada aporte, el nombre, el
               mensaje y el monto que deja quien aporta.
@@ -94,7 +101,7 @@ export function PrivacyPage() {
           <h2>Para qué los usamos</h2>
           <ul>
             <li>Para prestar el servicio: crear y mostrar los regalos y las listas, seguir los pagos y llevar los créditos.</li>
-            <li>Para mandar los mails del servicio: confirmar el mail, el acceso a la cuenta, el aviso de regalo listo y el recordatorio si sigue sin abrirse.</li>
+            <li>Para mandar los mails del servicio: confirmar el mail, el acceso a la cuenta, el aviso de regalo listo, el recordatorio si sigue sin abrirse y, ya sin saber cuáles, un aviso general si quedan regalos sin abrir (a los 14 días de armar uno y después cada 2 meses sin cambios).</li>
             <li>Para prevenir abusos y fraudes (por ejemplo, pausar una lista reportada mientras se revisa).</li>
           </ul>
           <p>

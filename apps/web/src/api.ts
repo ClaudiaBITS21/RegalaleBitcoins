@@ -62,6 +62,8 @@ export interface NewGift {
   readonly mostrarValor?: boolean;
   /** Índice del regalo en la clave maestra: el servidor lo guarda solo si hay sesión. */
   readonly indice: number;
+  /** Etapa D: SHA-256 de la llave de edición (docs/derivacion.md, «Lista de regalos»). */
+  readonly llaveEdicion?: string;
   /** Recupero avanzado: script de testigo (hex) y huella/ruta de la clave de la billetera. */
   readonly testigo?: string;
   readonly rutaRecupero?: string;
