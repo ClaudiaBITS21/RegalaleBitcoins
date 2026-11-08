@@ -1,4 +1,4 @@
-import { isLang } from '@regalale/core';
+import { isLang, isSealedCard } from '@regalale/core';
 import type { Context, Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import {
@@ -418,6 +418,8 @@ export function registerAccountRoutes(
         ocasion: g.occasion,
         ocasionLibre: g.occasionFree,
         para: g.to,
+        de: g.from,
+        tarjeta: g.card,
         // Para comprobar en el navegador que unas 12 palabras son las de esta cuenta.
         direccion: g.address,
         satsEsperados: g.satsExpected,
@@ -434,6 +436,26 @@ export function registerAccountRoutes(
         vistaCreada: g.previewAt?.toISOString() ?? null,
       })),
     });
+  });
+
+  /**
+   * Guardar la tarjeta cifrada con el link (08/11/2026): al crear el regalo ya va cifrada; los de
+   * antes se cifran desde «Mis regalos», y al editar el mensaje se vuelve a cifrar. Solo el regalo
+   * propio. Pasar a cifrada se puede siempre; cambiar una ya cifrada, solo mientras no se abrió.
+   * Deja en blanco para quién, de quién y el mensaje en claro.
+   */
+  app.post('/api/cuenta/regalos/:id/tarjeta', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    if (typeof b.tarjeta !== 'string' || !isSealedCard(b.tarjeta) || b.tarjeta.length > 2000) throw new ApiError(400, 'pedido_invalido');
+    const id = c.req.param('id');
+    const [g] = await sql<{ reclamo_txid: string | null; tarjeta: string | null }[]>`
+      select reclamo_txid, tarjeta from regalos where id = ${id} and usuario_id = ${account.id}`;
+    if (g === undefined) throw new ApiError(404, 'no_encontrado');
+    if (g.tarjeta !== null && (g.reclamo_txid !== null || (await pendingFor(sql, id)) !== null)) throw new ApiError(409, 'regalo_abierto');
+    await sql`update regalos set tarjeta = ${b.tarjeta}, para = null, de = null, mensaje = '' where id = ${id} and usuario_id = ${account.id}`;
+    return c.json({ ok: true });
   });
 
   /**

@@ -403,8 +403,9 @@ try {
   // Al final: «¡Realizado!», volver al inicio o ver los regalos.
   await page.getByRole('heading', { name: '¡Realizado!' }).waitFor();
   if ((await page.getByRole('link', { name: 'Volver al inicio' }).count()) !== 1 || (await page.getByRole('link', { name: 'Ver mis regalos' }).count()) !== 1) fail('falta el cierre con Volver al inicio y Ver mis regalos');
-  const created = (await sql`select id, para, de, idioma, ocasion, imagen, estilo, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
-  if (created === undefined || created.para !== 'Ana' || created.idioma !== 'pt' || created.imagen !== 1 || created.estilo !== 'mano' || created.sats_esperados !== '30500') {
+  // La tarjeta viaja cifrada con el link (08/11): el servidor no tiene el nombre ni el mensaje.
+  const created = (await sql`select id, para, de, mensaje, tarjeta, idioma, ocasion, imagen, estilo, moneda, monto, sats_esperados from regalos where direccion = ${payAddress}`)[0];
+  if (created === undefined || created.para !== null || created.mensaje !== '' || !String(created.tarjeta).startsWith('t1.') || String(created.tarjeta).includes('Ana') || created.idioma !== 'pt' || created.imagen !== 1 || created.estilo !== 'mano' || created.sats_esperados !== '30500') {
     fail(`el regalo quedó mal registrado: ${JSON.stringify(created)}`);
   }
   newGiftId = created.id as string;
@@ -496,7 +497,9 @@ try {
     await giver.waitForTimeout(200);
   }
   await giver.getByRole('heading', { name: 'Regalos que hiciste' }).waitFor();
-  await giver.getByText('Para Lupe').waitFor();
+  // La tarjeta va cifrada con el link (08/11): el nombre aparece al abrir la clave con la passkey.
+  if ((await giver.getByText('Para Lupe').count()) === 0) await giver.getByRole('button', { name: 'Ver para quién es cada regalo' }).click();
+  await giver.getByText('Para Lupe').waitFor({ timeout: 15_000 });
   await giver.getByText('Listo para abrir').waitFor();
   await giver.getByRole('button', { name: 'Ver link y palabras' }).click();
   await giver.locator('.regalo-secretos').waitFor({ timeout: 15_000 });

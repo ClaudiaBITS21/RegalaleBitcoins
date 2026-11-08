@@ -147,6 +147,23 @@ El servidor guarda el texto por credencial. Sin la passkey no puede abrirlo; con
 credencial falla el AAD. Si se pierde la passkey, queda el código de recuperación del panel.
 
 
+## 9 bis. Tarjeta (desde el 08/11/2026)
+
+Para quién es el regalo, de quién y el mensaje se cifran en el navegador con una clave que sale
+de la semilla del regalo, la misma que va en el link. El servidor guarda solo el resultado y no
+lo puede leer. Lo abre quien tiene el link y quien regala, que vuelve a derivar la semilla desde
+su clave maestra. No cambia nada de la derivación de las claves ni de la dirección.
+
+- **Clave:** `HKDF-SHA256(semilla del regalo [16 bytes], salt vacío, info "regalalebitcoins/tarjeta/v1/aes-gcm")`,
+  32 bytes.
+- **Cifrado:** AES-256-GCM, IV de 12 bytes al azar, AAD = `"regalalebitcoins/tarjeta/v1"` ‖ dirección
+  del regalo (ASCII). Con otra semilla u otra dirección no abre.
+- **Contenido:** JSON UTF-8 `{"para": …, "de": … o null, "mensaje": …}`.
+- **Formato:** `t1.<iv base64url>.<cifrado base64url>`.
+- La ocasión, el idioma, el estilo y el monto siguen en claro: los usa el servidor (avisos, estado,
+  estadísticas) y no dicen quién es quién.
+- Vector en `packages/core/test/card.test.ts` (verificado también con `node:crypto`).
+
 ## 10. Recupero avanzado: multifirma 1-de-2 con la billetera del que regala
 
 **Guardado y apagado (Claudia, 25/10/2026):** no se ofrece en ninguna red. El esquema queda

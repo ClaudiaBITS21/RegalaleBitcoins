@@ -31,7 +31,7 @@ export async function refreshPreviews(gifts: readonly AccountGift[]): Promise<nu
         occasionFree: g.ocasionLibre ?? '',
         style: g.estilo as CardStyle,
         ownImage: g.estilo === 'propia' ? `/api/gifts/${g.id}/imagen` : null,
-        to: g.para,
+        to: g.para ?? '',
       });
       if (vista === null) continue;
       await accountApi.updatePreview(g.id, vista);

@@ -12,7 +12,7 @@ const LINK_DAYS_MINUTES = 3 * 24 * 60;
 
 export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
-  const pending = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; verificado: Date | null }[]>`
+  const pending = await sql<{ id: string; direccion: string; para: string | null; usuario_id: string; email: string; idioma: string; verificado: Date | null }[]>`
     select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, u.verificado
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is null and r.reclamo_txid is null and r.creado > now() - interval '30 days'
@@ -58,7 +58,7 @@ export const REMINDER_DAYS = [14, 60] as const;
 export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
   const [first, second] = REMINDER_DAYS;
-  const due = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; recordatorios: number; ocasion: string; ocasion_libre: string | null; creado: Date }[]>`
+  const due = await sql<{ id: string; direccion: string; para: string | null; usuario_id: string; email: string; idioma: string; recordatorios: number; ocasion: string; ocasion_libre: string | null; creado: Date }[]>`
     select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, r.recordatorios, r.ocasion, r.ocasion_libre, r.creado
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is not null and r.reclamo_txid is null

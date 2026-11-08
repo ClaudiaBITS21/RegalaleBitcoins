@@ -109,7 +109,7 @@ export function RecoverWithWallet({ gift: g, root, network, onDone }: { gift: Ac
   const base64 = built === null ? '' : psbtToBase64(built.psbt);
   return (
     <div class="regalo-secretos recupero-psbt">
-      <strong>{t('avanzado.recuperar.titulo', { nombre: g.para })}</strong>
+      <strong>{t('avanzado.recuperar.titulo', { nombre: g.para ?? '' })}</strong>
       {built === null ? (
         <form
           class="formulario"

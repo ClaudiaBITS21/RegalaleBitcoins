@@ -11,9 +11,11 @@ export interface GiftView {
   readonly idioma: Lang;
   readonly ocasion: string;
   readonly ocasionLibre: string | null;
-  readonly para: string;
+  /** En regalos con la tarjeta cifrada (08/11/2026) viene null: el texto está en `tarjeta` y lo abre openGiftCard. */
+  readonly para: string | null;
   readonly de: string | null;
   readonly mensaje: string;
+  readonly tarjeta?: string | null;
   readonly imagen: number;
   /** Estilo de la tarjeta (ilustracion, mano, elegante, propia). Falta en regalos viejos. */
   readonly estilo?: string;
@@ -45,9 +47,8 @@ export interface NewGift {
   readonly idioma: Lang;
   readonly ocasion: string;
   readonly ocasionLibre?: string;
-  readonly para: string;
-  readonly de: string;
-  readonly mensaje: string;
+  /** Para quién, de quién y el mensaje, cifrados con la semilla del link (core sealCard). */
+  readonly tarjeta: string;
   readonly imagen: number;
   readonly estilo?: string;
   /** Base64 de la imagen propia (solo con estilo 'propia'). */

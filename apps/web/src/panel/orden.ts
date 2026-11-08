@@ -6,7 +6,8 @@ export type GiftOrder = 'fecha' | 'apertura' | 'nombre' | 'motivo';
 export const GIFT_ORDERS: readonly GiftOrder[] = ['fecha', 'apertura', 'nombre', 'motivo'];
 
 interface Sortable {
-  readonly para: string;
+  /** null mientras la tarjeta cifrada no se abre (sin passkey): esos van al final al ordenar por nombre. */
+  readonly para: string | null;
   readonly creado: string;
   readonly abierto: string | null;
 }
@@ -15,7 +16,7 @@ const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCa
 
 export function filterGifts<T extends Sortable>(gifts: readonly T[], query: string): T[] {
   const q = plain(query);
-  return q === '' ? [...gifts] : gifts.filter((g) => plain(g.para).includes(q));
+  return q === '' ? [...gifts] : gifts.filter((g) => plain(g.para ?? '').includes(q));
 }
 
 export function sortGifts<T extends Sortable>(gifts: readonly T[], order: GiftOrder, motivo: (g: T) => string, lang: string): T[] {
@@ -24,7 +25,7 @@ export function sortGifts<T extends Sortable>(gifts: readonly T[], order: GiftOr
   const cmp: Record<GiftOrder, (a: T, b: T) => number> = {
     fecha: byDate,
     apertura: (a, b) => (a.abierto === null ? (b.abierto === null ? byDate(a, b) : 1) : b.abierto === null ? -1 : b.abierto.localeCompare(a.abierto)),
-    nombre: (a, b) => text(a.para, b.para) || byDate(a, b),
+    nombre: (a, b) => (a.para === null ? 1 : 0) - (b.para === null ? 1 : 0) || text(a.para ?? '', b.para ?? '') || byDate(a, b),
     motivo: (a, b) => text(motivo(a), motivo(b)) || byDate(a, b),
   };
   return [...gifts].sort(cmp[order]);

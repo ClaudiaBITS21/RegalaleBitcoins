@@ -23,6 +23,7 @@ import { Button, Layout, Notice, StepTitle, useI18n } from '../ui.tsx';
 import { AddressStep } from './AddressStep.tsx';
 import { ConfirmStep } from './ConfirmStep.tsx';
 import { WordsStep } from './WordsStep.tsx';
+import { openGiftCard } from '../tarjeta.ts';
 
 type Step = 'regalo' | 'palabras' | 'billetera' | 'guia' | 'direccion' | 'confirmar' | 'listo';
 type LoadError = 'link' | 'no_existe' | 'sin_red' | 'mainnet';
@@ -113,6 +114,16 @@ export function ClaimPage({ id }: { id: string }) {
         setNetwork(getNetwork(g.red, { allowMainnet: ALLOW_MAINNET }));
       } catch {
         setError('mainnet');
+        return;
+      }
+      // La tarjeta viene cifrada con este mismo link (08/11/2026): se abre acá. Si el link no la
+      // abre, es otro link (o está mal copiado).
+      if (g.tarjeta != null && entropy !== null) {
+        try {
+          setGift(await openGiftCard(g, entropy));
+        } catch {
+          setError('link');
+        }
         return;
       }
       setGift(g);
@@ -305,7 +316,7 @@ function GiftCard({ gift, onReceive, onReload }: { gift: GiftView; onReceive: ()
   return (
     <div class="paso">
       <article class="tarjeta">
-        <GiftCardArt occasion={gift.ocasion} estilo={gift.estilo} src={`/api/gifts/${gift.id}/imagen`} name={gift.para} class="tarjeta-imagen" />
+        <GiftCardArt occasion={gift.ocasion} estilo={gift.estilo} src={`/api/gifts/${gift.id}/imagen`} name={gift.para ?? undefined} class="tarjeta-imagen" />
         <div class="tarjeta-texto">
           <p class="kicker tarjeta-ocasion">{occasionLabel(gift.ocasion, lang, gift.ocasionLibre)}</p>
           <StepTitle>{gift.de ? t('reclamo.de', { de: gift.de }) : t('reclamo.anonimo')}</StepTitle>

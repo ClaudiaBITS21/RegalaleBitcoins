@@ -1,13 +1,14 @@
 import { useState } from 'preact/hooks';
 import { type AccountGift, accountApi } from '../account.ts';
 import { Button, Notice, useI18n } from '../ui.tsx';
+import { resealCard } from './tarjetas.ts';
 
 // Editar un regalo ya mandado (Claudia, 04/11/2026), desde «Mis regalos»: el mensaje y si quien
 // recibe ve cuánto vale. Solo mientras no se abrió; quien recibe ve los cambios al abrir el link.
 
 const MAX = 280;
 
-export function EditarRegalo({ gift: g, onDone }: { gift: AccountGift; onDone: () => void }) {
+export function EditarRegalo({ gift: g, master, onDone }: { gift: AccountGift; master: string | null; onDone: () => void }) {
   const { t } = useI18n();
   const [message, setMessage] = useState(g.mensaje ?? '');
   const [showValue, setShowValue] = useState(g.mostrarValor !== false);
@@ -21,7 +22,11 @@ export function EditarRegalo({ gift: g, onDone }: { gift: AccountGift; onDone: (
     setBusy(true);
     setProblem(false);
     try {
-      await accountApi.editGift(g.id, { mensaje: message.trim(), mostrarValor: showValue });
+      // Con la tarjeta cifrada (08/11/2026), el mensaje nuevo se cifra acá y viaja cifrado.
+      const sealed = g.tarjeta != null && master !== null && g.para !== null ? await resealCard(g, master, { para: g.para, de: g.de ?? null, mensaje: message.trim() }) : null;
+      if (g.tarjeta != null && sealed === null) throw new Error('sin la clave para cifrar');
+      if (sealed !== null) await accountApi.sealCard(g.id, sealed);
+      await accountApi.editGift(g.id, sealed !== null ? { mostrarValor: showValue } : { mensaje: message.trim(), mostrarValor: showValue });
       setSaved(true);
       onDone();
     } catch {
