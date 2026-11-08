@@ -55,16 +55,16 @@ export interface AppDeps {
 }
 
 /** Techo de la beta en redes de prueba: un regalo no puede superar este valor en dólares. */
-export const CEILING_USD = 100;
+export const CEILING_USD = 250;
 /**
  * Techo en mainnet autorizado por la responsable del proyecto (docs/mainnet.md). Subirlo
  * requiere una nueva autorización explícita, no solo cambiar la variable de entorno.
  */
-export const MAINNET_CEILING_USD = 100;
+export const MAINNET_CEILING_USD = 250;
 /**
  * Techo por aporte de las listas de casamiento con «Semilla nueva» y de todas las listas con
  * billetera propia (autorizado el 28/10/2026, docs/mainnet.md). Las demás de «Semilla nueva»
- * usan el techo de los regalos.
+ * usan el techo de los regalos (desde el 08/11/2026 también USD 250).
  */
 export const LIST_CEILING_USD = 250;
 export const MAINNET_LIST_CEILING_USD = 250;

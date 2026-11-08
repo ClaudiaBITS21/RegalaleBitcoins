@@ -7,9 +7,9 @@ import { dailyAllowance, giftUsd } from '../src/topes.ts';
 describe('techo por regalo', () => {
   it('en mainnet nunca supera el autorizado, aunque la variable diga otra cosa', () => {
     const mainnet = getNetwork('mainnet', { allowMainnet: true });
-    assert.equal(MAINNET_CEILING_USD, 100);
-    assert.equal(effectiveCeilingUsd(mainnet, undefined), 100);
-    assert.equal(effectiveCeilingUsd(mainnet, 500), 100);
+    assert.equal(MAINNET_CEILING_USD, 250);
+    assert.equal(effectiveCeilingUsd(mainnet, undefined), 250);
+    assert.equal(effectiveCeilingUsd(mainnet, 500), 250);
     assert.equal(effectiveCeilingUsd(mainnet, 10), 10);
   });
 

@@ -10,17 +10,18 @@
 | 17/10/2026 | Claudia (Rodolfo es la misma persona) | Sin consulta legal para las listas con alias: "Sé que no nos convierte en intermediarios. Orgullosamente no inscripto en la CNV." Las listas con alias van desde ya, no después del lanzamiento. Para armar una lista, dos botones: "Mi cold wallet (recomendado)" o "Semilla nueva" (abre las listas a quien no tiene billetera). Mostrar los sats de una transferencia convertida está bien: "Es una división entre los sats comprados entre todos los aportes marcados como usados para esa compra. No es una promesa de nada." |
 | 17/10/2026 | Claudia | "Pasar el límite de 20 USD a 100 USD." "En las listas con billetera propia remover el límite pero sugerir 50 / 100 / 150 o lo que ponga la persona." Se interpretó "billetera propia" como las listas con cold wallet; las de "Semilla nueva" mantienen el tope de los regalos (USD 100). |
 | 28/10/2026 | Claudia (como Rodolfo, en Cowork; handoff `docs/handoff/2026-10-28/topes-en-mainnet.md`) | «Los limites en Regalos siguen siendo 100, en listas de regalo casamiento $250 puede ser, limite por cuenta de 500 tmb.» Precisiones del mismo chat: los USD 500 son por día y cuentan solo los regalos que carga la cuenta; los USD 250 de las listas son por aporte de cada invitado; las listas con billetera propia (cold wallet) quedan en USD 250 por aporte en cualquier ocasión (antes, sin tope). |
+| 08/11/2026 | Claudia (en esta conversación con Code) | «A1, tope por regalo. = 250 en todo y 500 diarios.» USD 250 por regalo en todo el producto (también los aportes de listas «Semilla nueva» de cualquier ocasión) y USD 500 por día y por cuenta. «A2. Las empresas no usan topes o se definen por "contrato"»: el tope de cada empresa se fija al darla de alta (todavía no hay cuentas de empresa). Seguridad de las 4 palabras revisada en `docs/derivacion.md` §8. |
 
-- Topes vigentes (28/10/2026), fijos en el código (`apps/api/src/app.ts`). Las variables de entorno
+- Topes vigentes (08/11/2026), fijos en el código (`apps/api/src/app.ts`). Las variables de entorno
   solo pueden bajarlos; subirlos requiere una nueva autorización explícita anotada en esta tabla.
 
   | Qué | Tope | Constante (variable que lo baja) |
   |---|---|---|
-  | Regalo | USD 100 por regalo | `MAINNET_CEILING_USD` (`TOPE_USD`) |
+  | Regalo | USD 250 por regalo | `MAINNET_CEILING_USD` (`TOPE_USD`) |
   | Regalos de una cuenta | USD 500 en 24 h (ventana móvil), también para admins | `MAINNET_DAILY_ACCOUNT_USD` (`TOPE_DIARIO_USD`) |
   | Lista de casamiento con «Semilla nueva» | USD 250 por aporte | `MAINNET_LIST_CEILING_USD` (`TOPE_LISTA_USD`) |
   | Lista con billetera propia, cualquier ocasión | USD 250 por aporte | `MAINNET_LIST_CEILING_USD` (`TOPE_LISTA_USD`) |
-  | Lista de otra ocasión con «Semilla nueva» | USD 100 por aporte (el de los regalos) | `MAINNET_CEILING_USD` (`TOPE_USD`) |
+  | Lista de otra ocasión con «Semilla nueva» | USD 250 por aporte (el de los regalos) | `MAINNET_CEILING_USD` (`TOPE_USD`) |
   | Transferencias en pesos de las listas | sin tope (no pasan por la plataforma) | — |
 
   El tope diario suma el monto elegido al crear cada regalo de la cuenta, pagado o no (contar solo

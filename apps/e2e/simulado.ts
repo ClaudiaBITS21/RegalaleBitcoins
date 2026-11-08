@@ -285,8 +285,8 @@ try {
   await page.getByRole('button', { name: 'En dólares' }).click();
   await page.getByLabel('Monto', { exact: true }).fill('1.5');
   await page.getByText('No entendimos el número. Escribilo así: US$ 1.234,50.').waitFor();
-  await page.getByLabel('Monto', { exact: true }).fill('150');
-  await page.getByText('Por ahora, el máximo por regalo es US$ 100.').waitFor();
+  await page.getByLabel('Monto', { exact: true }).fill('300');
+  await page.getByText('Por ahora, el máximo por regalo es US$ 250.').waitFor();
   await page.getByLabel('Monto', { exact: true }).fill('30,5');
   await page.getByText('Vas a regalar 30.500 sats.').waitFor();
   await page.getByText('Hoy equivale a US$ 30,50.').waitFor();
