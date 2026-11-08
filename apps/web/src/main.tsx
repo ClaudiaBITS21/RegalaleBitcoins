@@ -1,3 +1,4 @@
+import { BusinessPage } from './empresas.tsx';
 import '@fontsource/bricolage-grotesque/latin-600.css';
 import '@fontsource/bricolage-grotesque/latin-800.css';
 import '@fontsource/dm-sans/latin-400.css';
@@ -122,6 +123,8 @@ function App() {
         <PrivacyPage />
       ) : /^\/comparativa\/?$/.test(path) ? (
         <ComparisonPage testnet={!ALLOW_MAINNET} />
+      ) : /^\/empresas\/?$/.test(path) ? (
+        <BusinessPage testnet={!ALLOW_MAINNET} />
       ) : /^\/sin-custodia\/?$/.test(path) ? (
         <NoCustodyPage testnet={!ALLOW_MAINNET} />
       ) : (

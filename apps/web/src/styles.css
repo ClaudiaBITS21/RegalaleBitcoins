@@ -3969,3 +3969,9 @@ svg.tarjeta-imagen {
 .guia li > [role='note'] {
   margin-top: 10px;
 }
+
+/* «Regalo empresarial» va con las ocasiones pero es un link (Claudia, 08/11/2026). */
+a.chip {
+  text-decoration: none;
+  color: inherit;
+}

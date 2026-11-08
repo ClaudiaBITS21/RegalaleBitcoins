@@ -42,6 +42,10 @@ export function OccasionPicker({ value, onPick }: { value: OccasionChoice | null
         <button type="button" class="chip chip-borde" aria-expanded={more} onClick={() => setMore(!more)}>
           {t(more ? 'home.menosOcasiones' : 'home.masOcasiones')}
         </button>
+        {/* Regalo empresarial (Claudia, 08/11/2026): lleva a su landing, no es una ocasión. */}
+        <a class="chip chip-borde" href="/empresas">
+          {t('empresas.chip')}
+        </a>
       </div>
       {more && (
         <div class="panel-ocasiones">
