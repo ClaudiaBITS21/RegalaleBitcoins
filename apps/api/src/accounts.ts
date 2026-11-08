@@ -165,14 +165,28 @@ export interface AccountGift {
   readonly showValue: boolean;
   /** Cuándo se subió la imagen para compartir el link; null si no tiene. */
   readonly previewAt: Date | null;
+  /** Si ya se resolvió el crédito del regalo (se puede desvincular de la cuenta). */
+  readonly creditResolved: boolean;
+  /** Si tiene llave de edición (regalos de antes de la etapa D: no). */
+  readonly hasEditKey: boolean;
 }
 
 export async function accountGifts(sql: Sql, accountId: string, limit = 200): Promise<AccountGift[]> {
+  return giftsWhere(sql, sql`usuario_id = ${accountId}`, limit);
+}
+
+/** Los regalos de la lista cifrada de una cuenta, por id (etapa D: ya no dicen de qué cuenta son). */
+export async function giftsByIds(sql: Sql, ids: readonly string[]): Promise<AccountGift[]> {
+  if (ids.length === 0) return [];
+  return giftsWhere(sql, sql`id = any(${sql.array(ids as string[])}::text[])`, ids.length);
+}
+
+async function giftsWhere(sql: Sql, where: ReturnType<Sql>, limit: number): Promise<AccountGift[]> {
   const rows = await sql<
-    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string | null; de: string | null; tarjeta: string | null; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean; vista_creada: Date | null }[]
-  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, de, tarjeta, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor,
+    { id: string; direccion: string; indice: number | null; idioma: Lang; ocasion: string; ocasion_libre: string | null; para: string | null; de: string | null; tarjeta: string | null; sats_esperados: string | null; reclamo_txid: string | null; reclamo_tipo: string | null; creado: Date; estilo: string; reclamado: Date | null; moneda: string | null; monto: string | null; usd_por_btc: string | null; recupero_ruta: string | null; descartado: Date | null; mensaje: string; mostrar_valor: boolean; vista_creada: Date | null; credito: Date | null; tiene_llave: boolean }[]
+  >`select id, direccion, indice, idioma, ocasion, ocasion_libre, para, de, tarjeta, sats_esperados, reclamo_txid, reclamo_tipo, creado, estilo, reclamado, moneda, monto, usd_por_btc, recupero_ruta, descartado, mensaje, mostrar_valor, credito, llave_edicion is not null as tiene_llave,
       (select v.creada from vistas v where v.regalo_id = regalos.id) as vista_creada
-    from regalos where usuario_id = ${accountId} order by creado desc limit ${limit}`;
+    from regalos where ${where} order by creado desc limit ${limit}`;
   return rows.map((r) => ({
     id: r.id,
     address: r.direccion,
@@ -197,6 +211,8 @@ export async function accountGifts(sql: Sql, accountId: string, limit = 200): Pr
     message: r.mensaje,
     showValue: r.mostrar_valor,
     previewAt: r.vista_creada,
+    creditResolved: r.credito !== null,
+    hasEditKey: r.tiene_llave,
   }));
 }
 
@@ -210,7 +226,9 @@ export async function setAccountRecoveryKey(sql: Sql, accountId: string, sealed:
   await sql`update usuarios set recupero = ${sealed} where id = ${accountId}`;
 }
 
+/** El próximo índice libre: el contador de la cuenta (los regalos desvinculados ya no se ven). */
 export async function nextGiftIndex(sql: Sql, accountId: string): Promise<number> {
-  const [r] = await sql<{ n: number | null }[]>`select max(indice) as n from regalos where usuario_id = ${accountId}`;
-  return r?.n === null || r?.n === undefined ? 0 : r.n + 1;
+  const [r] = await sql<{ n: number | null }[]>`
+    select greatest((select proximo_indice from usuarios where id = ${accountId}), (select max(indice) + 1 from regalos where usuario_id = ${accountId})) as n`;
+  return r?.n ?? 0;
 }

@@ -1,5 +1,5 @@
 // Tope diario de los regalos de una cuenta (autorizado el 28/10/2026, docs/mainnet.md): la suma,
-// en dólares, de los regalos que cargó en las últimas 24 horas (ventana móvil). Se controla en el
+// en dólares, de los regalos que cargó en las últimas 24 horas (ventana móvil), en `topes_diarios`. Se controla en el
 // servidor al registrar cada regalo. Cuenta el monto elegido al crearlo, pagado o no (contar solo
 // los pagados dejaría cargar muchos sin pagar para pagarlos todos después). No cuentan los
 // descartados: solo se descartan regalos cuya dirección nunca recibió nada.
@@ -41,13 +41,27 @@ export function dailyAllowance(rows: readonly DailyRow[], newUsd: number, limitU
 }
 
 export async function checkDailyLimit(sql: Sql, accountId: string, network: string, newUsd: number, limitUsd: number, now = new Date()): Promise<void> {
-  const rows = await sql<{ creado: Date; moneda: string | null; monto: string | null; sats_esperados: string | null; usd_por_btc: string | null }[]>`
-    select creado, moneda, monto, sats_esperados, usd_por_btc from regalos
-    where usuario_id = ${accountId} and red = ${network} and creado > ${new Date(now.getTime() - DAY_MS)} and descartado is null`;
-  const daily = rows.map((r) => ({
-    at: r.creado,
-    usd: r.moneda === 'USD' && r.monto !== null ? Number(r.monto) : (Number(r.sats_esperados ?? 0) / 1e8) * Number(r.usd_por_btc ?? 0),
-  }));
-  const check = dailyAllowance(daily, newUsd, limitUsd, now);
+  // Desde la etapa D (08/11/2026) el tope sale de su propia tabla, que guarda solo las últimas 24
+  // horas: los regalos ya no dicen de qué cuenta son.
+  const rows = await sql<{ creado: Date; usd: string }[]>`
+    select creado, usd from topes_diarios
+    where usuario_id = ${accountId} and red = ${network} and creado > ${new Date(now.getTime() - DAY_MS)}`;
+  const check = dailyAllowance(rows.map((r) => ({ at: r.creado, usd: Number(r.usd) })), newUsd, limitUsd, now);
   if (!check.ok) throw new ApiError(409, 'tope_diario', `Supera los USD ${limitUsd} por día de la cuenta.`, { topeUsd: limitUsd, restaUsd: check.remainingUsd, desde: check.from.toISOString() });
+}
+
+/** Al crear un regalo con cuenta: suma al tope del día y a los contadores de la cuenta. */
+export async function recordAccountGift(sql: Sql, accountId: string, network: string, giftId: string, usd: number, index: number | null): Promise<void> {
+  await sql`insert into topes_diarios (usuario_id, red, ref, usd) values (${accountId}, ${network}, ${giftId}, ${usd.toFixed(2)}) on conflict do nothing`;
+  await sql`
+    update usuarios set regalos_hechos = regalos_hechos + 1, ultimo_regalo = now(),
+      pendientes = pendientes + 1, pendientes_desde = now(),
+      proximo_indice = greatest(proximo_indice, ${index === null ? 0 : index + 1})
+    where id = ${accountId}`;
+}
+
+/** Borra lo que ya salió de la ventana de 24 horas (lo llama la tarea programada). */
+export async function purgeDailyLimits(sql: Sql, now = new Date()): Promise<number> {
+  const rows = await sql`delete from topes_diarios where creado <= ${new Date(now.getTime() - DAY_MS)} returning ref`;
+  return rows.length;
 }

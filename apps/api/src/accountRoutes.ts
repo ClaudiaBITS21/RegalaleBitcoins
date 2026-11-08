@@ -1,4 +1,4 @@
-import { isLang, isSealedCard } from '@regalale/core';
+import { isLang, isSealedCard, isSealedGiftList } from '@regalale/core';
 import type { Context, Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import {
@@ -14,6 +14,7 @@ import {
   deleteSession,
   findAccountByEmail,
   findCredential,
+  giftsByIds,
   nextGiftIndex,
   normalizeEmail,
   redeemMailLink,
@@ -29,11 +30,11 @@ import type { Sql } from './db.ts';
 import { isAdmin } from './admins.ts';
 import { balance, canGive, chargingActive, features, hasPlanFeatures } from './credits.ts';
 import { ApiError } from './errors.ts';
+import { EDIT_KEY, editKeyFrom, ownsGift, panelGifts, refundUnlinked, unlinkGifts, unlinkedRef } from './desvincular.ts';
 import { pendingFor } from './gifts.ts';
 import { confirmMail, loginMail, type Mailer } from './mail.ts';
 import { RateLimiter } from './ratelimit.ts';
 import { parsePreview } from './share.ts';
-import { giftState } from './state.ts';
 import { text } from './validate.ts';
 import { verifyAssertion, verifyRegistration, WebAuthnError } from './webauthn.ts';
 
@@ -392,50 +393,82 @@ export function registerAccountRoutes(
       deps.price?.btcUsd().catch(() => null) ?? null,
       deps.arsPrice?.btcArs().then((q) => q.price).catch(() => null) ?? null,
     ]);
-    const states = await Promise.all(
-      gifts.map(async (g) => {
-        try {
-          const stats = await chain.addressStats(g.address);
-          return giftState({ claimTxid: g.claimTxid, claimKind: g.claimKind } as Parameters<typeof giftState>[0], stats, false);
-        } catch {
-          return null;
-        }
-      }),
-    );
-    // Los descartados no se muestran, salvo que igual les haya llegado un pago (o no se sepa).
-    const received = (i: number): bigint | null => (states[i] == null ? null : states[i].confirmedSats + states[i].unconfirmedSats);
-    const visible = gifts.map((g, i) => ({ g, i })).filter(({ g, i }) => g.discardedAt === null || received(i) !== 0n);
+    const [{ lista } = { lista: null }] = await sql<{ lista: string | null }[]>`select lista_regalos as lista from usuarios where id = ${account.id}`;
     return c.json({
       email: account.email,
       idioma: account.lang,
       credenciales: credentials,
       proximoIndice: next,
       cotizacion: { usdPorBtc: usdNow, arsPorBtc: arsNow },
-      regalos: visible.map(({ g, i }) => ({
-        id: g.id,
-        indice: g.index,
-        idioma: g.lang,
-        ocasion: g.occasion,
-        ocasionLibre: g.occasionFree,
-        para: g.to,
-        de: g.from,
-        tarjeta: g.card,
-        // Para comprobar en el navegador que unas 12 palabras son las de esta cuenta.
-        direccion: g.address,
-        satsEsperados: g.satsExpected,
-        // Regalo con recupero avanzado: con qué billetera se armó (huella y ruta).
-        rutaRecupero: g.recoveryPath,
-        creado: g.createdAt.toISOString(),
-        estilo: g.style,
-        abierto: g.claimedAt?.toISOString() ?? null,
-        original: g.currency === null || g.amount === null ? null : { moneda: g.currency, monto: g.amount, usdPorBtc: g.usdPerBtc },
-        estado: states[i]?.state ?? null,
-        sats: received(i)?.toString() ?? null,
-        mensaje: g.message,
-        mostrarValor: g.showValue,
-        vistaCreada: g.previewAt?.toISOString() ?? null,
-      })),
+      // Etapa D: la lista de regalos cifrada con la clave maestra (los ya desvinculados).
+      lista,
+      regalos: await panelGifts(chain, gifts),
     });
+  });
+
+  /**
+   * Estado de los regalos de la lista cifrada (etapa D, 08/11/2026). Sin sesión: el navegador lo
+   * pide sin cookies, así el servidor no sabe de qué cuenta son. Devuelve lo mismo que «Mis
+   * regalos» para cada id (el texto de la tarjeta va cifrado).
+   */
+  app.post('/api/regalos/estado', async (c) => {
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    const ids = b.ids;
+    if (!Array.isArray(ids) || ids.length > 300 || !ids.every((id) => typeof id === 'string' && /^[A-Za-z0-9_-]{22}$/.test(id))) throw new ApiError(400, 'pedido_invalido');
+    const gifts = await giftsByIds(sql, [...new Set(ids as string[])]);
+    return c.json({ regalos: await panelGifts(chain, gifts.filter((g) => g.to === null)) });
+  });
+
+  /** Guarda la lista cifrada de regalos de la cuenta (la arma y la cifra el navegador). */
+  app.put('/api/cuenta/lista', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    if (typeof b.lista !== 'string' || !isSealedGiftList(b.lista) || b.lista.length > 300_000) throw new ApiError(400, 'pedido_invalido');
+    await sql`update usuarios set lista_regalos = ${b.lista} where id = ${account.id}`;
+    return c.json({ ok: true });
+  });
+
+  /**
+   * Cuántos regalos sin abrir vio el navegador (para el aviso genérico por mail, sin saber cuáles).
+   * Si el número cambia, vuelve a contar el plazo de «2 meses sin cambios».
+   */
+  app.post('/api/cuenta/pendientes', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    if (typeof b.n !== 'number' || !Number.isInteger(b.n) || b.n < 0 || b.n > 100_000) throw new ApiError(400, 'pedido_invalido');
+    await sql`
+      update usuarios set pendientes = ${b.n},
+        pendientes_desde = case when pendientes = ${b.n} and pendientes_desde is not null then pendientes_desde else now() end
+      where id = ${account.id}`;
+    return c.json({ ok: true });
+  });
+
+  /**
+   * Desvincular regalos de la cuenta (etapa D): el navegador ya los guardó en la lista cifrada.
+   * Solo los que ya resolvieron su crédito, tienen la tarjeta cifrada y llegan con su llave.
+   */
+  app.post('/api/cuenta/regalos/desvincular', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    const items = b.regalos;
+    if (!Array.isArray(items) || items.length > 300) throw new ApiError(400, 'pedido_invalido');
+    const parsed = items.map((it: { id?: unknown; llave?: unknown }) => {
+      if (typeof it?.id !== 'string' || !/^[A-Za-z0-9_-]{22}$/.test(it.id) || typeof it.llave !== 'string' || !EDIT_KEY.test(it.llave)) throw new ApiError(400, 'pedido_invalido');
+      return { id: it.id, key: it.llave };
+    });
+    return c.json({ desvinculados: await unlinkGifts(sql, account.id, parsed) });
+  });
+
+  /** Devolver el crédito de un regalo recuperado sin abrir, ya desvinculado (lo pide el panel). */
+  app.post('/api/cuenta/regalos/:id/devolucion', async (c) => {
+    const account = await currentAccount(sql, c);
+    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const key = editKeyFrom(await c.req.json().catch(() => null));
+    if (key === null) throw new ApiError(400, 'pedido_invalido');
+    return c.json({ devuelto: await refundUnlinked(sql, account.id, c.req.param('id'), key) });
   });
 
   /**
@@ -444,17 +477,28 @@ export function registerAccountRoutes(
    * propio. Pasar a cifrada se puede siempre; cambiar una ya cifrada, solo mientras no se abrió.
    * Deja en blanco para quién, de quién y el mensaje en claro.
    */
-  app.post('/api/cuenta/regalos/:id/tarjeta', async (c) => {
+  /**
+   * Que el regalo sea de quien pide: vinculado a su sesión o, ya desvinculado, con la llave de
+   * edición (etapa D). Devuelve la llave si vino.
+   */
+  async function requireOwner(c: Context, id: string, b: Record<string, unknown>): Promise<string | null> {
+    const key = editKeyFrom(b);
     const account = await currentAccount(sql, c);
-    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    if (account === null && key === null) throw new ApiError(401, 'sesion_requerida');
+    if (!(await ownsGift(sql, account?.id ?? null, id, key))) throw new ApiError(404, 'no_encontrado');
+    return key;
+  }
+
+  app.post('/api/cuenta/regalos/:id/tarjeta', async (c) => {
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     if (typeof b.tarjeta !== 'string' || !isSealedCard(b.tarjeta) || b.tarjeta.length > 2000) throw new ApiError(400, 'pedido_invalido');
     const id = c.req.param('id');
+    await requireOwner(c, id, b);
     const [g] = await sql<{ reclamo_txid: string | null; tarjeta: string | null }[]>`
-      select reclamo_txid, tarjeta from regalos where id = ${id} and usuario_id = ${account.id}`;
+      select reclamo_txid, tarjeta from regalos where id = ${id}`;
     if (g === undefined) throw new ApiError(404, 'no_encontrado');
     if (g.tarjeta !== null && (g.reclamo_txid !== null || (await pendingFor(sql, id)) !== null)) throw new ApiError(409, 'regalo_abierto');
-    await sql`update regalos set tarjeta = ${b.tarjeta}, para = null, de = null, mensaje = '' where id = ${id} and usuario_id = ${account.id}`;
+    await sql`update regalos set tarjeta = ${b.tarjeta}, para = null, de = null, mensaje = '' where id = ${id}`;
     return c.json({ ok: true });
   });
 
@@ -463,20 +507,19 @@ export function registerAccountRoutes(
    * los regalos propios y mientras no se hayan abierto. Quien recibe lo ve al abrir el link.
    */
   app.post('/api/cuenta/regalos/:id/editar', async (c) => {
-    const account = await currentAccount(sql, c);
-    if (account === null) throw new ApiError(401, 'sesion_requerida');
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    await requireOwner(c, c.req.param('id'), b);
     const message = b.mensaje === undefined ? undefined : (text(b.mensaje, LIMITS.message, false) ?? '');
     if (b.mostrarValor !== undefined && typeof b.mostrarValor !== 'boolean') throw new ApiError(400, 'pedido_invalido');
     const showValue = b.mostrarValor as boolean | undefined;
     if (message === undefined && showValue === undefined) throw new ApiError(400, 'pedido_invalido');
     const [g] = await sql<{ reclamo_txid: string | null; mensaje: string; mostrar_valor: boolean }[]>`
-      select reclamo_txid, mensaje, mostrar_valor from regalos where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+      select reclamo_txid, mensaje, mostrar_valor from regalos where id = ${c.req.param('id')}`;
     if (g === undefined) throw new ApiError(404, 'no_encontrado');
     if (g.reclamo_txid !== null || (await pendingFor(sql, c.req.param('id'))) !== null) throw new ApiError(409, 'regalo_abierto');
     await sql`
       update regalos set mensaje = ${message ?? g.mensaje}, mostrar_valor = ${showValue ?? g.mostrar_valor}
-      where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+      where id = ${c.req.param('id')}`;
     return c.json({ mensaje: message ?? g.mensaje, mostrarValor: showValue ?? g.mostrar_valor });
   });
 
@@ -485,13 +528,10 @@ export function registerAccountRoutes(
    * navegador de quien armó el regalo la vuelve a dibujar y la sube. Solo regalos propios.
    */
   app.post('/api/cuenta/regalos/:id/vista', async (c) => {
-    const account = await currentAccount(sql, c);
-    if (account === null) throw new ApiError(401, 'sesion_requerida');
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     const data = parsePreview(b.vista);
     const id = c.req.param('id');
-    const [g] = await sql<{ id: string }[]>`select id from regalos where id = ${id} and usuario_id = ${account.id}`;
-    if (g === undefined) throw new ApiError(404, 'no_encontrado');
+    await requireOwner(c, id, b);
     await sql`
       insert into vistas (regalo_id, datos) values (${id}, ${Buffer.from(data)})
       on conflict (regalo_id) do update set datos = excluded.datos, creada = now()`;
@@ -503,15 +543,17 @@ export function registerAccountRoutes(
    * de contar para el tope diario. Solo si su dirección no tiene ningún movimiento, ni sin confirmar.
    */
   app.post('/api/cuenta/regalos/:id/descartar', async (c) => {
-    const account = await currentAccount(sql, c);
-    if (account === null) throw new ApiError(401, 'sesion_requerida');
+    const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    const key = await requireOwner(c, c.req.param('id'), b);
     const [g] = await sql<{ direccion: string; descartado: Date | null; reclamo_txid: string | null }[]>`
-      select direccion, descartado, reclamo_txid from regalos where id = ${c.req.param('id')} and usuario_id = ${account.id}`;
+      select direccion, descartado, reclamo_txid from regalos where id = ${c.req.param('id')}`;
     if (g === undefined) throw new ApiError(404, 'no_encontrado');
     if (g.descartado !== null) return c.json({ ok: true });
     const stats = await chain.addressStats(g.direccion);
     if (g.reclamo_txid !== null || stats.txCount > 0 || stats.mempoolFunded > 0n || stats.confirmedFunded > 0n) throw new ApiError(409, 'regalo_con_fondos');
-    await sql`update regalos set descartado = now() where id = ${c.req.param('id')} and usuario_id = ${account.id} and descartado is null`;
+    await sql`update regalos set descartado = now() where id = ${c.req.param('id')} and descartado is null`;
+    // Deja de contar para el tope diario (vinculado: por su id; desvinculado: por la referencia ciega).
+    await sql`delete from topes_diarios where ref = ${c.req.param('id')} or ref = ${key === null ? '' : unlinkedRef(key, 'tope')}`;
     return c.json({ ok: true });
   });
 }

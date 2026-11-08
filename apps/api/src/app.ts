@@ -14,7 +14,7 @@ import { registerAdminRoutes } from './admin.ts';
 import { registerListRoutes } from './lists.ts';
 import { registerReportRoutes } from './reports.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
-import { checkDailyLimit, giftUsd } from './topes.ts';
+import { checkDailyLimit, giftUsd, purgeDailyLimits, recordAccountGift } from './topes.ts';
 import { consoleMailer } from './mail.ts';
 import { registerAdminCobroRoutes } from './adminCobro.ts';
 import { isAdmin, registerAdminUserRoutes } from './admins.ts';
@@ -22,7 +22,7 @@ import { normalizeCode, registerCouponRoutes } from './coupons.ts';
 import { registerRefundRoutes } from './refunds.ts';
 import { balance, canGive, chargingActive, consumeGiftCredits, features, refundCanceledGifts } from './credits.ts';
 import { BUYABLE, createPayment, findPayment, foundersLeft, paymentKey, paymentView, refreshPayment, watchPayments } from './payments.ts';
-import { sendReadyNotices, sendReminders } from './notices.ts';
+import { sendGenericReminders, sendReadyNotices, sendReminders } from './notices.ts';
 import { giftState } from './state.ts';
 
 export interface AppDeps {
@@ -255,10 +255,12 @@ export function createApp(deps: AppDeps): Hono {
     const avisoDeps = { sql, chain, mailer: accounts.mailer, publicUrl: accounts.publicUrl };
     const avisos = await sendReadyNotices(avisoDeps);
     const recordatorios = await sendReminders(avisoDeps);
+    const avisosGenericos = await sendGenericReminders(avisoDeps);
+    const topesBorrados = await purgeDailyLimits(sql);
     const creditos = await consumeGiftCredits({ sql, chain, adminEmails: deps.adminEmails ?? [] });
     const devoluciones = await refundCanceledGifts(sql);
     const pagos = await watchPayments({ sql, chain, price });
-    return c.json({ ...broadcasts, avisos, recordatorios, creditos, devoluciones, pagos });
+    return c.json({ ...broadcasts, avisos, recordatorios, avisosGenericos, topesBorrados, creditos, devoluciones, pagos });
   });
 
   app.get('/api/precio', async (c) => {
@@ -311,6 +313,7 @@ export function createApp(deps: AppDeps): Hono {
         accountId: account?.id ?? null,
         index: account === null ? null : (g.index ?? null),
       });
+      if (account !== null) await recordAccountGift(sql, account.id, network.name, gift.id, giftUsd(g, usdPerBtc), g.index ?? null);
       createLimiter.record(ip);
       return c.json({ id: gift.id }, 201);
     } catch (error) {
@@ -545,6 +548,8 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     amount: b.monto,
     satsExpected: BigInt(b.sats),
     index: typeof b.indice === 'number' && Number.isInteger(b.indice) && b.indice >= 0 && b.indice < 2 ** 31 ? b.indice : null,
+    // Hash de la llave de edición (etapa D): con ella quien regala edita el regalo ya desvinculado.
+    editKeyHash: b.llaveEdicion === undefined ? null : typeof b.llaveEdicion === 'string' && /^[0-9a-f]{64}$/.test(b.llaveEdicion) ? b.llaveEdicion : badRequest(),
     witnessScript,
     recoveryPath,
     // Sin el dato (web anterior), como antes: se muestra.

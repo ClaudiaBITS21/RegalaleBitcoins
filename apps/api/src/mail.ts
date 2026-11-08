@@ -184,6 +184,21 @@ export function reminderMail(to: string, lang: Lang, para: string | null, link: 
   return { to, subject, text: fill(t.body, { para: para ?? '', cual, link }), html: fromText(lang, subject, t.body, { para: para ?? '', cual }, link, CONGRATS[lang].buttonPanel) };
 }
 
+// Aviso genérico (etapa D, Claudia, 08/11/2026): el servidor ya no sabe qué regalos son de quién;
+// solo cuántos sin abrir vio el navegador la última vez. A los 14 días de un regalo nuevo y después
+// cada 2 meses sin cambios. Sin vos ni tú: el mismo texto sirve para los dos tratos.
+const GENERIC: Record<Lang, Texts> = {
+  es: { subject: 'Tus regalos de bitcoin', body: 'La última vez que entraste, algunos de tus regalos todavía no se habían abierto. No vencen, así que no hay apuro; quizás sea un buen momento para recordarlos o para acompañar a quien los recibe a abrirlos.\n\nEn tu panel ves cómo va cada uno:\n\n{link}\n\nNunca te vamos a pedir las palabras de tu billetera.' },
+  pt: { subject: 'Seus presentes em bitcoin', body: 'Na última vez que você entrou, alguns dos seus presentes ainda não tinham sido abertos. Eles não vencem, então não há pressa; talvez seja um bom momento para lembrar ou para ajudar quem recebe a abri-los.\n\nNo seu painel você vê como está cada um:\n\n{link}\n\nNunca vamos pedir as palavras da sua carteira.' },
+  en: { subject: 'Your bitcoin gifts', body: 'The last time you signed in, some of your gifts hadn’t been opened yet. They don’t expire, so there’s no rush; it may be a good moment for a reminder or to help the recipients open them.\n\nIn your dashboard you can see how each one is doing:\n\n{link}\n\nWe will never ask for the words of your wallet.' },
+  it: { subject: 'I tuoi regali in bitcoin', body: 'L’ultima volta che sei entrato, alcuni dei tuoi regali non erano ancora stati aperti. Non scadono, quindi non c’è fretta; forse è un buon momento per ricordarli o per aiutare chi li riceve ad aprirli.\n\nNel tuo pannello vedi come va ciascuno:\n\n{link}\n\nNon ti chiederemo mai le parole del tuo portafoglio.' },
+};
+
+export function genericReminderMail(to: string, lang: Lang, link: string): Mail {
+  const t = GENERIC[lang];
+  return { to, subject: t.subject, text: fill(t.body, { link }), html: fromText(lang, t.subject, t.body, {}, link, CONGRATS[lang].buttonPanel) };
+}
+
 // Aviso a quien armó una lista que fue reportada (sin el mail de quien la reportó). Sin formas de
 // vos ni de tú: el mismo texto sirve para los dos tratos.
 const REPORT: Record<Lang, { subject: string; body: string; again: string; review: string; button: string }> = {

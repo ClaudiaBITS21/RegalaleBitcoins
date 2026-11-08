@@ -258,7 +258,7 @@ export function registerAdminCobroRoutes(app: Hono, deps: AdminCobroDeps): void 
     const rows = await sql<{ email: string; creado: Date; passkey: boolean; regalos: string; listas: string; compras: string; plan: boolean; saldo_regalos: string; saldo_listas: string }[]>`
       select u.email, u.creado,
         exists (select 1 from credenciales c where c.usuario_id = u.id) as passkey,
-        (select count(*) from regalos r where r.usuario_id = u.id and r.red = ${network.name}) as regalos,
+        u.regalos_hechos as regalos,
         (select count(*) from listas l where l.usuario_id = u.id) as listas,
         (select count(*) from pagos p where p.usuario_id = u.id and p.estado = 'confirmado') as compras,
         exists (select 1 from planes pl where pl.usuario_id = u.id and pl.desde <= now() and (pl.hasta is null or pl.hasta > now())) as plan,
