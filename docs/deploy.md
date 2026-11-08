@@ -14,6 +14,9 @@ Todo vive en el proyecto de Google Cloud `regalalebitcoins`, región `southameri
 | Difusiones programadas | Cloud Scheduler `difusiones-programadas`, cada 5 min, POST `/api/tareas/difusiones` con OIDC (`tareas-scheduler@`) y header `x-tarea-token` |
 
 Firebase Hosting reenvía `/api/**`, `/r/**` y `/c/**` a Cloud Run; el resto cae en `index.html`.
+Las páginas sin extensión (`/empresas`, `/panel`, …) se sirven con `Cache-Control: no-cache`,
+igual que `/index.html`: si no, el navegador podía mostrar la versión anterior hasta una hora
+después de un deploy (08/11/2026).
 `/r/<id>` y `/c/<corto>` los sirve la API (share.ts): la misma web, con la vista previa del regalo
 o del cupón (link corto, migración 030) para WhatsApp y las redes. Al sumar una de estas reglas,
 primero la API y después la web: si no, el link llega a una API que todavía no lo conoce.
