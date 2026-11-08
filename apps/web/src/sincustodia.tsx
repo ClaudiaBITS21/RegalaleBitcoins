@@ -10,21 +10,28 @@ import { ConMarca, SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 const STEPS = [1, 2, 3, 4] as const;
 
 /** Lista de dos columnas: lo que sí (con tilde) y lo que no (con cruz). */
-function TwoLists({ yes, no }: { yes: { title: Key; items: readonly Key[] }; no: { title: Key; items: readonly Key[] } }) {
+type ListKind = 'si' | 'cifrado' | 'no';
+
+const MARKS: Readonly<Record<ListKind, string>> = {
+  si: 'M5 12.5l4.5 4.5L19 7',
+  // Un candado: lo cifrado solo lo abre quien tiene la llave.
+  cifrado: 'M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z',
+  no: 'M6 6l12 12M18 6L6 18',
+};
+
+/** Listas con marca (sí, cifrado o no), lado a lado en pantallas anchas. */
+function Lists({ lists }: { lists: ReadonlyArray<{ kind: ListKind; title: Key; items: readonly Key[] }> }) {
   const { t } = useI18n();
   return (
-    <div class="custodia-listas">
-      {[
-        { kind: 'si', ...yes },
-        { kind: 'no', ...no },
-      ].map(({ kind, title, items }) => (
+    <div class={`custodia-listas custodia-listas-${lists.length}`}>
+      {lists.map(({ kind, title, items }) => (
         <article class={`custodia-lista custodia-lista-${kind}`} key={kind}>
           <h3>{t(title)}</h3>
           <ul>
             {items.map((item) => (
               <li key={item}>
                 <svg class="custodia-marca" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d={kind === 'si' ? 'M5 12.5l4.5 4.5L19 7' : 'M6 6l12 12M18 6L6 18'} />
+                  <path d={MARKS[kind]} />
                 </svg>
                 <span>{t(item)}</span>
               </li>
@@ -52,11 +59,9 @@ function Verify() {
       .catch(() => undefined);
   }, []);
   return (
-    <article class="historia custodia-bloque custodia-verificar">
-      <h2 id="custodia-verificar">{t('custodia.verificar.titulo')}</h2>
-      <p>{t('custodia.verificar.resumen')}</p>
-      {/* Todo lo demás (la huella, los pasos y la herramienta) va plegado para no cortar la lectura. */}
-      <details class="desplegable">
+    <>
+      {/* La huella, los pasos y la herramienta van plegados para no cortar la lectura. */}
+      <details class="desplegable" id="custodia-verificar">
         <summary>{t('custodia.verificar.mas')}</summary>
         <p>{t('custodia.verificar.p1')}</p>
         {v !== null && <p>{t('custodia.verificar.esta')}</p>}
@@ -119,7 +124,45 @@ certutil -hashfile regalalebitcoin-sin-conexion.html SHA256   # Windows`}</code>
         </pre>
         <p class="texto-suave">{t('custodia.offline.usar')}</p>
       </details>
-    </article>
+    </>
+  );
+}
+
+/**
+ * Abrir un regalo sin esta página (Claudia, 08/11/2026): lo principal es la herramienta sin conexión;
+ * después, cualquier billetera que acepte passphrase.
+ */
+function OpenElsewhere() {
+  const { t } = useI18n();
+  const openTool = () => {
+    // Además de bajarla, se abre el desplegable con cómo comprobar su huella.
+    const d = document.getElementById('custodia-verificar') as HTMLDetailsElement | null;
+    if (d !== null) d.open = true;
+  };
+  return (
+    <details class="desplegable">
+      <summary>{t('custodia.abrir.titulo')}</summary>
+      <ol>
+        <li>
+          {t('custodia.abrir.paso1')}{' '}
+          <a href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html" onClick={openTool}>
+            {t('custodia.abrir.bajar')}
+          </a>
+        </li>
+        <li>{t('custodia.abrir.paso2')}</li>
+        <li>{t('custodia.abrir.paso3')}</li>
+      </ol>
+      <p>
+        {t('custodia.abrir.regalaste')} <a href="/panel">{t('custodia.abrir.ver')}</a>
+      </p>
+      <p class="texto-suave">
+        {t('custodia.abrir.sinWeb')}{' '}
+        <a href={`${REPO}/releases/latest`} target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+        . {t('custodia.abrir.sinWeb2')}
+      </p>
+    </details>
   );
 }
 
@@ -186,17 +229,23 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
 
         <section class="seccion" aria-labelledby="custodia-guardamos">
           <h2 id="custodia-guardamos">{t('custodia.guardamos.titulo')}</h2>
-          <TwoLists
-            yes={{ title: 'custodia.guardamos.si', items: ['custodia.guardamos.si1', 'custodia.guardamos.si2', 'custodia.guardamos.si3', 'custodia.guardamos.si4', 'custodia.guardamos.si5'] }}
-            no={{ title: 'custodia.guardamos.no', items: ['custodia.guardamos.no1', 'custodia.guardamos.no2', 'custodia.guardamos.no3'] }}
+          {/* Qué vemos nosotros, qué está cifrado (solo lo abre quien tiene la llave) y qué no guardamos (Claudia, 08/11/2026). */}
+          <Lists
+            lists={[
+              { kind: 'si', title: 'custodia.guardamos.abierto', items: ['custodia.guardamos.a1', 'custodia.guardamos.a2', 'custodia.guardamos.a3', 'custodia.guardamos.a4', 'custodia.guardamos.a5', 'custodia.guardamos.a6'] },
+              { kind: 'cifrado', title: 'custodia.guardamos.cifrado', items: ['custodia.guardamos.c1', 'custodia.guardamos.c2', 'custodia.guardamos.c3', 'custodia.guardamos.c4'] },
+              { kind: 'no', title: 'custodia.guardamos.no', items: ['custodia.guardamos.no1', 'custodia.guardamos.no2', 'custodia.guardamos.no3', 'custodia.guardamos.no4', 'custodia.guardamos.no5'] },
+            ]}
           />
         </section>
 
         <section class="seccion" aria-labelledby="custodia-podemos">
           <h2 id="custodia-podemos">{t('custodia.podemos.titulo')}</h2>
-          <TwoLists
-            yes={{ title: 'custodia.podemos.si', items: ['custodia.podemos.si1', 'custodia.podemos.si2', 'custodia.podemos.si3'] }}
-            no={{ title: 'custodia.podemos.no', items: ['custodia.podemos.no1', 'custodia.podemos.no2', 'custodia.podemos.no3', 'custodia.podemos.no4'] }}
+          <Lists
+            lists={[
+              { kind: 'si', title: 'custodia.podemos.si', items: ['custodia.podemos.si1', 'custodia.podemos.si2', 'custodia.podemos.si3'] },
+              { kind: 'no', title: 'custodia.podemos.no', items: ['custodia.podemos.no1', 'custodia.podemos.no2', 'custodia.podemos.no3', 'custodia.podemos.no4'] },
+            ]}
           />
         </section>
 
@@ -210,6 +259,7 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
             </p>
             <p>{t('custodia.desaparece.p2')}</p>
             <p>{t('custodia.desaparece.p3')}</p>
+            <OpenElsewhere />
             <p>
               {t('custodia.desaparece.ayuda')}{' '}
               <a class="custodia-link" href="https://bitcoin.ar" target="_blank" rel="noopener noreferrer">
@@ -226,11 +276,8 @@ export function NoCustodyPage({ testnet }: { testnet: boolean }) {
             <p>{t('custodia.confianza.p1')}</p>
             <p>{t('custodia.confianza.cold')}</p>
             <p>{t('custodia.confianza.p2')}</p>
+            <Verify />
           </article>
-        </section>
-
-        <section class="seccion" aria-labelledby="custodia-verificar">
-          <Verify />
         </section>
 
         <section class="seccion" aria-labelledby="custodia-otra">
