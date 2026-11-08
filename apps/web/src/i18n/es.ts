@@ -475,7 +475,7 @@ export const es = {
   'custodia.guardamos.si1': 'La tarjeta: nombre, mensaje y ocasión.',
   'custodia.guardamos.si2': 'La dirección pública del regalo, para ver si llegó el pago. Es como un número de cuenta: sirve para mirar, no para sacar.',
   'custodia.guardamos.si3': 'Si creaste tu acceso con passkey, tu código de recuperación cerrado con tu cara o tu huella. Es un sobre cerrado que no podemos abrir.',
-  'custodia.guardamos.si4': 'Tu mail, si creaste una cuenta, para avisarte cómo va tu regalo.',
+  'custodia.guardamos.si4': 'Tu mail, si creaste una cuenta, para avisarte cómo va tu regalo. Lo guardamos cifrado: una copia de nuestra base no deja leerlo.',
   'custodia.guardamos.no': 'No guardamos',
   'custodia.guardamos.no1': 'El link del regalo.',
   'custodia.guardamos.no2': 'Las 4 palabras.',

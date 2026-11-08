@@ -477,7 +477,7 @@ export const pt: Dict = {
   'custodia.guardamos.si1': 'O cartão: nome, mensagem e ocasião.',
   'custodia.guardamos.si2': 'O endereço público do presente, para ver se o pagamento chegou. É como um número de conta: serve para olhar, não para sacar.',
   'custodia.guardamos.si3': 'Se você criou seu acesso com passkey, seu código de recuperação trancado com seu rosto ou sua digital. É um envelope fechado que não conseguimos abrir.',
-  'custodia.guardamos.si4': 'Seu e-mail, se você criou uma conta, para avisar como está o seu presente.',
+  'custodia.guardamos.si4': 'Seu e-mail, se você criou uma conta, para avisar como está o seu presente. Guardamos cifrado: uma cópia da nossa base não permite lê-lo.',
   'custodia.guardamos.no': 'Não guardamos',
   'custodia.guardamos.no1': 'O link do presente.',
   'custodia.guardamos.no2': 'As 4 palavras.',
