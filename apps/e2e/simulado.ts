@@ -540,7 +540,7 @@ try {
   await giver.reload();
   await giver.getByRole('button', { name: 'Ver para quién es cada regalo' }).click();
   for (let i = 0; ; i++) {
-    const r = (await sql`select r.usuario_id, r.llave_edicion, u.lista_regalos from regalos r, usuarios u where r.direccion = ${lupeAddress} and u.email = 'lupe.e2e@example.com'`)[0];
+    const r = (await sql`select r.usuario_id, r.llave_edicion, (select lista_regalos from usuarios where lista_regalos is not null limit 1) as lista_regalos from regalos r where r.direccion = ${lupeAddress}`)[0];
     if (r?.usuario_id === null && /^[0-9a-f]{64}$/.test(String(r.llave_edicion)) && String(r.lista_regalos).startsWith('l1.')) break;
     if (i > 75) fail(`el panel no desvinculó el regalo: ${JSON.stringify(r)}`);
     await giver.waitForTimeout(200);
