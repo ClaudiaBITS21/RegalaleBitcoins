@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createHash } from 'node:crypto';
-import { isCoreError, isLang, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination, parseGiftWitnessScript } from '@regalale/core';
+import { isCoreError, isLang, isSealedCard, inspectTransaction, type InspectedTx, minimumGiftAmount, type Network, parseDestination, parseGiftWitnessScript } from '@regalale/core';
 import { Hono } from 'hono';
 import { type ArsPriceClient, ChainError, type ChainClient, type PriceClient, type Utxo } from './chain.ts';
 import type { Sql } from './db.ts';
@@ -343,6 +343,8 @@ export function createApp(deps: AppDeps): Hono {
       para: gift.to,
       de: gift.from,
       mensaje: gift.message,
+      // Tarjeta cifrada con el link (08/11/2026): la abre el navegador; entonces para/de/mensaje van vacíos.
+      tarjeta: gift.card,
       imagen: gift.image,
       estilo: gift.style,
       direccion: gift.address,
@@ -470,6 +472,12 @@ function badRequest(): never {
   throw new ApiError(400, 'pedido_invalido');
 }
 
+/** Tarjeta cifrada en el navegador (packages/core/src/card.ts): solo se controla la forma y el largo. */
+function parseCard(v: unknown): string {
+  if (typeof v !== 'string' || !isSealedCard(v) || v.length > 2000) throw new ApiError(400, 'pedido_invalido');
+  return v;
+}
+
 /** Tope de la imagen propia (ya achicada en el navegador a ~1024 px). */
 export const OWN_IMAGE_MAX_BYTES = 600_000;
 
@@ -523,9 +531,10 @@ function parseNewGift(body: unknown, network: Network): ParsedGift {
     lang: b.idioma,
     occasion: b.ocasion,
     occasionFree: b.ocasion === 'otra' ? text(b.ocasionLibre, LIMITS.freeOccasion, false) : null,
-    to: text(b.para, LIMITS.to, true) as string,
-    from: text(b.de, LIMITS.from, false),
-    message: text(b.mensaje, LIMITS.message, false) ?? '',
+    // Con la tarjeta cifrada no viajan en claro para quién, de quién ni el mensaje.
+    ...(b.tarjeta !== undefined
+      ? { card: parseCard(b.tarjeta), to: null, from: null, message: '' }
+      : { to: text(b.para, LIMITS.to, true) as string, from: text(b.de, LIMITS.from, false), message: text(b.mensaje, LIMITS.message, false) ?? '' }),
     image: b.imagen,
     style,
     ownImage,

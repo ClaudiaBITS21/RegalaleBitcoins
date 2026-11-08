@@ -36,6 +36,8 @@ export interface Config {
   readonly advancedRecovery: boolean;
   /** Carpeta con la web compilada (apps/web/dist), si la sirve esta misma API. */
   readonly webDist: string | null;
+  /** Clave de Cloud KMS que envuelve las claves de los mails (secreto.ts). */
+  readonly mailKmsKey: string | null;
 }
 
 const DEFAULT_ESPLORA: Readonly<Record<NetworkName, string>> = {
@@ -60,6 +62,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (env.TOPE_USD !== undefined && !(Number(env.TOPE_USD) > 0)) throw new Error(`TOPE_USD inválido: ${env.TOPE_USD}`);
   // En mainnet, sin mailer real los links de acceso al panel irían a los logs.
   if (name === 'mainnet' && !env.RESEND_API_KEY) throw new Error('En mainnet hace falta RESEND_API_KEY.');
+  // En mainnet los mails se guardan cifrados con claves envueltas por Cloud KMS (secreto.ts).
+  if (name === 'mainnet' && !env.CLAVE_MAILS_KMS) throw new Error('En mainnet hace falta CLAVE_MAILS_KMS (scripts/setup-kms-mails.sh).');
   const port = Number(env.PORT ?? 8787);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error(`PORT inválido: ${env.PORT}`);
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
@@ -91,5 +95,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dailyAccountUsd: env.TOPE_DIARIO_USD === undefined ? undefined : Number(env.TOPE_DIARIO_USD),
     advancedRecovery: env.RECUPERO_AVANZADO === 'prueba',
     webDist: env.WEB_DIST ?? null,
+    mailKmsKey: env.CLAVE_MAILS_KMS !== undefined && env.CLAVE_MAILS_KMS !== '' ? env.CLAVE_MAILS_KMS : null,
   });
 }

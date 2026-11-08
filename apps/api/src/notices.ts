@@ -4,6 +4,7 @@ import type { ChainClient } from './chain.ts';
 import type { Sql } from './db.ts';
 import { type Mailer, readyMail, reminderMail } from './mail.ts';
 import { occasionName } from './ocasiones.ts';
+import { open } from './secreto.ts';
 
 // «¡Felicitaciones!»: cuando entra el pago de un regalo de una cuenta, se avisa por mail con un
 // link al panel (que además confirma el mail). Lo dispara la tarea programada (Cloud Scheduler).
@@ -12,7 +13,7 @@ const LINK_DAYS_MINUTES = 3 * 24 * 60;
 
 export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
-  const pending = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; verificado: Date | null }[]>`
+  const pending = await sql<{ id: string; direccion: string; para: string | null; usuario_id: string; email: string; idioma: string; verificado: Date | null }[]>`
     select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, u.verificado
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is null and r.reclamo_txid is null and r.creado > now() - interval '30 days'
@@ -34,7 +35,7 @@ export async function sendReadyNotices(deps: { sql: Sql; chain: ChainClient; mai
     const [prev] = await sql<{ n: string }[]>`select count(*) as n from regalos where usuario_id = ${g.usuario_id} and aviso_listo is not null and id <> ${g.id}`;
     try {
       await mailer.send(
-        readyMail(g.email, isLang(g.idioma) ? g.idioma : 'es', {
+        readyMail(open(g.email), isLang(g.idioma) ? g.idioma : 'es', {
           para: g.para,
           sats: stats.confirmedFunded,
           first: Number(prev?.n ?? 0) === 0,
@@ -58,7 +59,7 @@ export const REMINDER_DAYS = [14, 60] as const;
 export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer: Mailer; publicUrl: string }): Promise<number> {
   const { sql, chain, mailer, publicUrl } = deps;
   const [first, second] = REMINDER_DAYS;
-  const due = await sql<{ id: string; direccion: string; para: string; usuario_id: string; email: string; idioma: string; recordatorios: number; ocasion: string; ocasion_libre: string | null; creado: Date }[]>`
+  const due = await sql<{ id: string; direccion: string; para: string | null; usuario_id: string; email: string; idioma: string; recordatorios: number; ocasion: string; ocasion_libre: string | null; creado: Date }[]>`
     select r.id, r.direccion, r.para, r.usuario_id, u.email, u.idioma, r.recordatorios, r.ocasion, r.ocasion_libre, r.creado
     from regalos r join usuarios u on u.id = r.usuario_id
     where r.aviso_listo is not null and r.reclamo_txid is null
@@ -86,7 +87,7 @@ export async function sendReminders(deps: { sql: Sql; chain: ChainClient; mailer
     const token = await createMailLink(sql, g.usuario_id, LINK_DAYS_MINUTES);
     try {
       const lang = isLang(g.idioma) ? g.idioma : 'es';
-      await mailer.send(reminderMail(g.email, lang, g.para, `${publicUrl}/panel#acceso=${token}`, { ocasion: occasionName(g.ocasion, lang, g.ocasion_libre), creado: g.creado }));
+      await mailer.send(reminderMail(open(g.email), lang, g.para, `${publicUrl}/panel#acceso=${token}`, { ocasion: occasionName(g.ocasion, lang, g.ocasion_libre), creado: g.creado }));
       sent++;
     } catch (error) {
       console.error(`No se pudo mandar el recordatorio del regalo ${g.id}: ${(error as Error).message}`);

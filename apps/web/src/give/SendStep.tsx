@@ -11,6 +11,7 @@ import { PrintCard } from './PrintCard.tsx';
 import { numberedWords, WordsList } from './WordsList.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 import { downloadText } from '../recupero/recupero.ts';
+import { seedFromLink, useOpenedView } from '../tarjeta.ts';
 
 /** Por qué canal salió cada parte, recordado en este navegador (give/envios.ts). */
 function useSentBy(giftId: string, part: Part): [Channel | null, (c: Channel) => void] {
@@ -29,7 +30,10 @@ function useSentBy(giftId: string, part: Part): [Channel | null, (c: Channel) =>
  */
 export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceilingUsd: number; onAnother: () => void }) {
   const { t, lang, trato } = useI18n();
-  const { view } = useGiftStatus(gift.id);
+  const { view: raw } = useGiftStatus(gift.id);
+  // La tarjeta viene cifrada: se abre con la semilla del link recién armado.
+  const [seed] = useState(() => seedFromLink(gift.link));
+  const view = useOpenedView(raw, seed);
   const conPlan = useCardFeature();
   // El link y las palabras nunca por el mismo canal: quien vea los dos se queda con el regalo.
   const [linkBy, setLinkBy] = useSentBy(gift.id, 'link');
@@ -63,7 +67,7 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
       {overCeiling && <Notice>{t('regalar.pagar.techo', { maximo: formatUsd(ceilingUsd, lang) })}</Notice>}
       {view !== null && (
         <div class="tarjeta vista-tarjeta">
-          <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} name={view.para} class="tarjeta-imagen" />
+          <GiftCardArt occasion={view.ocasion} estilo={view.estilo} src={`/api/gifts/${view.id}/imagen`} name={view.para ?? undefined} class="tarjeta-imagen" />
         </div>
       )}
       <p class="texto-suave">{t('regalar.mandar.monto', { monto: formatSats(received, lang) })}</p>

@@ -12,6 +12,8 @@ import {
   planSweep,
   recoveryKeyText,
   signSweep,
+  openCard,
+  sealCard,
 } from '@regalale/core';
 import { advancedRecoveryEnabled, createApp, verifySweep } from '../src/app.ts';
 import { ApiError } from '../src/errors.ts';
@@ -92,7 +94,7 @@ const post = (path: string, body: unknown) =>
 describe('API del reclamo', () => {
   before(async () => {
     sql = connect(DB);
-    await sql`drop table if exists compras_historial, compras, denuncias, vinculos, bovedas_extra, cupon_usos, cupones_vistas, cupones_logos, cupones, altas_semana, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
+    await sql`drop table if exists claves, compras_historial, compras, denuncias, vinculos, bovedas_extra, cupon_usos, cupones_vistas, cupones_logos, cupones, altas_semana, cupon_lotes, admins, vistas, arrepentimientos, registro_admin, pagos, movimientos, planes, productos, ajustes, transferencias, aportes, listas, imagenes, difusiones, regalos, enlaces, desafios, sesiones, credenciales, usuarios, migraciones cascade`;
     await sql`drop function if exists movimientos_sin_cambios()`;
     await sql`drop function if exists nuevo_corto_cupon()`;
     await migrate(sql);
@@ -238,6 +240,8 @@ describe('API del reclamo', () => {
     chain.feeRates = { fastest: 3, halfHour: 2, hour: 2, economy: 1, minimum: 1 };
     assert.deepEqual(await processPending({ sql, chain, network: signet }), { difundidas: 1, canceladas: 0 });
     assert.equal(await estado(), 'reclamado');
+    // Difundida, la transacción firmada ya no se guarda.
+    assert.deepEqual([...(await sql`select hex from difusiones`)], [{ hex: null }]);
     assert.deepEqual(chain.broadcasts, [sweep.hex]);
   });
 
@@ -466,6 +470,22 @@ describe('API para regalar', () => {
     assert.equal(await status({ sats: '25000.5' }), 400);
     assert.equal(await status({ sats: 25000 }), 400);
     assert.equal(await status({ moneda: 'EUR' }), 400);
+  });
+
+  it('tarjeta cifrada con el link (08/11): el servidor guarda y devuelve solo el cifrado, sin para, de ni mensaje', async () => {
+    const seed = Uint8Array.from({ length: 16 }, (_, i) => i + 1);
+    const g = nuevo(9);
+    const tarjeta = await sealCard(seed, g.direccion, { para: 'Ana', de: 'Rodo', mensaje: 'Feliz Navidad 🎄' });
+    const { para: _p, de: _d, mensaje: _m, ...sinTexto } = g;
+    assert.equal((await post('/api/gifts', { ...sinTexto, tarjeta: 'Ana' })).status, 400);
+    const res = await post('/api/gifts', { ...sinTexto, tarjeta });
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: string };
+    const view = (await (await app.request(`/api/gifts/${id}`)).json()) as Record<string, unknown>;
+    assert.deepEqual([view.para, view.de, view.mensaje, view.tarjeta], [null, null, '', tarjeta]);
+    assert.deepEqual(await openCard(seed, g.direccion, view.tarjeta as string), { para: 'Ana', de: 'Rodo', mensaje: 'Feliz Navidad 🎄' });
+    const [row] = await sql`select para, de, mensaje from regalos where id = ${id}`;
+    assert.deepEqual([row?.para, row?.de, row?.mensaje], [null, null, '']);
   });
 
   it('valida la tarjeta: largos, ocasión, imagen, idioma y dirección de la red', async () => {
