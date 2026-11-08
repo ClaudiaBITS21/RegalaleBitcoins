@@ -172,9 +172,13 @@ export async function findGift(sql: Sql, id: string): Promise<Gift | null> {
 }
 
 /** Marca el regalo como reclamado o recuperado. false si ya tenía otro reclamo. */
-export async function recordClaim(sql: Sql, id: string, claim: { txid: string; kind: ClaimKind; destination: string }): Promise<boolean> {
+/**
+ * Marca el regalo como abierto. La dirección a la que fue el barrido no se guarda (08/11/2026,
+ * handoff B2B «cerrar fugas en el reclamo»): está en la cadena, pero no la atamos al regalo.
+ */
+export async function recordClaim(sql: Sql, id: string, claim: { txid: string; kind: ClaimKind }): Promise<boolean> {
   const rows = await sql`
-    update regalos set reclamo_txid = ${claim.txid}, reclamo_tipo = ${claim.kind}, reclamo_destino = ${claim.destination}, reclamado = now()
+    update regalos set reclamo_txid = ${claim.txid}, reclamo_tipo = ${claim.kind}, reclamo_destino = null, reclamado = now()
     where id = ${id} and (reclamo_txid is null or reclamo_txid = ${claim.txid})
     returning id`;
   return rows.length === 1;

@@ -168,6 +168,8 @@ describe('API del reclamo', () => {
     assert.equal(gift?.claimTxid, sweep.txid);
     const again = await post(`/api/gifts/${giftId}/claim`, { hex: sweep.hex, modo: 'ahora' });
     assert.equal(again.status, 409);
+    // La dirección a la que fue el barrido no queda atada al regalo (08/11).
+    assert.equal((await sql`select reclamo_destino from regalos where id = ${giftId}`)[0]?.reclamo_destino, null);
   });
 
   it('un reclamo que la red olvidó (expulsado de la mempool) se libera para firmar otra vez', async () => {
