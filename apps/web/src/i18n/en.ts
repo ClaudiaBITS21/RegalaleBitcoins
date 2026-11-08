@@ -482,7 +482,7 @@ export const en: Dict = {
   'custodia.podemos.si': 'We can',
   'custodia.podemos.si1': 'Show you the gift’s status: whether the payment arrived or it has been opened.',
   'custodia.podemos.si2': 'Deliver to the bitcoin network a transfer your phone signed. We can’t change it: only send it.',
-  'custodia.podemos.si3': "Email you when your gift is ready to send and, without saying which, whether you still have unopened gifts.",
+  'custodia.podemos.si3': "Email you when the payment has arrived and your gift can be sent (if the recipient opens it earlier, they see it’s still waiting for payment) and, without saying which, whether you still have unopened gifts.",
   'custodia.podemos.no': 'We can’t',
   'custodia.podemos.no1': 'Move a gift or keep it.',
   'custodia.podemos.no2': 'Freeze it or block it.',

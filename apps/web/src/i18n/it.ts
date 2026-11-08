@@ -482,7 +482,7 @@ export const it: Dict = {
   'custodia.podemos.si': 'Possiamo',
   'custodia.podemos.si1': 'Mostrarti lo stato del regalo: se il pagamento è arrivato o se è già stato aperto.',
   'custodia.podemos.si2': 'Far arrivare alla rete bitcoin un invio firmato dal tuo telefono. Non possiamo modificarlo: solo inviarlo.',
-  'custodia.podemos.si3': "Avvisarti per e-mail quando il tuo regalo è pronto da mandare e, senza dire quali, se hai ancora regali non aperti.",
+  'custodia.podemos.si3': "Avvisarti per e-mail quando è arrivato il pagamento e il tuo regalo si può mandare (se chi lo riceve lo apre prima, vede che aspetta ancora il pagamento) e, senza dire quali, se hai ancora regali non aperti.",
   'custodia.podemos.no': 'Non possiamo',
   'custodia.podemos.no1': 'Spostare un regalo né tenercelo.',
   'custodia.podemos.no2': 'Congelarlo né bloccarlo.',
