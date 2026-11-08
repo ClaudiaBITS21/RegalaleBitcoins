@@ -329,14 +329,16 @@ describe('listas de regalos', () => {
     assert.equal((await pub()).estado, 'en_revision');
     assert.equal((await req(`/api/cuenta/listas/${id}/reactivar`, {})).status, 409);
     assert.ok(mails[1]?.text.includes('revisa nuestro equipo'));
-    // Admin: ve las denuncias con el mail de quien denunció (no el dato de cobro) y decide, con passkey.
+    // Admin: ve las denuncias, sin el mail de quien denunció (solo una huella corta) ni el dato de cobro, y decide, con passkey.
     const adminAccount = await createAccount(sql, { email: 'admin@example.com', lang: 'es', credential: { id: randomBytes(16).toString('base64url'), publicKey: randomBytes(65), alg: -7, signCount: 0, vault: null } });
     const adminCookie = `__session=${await createSession(sql, adminAccount.id, 'passkey')}`;
     const adminReq = (path: string, body?: unknown, ck = adminCookie) =>
       app.request(path, { method: body === undefined ? 'GET' : 'POST', headers: { 'content-type': 'application/json', origin: ORIGIN, cookie: ck }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     assert.equal((await adminReq('/api/admin/denuncias', undefined, cookie)).status, 404);
-    const list = (await (await adminReq('/api/admin/denuncias')).json()) as { listas: Array<{ id: string; estado: string; dueno: string; denuncias: Array<{ email: string }> }> };
-    assert.deepEqual([list.listas[0]?.id, list.listas[0]?.estado, list.listas[0]?.dueno, list.listas[0]?.denuncias.map((d) => d.email)], [id, 'en_revision', 'ana@example.com', ['tia@example.com', 'primo@example.com']]);
+    const list = (await (await adminReq('/api/admin/denuncias')).json()) as { listas: Array<{ id: string; estado: string; dueno: string; denuncias: Array<{ quien: string; email?: string }> }> };
+    assert.deepEqual([list.listas[0]?.id, list.listas[0]?.estado, list.listas[0]?.dueno, list.listas[0]?.denuncias.map((d) => d.email)], [id, 'en_revision', 'ana@example.com', [undefined, undefined]]);
+    assert.ok(list.listas[0]?.denuncias.every((d) => /^[0-9a-f]{6}$/.test(d.quien)));
+    assert.equal(JSON.stringify(await sql`select * from denuncias`).includes('tia@example.com'), false);
     assert.ok(!JSON.stringify(list).includes('CCCC'), 'el admin no ve el dato de cobro');
     const linkCookie = `__session=${await createSession(sql, adminAccount.id, 'link')}`;
     assert.equal((await adminReq(`/api/admin/denuncias/${id}`, { accion: 'baja' }, linkCookie)).status, 403);

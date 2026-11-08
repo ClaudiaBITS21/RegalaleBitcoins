@@ -70,8 +70,9 @@ export function PrivacyPage() {
               <strong>Compras del servicio:</strong> el producto, el monto en sats, la dirección de pago y sus transacciones; si se usa el botón de arrepentimiento, la dirección para la devolución.
             </li>
             <li>
-              <strong>Reportes de listas:</strong> el mail y el motivo de quien reporta una lista, y su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le
-              llega el motivo, nunca el mail de quien la reportó.
+              <strong>Reportes de listas:</strong> el motivo de quien reporta una lista. Su mail no se guarda: solo una huella (un hash) distinta para cada lista, que sirve para que la misma
+              persona no reporte dos veces la misma lista y no permite saber quién es. También su dirección IP transformada (un hash) para frenar abusos. A quien armó la lista le llega
+              el motivo.
             </li>
             <li>
               <strong>Cupones:</strong> el código, lo que da, quién lo usó y cuándo. Un cupón puede estar hecho para un mail: ese mail queda guardado con el cupón aunque la persona todavía no

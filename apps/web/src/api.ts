@@ -375,7 +375,8 @@ export const api = {
         estado: 'activa' | 'pausada' | 'en_revision' | 'baja';
         reactivada: string | null;
         dueno: string;
-        denuncias: Array<{ email: string; motivo: string; creada: string }>;
+        /** quien: huella corta de quien denunció (el mail no se guarda). */
+        denuncias: Array<{ quien: string; motivo: string; creada: string }>;
       }>;
     }>('/api/admin/denuncias'),
   adminReportAction: (id: string, accion: 'reactivar' | 'baja') => post<{ estado: string }>(`/api/admin/denuncias/${encodeURIComponent(id)}`, { accion }),
