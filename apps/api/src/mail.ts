@@ -72,12 +72,14 @@ interface Congrats {
   readonly buttonPanel: string;
   readonly closing: string;
 }
+// Felicitación cuando llega el pago (Claudia, 08/11/2026): sin decir para quién es ni cuánto; el
+// detalle está en «Mis regalos». `paid` y `paidAnon` quedan iguales.
 const CONGRATS: Readonly<Record<Lang, Congrats>> = {
   es: {
     subjectFirst: '¡Felicitaciones! Hiciste tu primer regalo',
     subjectNext: '¡Felicitaciones! Hiciste un nuevo regalo',
-    paid: 'El regalo para {para} ya está pago y listo para abrir: {sats}.',
-    paidAnon: 'Tu regalo ya está pago y listo para abrir: {sats}.',
+    paid: '¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir. No sabemos para quién es ni qué le escribiste: eso queda entre quien regala y quien recibe.',
+    paidAnon: '¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir. No sabemos para quién es ni qué le escribiste: eso queda entre quien regala y quien recibe.',
     confirm: 'Falta un paso: confirmar tu mail. Con el botón se confirma y se entra a tu panel, donde está el regalo.',
     panel: 'En tu panel ves cómo va y, con tu cara o tu huella, se pueden volver a ver el link y las palabras.',
     buttonConfirm: 'Confirmar mi mail',
@@ -87,8 +89,8 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
   pt: {
     subjectFirst: 'Parabéns! Você deu seu primeiro presente',
     subjectNext: 'Parabéns! Você deu um novo presente',
-    paid: 'O presente para {para} já está pago e pronto para abrir: {sats}.',
-    paidAnon: 'Seu presente já está pago e pronto para abrir: {sats}.',
+    paid: 'Obrigado por presentear com bitcoin! Seu presente já pode ser aberto. Não sabemos para quem é nem o que você escreveu: isso fica entre quem presenteia e quem recebe.',
+    paidAnon: 'Obrigado por presentear com bitcoin! Seu presente já pode ser aberto. Não sabemos para quem é nem o que você escreveu: isso fica entre quem presenteia e quem recebe.',
     confirm: 'Falta um passo: confirmar seu e-mail. Com o botão ele é confirmado e você entra no seu painel, onde está o presente.',
     panel: 'No seu painel você acompanha tudo e, com seu rosto ou sua digital, pode ver de novo o link e as palavras.',
     buttonConfirm: 'Confirmar meu e-mail',
@@ -98,8 +100,8 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
   en: {
     subjectFirst: 'Congratulations! You made your first gift',
     subjectNext: 'Congratulations! You made a new gift',
-    paid: 'The gift for {para} is paid and ready to open: {sats}.',
-    paidAnon: 'Your gift is paid and ready to open: {sats}.',
+    paid: 'Thanks for giving bitcoin! Your gift can now be opened. We don’t know who it’s for or what you wrote: that stays between the giver and the recipient.',
+    paidAnon: 'Thanks for giving bitcoin! Your gift can now be opened. We don’t know who it’s for or what you wrote: that stays between the giver and the recipient.',
     confirm: 'One step left: confirm your email. The button confirms it and opens your dashboard, where the gift is.',
     panel: 'In your dashboard you can follow it and, with your face or fingerprint, see the link and the words again.',
     buttonConfirm: 'Confirm my email',
@@ -109,8 +111,8 @@ const CONGRATS: Readonly<Record<Lang, Congrats>> = {
   it: {
     subjectFirst: 'Congratulazioni! Hai fatto il tuo primo regalo',
     subjectNext: 'Congratulazioni! Hai fatto un nuovo regalo',
-    paid: 'Il regalo per {para} è pagato e pronto da aprire: {sats}.',
-    paidAnon: 'Il tuo regalo è pagato e pronto da aprire: {sats}.',
+    paid: 'Grazie per aver regalato bitcoin! Il tuo regalo si può già aprire. Non sappiamo per chi è né cosa hai scritto: resta tra chi regala e chi riceve.',
+    paidAnon: 'Grazie per aver regalato bitcoin! Il tuo regalo si può già aprire. Non sappiamo per chi è né cosa hai scritto: resta tra chi regala e chi riceve.',
     confirm: 'Manca un passo: confermare la tua email. Con il pulsante si conferma e si entra nel tuo pannello, dove c’è il regalo.',
     panel: 'Nel tuo pannello vedi come va e, con il volto o l’impronta, puoi rivedere il link e le parole.',
     buttonConfirm: 'Conferma la mia email',

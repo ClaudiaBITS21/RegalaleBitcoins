@@ -10,18 +10,19 @@ describe('Mails con el diseño de la marca', () => {
   it('felicitaciones: primer regalo o uno nuevo; confirmar el mail o ver los regalos', () => {
     const first = readyMail('ana@example.com', 'es', { para: 'Tomi', sats: 30500n, first: true, verified: false, link: LINK });
     assert.equal(first.subject, '¡Felicitaciones! Hiciste tu primer regalo');
-    assert.ok(first.text.includes('El regalo para Tomi ya está pago y listo para abrir: 30.500 sats.'));
+    assert.ok(first.text.includes('¡Gracias por regalar bitcoin! Tu regalo ya se puede abrir.'));
+    // Sin para quién ni cuánto (08/11/2026).
+    assert.ok(!first.text.includes('Tomi') && !first.text.includes('sats'));
     assert.ok(first.html?.includes('Confirmar mi mail'));
     const next = readyMail('ana@example.com', 'it', { para: 'Tomi', sats: 1234n, first: false, verified: true, link: LINK });
     assert.equal(next.subject, 'Congratulazioni! Hai fatto un nuovo regalo');
-    assert.ok(next.text.includes('1.234 sats'));
+    assert.ok(!next.text.includes('1.234'));
     assert.ok(next.html?.includes('Vedi i miei regali') && !next.html.includes('Conferma la mia email'));
   });
 
   it('lo que escribe la persona va escapado en el HTML', () => {
     const m = readyMail('ana@example.com', 'en', { para: '<img src=x onerror=alert(1)>', sats: 1n, first: true, verified: true, link: LINK });
     assert.ok(!m.html?.includes('<img src=x'));
-    assert.ok(m.html?.includes('&lt;img src=x onerror=alert(1)&gt;'));
   });
 
   it('el recordatorio dice la ocasión y el día en que se armó el regalo (05/11)', () => {
