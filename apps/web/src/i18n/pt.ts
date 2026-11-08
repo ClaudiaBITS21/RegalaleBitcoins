@@ -483,7 +483,7 @@ export const pt: Dict = {
   'custodia.podemos.si': 'Podemos',
   'custodia.podemos.si1': 'Mostrar em que estado está o presente: se o pagamento chegou ou se já foi aberto.',
   'custodia.podemos.si2': 'Fazer chegar à rede bitcoin um envio que o seu celular assinou. Não podemos alterá-lo: só enviá-lo.',
-  'custodia.podemos.si3': "Avisar por e-mail quando seu presente está pronto para mandar e, sem dizer quais, se ainda há presentes sem abrir.",
+  'custodia.podemos.si3': "Avisar por e-mail quando o pagamento chegou e seu presente já pode ser enviado (se quem recebe abrir antes, vê que ainda espera o pagamento) e, sem dizer quais, se ainda há presentes sem abrir.",
   'custodia.podemos.no': 'Não podemos',
   'custodia.podemos.no1': 'Mover um presente nem ficar com ele.',
   'custodia.podemos.no2': 'Congelá-lo nem bloqueá-lo.',

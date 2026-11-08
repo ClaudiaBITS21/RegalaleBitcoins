@@ -481,7 +481,7 @@ export const es = {
   'custodia.podemos.si': 'Sí podemos',
   'custodia.podemos.si1': 'Mostrarte en qué estado está el regalo: si llegó el pago o si ya lo abrieron.',
   'custodia.podemos.si2': 'Hacer llegar a la red bitcoin un envío que firmó tu teléfono. No lo podemos cambiar: solo mandarlo.',
-  'custodia.podemos.si3': "Avisarte por mail cuando tu regalo está listo para mandar y, sin decir cuáles, si te quedan regalos sin abrir.",
+  'custodia.podemos.si3': "Avisarte por mail cuando llegó el pago y tu regalo ya se puede mandar (si quien lo recibe lo abre antes, ve que todavía espera el pago) y, sin decir cuáles, si te quedan regalos sin abrir.",
   'custodia.podemos.no': 'No podemos',
   'custodia.podemos.no1': 'Mover un regalo ni quedarnos con él.',
   'custodia.podemos.no2': 'Congelarlo ni bloquearlo.',
