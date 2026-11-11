@@ -556,6 +556,7 @@ export const en: Dict = {
   'custodia.abrir.ver': "See my 12 words",
   'custodia.abrir.sinWeb': "What if this page is gone and you didn’t download it? Every version of the tool is also published on",
   'custodia.abrir.sinWeb2': "Download it from there and check its fingerprint. The full method is published too, so anyone who knows bitcoin can help you.",
+  'custodia.abrir.bajada': "Done: the file “regalalebitcoin-sin-conexion.html” was saved to your Downloads. To use it, turn off the internet and open it in your browser.",
   'empresas.chip': "Corporate gift",
   'empresas.kicker': "Corporate gift",
   'empresas.titulo': "Give bitcoin to your team and your clients",

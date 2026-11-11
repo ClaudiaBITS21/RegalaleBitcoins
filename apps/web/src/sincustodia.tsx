@@ -107,9 +107,7 @@ pnpm build:mainnet`}</code>
           <li>{t('custodia.offline.recuperar')}</li>
         </ul>
         <p>
-          <a class="boton boton-contorno" href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html">
-            {t('custodia.offline.bajar')}
-          </a>
+          <DownloadTool className="boton boton-contorno" label={t('custodia.offline.bajar')} />
         </p>
         {v?.herramienta != null && (
           <p>
@@ -124,6 +122,35 @@ certutil -hashfile regalalebitcoin-sin-conexion.html SHA256   # Windows`}</code>
         </pre>
         <p class="texto-suave">{t('custodia.offline.usar')}</p>
       </details>
+    </>
+  );
+}
+
+/**
+ * Link para bajar la herramienta sin conexión. El navegador la guarda en Descargas sin abrir nada,
+ * así que se avisa en la página dónde quedó y cómo usarla (Claudia, 11/11/2026).
+ */
+function DownloadTool({ label, className, onDownload }: { label: string; className?: string; onDownload?: () => void }) {
+  const { t } = useI18n();
+  const [done, setDone] = useState(false);
+  return (
+    <>
+      <a
+        class={className}
+        href="/herramienta-sin-conexion.html"
+        download="regalalebitcoin-sin-conexion.html"
+        onClick={() => {
+          setDone(true);
+          onDownload?.();
+        }}
+      >
+        {label}
+      </a>
+      {done && (
+        <span class="aviso-descarga" role="status">
+          {t('custodia.abrir.bajada')}
+        </span>
+      )}
     </>
   );
 }
@@ -145,9 +172,7 @@ function OpenElsewhere() {
       <ol>
         <li>
           {t('custodia.abrir.paso1')}{' '}
-          <a href="/herramienta-sin-conexion.html" download="regalalebitcoin-sin-conexion.html" onClick={openTool}>
-            {t('custodia.abrir.bajar')}
-          </a>
+          <DownloadTool label={t('custodia.abrir.bajar')} onDownload={openTool} />
         </li>
         <li>{t('custodia.abrir.paso2')}</li>
         <li>{t('custodia.abrir.paso3')}</li>

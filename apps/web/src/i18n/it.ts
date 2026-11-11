@@ -556,6 +556,7 @@ export const it: Dict = {
   'custodia.abrir.ver': "Vedi le mie 12 parole",
   'custodia.abrir.sinWeb': "E se questa pagina non c’è più e non l’hai scaricato? Ogni versione dello strumento è pubblicata anche su",
   'custodia.abrir.sinWeb2': "Scaricalo da lì e controlla la sua impronta. Anche il metodo completo è pubblicato, quindi chiunque conosca bitcoin può aiutarti.",
+  'custodia.abrir.bajada': "Fatto: il file «regalalebitcoin-sin-conexion.html» è stato salvato nei tuoi Download. Per usarlo, scollega internet e aprilo con il browser.",
   'empresas.chip': "Regalo aziendale",
   'empresas.kicker': "Regalo aziendale",
   'empresas.titulo': "Regala bitcoin al tuo team e ai tuoi clienti",
