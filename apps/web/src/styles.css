@@ -3975,3 +3975,15 @@ a.chip {
   text-decoration: none;
   color: inherit;
 }
+
+/* Aviso después de bajar la herramienta sin conexión (11/11/2026). */
+.aviso-descarga {
+  display: block;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ok);
+  color: #2f6b1a;
+  font-size: 14px;
+  line-height: 1.45;
+}

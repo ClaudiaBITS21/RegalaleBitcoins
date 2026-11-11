@@ -555,6 +555,7 @@ export const es = {
   'custodia.abrir.ver': "Ver mis 12 palabras",
   'custodia.abrir.sinWeb': "¿Y si esta página ya no está y no la bajaste? Cada versión de la herramienta queda publicada también en",
   'custodia.abrir.sinWeb2': "Bajala de ahí y comprobá su huella. El método completo también está publicado, así que cualquiera que sepa de bitcoin puede ayudarte.",
+  'custodia.abrir.bajada': "Listo: el archivo «regalalebitcoin-sin-conexion.html» se guardó en tus Descargas. Para usarlo, cortá internet y abrilo con el navegador.",
   'empresas.chip': "Regalo empresarial",
   'empresas.kicker': "Regalo empresarial",
   'empresas.titulo': "Regalá bitcoin a tu equipo y a tus clientes",

@@ -292,6 +292,7 @@ export const tu: Partial<Record<Key, string>> = {
   'custodia.abrir.paso3': "En cualquier billetera que acepte passphrase (por ejemplo, Sparrow o Electrum), crea una billetera nueva con esas 12 palabras, pon las 4 palabras como passphrase (en minúsculas, sin tildes y con un espacio entre palabras) y elige Native Segwit. La primera dirección tiene que ser la misma que muestra la herramienta.",
   'custodia.abrir.sinWeb': "¿Y si esta página ya no está y no la descargaste? Cada versión de la herramienta queda publicada también en",
   'custodia.abrir.sinWeb2': "Descárgala de ahí y comprueba su huella. El método completo también está publicado, así que cualquiera que sepa de bitcoin puede ayudarte.",
+  'custodia.abrir.bajada': "Listo: el archivo «regalalebitcoin-sin-conexion.html» se guardó en tus Descargas. Para usarlo, desconecta internet y ábrelo con el navegador.",
   'empresas.titulo': "Regala bitcoin a tu equipo y a tus clientes",
   'empresas.paso1.t': "Nos cuentas qué necesitas",
   'empresas.paso3.t': "Los repartes",
