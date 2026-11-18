@@ -33,10 +33,13 @@ describe('Tarjeta cifrada con el link', () => {
   });
 
   it('al azar, cada sellado es distinto y no contiene el texto; «de» puede faltar', async () => {
-    const a = await sealCard(SEED, ADDRESS, { para: 'Ana', de: null, mensaje: '' });
-    const b = await sealCard(SEED, ADDRESS, { para: 'Ana', de: null, mensaje: '' });
-    assert.ok(a !== b && isSealedCard(a) && !a.includes('Ana'));
-    assert.deepEqual(await openCard(SEED, ADDRESS, a), { para: 'Ana', de: null, mensaje: '' });
+    // Nombre largo: el cifrado es base64url al azar y un nombre corto («Ana») aparece en él por
+    // casualidad cada tanto (pasó en CI el 18/11/2026); uno de 12 letras, en la práctica nunca.
+    const para = 'Anastasiadis';
+    const a = await sealCard(SEED, ADDRESS, { para, de: null, mensaje: '' });
+    const b = await sealCard(SEED, ADDRESS, { para, de: null, mensaje: '' });
+    assert.ok(a !== b && isSealedCard(a) && !a.includes(para));
+    assert.deepEqual(await openCard(SEED, ADDRESS, a), { para, de: null, mensaje: '' });
     assert.equal(isSealedCard('Ana'), false);
   });
 });
