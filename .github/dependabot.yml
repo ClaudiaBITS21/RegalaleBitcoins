@@ -1,0 +1,27 @@
+# Revisión automática de dependencias (pedido de la responsable, 18/11/2026).
+# Las librerías solo reciben PRs de seguridad: los cambios de versión comunes los decidimos a mano.
+# La imagen de Node sí recibe actualizaciones dentro de la 24, para traer los parches de seguridad.
+# Todo con 7 días de espera, como el minimumReleaseAge de pnpm-workspace.yaml.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    # 0 = sin PRs de versión comunes; los de seguridad no cuentan en este límite.
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'Seguridad'
+  - package-ecosystem: docker
+    directory: /apps/api
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
+    commit-message:
+      prefix: 'Seguridad'

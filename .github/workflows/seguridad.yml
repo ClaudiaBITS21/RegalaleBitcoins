@@ -1,0 +1,29 @@
+name: Revisión de seguridad
+
+# Todos los días: avisos de seguridad de las dependencias y parches de Node para la imagen de la API.
+# Si algo falla, GitHub manda un mail. El arreglo lo hace la revisión de lunes, miércoles y viernes
+# (o Dependabot) con un PR aparte.
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  revision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: corepack enable
+      - name: Avisos de seguridad de las dependencias
+        run: pnpm audit
+      - name: Parches de Node para la imagen de la API
+        if: ${{ !cancelled() }}
+        run: node scripts/node-parches.mjs
