@@ -1,6 +1,7 @@
 import type { Lang } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { GiftView } from '../api.ts';
+import { countEvent } from '../eventos.ts';
 import { GiftCardArt } from '../content/GiftCardArt.tsx';
 import { examplesFor, looksLikeLink, pickExample, REMATE_MAX, useExamples } from '../content/mensajes.ts';
 import { occasionLabel } from '../content/occasions.ts';
@@ -101,6 +102,7 @@ export function PrintCard({ link, view: raw, conPlan }: { link: string; view: Gi
   }, [key]);
 
   const download = async () => {
+    countEvent('regalo_compartido', view.id);
     setBusy(true);
     try {
       const art = await artImage(artRef.current);

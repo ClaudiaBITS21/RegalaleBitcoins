@@ -11,6 +11,7 @@ import { parsePreview, registerShareRoutes } from './share.ts';
 import { ApiError } from './errors.ts';
 import { type AccountConfig, currentAccount, registerAccountRoutes } from './accountRoutes.ts';
 import { registerAdminRoutes } from './admin.ts';
+import { registerFunnelRoutes } from './embudo.ts';
 import { registerListRoutes } from './lists.ts';
 import { registerReportRoutes } from './reports.ts';
 import { checkAmount, clientIp, text } from './validate.ts';
@@ -50,6 +51,8 @@ export interface AppDeps {
   readonly adminEmails?: readonly string[];
   /** Recupero avanzado en redes de prueba (RECUPERO_AVANZADO=prueba). Apagado si no se pide. */
   readonly advancedRecovery?: boolean;
+  /** Avisos del embudo que puede mandar una misma IP por hora (embudo.ts). */
+  readonly funnelPerHour?: number;
   /** El index.html de la web, para servir /r/<id> con la vista previa del regalo (share.ts). */
   readonly indexHtml?: () => Promise<string>;
 }
@@ -191,6 +194,7 @@ export function createApp(deps: AppDeps): Hono {
   registerRefundRoutes(app, { sql, network, adminEmails: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerAdminUserRoutes(app, { sql, fixed: deps.adminEmails ?? [], mailer: accounts.mailer });
   registerCouponRoutes(app, { sql, adminEmails: deps.adminEmails ?? [], publicUrl: accounts.publicUrl });
+  registerFunnelRoutes(app, { sql, ...(deps.funnelPerHour === undefined ? {} : { perHour: deps.funnelPerHour }) });
   if (deps.indexHtml !== undefined) registerShareRoutes(app, { sql, publicUrl: accounts.publicUrl, indexHtml: deps.indexHtml });
 
   /** Precios públicos (para la página de precios y la pantalla de compra). */

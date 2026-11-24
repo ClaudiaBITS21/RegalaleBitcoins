@@ -114,6 +114,8 @@ export interface AdminSummary {
   readonly red: string;
   /** Cuentas nuevas de las últimas 12 semanas por país aproximado y por origen (solo contadores). */
   readonly altas?: { readonly porPais: Record<string, number>; readonly porOrigen: Record<string, number> };
+  /** Embudo por origen de la visita, últimas 12 semanas (solo contadores): origen → paso → cantidad. */
+  readonly embudo?: { readonly porOrigen: Record<string, Record<string, number>> };
   readonly generado: string;
   readonly usuarios: { total: number; ultimos7: number; ultimos30: number; conBoveda: number; conRegalos: number };
   readonly regalos: { total: number; ultimos7: number; ultimos30: number; conCuenta: number; porEstado: Record<string, number>; muestra: number; parcial: boolean };

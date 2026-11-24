@@ -103,6 +103,60 @@ function Tile({ label, value, detail }: { label: string; value: string; detail?:
 }
 
 /** Barras horizontales simples para un conteo por categoría. */
+/** Cómo se muestra un origen (el mismo rótulo para las altas y el embudo). */
+const originLabel = (k: string): string =>
+  k === 'directo' ? 'Directo / sin dato' : k === 'cupon' ? 'Link de cupón o invitación' : k === 'regalo' ? 'Recibió un regalo' : k.startsWith('utm:') ? `Campaña «${k.slice(4)}»` : k;
+
+const FUNNEL_COLUMNS: ReadonlyArray<readonly [string, string]> = [
+  ['visita', 'Visitas'],
+  ['regalar_inicio', 'Empezó a regalar'],
+  ['regalo_creado', 'Regalo creado'],
+  ['pago_visto', 'Pago visto'],
+  ['regalo_compartido', 'Compartido'],
+  ['compra', 'Compras'],
+  ['link_abierto', 'Link abierto'],
+  ['palabras_ok', 'Palabras bien'],
+  ['regalo_abierto', 'Regalo abierto'],
+];
+
+/** Embudo por origen de la visita (12 semanas): solo contadores, sin relación con cuentas ni regalos. */
+function Funnel({ data, n, pct }: { data: Record<string, Record<string, number>>; n: (x: number) => string; pct: (a: number, b: number) => string }) {
+  const rows = Object.entries(data).sort((a, b) => (b[1].pago_visto ?? 0) - (a[1].pago_visto ?? 0) || (b[1].visita ?? 0) - (a[1].visita ?? 0));
+  return (
+    <section class="admin-bloque">
+      <h2>Embudo por origen de la visita (12 semanas)</h2>
+      <p class="texto-suave">
+        Cada paso se cuenta una vez por visita, con el origen de esa visita. Para medir una campaña, usá links con <code>?utm_source=nombre</code>. «Recibió un regalo» son las
+        visitas que entraron por el link de un regalo: si después regalan, se ve en esa fila.
+      </p>
+      <div class="admin-tabla-scroll">
+        <table class="admin-tabla">
+          <thead>
+            <tr>
+              <th>Origen</th>
+              {FUNNEL_COLUMNS.map(([k, label]) => (
+                <th key={k}>{label}</th>
+              ))}
+              <th>Visita → pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([origen, e]) => (
+              <tr key={origen}>
+                <td>{originLabel(origen)}</td>
+                {FUNNEL_COLUMNS.map(([k]) => (
+                  <td key={k}>{n(e[k] ?? 0)}</td>
+                ))}
+                <td>{pct(e.pago_visto ?? 0, e.visita ?? 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function Bars({ title, data, label = (k) => k }: { title: string; data: Record<string, number>; label?: (k: string) => string }) {
   const entries = Object.entries(data);
   const max = Math.max(1, ...entries.map(([, n]) => n));
@@ -226,8 +280,9 @@ export function AdminPage() {
           <Bars title="Cuentas nuevas por país (aprox., 12 semanas)" data={data.altas.porPais} label={(k) => (k === 'INT' ? 'Otro país' : k)} />
         )}
         {data.altas !== undefined && Object.keys(data.altas.porOrigen).length > 0 && (
-          <Bars title="Cuentas nuevas por origen (12 semanas)" data={data.altas.porOrigen} label={(k) => (k === 'directo' ? 'Directo / sin dato' : k === 'cupon' ? 'Link de cupón o invitación' : k.startsWith('utm:') ? `Campaña «${k.slice(4)}»` : k)} />
+          <Bars title="Cuentas nuevas por origen (12 semanas)" data={data.altas.porOrigen} label={originLabel} />
         )}
+        {data.embudo !== undefined && Object.keys(data.embudo.porOrigen).length > 0 && <Funnel data={data.embudo.porOrigen} n={n} pct={pct} />}
         <Motives data={data} n={n} pct={pct} usd={(x) => formatUsd(x, lang)} />
         {Object.keys(data.ocasionesLibres).length > 0 && <Bars title="Ocasiones escritas a mano (usadas por 3 o más)" data={data.ocasionesLibres} />}
         <div>

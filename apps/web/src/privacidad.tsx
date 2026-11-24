@@ -6,8 +6,8 @@ import { SiteFooter, SiteHeader, useI18n } from './ui.tsx';
 // en castellano y escrita sin vos ni tú, para que valga con los dos tratos. Si cambia lo que se
 // guarda o con quién se comparte, esta página cambia con el mismo PR.
 
-// Versión de la etapa de privacidad B, C y D (Claudia, 08/11/2026): se publica junto con esos cambios.
-const VERSION = '8 de noviembre de 2026';
+// Versión del embudo por campaña (Claudia, 24/11/2026; antes, etapa de privacidad B, C y D del 08/11).
+const VERSION = '24 de noviembre de 2026';
 const CONTACTO = 'hola@regalalebitcoin.com';
 
 export function PrivacyPage() {
@@ -120,6 +120,13 @@ export function PrivacyPage() {
               <strong>Estadística de altas:</strong> al crear una cuenta sumamos uno a un contador por semana, con el país aproximado (según la zona horaria del
               dispositivo, no la dirección IP) y de dónde llegaste (solo el nombre del sitio, la etiqueta de campaña del link o si entraste por un cupón). Ese
               contador no se guarda en tu cuenta ni se puede relacionar con ella.
+            </li>
+            <li>
+              <strong>Estadística de uso:</strong> para saber qué comunicación funciona, contamos cuántas veces pasa cada paso del camino (una visita, un regalo
+              creado, un pago visto en la red, un regalo compartido, una compra, un link abierto, las palabras bien puestas, un regalo abierto). Tu navegador avisa
+              solo el nombre del paso y de dónde había llegado esa visita (el nombre del sitio, la etiqueta de campaña del link, un cupón o el link de un regalo), y
+              sumamos uno a un contador por semana. El aviso no lleva el regalo, la cuenta, el monto ni ningún identificador, y no usamos cookies ni servicios de
+              terceros para esto: ese contador no se puede relacionar con ninguna persona ni con ningún regalo.
             </li>
           </ul>
         </section>

@@ -2,6 +2,7 @@ import type { NetworkName } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { clearPendingCoupon, pendingCoupon } from './cuponPendiente.ts';
 import { ApiFailure, api, type CouponView, type Purchase } from './api.ts';
+import { countEvent } from './eventos.ts';
 import { formatSats, formatUsdExact } from './format.ts';
 import { PayBox } from './give/PayBox.tsx';
 import type { Key } from './i18n/index.ts';
@@ -114,6 +115,11 @@ export function BuyPage({ testnet }: { testnet: boolean }) {
       setBusy(false);
     }
   };
+
+  // Embudo: una compra pagada (lo confirma el servidor).
+  useEffect(() => {
+    if (purchase !== null && purchase.estado === 'confirmado') countEvent('compra', purchase.id);
+  }, [purchase?.estado]);
 
   // Mira el pago hasta que se confirme.
   useEffect(() => {
