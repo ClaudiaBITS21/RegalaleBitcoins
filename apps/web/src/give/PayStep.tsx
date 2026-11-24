@@ -1,6 +1,7 @@
 import type { Network } from '@regalale/core';
 import { useEffect, useRef } from 'preact/hooks';
 import type { Credits } from '../api.ts';
+import { countEvent } from '../eventos.ts';
 import { formatSats } from '../format.ts';
 import { Button, Notice, StepTitle, useI18n } from '../ui.tsx';
 import type { MadeGift } from './GivePage.tsx';
@@ -26,6 +27,11 @@ export function PayStep({ gift, network, credits = null, onPaid }: { gift: MadeG
   const received = view === null ? 0n : receivedSats(view);
   const replaced = view !== null && received === 0n && seen.current;
   if (received > 0n) seen.current = true;
+
+  // Embudo: el pago apareció en la red (lo dice el servidor, que mira la cadena).
+  useEffect(() => {
+    if (received > 0n) countEvent('pago_visto', gift.id);
+  }, [received > 0n]);
 
   // Pago completo visto en la red (aunque sin confirmar): pasa a mandar el regalo.
   useEffect(() => {

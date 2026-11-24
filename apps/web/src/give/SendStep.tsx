@@ -8,6 +8,7 @@ import type { MadeGift } from './GivePage.tsx';
 import { useCardFeature } from './planFeatures.ts';
 import { type Channel, type Part, readSent, saveSent } from './envios.ts';
 import { PrintCard } from './PrintCard.tsx';
+import { countEvent } from '../eventos.ts';
 import { numberedWords, WordsList } from './WordsList.tsx';
 import { receivedSats, useGiftStatus } from './useGiftStatus.ts';
 import { downloadText } from '../recupero/recupero.ts';
@@ -36,7 +37,11 @@ export function SendStep({ gift, ceilingUsd, onAnother }: { gift: MadeGift; ceil
   const view = useOpenedView(raw, seed);
   const conPlan = useCardFeature();
   // El link y las palabras nunca por el mismo canal: quien vea los dos se queda con el regalo.
-  const [linkBy, setLinkBy] = useSentBy(gift.id, 'link');
+  const [linkBy, markLinkBy] = useSentBy(gift.id, 'link');
+  const setLinkBy: typeof markLinkBy = (c) => {
+    countEvent('regalo_compartido', gift.id);
+    markLinkBy(c);
+  };
   const [wordsBy, setWordsBy] = useSentBy(gift.id, 'palabras');
   const r = (key: Key, vars?: Record<string, string>) => translate(gift.lang as UiLang, key, vars, trato);
 

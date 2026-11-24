@@ -9,6 +9,7 @@ import './styles.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { captureOrigin } from './origen.ts';
+import { countEvent } from './eventos.ts';
 import { ComparisonPage } from './comparativa.tsx';
 import { MediakitPage } from './mediakit.tsx';
 import { PricingPage } from './precios.tsx';
@@ -142,5 +143,7 @@ if (ALLOW_MAINNET && window.location.hostname === 'regalalebitcoins.web.app') {
   window.location.replace(`https://regalalebitcoin.com${window.location.pathname}${window.location.search}${window.location.hash}`);
 } else {
   captureOrigin();
+  // El panel de administración no es una visita a contar.
+  if (!/^\/(admin|cupones)/.test(window.location.pathname)) countEvent('visita');
   render(<App />, document.getElementById('app') as HTMLElement);
 }

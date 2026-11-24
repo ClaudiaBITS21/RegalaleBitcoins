@@ -1,6 +1,7 @@
 import { deriveGift, deriveMultisigGift, editKeyHash, encodeGiftFragment, giftEditKey, sealCard, generateMasterMnemonic, getNetwork, type Lang, masterRootFromMnemonic, type Network, type RecoveryKey } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type Credits } from '../api.ts';
+import { countEvent } from '../eventos.ts';
 import { formatDayTime, formatUsd } from '../format.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { FREE_OCCASION_MAX, isOccasion, type OccasionKey } from '../content/occasions.ts';
@@ -134,6 +135,7 @@ async function register(session: Session, draft: Draft, network: Network): Promi
         ...(multisig === null || session.recovery === null || testigo === null ? {} : { testigo, rutaRecupero: recoveryPathText(session.recovery, index) }),
       });
       session.next = index + 1;
+      countEvent('regalo_creado', id);
       return {
         id,
         index,
@@ -226,6 +228,7 @@ export function GivePage() {
   const [dailyUsd, setDailyUsd] = useState<number | null>(null);
   const [dailyStop, setDailyStop] = useState<{ tope: number; resta: number; desde: Date } | null>(null);
   const step = steps[steps.length - 1] ?? 'ocasion';
+  useEffect(() => countEvent('regalar_inicio'), []);
 
   const loadNetwork = async () => {
     setNetError(null);

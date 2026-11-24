@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import { signupStats } from './altas.ts';
+import { funnelStats } from './embudo.ts';
 import { currentAccount } from './accountRoutes.ts';
 import { isAdmin } from './admins.ts';
 import type { ChainClient, PriceClient } from './chain.ts';
@@ -155,8 +156,14 @@ export async function adminSummary(deps: AdminDeps): Promise<Record<string, unkn
   const signups = await signupStats(sql, 12);
   const sumBy = (k: 'pais' | 'origen') => signups.reduce<Record<string, number>>((acc, r) => ({ ...acc, [r[k]]: (acc[r[k]] ?? 0) + r.cuentas }), {});
 
+  // Embudo de las últimas 12 semanas por origen y paso: solo contadores (embudo.ts).
+  const funnel = await funnelStats(sql, 12);
+  const embudo: Record<string, Record<string, number>> = {};
+  for (const r of funnel) (embudo[r.origen] ??= {})[r.evento] = (embudo[r.origen]?.[r.evento] ?? 0) + r.cantidad;
+
   return {
     red: network,
+    embudo: { porOrigen: embudo, porSemana: funnel },
     altas: { porPais: sumBy('pais'), porOrigen: sumBy('origen') },
     generado: new Date((deps.now ?? Date.now)()).toISOString(),
     usuarios: {

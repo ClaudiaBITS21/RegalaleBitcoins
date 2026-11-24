@@ -310,6 +310,31 @@ describe('Cuentas con passkey', () => {
     assert.ok(!columnas.some((c) => /pais|origen/.test(c.column_name)), 'la cuenta no guarda país ni origen');
   });
 
+  it('embudo por campaña: solo un contador por semana, origen y paso; nada del regalo ni de la cuenta', async () => {
+    await sql`delete from embudo_semana`;
+    const contador = createApp({ sql, chain, price, network: signet, funnelPerHour: 5 });
+    const aviso = (body: unknown) => contador.request('/api/eventos', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.equal((await aviso({ evento: 'visita', origen: 'utm:labitconf' })).status, 204);
+    assert.equal((await aviso({ evento: 'visita', origen: 'utm:labitconf' })).status, 204);
+    // Lo que venga de más (un id, un mail) se ignora; un origen raro cuenta como directo.
+    assert.equal((await aviso({ evento: 'pago_visto', origen: 'Ojo Raro!', regalo: 'abc', email: 'x@example.com' })).status, 204);
+    // Un paso que no está en la lista no se cuenta: no es un canal para mandar datos.
+    assert.equal((await aviso({ evento: 'ana@example.com', origen: 'directo' })).status, 400);
+    assert.equal((await aviso(null)).status, 400);
+    const filas = await sql<{ origen: string; evento: string; cantidad: number }[]>`select origen, evento, cantidad from embudo_semana order by cantidad desc`;
+    assert.deepEqual(filas.map((f) => [f.origen, f.evento, f.cantidad]), [['utm:labitconf', 'visita', 2], ['directo', 'pago_visto', 1]]);
+    // La tabla solo tiene la semana, el origen, el paso y la cuenta.
+    const columnas = await sql<{ column_name: string }[]>`select column_name from information_schema.columns where table_name = 'embudo_semana' order by column_name`;
+    assert.deepEqual(columnas.map((c) => c.column_name), ['cantidad', 'evento', 'origen', 'semana']);
+    // Límite por IP (en memoria): los rechazados por inválidos no cuentan, los 5 de la hora sí.
+    assert.equal((await aviso({ evento: 'visita', origen: 'directo' })).status, 204);
+    assert.equal((await aviso({ evento: 'visita', origen: 'directo' })).status, 204);
+    assert.equal((await aviso({ evento: 'visita', origen: 'directo' })).status, 429);
+    // Ni los regalos ni las cuentas guardan de dónde llegó la visita.
+    const otras = await sql<{ column_name: string }[]>`select column_name from information_schema.columns where table_name in ('regalos', 'usuarios')`;
+    assert.ok(!otras.some((c) => /^(origen|evento|campana|utm)/.test(c.column_name)), 'ni regalos ni cuentas guardan el origen');
+  });
+
   it('el menú pregunta si hay sesión sin errores ni datos de la cuenta', async () => {
     const sin = await req('/api/cuenta/sesion');
     assert.equal(sin.status, 200);

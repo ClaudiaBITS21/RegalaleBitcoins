@@ -1,6 +1,7 @@
 import { decodeGiftFragment, type Destination, getNetwork, type GiftWallet, isCoreError, multisigGiftWallet, type Network, openGiftWallet } from '@regalale/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiFailure, api, type GiftView } from '../api.ts';
+import { countEvent } from '../eventos.ts';
 import { ALLOW_MAINNET } from '../config.ts';
 import { explorerTxUrl, formatSats, formatUsd, formatWhole, satsToUsd } from '../format.ts';
 import { giftValueText } from '../valorRegalo.ts';
@@ -121,12 +122,14 @@ export function ClaimPage({ id }: { id: string }) {
       if (g.tarjeta != null && entropy !== null) {
         try {
           setGift(await openGiftCard(g, entropy));
+          countEvent('link_abierto', id);
         } catch {
           setError('link');
         }
         return;
       }
       setGift(g);
+      countEvent('link_abierto', id);
     } catch (e) {
       setError(e instanceof ApiFailure && e.status === 404 ? 'no_existe' : 'sin_red');
     }
@@ -160,6 +163,7 @@ export function ClaimPage({ id }: { id: string }) {
       }
       wallet.current?.wipe();
       wallet.current = w;
+      countEvent('palabras_ok', id);
       go('billetera');
       return null;
     } catch (e) {
@@ -259,6 +263,7 @@ export function ClaimPage({ id }: { id: string }) {
           wallet.current?.wipe();
           wallet.current = null;
           setDone(r);
+          countEvent('regalo_abierto', id);
           setSteps(['listo']);
         }}
       />
