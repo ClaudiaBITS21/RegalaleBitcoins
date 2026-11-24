@@ -126,7 +126,9 @@ export function PrivacyPage() {
               creado, un pago visto en la red, un regalo compartido, una compra, un link abierto, las palabras bien puestas, un regalo abierto). Tu navegador avisa
               solo el nombre del paso y de dónde había llegado esa visita (el nombre del sitio, la etiqueta de campaña del link, un cupón o el link de un regalo), y
               sumamos uno a un contador por semana. El aviso no lleva el regalo, la cuenta, el monto ni ningún identificador, y no usamos cookies ni servicios de
-              terceros para esto: ese contador no se puede relacionar con ninguna persona ni con ningún regalo.
+              terceros para esto: ese contador no se puede relacionar con ninguna persona ni con ningún regalo. Para que
+              una visita posterior cuente para la misma campaña, el navegador recuerda de dónde llegaste durante 7 días (solo esa etiqueta y el día en que vence, en
+              el propio dispositivo; se borra sola o al borrar los datos del sitio).
             </li>
           </ul>
         </section>

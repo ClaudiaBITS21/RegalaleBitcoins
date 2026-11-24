@@ -126,7 +126,7 @@ function Funnel({ data, n, pct }: { data: Record<string, Record<string, number>>
     <section class="admin-bloque">
       <h2>Embudo por origen de la visita (12 semanas)</h2>
       <p class="texto-suave">
-        Cada paso se cuenta una vez por visita, con el origen de esa visita. Para medir una campaña, usá links con <code>?utm_source=nombre</code>. «Recibió un regalo» son las
+        Cada paso se cuenta una vez por visita, con el origen de esa visita. Para medir una campaña, usá links con <code>?utm_source=nombre</code>: el origen se recuerda 7 días en ese navegador. «Recibió un regalo» son las
         visitas que entraron por el link de un regalo: si después regalan, se ve en esa fila.
       </p>
       <div class="admin-tabla-scroll">

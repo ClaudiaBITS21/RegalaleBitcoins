@@ -21,7 +21,7 @@ El navegador avisa a `POST /api/eventos` con dos datos: `{ evento, origen }`. El
 | `regalo_abierto` | El barrido salió (o quedó programado) | Recibe |
 
 `origen` es el de la visita (`apps/web/src/origen.ts`): `utm:<utm_source>`, el dominio del sitio
-de donde vino, `cupon`, `regalo` (entró por el link de un regalo) o `directo`. Las filas con origen
+de donde vino, `cupon`, `regalo` (entró por el link de un regalo) o `directo`; se recuerda 7 días (ver abajo). Las filas con origen
 `regalo` y eventos de quien regala muestran cuántos de los que recibieron un regalo después hicieron
 uno, en la misma visita.
 
@@ -42,9 +42,13 @@ Se ve en el admin: «Embudo por origen de la visita (12 semanas)».
 
 ## Límites conocidos
 
-- El origen dura lo que dura la pestaña. Quien llega por una campaña y vuelve otro día cuenta como
-  `directo` en esa segunda visita. Guardarlo más tiempo en el navegador es posible, pero es una
-  decisión de la responsable (**ABIERTO**).
+- **El origen se recuerda 7 días en el navegador** (decisión de la responsable, 24/11/2026: es el
+  tiempo entre campaña y campaña). Lo que pase en esa semana cuenta para la campaña por la que
+  llegó la persona, aunque vuelva sin el link. Otra campaña o un cupón la reemplazan y arrancan su
+  semana; volver directo, desde otro sitio o por el link de un regalo no la pisa ni estira el
+  plazo. Queda en `localStorage` (etiqueta y día de vencimiento) y no viaja como tal. Vale también
+  para la estadística de altas. Desde otro dispositivo o navegador no se hereda.
+- Cada paso se cuenta una vez por visita: quien vuelve tres veces en la semana suma tres `visita`.
 - `pago_visto` y `compra` solo se cuentan si la persona tiene la página abierta cuando el pago
   aparece. Los totales exactos de regalos pagados y abiertos siguen siendo los del resto del admin,
   que salen de la cadena; el embudo sirve para comparar orígenes entre sí.
